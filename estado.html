@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Córcega Loyalty Club</title>
+  <title>Tu Cafecito</title>
   <style>
     body {
       margin: 0;
@@ -17,6 +17,7 @@
       margin: 0 auto;
       padding: 40px 20px;
       text-align: center;
+      display: none;
     }
 
     h1 {
@@ -82,10 +83,31 @@
       font-size: 16px;
       font-weight: bold;
     }
+
+    #loader {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .galope {
+      width: 100px;
+      animation: galopar 1s infinite ease-in-out alternate;
+    }
+
+    @keyframes galopar {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-10px); }
+    }
   </style>
 </head>
 <body>
-  <div class="contenedor">
+  <div id="loader">
+    <img src="caballo-logo.png" alt="Cargando..." class="galope">
+  </div>
+
+  <div class="contenedor" id="contenedor">
     <p id="cliente"></p>
     <h1>COMPLETÁ LAS VISITAS Y TE REGALAMOS</h1>
     <h2>UN CAFECITO</h2>
@@ -105,6 +127,9 @@
     fetch(api)
       .then(res => res.json())
       .then(data => {
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("contenedor").style.display = "block";
+
         const grid = document.getElementById("grid");
         const cantidad = parseInt(data.cafes) || 0;
         const nombre = data.nombre || "";
@@ -128,6 +153,8 @@
         }
       })
       .catch(() => {
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("contenedor").style.display = "block";
         document.getElementById("grid").innerHTML = "<p>No se pudo cargar la tarjeta.</p>";
       });
   </script>
