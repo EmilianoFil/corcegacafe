@@ -75,13 +75,12 @@
     <input type="text" id="nombre" placeholder="Nombre y apellido" required />
     <input type="email" id="mail" placeholder="Email" required />
     <div>
-      <button onclick="registrar(false)">Registrar</button>
-      <button onclick="registrar(true)">Registrar y sumar cafecito</button>
+      <button onclick="registrar()">Registrarme</button>
     </div>
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope" /></div>
     <p id="mensaje"></p>
     <br />
-    <a href="admin.html">Volver</a>
+    <a href="index.html">Volver</a>
   </div>
 
   <script>
@@ -93,7 +92,7 @@
       document.getElementById("dni").value = params.get("dni");
     }
 
-    function registrar(sumarCafecito) {
+    function registrar() {
       const dni = document.getElementById("dni").value.trim();
       const nombre = document.getElementById("nombre").value.trim();
       const mail = document.getElementById("mail").value.trim();
@@ -113,12 +112,12 @@
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ dni, nombre, mail, sumar: sumarCafecito })
+        body: JSON.stringify({ dni, nombre, mail })
       })
         .then(res => res.text())
         .then(() => {
           loader.style.display = "none";
-          mensaje.innerText = `¡Registro exitoso!\nEl cliente ${dni} fue registrado correctamente.` + (sumarCafecito ? "\nY ya se sumó un cafecito ☕" : "");
+          mensaje.innerText = `¡Registro exitoso!\nEl cliente ${dni} fue registrado correctamente.`;
         })
         .catch(() => {
           loader.style.display = "none";
