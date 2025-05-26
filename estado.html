@@ -1,56 +1,65 @@
-{\rtf1\ansi\ansicpg1252\cocoartf2822
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
-{\colortbl;\red255\green255\blue255;}
-{\*\expandedcolortbl;;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-
-\f0\fs24 \cf0 <!DOCTYPE html>\
-<html lang="es">\
-<head>\
-  <meta charset="UTF-8" />\
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\
-  <title>Tu Cafecito</title>\
-  <style>\
-    body \{\
-      font-family: sans-serif;\
-      text-align: center;\
-      padding-top: 80px;\
-      background-color: #f7f2ec;\
-      color: #3e3e3e;\
-    \}\
-    .cafe \{\
-      font-size: 24px;\
-    \}\
-  </style>\
-</head>\
-<body>\
-  <h1>\uc0\u9749  Estado de Cafecito</h1>\
-  <div id="resultado">Cargando...</div>\
-\
-  <script>\
-    const params = new URLSearchParams(window.location.search);\
-    const dni = params.get("dni");\
-    const apiUrl = "https://script.google.com/macros/s/AKfycbyDGL_2LXYKvLbUDy_wOXXfVhZWF6Ya-C3qDkkP3jU6V9uVlCHn6yLRhUCefKQ0E9ER/exec?formato=json&dni=" + encodeURIComponent(dni);\
-\
-    fetch(apiUrl)\
-      .then(res => res.json())\
-      .then(data => \{\
-        if (data.error) \{\
-          document.getElementById("resultado").innerHTML = `<p>$\{data.error\}</p>`;\
-        \} else \{\
-          const cafes = "\uc0\u9749 ".repeat(data.cafes);\
-          const falta = 9 - data.cafes;\
-          document.getElementById("resultado").innerHTML = `\
-            <h2>Hola $\{data.nombre\}</h2>\
-            <p class="cafe">$\{cafes\} ($\{data.cafes\} / 9)</p>\
-            <p>$\{data.gratis === "S\'ed" ? "\uc0\u55356 \u57225  \'a1Ten\'e9s un caf\'e9 gratis!" : `Te faltan $\{falta\} para el pr\'f3ximo.`\}</p>\
-          `;\
-        \}\
-      \})\
-      .catch(() => \{\
-        document.getElementById("resultado").innerHTML = `<p>No se pudo obtener la informaci\'f3n.</p>`;\
-      \});\
-  </script>\
-</body>\
-</html>}
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.5">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="es"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;Tu Cafecito&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>body {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-family: sans-serif;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>text-align: center;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>padding-top: 80px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background-color: #f7f2ec;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #3e3e3e;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.cafe {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 24px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;h1&gt;☕ Estado de Cafecito&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div id="resultado"&gt;Cargando...&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const params = new URLSearchParams(window.location.search);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const dni = params.get("dni");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const apiUrl = "https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec?formato=json&amp;dni=" + encodeURIComponent(dni);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>fetch(apiUrl)</p>
+<p class="p1"><span class="Apple-converted-space">      </span>.then(res =&gt; res.json())</p>
+<p class="p1"><span class="Apple-converted-space">      </span>.then(data =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if (data.error) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>document.getElementById("resultado").innerHTML = `&lt;p&gt;${data.error}&lt;/p&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const cafes = "☕".repeat(data.cafes);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const falta = 9 - data.cafes;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>document.getElementById("resultado").innerHTML = `</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;h2&gt;Hola ${data.nombre}&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;p class="cafe"&gt;${cafes} (${data.cafes} / 9)&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;p&gt;${data.gratis === "Sí" ? "🎉 ¡Tenés un café gratis!" : `Te faltan ${falta} para el próximo.`}&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>`;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>})</p>
+<p class="p1"><span class="Apple-converted-space">      </span>.catch(() =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById("resultado").innerHTML = `&lt;p&gt;No se pudo obtener la información.&lt;/p&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
