@@ -70,7 +70,7 @@
     <h1>☕ Consultá cómo venís</h1>
     <p>Ingresá tu DNI para ver tu progreso</p>
     <form onsubmit="redirigir(event)">
-      <input type="text" id="dni" placeholder="Tu DNI" required />
+      <input type="tel" name="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]*" required />
       <br />
       <button type="submit">Ver</button>
     </form>
