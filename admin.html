@@ -75,6 +75,13 @@
   </style>
 </head>
 <body>
+  <script>
+    // Redirigir si no hay login válido
+    if (localStorage.getItem("admin") !== "true") {
+      window.location.href = "login.html";
+    }
+  </script>
+
   <div class="contenedor">
     <h1>Cargar Cafecito ☕</h1>
     <form id="adminForm">
