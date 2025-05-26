@@ -71,6 +71,8 @@
     .mensaje a {
       color: white;
       text-decoration: underline;
+      display: inline-block;
+      margin: 5px;
     }
 
     #loader {
@@ -86,6 +88,19 @@
     @keyframes galopar {
       0% { transform: translateY(0); }
       100% { transform: translateY(-10px); }
+    }
+
+    .logout {
+      margin-top: 20px;
+    }
+
+    .logout a {
+      background: white;
+      color: #d86634;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      text-decoration: none;
     }
   </style>
 </head>
@@ -104,9 +119,30 @@
     </form>
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div id="respuesta" class="mensaje"></div>
+    <div class="logout">
+      <a href="#" onclick="cerrarSesion()">Cerrar sesión</a>
+    </div>
   </div>
 
   <script>
+    async function cerrarSesion() {
+      const usuario = localStorage.getItem("usuario");
+
+      if (usuario) {
+        await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+          method: "POST",
+          body: JSON.stringify({
+            log: true,
+            usuario: usuario,
+            accion: "cerrar_sesion"
+          })
+        });
+      }
+
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
     document.getElementById("adminForm").addEventListener("submit", async function(e) {
       e.preventDefault();
 
@@ -134,9 +170,24 @@
       if (result.estado === "ok") {
         div.className = "mensaje ok";
         div.innerText = `✅ Se sumó 1 cafecito a ${result.nombre}. Total: ${result.cafes}`;
+
+        const usuario = localStorage.getItem("usuario");
+        if (usuario) {
+          await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+            method: "POST",
+            body: JSON.stringify({
+              log: true,
+              usuario: usuario,
+              accion: "cargar_cafecito",
+              detalles: `DNI: ${dni}`
+            })
+          });
+        }
       } else if (result.estado === "no_encontrado") {
         div.className = "mensaje error";
-        div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar ahora</a>`;
+        div.innerHTML = `❌ El DNI ${dni} no está registrado.<br>
+        <a href="registro-admin.html?dni=${dni}">Registrar</a>
+        <a href="registro-admin.html?dni=${dni}&sumar=true">Registrar y sumar cafecito</a>`;
       } else {
         div.className = "mensaje error";
         div.innerText = "❌ Ocurrió un error inesperado.";
