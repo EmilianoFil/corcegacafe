@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Registro - Club de Recompensas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro</title>
   <style>
     body {
       font-family: sans-serif;
@@ -15,7 +15,6 @@
       min-height: 100vh;
       margin: 0;
     }
-
     .contenedor {
       background: rgba(255,255,255,0.05);
       padding: 40px 20px;
@@ -24,12 +23,10 @@
       max-width: 400px;
       width: 100%;
     }
-
     h1 {
       font-size: 20px;
       margin-bottom: 20px;
     }
-
     input {
       padding: 10px;
       font-size: 16px;
@@ -41,9 +38,8 @@
       color: black;
       font-weight: bold;
     }
-
     button {
-      padding: 10px 20px;
+      padding: 10px 16px;
       font-size: 16px;
       background-color: white;
       color: #d86634;
@@ -51,37 +47,32 @@
       border-radius: 8px;
       cursor: pointer;
       font-weight: bold;
-      margin-top: 15px;
+      margin-top: 10px;
     }
-
-    .exito {
+    .mensaje {
       margin-top: 20px;
       color: white;
       font-weight: bold;
       white-space: pre-line;
     }
-
-    #loader {
-      margin-top: 20px;
-      display: none;
-    }
-
     .galope {
       width: 80px;
       animation: galopar 1s infinite ease-in-out alternate;
-    }
-
-    .volver {
       margin-top: 20px;
-      display: inline-block;
-      padding: 8px 16px;
-      background-color: white;
+      display: none;
+    }
+    #volver {
+      margin-top: 15px;
+      display: none;
+    }
+    #volver a {
+      background: white;
       color: #d86634;
-      text-decoration: none;
+      padding: 8px 16px;
       border-radius: 8px;
       font-weight: bold;
+      text-decoration: none;
     }
-
     @keyframes galopar {
       0% { transform: translateY(0); }
       100% { transform: translateY(-10px); }
@@ -90,53 +81,55 @@
 </head>
 <body>
   <div class="contenedor">
-    <h1>Registrate al Club de Recompensas</h1>
+    <h1>Sumate al Club de Cafecitos</h1>
     <form id="registroForm">
       <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]*" required />
       <input type="text" name="nombre" placeholder="Nombre y apellido" required />
       <input type="email" name="mail" placeholder="Correo electrónico" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" />
       <button type="submit">Registrarme</button>
     </form>
-
-    <div id="loader"><img src="caballo-logo.png" class="galope" /></div>
-    <div class="exito" id="mensaje"></div>
-    <a href="index.html" class="volver" id="volver" style="display: none;">Inicio</a>
+    <img src="caballo-logo.png" alt="Cargando..." class="galope" id="loader">
+    <div class="mensaje" id="mensaje"></div>
+    <div id="volver">
+      <a href="index.html">Inicio</a>
+    </div>
   </div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const params = new URLSearchParams(window.location.search);
-      const dni = params.get("dni");
-      if (dni) document.querySelector('input[name="dni"]').value = dni;
+    const form = document.getElementById("registroForm");
+    const mensaje = document.getElementById("mensaje");
+    const loader = document.getElementById("loader");
+    const volver = document.getElementById("volver");
 
-      document.getElementById("registroForm").addEventListener("submit", async function(e) {
-        e.preventDefault();
+    form.addEventListener("submit", async function(e) {
+      e.preventDefault();
 
-        const form = e.target;
-        const data = {
-          dni: form.dni.value.trim(),
-          nombre: form.nombre.value.trim(),
-          mail: form.mail.value.trim()
-        };
+      const dni = form.dni.value.trim();
+      const nombre = form.nombre.value.trim();
+      const mail = form.mail.value.trim();
 
-        document.getElementById("loader").style.display = "block";
-        form.style.display = "none";
+      loader.style.display = "block";
+      mensaje.innerText = "";
 
-        const response = await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-          method: "POST",
-          body: JSON.stringify(data)
-        });
-
-        document.getElementById("loader").style.display = "none";
-        document.getElementById("volver").style.display = "inline-block";
-
-        if (response.ok) {
-          document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🎉☕️";
-        } else {
-          document.getElementById("mensaje").innerText = "Hubo un error. Probá de nuevo más tarde.";
-          form.style.display = "block";
-        }
+      await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+        method: "POST",
+        body: JSON.stringify({ dni, nombre, mail })
       });
+
+      await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+        method: "POST",
+        body: JSON.stringify({
+          log: true,
+          usuario: "cliente",
+          accion: "registro_manual",
+          detalles: `DNI: ${dni}`
+        })
+      });
+
+      loader.style.display = "none";
+      mensaje.innerText = `¡Registro exitoso!\nYa empezás a sumar sellos.\n🎉☕️`;
+      volver.style.display = "block";
+      form.reset();
     });
   </script>
 </body>
