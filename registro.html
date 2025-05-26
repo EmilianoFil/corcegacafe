@@ -71,6 +71,17 @@
       animation: galopar 1s infinite ease-in-out alternate;
     }
 
+    .volver {
+      margin-top: 20px;
+      display: inline-block;
+      padding: 8px 16px;
+      background-color: white;
+      color: #d86634;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
     @keyframes galopar {
       0% { transform: translateY(0); }
       100% { transform: translateY(-10px); }
@@ -89,6 +100,7 @@
 
     <div id="loader"><img src="caballo-logo.png" class="galope" /></div>
     <div class="exito" id="mensaje"></div>
+    <a href="index.html" class="volver" id="volver" style="display: none;">Inicio</a>
   </div>
 
   <script>
@@ -107,7 +119,6 @@
           mail: form.mail.value.trim()
         };
 
-        // Mostrar loader y ocultar form
         document.getElementById("loader").style.display = "block";
         form.style.display = "none";
 
@@ -117,6 +128,7 @@
         });
 
         document.getElementById("loader").style.display = "none";
+        document.getElementById("volver").style.display = "inline-block";
 
         if (response.ok) {
           document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🎉☕️";
