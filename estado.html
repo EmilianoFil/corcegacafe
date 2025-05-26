@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tu Cafecito</title>
+  <title>Tu Cafecitoo</title>
   <style>
     body {
       margin: 0;
@@ -87,7 +87,7 @@
       margin-bottom: 20px;
     }
 
-    #mensaje-error a {
+    #mensaje-error a.boton {
       background-color: white;
       color: #d86634;
       font-weight: bold;
@@ -95,6 +95,15 @@
       padding: 8px 16px;
       border-radius: 8px;
       display: inline-block;
+      margin-bottom: 10px;
+    }
+
+    #mensaje-error a.otro {
+      display: block;
+      margin-top: 10px;
+      font-size: 14px;
+      text-decoration: underline;
+      color: white;
     }
 
     footer {
@@ -168,9 +177,10 @@
           grid.style.display = "none";
           document.getElementById("mensaje-error").style.display = "block";
           document.getElementById("mensaje-error").innerHTML = `
-            <p>El DNI ingresado no está registrado en nuestro Club de Recompensas.<br>
+            <p>El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.<br>
             Pero no te preocupes, podés registrarte:</p>
-            <a href="registro.html">Acá</a>
+            <a href="registro.html" class="boton">acá</a>
+            <a href="index.html" class="otro">Buscar otro DNI</a>
           `;
           return;
         }
