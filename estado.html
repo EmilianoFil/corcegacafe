@@ -83,15 +83,18 @@
       line-height: 1.4;
     }
 
+    #mensaje-error p {
+      margin-bottom: 20px;
+    }
+
     #mensaje-error a {
-      display: inline-block;
-      margin-top: 10px;
-      color: white;
-      background: #2b2b2b;
-      padding: 8px 12px;
-      border-radius: 8px;
-      text-decoration: none;
+      background-color: white;
+      color: #d86634;
       font-weight: bold;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      display: inline-block;
     }
 
     footer {
@@ -165,8 +168,9 @@
           grid.style.display = "none";
           document.getElementById("mensaje-error").style.display = "block";
           document.getElementById("mensaje-error").innerHTML = `
-            El DNI ingresado no está registrado en nuestro Club de Recompensas.<br>
-            Pero no te preocupes, podés registrarte <a href="registro.html">acá</a>.
+            <p>El DNI ingresado no está registrado en nuestro Club de Recompensas.<br>
+            Pero no te preocupes, podés registrarte:</p>
+            <a href="registro.html">Acá</a>
           `;
           return;
         }
