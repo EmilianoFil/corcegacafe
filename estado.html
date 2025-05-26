@@ -77,6 +77,23 @@
       font-weight: normal;
     }
 
+    #mensaje-error {
+      font-size: 16px;
+      margin-top: 20px;
+      line-height: 1.4;
+    }
+
+    #mensaje-error a {
+      display: inline-block;
+      margin-top: 10px;
+      color: white;
+      background: #2b2b2b;
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
     footer {
       font-size: 14px;
       margin-top: 30px;
@@ -120,6 +137,7 @@
     <h2>UN CAFECITO</h2>
     <p id="faltan"></p>
     <div id="grid" class="grid"></div>
+    <div id="mensaje-error" style="display:none;"></div>
     <footer>
       <div>Seguinos en Instagram</div>
       <a href="https://www.instagram.com/corcegacafe" target="_blank">@corcegacafe</a>
@@ -138,8 +156,20 @@
         document.getElementById("contenedor").style.display = "block";
 
         const grid = document.getElementById("grid");
-        const cantidad = parseInt(data.cafes) || 0;
-        const nombre = data.nombre || "";
+        const cantidad = parseInt(data.cafes);
+        const nombre = data.nombre;
+
+        if (!nombre) {
+          document.getElementById("cliente").style.display = "none";
+          document.getElementById("faltan").style.display = "none";
+          grid.style.display = "none";
+          document.getElementById("mensaje-error").style.display = "block";
+          document.getElementById("mensaje-error").innerHTML = `
+            El DNI ingresado no está registrado en nuestro Club de Recompensas.<br>
+            Pero no te preocupes, podés registrarte <a href="registro.html">acá</a>.
+          `;
+          return;
+        }
 
         document.getElementById("cliente").textContent = `Hola ${nombre}`;
         document.getElementById("faltan").textContent = cantidad < 9 ? `Te faltan ${9 - cantidad} para el próximo.` : "¡Ya tenés uno gratis! 🎉";
