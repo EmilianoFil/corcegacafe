@@ -64,8 +64,14 @@
     .galope {
       width: 80px;
       animation: galopar 1s infinite ease-in-out alternate;
-      margin-top: 20px;
+      margin: 20px auto 0;
       display: none;
+      display: block;
+    }
+
+    #loader {
+      display: none;
+      margin: 0 auto;
     }
 
     @keyframes galopar {
@@ -86,7 +92,9 @@
         <button type="submit" id="registrarYSumar">Registrar y sumar cafecito</button>
       </div>
     </form>
-    <img src="caballo-logo.png" alt="Cargando..." class="galope" id="loader">
+    <div id="loader">
+      <img src="caballo-logo.png" alt="Cargando..." class="galope">
+    </div>
     <div class="mensaje" id="mensaje"></div>
   </div>
 
