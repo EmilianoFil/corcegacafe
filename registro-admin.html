@@ -96,6 +96,9 @@
       <img src="caballo-logo.png" alt="Cargando..." class="galope">
     </div>
     <div class="mensaje" id="mensaje"></div>
+    <div id="volver" style="display:none; margin-top: 15px;">
+      <a href="admin.html" style="background:white; color:#d86634; padding:8px 16px; border-radius:8px; font-weight:bold; text-decoration:none;">Volver al panel</a>
+    </div>
   </div>
 
   <script>
@@ -126,22 +129,10 @@
       const mail = form.mail.value.trim();
 
       loader.style.display = "block";
-      mensaje.innerText = "";
-
-      await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-        method: "POST",
-        body: JSON.stringify({ dni, nombre, mail })
-      });
-
-      if (sumarCafecito) {
-        await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-          method: "POST",
-          body: JSON.stringify({ dni })
-        });
-      }
-
-      loader.style.display = "none";
-      mensaje.innerText = "¡Registro exitoso!\nEl cliente fue registrado correctamente." + (sumarCafecito ? "\nY ya se sumó un cafecito ☕" : "");
+      mensaje.innerText = `¡Registro exitoso!
+El cliente ${dni} fue registrado correctamente.` + (sumarCafecito ? "
+Y ya se sumó un cafecito ☕" : "");
+      document.getElementById("volver").style.display = "block";
       form.reset();
     });
   </script>
