@@ -60,7 +60,7 @@
 </head>
 <body>
   <div class="contenedor">
-    <h1>Registrate al Club de Recompensas</h1>
+    <h1>Registrate al Club de Recompensas de Córcega Café</h1>
     <form id="registroForm">
       <input type="text" name="dni" placeholder="DNI" required /><br />
       <input type="text" name="nombre" placeholder="Nombre y apellido" required /><br />
@@ -71,27 +71,33 @@
   </div>
 
   <script>
-    document.getElementById("registroForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      const form = e.target;
-      const data = {
-        dni: form.dni.value.trim(),
-        nombre: form.nombre.value.trim(),
-        mail: form.mail.value.trim()
-      };
+  document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    const dni = params.get("dni");
+    if (dni) document.querySelector('input[name="dni"]').value = dni;
+  });
 
-      const response = await fetch("URL_WEBAPP_ACÁ", {
-        method: "POST",
-        body: JSON.stringify(data)
-      });
+  document.getElementById("registroForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+      dni: form.dni.value.trim(),
+      nombre: form.nombre.value.trim(),
+      mail: form.mail.value.trim()
+    };
 
-      if (response.ok) {
-        form.style.display = "none";
-        document.getElementById("mensaje").innerText = "¡Registro exitoso! 🎉 Ya podés buscar tu cafecito.";
-      } else {
-        document.getElementById("mensaje").innerText = "Hubo un error. Probá de nuevo más tarde.";
-      }
+    const response = await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+      method: "POST",
+      body: JSON.stringify(data)
     });
-  </script>
+
+    if (response.ok) {
+      form.style.display = "none";
+      document.getElementById("mensaje").innerText = "¡Registro exitoso! 🎉 Ya podés buscar tu cafecito.";
+    } else {
+      document.getElementById("mensaje").innerText = "Hubo un error. Probá de nuevo más tarde.";
+    }
+  });
+</script>
 </body>
 </html>
