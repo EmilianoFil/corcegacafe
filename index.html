@@ -32,14 +32,14 @@
   </form>
 
   <script>
-    function redirigir(event) {
-      event.preventDefault();
-      const dni = document.getElementById("dni").value.trim();
-      if (dni) {
-        const baseUrl = "https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec";
-        window.location.href = `${baseUrl}?dni=${encodeURIComponent(dni)}`;
-      }
+  function redirigir(event) {
+    event.preventDefault();
+    const dni = document.getElementById("dni").value.trim();
+    if (dni) {
+      const baseUrl = "https://emilianofil.github.io/corcegacafe/estado.html";
+      window.location.href = `${baseUrl}?dni=${encodeURIComponent(dni)}`;
     }
-  </script>
+  }
+</script>
 </body>
 </html>
