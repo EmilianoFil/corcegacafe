@@ -95,7 +95,6 @@
 </head>
 <body>
   <script>
-    // Proteger acceso si no hay login válido
     if (localStorage.getItem("admin") !== "true") {
       window.location.href = "login.html";
     }
@@ -136,6 +135,7 @@
       const dni = dniInput.value.trim();
       const nombre = form.nombre.value.trim();
       const mail = form.mail.value.trim();
+      const usuario = localStorage.getItem("usuario");
 
       loader.style.display = "block";
       mensaje.innerText = "";
@@ -145,11 +145,35 @@
         body: JSON.stringify({ dni, nombre, mail })
       });
 
+      if (usuario) {
+        await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+          method: "POST",
+          body: JSON.stringify({
+            log: true,
+            usuario: usuario,
+            accion: "registrar_usuario",
+            detalles: `DNI: ${dni}`
+          })
+        });
+      }
+
       if (sumarCafecito) {
         await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
           method: "POST",
           body: JSON.stringify({ dni })
         });
+
+        if (usuario) {
+          await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+            method: "POST",
+            body: JSON.stringify({
+              log: true,
+              usuario: usuario,
+              accion: "cargar_cafecito",
+              detalles: `DNI: ${dni}`
+            })
+          });
+        }
       }
 
       loader.style.display = "none";
