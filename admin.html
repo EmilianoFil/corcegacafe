@@ -136,7 +136,7 @@
         div.innerText = `✅ Se sumó 1 cafecito a ${result.nombre}. Total: ${result.cafes}`;
       } else if (result.estado === "no_encontrado") {
         div.className = "mensaje error";
-        div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro.html?dni=${dni}">Registrar ahora</a>`;
+        div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar ahora</a>`;
       } else {
         div.className = "mensaje error";
         div.innerText = "❌ Ocurrió un error inesperado.";
