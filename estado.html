@@ -189,6 +189,17 @@
         }
 
         document.getElementById("cliente").textContent = `Hola ${nombre}`;
+
+// LOGUEAR CONSULTA DEL CLIENTE
+fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+  method: "POST",
+  body: JSON.stringify({
+    log: true,
+    usuario: "cliente",
+    accion: "consulta",
+    detalles: `DNI: ${dni}`
+  })
+});
         document.getElementById("faltan").textContent = cantidad < 8 ? `Te faltan ${8 - cantidad} para que te invitemos uno.` : "¡El próximo lo invitamos nosotros! 🐎🎉";
         
         for (let i = 1; i <= 9; i++) {
