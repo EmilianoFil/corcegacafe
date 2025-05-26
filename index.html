@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Córcega Café - Club de recompensas</title>
+  <title>Córcega Rewards</title>
   <style>
     body {
       font-family: sans-serif;
@@ -12,32 +12,39 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
     }
 
     .contenedor {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255,255,255,0.05);
       padding: 40px 20px;
       text-align: center;
+      border-radius: 24px;
       max-width: 400px;
-      width: 100%;
-      border-radius: 16px;
+      width: 90%;
     }
 
     h1 {
-      font-size: 18px;
-      margin-bottom: 20px;
-      font-weight: bold;
+      font-size: 22px;
+      margin-bottom: 10px;
     }
 
-    input[type="text"] {
+    p {
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+
+    input {
       padding: 10px;
       font-size: 16px;
-      width: 80%;
-      margin-bottom: 20px;
+      width: 90%;
+      margin: 10px 0;
       border: 2px solid white;
       border-radius: 8px;
+      background-color: white;
+      color: #d86634;
+      font-weight: bold;
     }
 
     button {
@@ -46,15 +53,14 @@
       background-color: white;
       color: #d86634;
       border: none;
-      border-radius: 8px;
+      border-radius: 12px;
       cursor: pointer;
       font-weight: bold;
     }
 
     footer {
-      font-size: 12px;
       margin-top: 30px;
-      line-height: 1.4;
+      font-size: 14px;
     }
 
     footer a {
@@ -67,38 +73,32 @@
 </head>
 <body>
   <div class="contenedor">
-    <h1>☕ Consultá cómo venís</h1>
+    <h1>☕ <strong>Consultá cómo venís</strong></h1>
     <p>Ingresá tu DNI para ver tu progreso</p>
-    <form onsubmit="redirigir(event)">
-      <input type="tel" name="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]*" required style="
-  padding: 10px;
-  font-size: 16px;
-  width: 90%;
-  margin: 10px 0;
-  border: 2px solid white;
-  border-radius: 8px;
-  background-color: white;
-  color: #d86634;
-  font-weight: bold;
-" />
+    <form id="dniForm">
+      <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]*" required />
       <br />
       <button type="submit">Ver</button>
     </form>
+
     <footer>
-      <div>Seguinos en Instagram</div>
-      <a href="https://www.instagram.com/corcegacafe" target="_blank">@corcegacafe</a>
+      <p>Seguinos en Instagram<br>
+      <a href="https://www.instagram.com/corcegacafe" target="_blank">@corcegacafe</a></p>
     </footer>
   </div>
 
   <script>
-    function redirigir(event) {
-      event.preventDefault();
-      const dni = document.getElementById("dni").value.trim();
-      if (dni) {
-        const baseUrl = "estado.html";
-        window.location.href = `${baseUrl}?dni=${encodeURIComponent(dni)}`;
-      }
-    }
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("dniForm");
+      form.addEventListener("submit", function(event) {
+        event.preventDefault();
+        const dniInput = document.getElementById("dni");
+        if (dniInput && dniInput.value.trim()) {
+          const dni = dniInput.value.trim();
+          window.location.href = `estado.html?dni=${encodeURIComponent(dni)}`;
+        }
+      });
+    });
   </script>
 </body>
 </html>
