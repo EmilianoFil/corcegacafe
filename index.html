@@ -1,58 +1,101 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Córcega Café - Club de recompensas</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tu Cafecito</title>
   <style>
     body {
+      margin: 0;
       font-family: sans-serif;
       background-color: #d86634;
       color: #2b2b2b;
       display: flex;
-      align-items: center;
       justify-content: center;
-      height: 100vh;
-      margin: 0;
+      align-items: center;
+      min-height: 100vh;
     }
 
     .contenedor {
-      background: rgba(255, 255, 255, 0.05);
-      padding: 40px 20px;
-      text-align: center;
       max-width: 400px;
       width: 100%;
+      padding: 40px 20px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.05);
       border-radius: 16px;
+      display: none;
     }
 
     h1 {
-      font-size: 18px;
-      margin-bottom: 20px;
-      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 14px;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
     }
 
-    input[type="text"] {
-      padding: 10px;
-      font-size: 16px;
-      width: 80%;
-      margin-bottom: 20px;
+    h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .circle {
+      width: 80px;
+      height: 80px;
       border: 2px solid white;
-      border-radius: 8px;
+      border-radius: 50%;
+      background-size: 60%;
+      background-repeat: no-repeat;
+      background-position: center;
+      opacity: 0.3;
     }
 
-    button {
-      padding: 10px 20px;
+    .circle.lleno {
+      background-image: url("caballito-oscuro.png");
+      opacity: 1;
+    }
+
+    .circle.noveno {
+      background-image: url("logo-corcega-color.png");
+      opacity: 1;
+    }
+
+    #cliente {
+      font-weight: bold;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    #faltan {
+      margin-bottom: 20px;
+      font-weight: normal;
+    }
+
+    #mensaje-error {
       font-size: 16px;
-      background-color: white;
-      color: #d86634;
-      border: none;
+      margin-top: 20px;
+      line-height: 1.4;
+    }
+
+    #mensaje-error a {
+      display: inline-block;
+      margin-top: 10px;
+      color: white;
+      background: #2b2b2b;
+      padding: 8px 12px;
       border-radius: 8px;
-      cursor: pointer;
+      text-decoration: none;
       font-weight: bold;
     }
 
     footer {
-      font-size: 12px;
+      font-size: 14px;
       margin-top: 30px;
       line-height: 1.4;
     }
@@ -63,17 +106,38 @@
       font-size: 16px;
       font-weight: bold;
     }
+
+    #loader {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .galope {
+      width: 100px;
+      animation: galopar 1s infinite ease-in-out alternate;
+    }
+
+    @keyframes galopar {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-10px); }
+    }
   </style>
 </head>
 <body>
-  <div class="contenedor">
-    <h1>☕ Consultá cómo venís</h1>
-    <p>Ingresá tu DNI para ver tu progreso</p>
-    <form onsubmit="redirigir(event)">
-      <input type="text" id="dni" placeholder="Tu DNI" required />
-      <br />
-      <button type="submit">Ver</button>
-    </form>
+  <div id="loader">
+    <img src="caballo-logo.png" alt="Cargando..." class="galope">
+  </div>
+
+  <div class="contenedor" id="contenedor">
+    <p id="cliente"></p>
+    <h1>COMPLETÁ LAS VISITAS Y TE REGALAMOS</h1>
+    <h2>UN CAFECITO</h2>
+    <p id="faltan"></p>
+    <div id="grid" class="grid"></div>
+    <div id="mensaje-error" style="display:none;"></div>
     <footer>
       <div>Seguinos en Instagram</div>
       <a href="https://www.instagram.com/corcegacafe" target="_blank">@corcegacafe</a>
@@ -81,14 +145,55 @@
   </div>
 
   <script>
-    function redirigir(event) {
-      event.preventDefault();
-      const dni = document.getElementById("dni").value.trim();
-      if (dni) {
-        const baseUrl = "estado.html";
-        window.location.href = `${baseUrl}?dni=${encodeURIComponent(dni)}`;
-      }
-    }
+    const params = new URLSearchParams(window.location.search);
+    const dni = params.get("dni");
+    const api = "https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec?formato=json&dni=" + encodeURIComponent(dni);
+
+    fetch(api)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("contenedor").style.display = "block";
+
+        const grid = document.getElementById("grid");
+        const cantidad = parseInt(data.cafes);
+        const nombre = data.nombre;
+
+        if (!nombre) {
+          document.getElementById("cliente").style.display = "none";
+          document.getElementById("faltan").style.display = "none";
+          grid.style.display = "none";
+          document.getElementById("mensaje-error").style.display = "block";
+          document.getElementById("mensaje-error").innerHTML = `
+            El DNI ingresado no está registrado en nuestro Club de Recompensas.<br>
+            Pero no te preocupes, podés registrarte <a href="registro.html">acá</a>.
+          `;
+          return;
+        }
+
+        document.getElementById("cliente").textContent = `Hola ${nombre}`;
+        document.getElementById("faltan").textContent = cantidad < 9 ? `Te faltan ${9 - cantidad} para el próximo.` : "¡Ya tenés uno gratis! 🎉";
+
+        for (let i = 1; i <= 9; i++) {
+          const div = document.createElement("div");
+          div.className = "circle";
+
+          if (i === 9) {
+            div.classList.add("noveno");
+          } else if (i <= cantidad) {
+            div.classList.add("lleno");
+          } else {
+            div.style.backgroundImage = "url('caballito-claro.png')";
+          }
+
+          grid.appendChild(div);
+        }
+      })
+      .catch(() => {
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("contenedor").style.display = "block";
+        document.getElementById("grid").innerHTML = "<p>No se pudo cargar la tarjeta.</p>";
+      });
   </script>
 </body>
 </html>
