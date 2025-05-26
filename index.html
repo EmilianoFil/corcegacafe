@@ -7,39 +7,38 @@
   <style>
     body {
       font-family: sans-serif;
-      padding: 50px;
-      text-align: center;
-      background-color: #fef9f5;
-      color: #333;
+      background-color: #d86634;
+      color: #2b2b2b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
     }
-    input {
+
+    .contenedor {
+      background: rgba(255,255,255,0.05);
+      padding: 40px 20px;
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+
+    input[type="text"] {
       padding: 10px;
       font-size: 16px;
+      width: 80%;
+      margin-bottom: 20px;
+      border: 2px solid white;
+      border-radius: 8px;
     }
+
     button {
       padding: 10px 20px;
-      font-size: 16px;
-      margin-left: 10px;
-    }
-  </style>
-</head>
-<body>
-  <h1>☕ Consultá tus cafecitos</h1>
-  <p>Ingresá tu DNI para ver tu progreso</p>
-  <form onsubmit="redirigir(event)">
-    <input type="text" id="dni" placeholder="Tu DNI" required />
-    <button type="submit">Ver</button>
-  </form>
-
-  <script>
-  function redirigir(event) {
-    event.preventDefault();
-    const dni = document.getElementById("dni").value.trim();
-    if (dni) {
-      const baseUrl = "https://emilianofil.github.io/corcegacafe/estado.html";
-      window.location.href = `${baseUrl}?dni=${encodeURIComponent(dni)}`;
-    }
-  }
-</script>
-</body>
-</html>
+      font
