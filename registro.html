@@ -2,77 +2,66 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registrate</title>
   <style>
     body {
+      margin: 0;
       font-family: sans-serif;
       background-color: #d86634;
       color: #2b2b2b;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       min-height: 100vh;
-      margin: 0;
     }
+
     .contenedor {
-      background: rgba(255,255,255,0.05);
-      padding: 40px 20px;
-      text-align: center;
-      border-radius: 16px;
       max-width: 400px;
       width: 100%;
+      padding: 40px 20px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
     }
-    h1 {
-      font-size: 20px;
-      margin-bottom: 20px;
-    }
+
     input {
-      padding: 10px;
-      font-size: 16px;
-      width: 90%;
-      margin: 10px 0;
-      border: 2px solid white;
-      border-radius: 8px;
-      background-color: white;
-      color: black;
-      font-weight: bold;
-    }
-    button {
-      padding: 10px 16px;
-      font-size: 16px;
-      background-color: white;
-      color: #d86634;
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
       border: none;
       border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: white;
+      color: #d86634;
+      font-weight: bold;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
       cursor: pointer;
-      font-weight: bold;
-      margin-top: 10px;
+      font-size: 16px;
+      margin: 8px;
     }
-    .mensaje {
+
+    #mensaje {
       margin-top: 20px;
-      color: white;
-      font-weight: bold;
-      white-space: pre-line;
+      font-size: 16px;
     }
+
+    #loader {
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
     .galope {
       width: 80px;
       animation: galopar 1s infinite ease-in-out alternate;
-      margin-top: 20px;
-      display: none;
     }
-    #volver {
-      margin-top: 15px;
-      display: none;
-    }
-    #volver a {
-      background: white;
-      color: #d86634;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-weight: bold;
-      text-decoration: none;
-    }
+
     @keyframes galopar {
       0% { transform: translateY(0); }
       100% { transform: translateY(-10px); }
@@ -81,60 +70,61 @@
 </head>
 <body>
   <div class="contenedor">
-    <h1>Sumate al Club de Cafecitos</h1>
-    <form id="registroForm">
-      <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]*" required />
-      <input type="text" name="nombre" placeholder="Nombre y apellido" required />
-      <input type="email" name="mail" placeholder="Correo electrónico" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" />
-      <button type="submit">Registrarme</button>
-    </form>
-    <img src="caballo-logo.png" alt="Cargando..." class="galope" id="loader" style="display:none; margin: 20px auto 0;">
-    <div class="mensaje" id="mensaje"></div>
-    <div id="volver">
-      <a href="index.html">Inicio</a>
+    <h2>Registrate al Club de Recompensas</h2>
+    <input type="number" id="dni" placeholder="DNI" required />
+    <input type="text" id="nombre" placeholder="Nombre y apellido" required />
+    <input type="email" id="mail" placeholder="Email" required />
+    <div>
+      <button onclick="registrar(false)">Registrar</button>
+      <button onclick="registrar(true)">Registrar y sumar cafecito</button>
     </div>
+    <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope" /></div>
+    <p id="mensaje"></p>
+    <br />
+    <a href="admin.html">Volver</a>
   </div>
 
   <script>
+    const URL_APPSCRIPT = "https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec";
+
+    // Precargar DNI si viene por parámetro
     const params = new URLSearchParams(window.location.search);
-    const dniInicial = params.get("dni") || "";
-    if (dniInicial) document.getElementById("dni").value = dniInicial;
+    if (params.has("dni")) {
+      document.getElementById("dni").value = params.get("dni");
+    }
 
-    const form = document.getElementById("registroForm");
-    const mensaje = document.getElementById("mensaje");
-    const loader = document.getElementById("loader");
-    const volver = document.getElementById("volver");
+    function registrar(sumarCafecito) {
+      const dni = document.getElementById("dni").value.trim();
+      const nombre = document.getElementById("nombre").value.trim();
+      const mail = document.getElementById("mail").value.trim();
+      const mensaje = document.getElementById("mensaje");
+      const loader = document.getElementById("loader");
 
-    form.addEventListener("submit", async function(e) {
-      e.preventDefault();
+      if (!dni || !nombre || !mail || !mail.includes("@")) {
+        mensaje.textContent = "Por favor completá todos los campos con un email válido.";
+        return;
+      }
 
-      const dni = form.dni.value.trim();
-      const nombre = form.nombre.value.trim();
-      const mail = form.mail.value.trim();
+      mensaje.textContent = "";
+      loader.style.display = "flex";
 
-      loader.style.display = "block";
-      mensaje.innerText = "";
-
-      await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+      fetch(URL_APPSCRIPT, {
         method: "POST",
-        body: JSON.stringify({ dni, nombre, mail })
-      });
-
-      await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-        method: "POST",
-        body: JSON.stringify({
-          log: true,
-          usuario: "cliente",
-          accion: "registro_manual",
-          detalles: `DNI: ${dni}`
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ dni, nombre, mail, sumar: sumarCafecito })
+      })
+        .then(res => res.text())
+        .then(() => {
+          loader.style.display = "none";
+          mensaje.innerText = `¡Registro exitoso!\nEl cliente ${dni} fue registrado correctamente.` + (sumarCafecito ? "\nY ya se sumó un cafecito ☕" : "");
         })
-      });
-
-      loader.style.display = "none";
-      mensaje.innerText = `¡Registro exitoso!\nYa empezás a sumar sellos.\n🎉☕️`;
-      volver.style.display = "block";
-      form.reset();
-    });
+        .catch(() => {
+          loader.style.display = "none";
+          mensaje.textContent = "Hubo un error. Intentá de nuevo.";
+        });
+    }
   </script>
 </body>
 </html>
