@@ -88,7 +88,7 @@
       <input type="email" name="mail" placeholder="Correo electrónico" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" />
       <button type="submit">Registrarme</button>
     </form>
-    <img src="caballo-logo.png" alt="Cargando..." class="galope" id="loader">
+    <img src="caballo-logo.png" alt="Cargando..." class="galope" id="loader" style="display:none; margin: 20px auto 0;">
     <div class="mensaje" id="mensaje"></div>
     <div id="volver">
       <a href="index.html">Inicio</a>
@@ -96,6 +96,10 @@
   </div>
 
   <script>
+    const params = new URLSearchParams(window.location.search);
+    const dniInicial = params.get("dni") || "";
+    if (dniInicial) document.getElementById("dni").value = dniInicial;
+
     const form = document.getElementById("registroForm");
     const mensaje = document.getElementById("mensaje");
     const loader = document.getElementById("loader");
