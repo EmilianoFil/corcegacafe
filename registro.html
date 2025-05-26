@@ -37,6 +37,9 @@
       margin: 10px 0;
       border: 2px solid white;
       border-radius: 8px;
+      background-color: white;
+      color: black;
+      font-weight: bold;
     }
 
     button {
@@ -55,6 +58,7 @@
       margin-top: 20px;
       color: white;
       font-weight: bold;
+      white-space: pre-line;
     }
 
     #loader {
@@ -77,9 +81,9 @@
   <div class="contenedor">
     <h1>Registrate al Club de Recompensas</h1>
     <form id="registroForm">
-      <input type="text" name="dni" placeholder="DNI" required />
+      <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]*" required />
       <input type="text" name="nombre" placeholder="Nombre y apellido" required />
-      <input type="email" name="mail" placeholder="Correo electrónico" required />
+      <input type="email" name="mail" placeholder="Correo electrónico" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" />
       <button type="submit">Registrarme</button>
     </form>
 
