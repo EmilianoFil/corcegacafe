@@ -78,8 +78,9 @@
       e.preventDefault();
       const input = document.getElementById("clave").value.trim();
       if (input === CLAVE_CORRECTA) {
-        window.location.href = "admin.html";
-      } else {
+  localStorage.setItem("admin", "true");
+  window.location.href = "admin.html";
+} else {
         document.getElementById("errorMsg").style.display = "block";
       }
     });
