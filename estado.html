@@ -193,6 +193,9 @@
 // LOGUEAR CONSULTA DEL CLIENTE
 fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
   method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
   body: JSON.stringify({
     log: true,
     usuario: "cliente",
