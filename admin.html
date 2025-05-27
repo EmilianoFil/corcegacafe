@@ -196,8 +196,7 @@
       } else if (result.estado === "no_encontrado") {
         div.className = "mensaje error";
         div.innerHTML = `❌ El DNI ${dni} no está registrado.<br>
-        <a href="registro-admin.html?dni=${dni}">Registrar</a>
-        <a href="registro-admin.html?dni=${dni}&sumar=true">Registrar y sumar cafecito</a>`;
+        <a href="registro-admin.html?dni=${dni}">Registrar</a>`;
       } else {
         div.className = "mensaje error";
         div.innerText = "❌ Ocurrió un error inesperado.";
