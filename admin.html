@@ -230,6 +230,7 @@
 El próximo se lo invitamos nosotros ☕🎉`
           : `✅ Se sumó 1 cafecito a ${result.nombre}. Total: ${result.cafes}`;
         div.innerText = mensajeFinal;
+        document.getElementById("volverLink").style.display = "block"; // 💥 Agregá esto
       } else if (result.estado === "invitado") {
         document.getElementById("volverLink").style.display = "block";
         div.className = "mensaje ok";
