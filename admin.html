@@ -130,6 +130,9 @@
     </form>
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div id="respuesta" class="mensaje"></div>
+    <div id="volverConsulta" class="logout" style="display:none;">
+      <a href="admin.html">Volver a consultar</a>
+    </div>
     <div class="logout">
       <a href="#" onclick="cerrarSesion()">Cerrar sesión</a>
     </div>
@@ -238,7 +241,7 @@ El próximo se lo invitamos nosotros ☕🎉`
       } else if (result.estado === "no_encontrado") {
         div.className = "mensaje error";
         div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
-      } else {
+} else {
         div.className = "mensaje error";
         div.innerText = "❌ Ocurrió un error inesperado.";
       }
@@ -247,6 +250,13 @@ El próximo se lo invitamos nosotros ☕🎉`
       estadoCliente = null;
       button.innerText = "Consultar estado";
     });
+
+    // Mostrar u ocultar botón "Volver a consultar"
+    const btnPrincipal = document.getElementById("submitBtn");
+    const volverConsulta = document.getElementById("volverConsulta");
+    if (btnPrincipal && volverConsulta && btnPrincipal.innerText.trim() !== "Consultar estado") {
+      volverConsulta.style.display = "block";
+    }
   </script>
 </body>
 </html>
