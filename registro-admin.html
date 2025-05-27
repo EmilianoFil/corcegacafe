@@ -22,19 +22,29 @@
       text-align: center;
       background: rgba(255, 255, 255, 0.05);
       border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
     }
-    input, button {
-      width: 100%;
+    h2 {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    input {
       padding: 10px;
-      margin: 10px 0;
+      font-size: 16px;
       border-radius: 8px;
       border: none;
-      font-size: 16px;
     }
     button {
       background-color: white;
       color: #d86634;
       font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 16px;
       cursor: pointer;
     }
     .loader {
@@ -68,6 +78,7 @@
   <input type="email" id="email" placeholder="Email" required />
   <button id="registrarBtn">Registrar</button>
   <button id="registrarSumarBtn">Registrar y sumar cafecito</button>
+  <button onclick="location.href='admin.html'">Volver al panel</button>
 </div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
