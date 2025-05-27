@@ -3,63 +3,83 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Registrate</title>
+  <title>Registro - Club de Recompensas</title>
   <style>
     body {
-      margin: 0;
       font-family: sans-serif;
       background-color: #d86634;
       color: #2b2b2b;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       min-height: 100vh;
+      margin: 0;
     }
 
     .contenedor {
-      max-width: 400px;
-      width: 100%;
+      background: rgba(255,255,255,0.05);
       padding: 40px 20px;
       text-align: center;
-      background: rgba(255, 255, 255, 0.05);
       border-radius: 16px;
+      max-width: 400px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin-bottom: 20px;
     }
 
     input {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 12px;
-      border: none;
-      border-radius: 8px;
+      padding: 10px;
       font-size: 16px;
+      width: 90%;
+      margin: 10px 0;
+      border: 2px solid white;
+      border-radius: 8px;
+      background-color: white;
+      color: black;
+      font-weight: bold;
     }
 
     button {
+      padding: 10px 20px;
+      font-size: 16px;
       background-color: white;
       color: #d86634;
-      font-weight: bold;
       border: none;
-      padding: 10px 20px;
-      border-radius: 10px;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: 16px;
-      margin: 8px;
+      font-weight: bold;
+      margin-top: 15px;
     }
 
-    #mensaje {
+    .exito {
       margin-top: 20px;
-      font-size: 16px;
+      color: white;
+      font-weight: bold;
+      white-space: pre-line;
     }
 
     #loader {
+      margin-top: 20px;
       display: none;
-      justify-content: center;
-      align-items: center;
     }
 
     .galope {
       width: 80px;
       animation: galopar 1s infinite ease-in-out alternate;
+    }
+
+    .volver {
+      margin-top: 20px;
+      display: inline-block;
+      padding: 8px 16px;
+      background-color: white;
+      color: #d86634;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
     }
 
     @keyframes galopar {
@@ -70,60 +90,54 @@
 </head>
 <body>
   <div class="contenedor">
-    <h2>Registrate al Club de Recompensas</h2>
-    <input type="number" id="dni" placeholder="DNI" required />
-    <input type="text" id="nombre" placeholder="Nombre y apellido" required />
-    <input type="email" id="mail" placeholder="Email" required />
-    <div>
-      <button onclick="registrar()">Registrarme</button>
-    </div>
-    <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope" /></div>
-    <p id="mensaje"></p>
-    <br />
-    <a href="index.html">Volver</a>
+    <h1>Registrate al Club de Recompensas</h1>
+    <form id="registroForm">
+      <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]*" required />
+      <input type="text" name="nombre" placeholder="Nombre y apellido" required />
+      <input type="email" name="mail" placeholder="Correo electrónico" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" />
+      <button type="submit">Registrarme</button>
+    </form>
+
+    <div id="loader"><img src="caballo-logo.png" class="galope" /></div>
+    <div class="exito" id="mensaje"></div>
+    <a href="index.html" class="volver" id="volver" style="display: none;">Inicio</a>
   </div>
 
   <script>
-    const URL_APPSCRIPT = "https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec";
+    document.addEventListener("DOMContentLoaded", () => {
+      const params = new URLSearchParams(window.location.search);
+      const dni = params.get("dni");
+      if (dni) document.querySelector('input[name="dni"]').value = dni;
 
-    // Precargar DNI si viene por parámetro
-    const params = new URLSearchParams(window.location.search);
-    if (params.has("dni")) {
-      document.getElementById("dni").value = params.get("dni");
-    }
+      document.getElementById("registroForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
 
-    function registrar() {
-      const dni = document.getElementById("dni").value.trim();
-      const nombre = document.getElementById("nombre").value.trim();
-      const mail = document.getElementById("mail").value.trim();
-      const mensaje = document.getElementById("mensaje");
-      const loader = document.getElementById("loader");
+        const form = e.target;
+        const data = {
+          dni: form.dni.value.trim(),
+          nombre: form.nombre.value.trim(),
+          mail: form.mail.value.trim()
+        };
 
-      if (!dni || !nombre || !mail || !mail.includes("@")) {
-        mensaje.textContent = "Por favor completá todos los campos con un email válido.";
-        return;
-      }
+        document.getElementById("loader").style.display = "block";
+        form.style.display = "none";
 
-      mensaje.textContent = "";
-      loader.style.display = "flex";
-
-      fetch(URL_APPSCRIPT, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ dni, nombre, mail })
-      })
-        .then(res => res.text())
-        .then(() => {
-          loader.style.display = "none";
-          mensaje.innerText = `¡Registro exitoso!\nEl cliente ${dni} fue registrado correctamente.`;
-        })
-        .catch(() => {
-          loader.style.display = "none";
-          mensaje.textContent = "Hubo un error. Intentá de nuevo.";
+        const response = await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+          method: "POST",
+          body: JSON.stringify(data)
         });
-    }
+
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("volver").style.display = "inline-block";
+
+        if (response.ok) {
+          document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🎉☕️";
+        } else {
+          document.getElementById("mensaje").innerText = "Hubo un error. Probá de nuevo más tarde.";
+          form.style.display = "block";
+        }
+      });
+    });
   </script>
 </body>
 </html>
