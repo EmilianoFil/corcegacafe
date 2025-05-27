@@ -101,15 +101,20 @@
     }
 
     .logout a {
-      background: none;
-      color: white;
-      padding: 4px 10px;
-      border: none;
-      border-radius: 6px;
-      font-weight: bold;
-      text-decoration: none;
-      font-size: 14px;
-    }
+  display: block;
+  margin-bottom: 10px;
+  background: white;
+  color: #d86634;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: bold;
+  text-decoration: none;
+  text-align: center;
+}
+
+.logout a.volver {
+  font-size: 17px;
+}
   </style>
 </head>
 <body>
@@ -130,10 +135,10 @@
     </form>
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div id="respuesta" class="mensaje"></div>
-    <div class="logout">
-      <a href="#" onclick="cerrarSesion()">Cerrar sesión</a>
-  <a href="admin.html">Volver a consultar</a>
-    </div>
+<div class="logout">
+  <a href="admin.html" class="volver">Volver a consultar</a>
+  <a href="#" onclick="cerrarSesion()">Cerrar sesión</a>
+</div>
   </div>
 
   <script>
