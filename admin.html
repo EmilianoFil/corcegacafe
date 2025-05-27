@@ -130,9 +130,9 @@
     </form>
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div id="respuesta" class="mensaje"></div>
-    <div style="margin-top: 20px;">
-      <a href="admin.html" style="display: inline-block; background: none; color: white; font-weight: bold; text-decoration: underline; font-size: 14px; border: none;">← Volver a consulta</a>
-    </div>
+    <div id="volverLink" style="margin-top: 20px; display: none;">
+  <a href="index.html" style="display: inline-block; background: none; color: white; font-weight: bold; text-decoration: underline; font-size: 14px; border: none;">← Volver a consulta</a>
+</div>
     <div class="logout">
       <a href="#" onclick="cerrarSesion()">Cerrar sesión</a>
     </div>
@@ -179,6 +179,7 @@
       const dni = input.value.trim();
 
       if (!estadoCliente) {
+        document.getElementById("volverLink").style.display = "none";
         // Paso 1: consultar estado
         const consulta = await fetch(`https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec?formato=json&dni=${dni}`);
         const result = await consulta.json();
@@ -197,6 +198,7 @@
         div.className = "mensaje ok";
         div.innerText = `✅ ${result.nombre} tiene ${result.cafes} cafecitos acumulados.`;
         button.innerText = result.cafes >= 8 ? "Invitar cafecito" : "Sumar cafecito";
+        document.getElementById("volverLink").style.display = "none";
         return;
       }
 
@@ -229,6 +231,7 @@ El próximo se lo invitamos nosotros ☕🎉`
           : `✅ Se sumó 1 cafecito a ${result.nombre}. Total: ${result.cafes}`;
         div.innerText = mensajeFinal;
       } else if (result.estado === "invitado") {
+        document.getElementById("volverLink").style.display = "block";
         div.className = "mensaje ok";
         div.innerText = `🎁 Invitamos un cafecito a ${result.nombre}.
 ¡Gracias por su fidelidad!`;
@@ -243,6 +246,7 @@ El próximo se lo invitamos nosotros ☕🎉`
       // Reiniciar estado y botón
       estadoCliente = null;
       button.innerText = "Consultar estado";
+      document.getElementById("volverLink").style.display = "none";
     });
   </script>
 </body>
