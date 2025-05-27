@@ -126,7 +126,7 @@
     <h1>Cargar Cafecito ☕</h1>
     <form id="adminForm">
       <input type="tel" name="dni" id="dni" placeholder="DNI del cliente" inputmode="numeric" pattern="[0-9]*" required />
-      <button type="submit" id="submitBtn">Sumar cafecito</button>
+      <button type="submit" id="submitBtn">Consultar estado</button>
     </form>
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div id="respuesta" class="mensaje"></div>
@@ -157,60 +157,91 @@
       window.location.href = "login.html";
     }
 
-    document.getElementById("adminForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
+    let estadoCliente = null;
 
-      const input = document.getElementById("dni");
-      const button = document.getElementById("submitBtn");
-      const div = document.getElementById("respuesta");
+document.getElementById("adminForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
 
-      div.innerHTML = "";
-      document.getElementById("loader").style.display = "block";
-      input.disabled = true;
-      button.disabled = true;
+  const input = document.getElementById("dni");
+  const button = document.getElementById("submitBtn");
+  const div = document.getElementById("respuesta");
+  const loader = document.getElementById("loader");
 
-      const dni = input.value.trim();
-      const response = await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-        method: "POST",
-        body: JSON.stringify({ dni: dni })
-      });
+  div.innerHTML = "";
+  loader.style.display = "block";
+  input.disabled = true;
+  button.disabled = true;
 
-      const result = await response.json();
+  const dni = input.value.trim();
 
-      document.getElementById("loader").style.display = "none";
-      input.disabled = false;
-      button.disabled = false;
-
-      if (result.estado === "ok") {
-          div.className = "mensaje ok";
-        
-          const mensajeFinal = result.cafes >= 8
-            ? `✅ Se sumó 1 cafecito a ${result.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
-            : `✅ Se sumó 1 cafecito a ${result.nombre}. Total: ${result.cafes}`;
-        
-          div.innerText = mensajeFinal;
-
-        const usuario = localStorage.getItem("usuario");
-        if (usuario) {
-          await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-            method: "POST",
-            body: JSON.stringify({
-              log: true,
-              usuario: usuario,
-              accion: "cargar_cafecito",
-              detalles: `DNI: ${dni}`
-            })
-          });
-        }
-      } else if (result.estado === "no_encontrado") {
-        div.className = "mensaje error";
-        div.innerHTML = `❌ El DNI ${dni} no está registrado.<br>
-        <a href="registro-admin.html?dni=${dni}">Registrar</a>`;
-      } else {
-        div.className = "mensaje error";
-        div.innerText = "❌ Ocurrió un error inesperado.";
-      }
+  if (!estadoCliente) {
+    // PRIMER PASO: consultar estado
+    const response = await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+      method: "GET"
     });
+
+    const consulta = await fetch(`https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec?formato=json&dni=${dni}`);
+    const result = await consulta.json();
+
+    loader.style.display = "none";
+    input.disabled = false;
+    button.disabled = false;
+
+    if (!result.nombre) {
+      div.className = "mensaje error";
+      div.innerHTML = `❌ El DNI ${dni} no está registrado.<br>
+      <a href="registro-admin.html?dni=${dni}">Registrar</a>`;
+      return;
+    }
+
+    estadoCliente = { dni, nombre: result.nombre, cafes: result.cafes };
+
+    div.className = "mensaje ok";
+    div.innerText = `✅ ${result.nombre} tiene ${result.cafes} cafecitos acumulados.`;
+
+    button.innerText = result.cafes >= 8 ? "Invitar cafecito" : "Sumar cafecito";
+    return;
+  }
+
+  // SEGUNDO PASO: sumar cafecito
+  const response = await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+    method: "POST",
+    body: JSON.stringify({ dni: estadoCliente.dni })
+  });
+
+  const result = await response.json();
+
+  loader.style.display = "none";
+  input.disabled = false;
+  button.disabled = false;
+
+  if (result.estado === "ok") {
+    div.className = "mensaje ok";
+    const mensajeFinal = result.cafes >= 8
+      ? `✅ Se sumó 1 cafecito a ${result.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
+      : `✅ Se sumó 1 cafecito a ${result.nombre}. Total: ${result.cafes}`;
+    div.innerText = mensajeFinal;
+
+    const usuario = localStorage.getItem("usuario");
+    if (usuario) {
+      await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+        method: "POST",
+        body: JSON.stringify({
+          log: true,
+          usuario,
+          accion: "cargar_cafecito",
+          detalles: `DNI: ${estadoCliente.dni}`
+        })
+      });
+    }
+
+    button.innerText = "Consultar estado";
+    estadoCliente = null;
+  } else {
+    div.className = "mensaje error";
+    div.innerText = "❌ Ocurrió un error inesperado.";
+  }
+});
     document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
   </script>
 </body>
