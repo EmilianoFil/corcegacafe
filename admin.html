@@ -196,8 +196,14 @@
 
         estadoCliente = { dni, nombre: result.nombre, cafes: result.cafes };
         div.className = "mensaje ok";
-        div.innerText = `✅ ${result.nombre} tiene ${result.cafes} cafecitos acumulados.`;
-        button.innerText = result.cafes >= 8 ? "Invitar cafecito" : "Sumar cafecito";
+
+        if (result.cafes >= 8) {
+          div.innerText = `Cliente ya tiene 8 cafecitos acumulados.\nEste nos toca a nosotros\n🐎`;
+          button.innerText = "Invitar cafecito";
+        } else {
+          div.innerText = `✅ ${result.nombre} tiene ${result.cafes} cafecitos acumulados.`;
+          button.innerText = "Sumar cafecito";
+        }
         document.getElementById("volverLink").style.display = "none";
         return;
       }
