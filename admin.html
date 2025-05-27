@@ -235,13 +235,25 @@
       button.disabled = false;
 
       if (result.estado === "ok") {
-        div.className = "mensaje ok";
-        const mensajeFinal = result.cafes >= 8
-          ? `✅ Se sumó 1 cafecito a ${result.nombre}.
-El próximo se lo invitamos nosotros ☕🎉`
-          : `✅ Se sumó 1 cafecito a ${result.nombre}. Total: ${result.cafes}`;
-        div.innerText = mensajeFinal;
-      } else if (result.estado === "invitado") {
+  div.className = "mensaje ok";
+  const mensajeFinal = result.cafes >= 8
+    ? `✅ Se sumó 1 cafecito a ${result.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
+    : `✅ Se sumó 1 cafecito a ${result.nombre}. Total: ${result.cafes}`;
+  div.innerText = mensajeFinal;
+
+  const usuario = localStorage.getItem("usuario");
+  if (usuario) {
+    await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+      method: "POST",
+      body: JSON.stringify({
+        log: true,
+        usuario: usuario,
+        accion: "consulta_admin",
+        detalles: `DNI: ${dni}`
+      })
+    });
+  }
+} else if (result.estado === "invitado") {
         div.className = "mensaje ok";
         div.innerText = `🎁 Invitamos un cafecito a ${result.nombre}.
 ¡Gracias por su fidelidad!`;
