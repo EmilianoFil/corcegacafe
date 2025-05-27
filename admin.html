@@ -90,6 +90,12 @@
       100% { transform: translateY(-10px); }
     }
 
+    #usuarioLogueado {
+      font-size: 14px;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
     .logout {
       margin-top: 20px;
     }
@@ -197,6 +203,7 @@
         div.innerText = "❌ Ocurrió un error inesperado.";
       }
     });
+    document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
   </script>
 </body>
 </html>
