@@ -101,15 +101,15 @@
     }
 
     .logout a {
-  background: none;
-  color: white;
-  padding: 4px 10px;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  text-decoration: none;
-  font-size: 14px;
-}
+      background: none;
+      color: white;
+      padding: 4px 10px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      text-decoration: none;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -130,16 +130,8 @@
     </form>
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div id="respuesta" class="mensaje"></div>
-    <div style="margin-top: 20px;">
-  <a href="admin.html" style="
-    display: inline-block;
-    background: none;
-    color: white;
-    font-weight: bold;
-    text-decoration: underline;
-    font-size: 14px;
-    border: none;
-  ">Volver a consultar</a>
+    <div id="volverLink" style="margin-top: 20px; display: none;">
+  <a href="index.html" style="display: inline-block; background: none; color: white; font-weight: bold; text-decoration: underline; font-size: 14px; border: none;">← Volver a consulta</a>
 </div>
     <div class="logout">
       <a href="#" onclick="cerrarSesion()">Cerrar sesión</a>
@@ -147,12 +139,12 @@
   </div>
 
   <script>
+    document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
+
     async function cerrarSesion() {
       const usuario = localStorage.getItem("usuario");
-      
-      // 🔥 Mostramos loader
       document.getElementById("loader").style.display = "block";
-      
+
       if (usuario) {
         await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
           method: "POST",
@@ -170,90 +162,92 @@
 
     let estadoCliente = null;
 
-document.getElementById("adminForm").addEventListener("submit", async function(e) {
-  e.preventDefault();
+    document.getElementById("adminForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
 
-  const input = document.getElementById("dni");
-  const button = document.getElementById("submitBtn");
-  const div = document.getElementById("respuesta");
-  const loader = document.getElementById("loader");
+      const input = document.getElementById("dni");
+      const button = document.getElementById("submitBtn");
+      const div = document.getElementById("respuesta");
+      const loader = document.getElementById("loader");
+      const usuario = localStorage.getItem("usuario");
 
-  div.innerHTML = "";
-  loader.style.display = "block";
-  input.disabled = true;
-  button.disabled = true;
+      div.innerHTML = "";
+      loader.style.display = "block";
+      input.disabled = true;
+      button.disabled = true;
 
-  const dni = input.value.trim();
+      const dni = input.value.trim();
 
-  if (!estadoCliente) {
-    // PRIMER PASO: consultar estado
-    const response = await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-      method: "GET"
-    });
+      if (!estadoCliente) {
+        document.getElementById("volverLink").style.display = "none";
+        // Paso 1: consultar estado
+        const consulta = await fetch(`https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec?formato=json&dni=${dni}`);
+        const result = await consulta.json();
 
-    const consulta = await fetch(`https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec?formato=json&dni=${dni}`);
-    const result = await consulta.json();
+        loader.style.display = "none";
+        input.disabled = false;
+        button.disabled = false;
 
-    loader.style.display = "none";
-    input.disabled = false;
-    button.disabled = false;
+        if (!result.nombre) {
+          div.className = "mensaje error";
+          div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
+          return;
+        }
 
-    if (!result.nombre) {
-      div.className = "mensaje error";
-      div.innerHTML = `❌ El DNI ${dni} no está registrado.<br>
-      <a href="registro-admin.html?dni=${dni}">Registrar</a>`;
-      return;
-    }
+        estadoCliente = { dni, nombre: result.nombre, cafes: result.cafes };
+        div.className = "mensaje ok";
+        div.innerText = `✅ ${result.nombre} tiene ${result.cafes} cafecitos acumulados.`;
+        button.innerText = result.cafes >= 8 ? "Invitar cafecito" : "Sumar cafecito";
+        document.getElementById("volverLink").style.display = "none";
+        return;
+      }
 
-    estadoCliente = { dni, nombre: result.nombre, cafes: result.cafes };
+      // Paso 2: sumar o invitar
+      const payload = {
+        dni: estadoCliente.dni,
+        usuario
+      };
 
-    div.className = "mensaje ok";
-    div.innerText = `✅ ${result.nombre} tiene ${result.cafes} cafecitos acumulados.`;
+      if (estadoCliente.cafes >= 8) {
+        payload.invitar = true;
+      }
 
-    button.innerText = result.cafes >= 8 ? "Invitar cafecito" : "Sumar cafecito";
-    return;
-  }
-
-  // SEGUNDO PASO: sumar cafecito
-  const response = await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-    method: "POST",
-    body: JSON.stringify({ dni: estadoCliente.dni })
-  });
-
-  const result = await response.json();
-
-  loader.style.display = "none";
-  input.disabled = false;
-  button.disabled = false;
-
-  if (result.estado === "ok") {
-    div.className = "mensaje ok";
-    const mensajeFinal = result.cafes >= 8
-      ? `✅ Se sumó 1 cafecito a ${result.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
-      : `✅ Se sumó 1 cafecito a ${result.nombre}. Total: ${result.cafes}`;
-    div.innerText = mensajeFinal;
-
-    const usuario = localStorage.getItem("usuario");
-    if (usuario) {
-      await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+      const response = await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
         method: "POST",
-        body: JSON.stringify({
-          log: true,
-          usuario,
-          accion: "cargar_cafecito",
-          detalles: `DNI: ${estadoCliente.dni}`
-        })
+        body: JSON.stringify(payload)
       });
-    }
 
-    button.innerText = "Consultar estado";
-    estadoCliente = null;
-  } else {
-    div.className = "mensaje error";
-    div.innerText = "❌ Ocurrió un error inesperado.";
-  }
-});
-    document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
+      const result = await response.json();
+
+      loader.style.display = "none";
+      input.disabled = false;
+      button.disabled = false;
+
+      if (result.estado === "ok") {
+        div.className = "mensaje ok";
+        const mensajeFinal = result.cafes >= 8
+          ? `✅ Se sumó 1 cafecito a ${result.nombre}.
+El próximo se lo invitamos nosotros ☕🎉`
+          : `✅ Se sumó 1 cafecito a ${result.nombre}. Total: ${result.cafes}`;
+        div.innerText = mensajeFinal;
+      } else if (result.estado === "invitado") {
+        document.getElementById("volverLink").style.display = "block";
+        div.className = "mensaje ok";
+        div.innerText = `🎁 Invitamos un cafecito a ${result.nombre}.
+¡Gracias por su fidelidad!`;
+      } else if (result.estado === "no_encontrado") {
+        div.className = "mensaje error";
+        div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
+      } else {
+        div.className = "mensaje error";
+        div.innerText = "❌ Ocurrió un error inesperado.";
+      }
+
+      // Reiniciar estado y botón
+      estadoCliente = null;
+      button.innerText = "Consultar estado";
+      document.getElementById("volverLink").style.display = "none";
+    });
   </script>
 </body>
 </html>
