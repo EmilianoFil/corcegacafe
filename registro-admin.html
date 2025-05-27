@@ -1,92 +1,56 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Registro Rápido - Admin</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro Admin</title>
   <style>
     body {
+      margin: 0;
       font-family: sans-serif;
       background-color: #d86634;
       color: #2b2b2b;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       min-height: 100vh;
-      margin: 0;
     }
-
     .contenedor {
-      background: rgba(255,255,255,0.05);
-      padding: 40px 20px;
-      text-align: center;
-      border-radius: 16px;
       max-width: 400px;
       width: 100%;
+      padding: 40px 20px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
     }
-
-    h1 {
-      font-size: 20px;
-      margin-bottom: 20px;
-    }
-
-    input {
+    input, button {
+      width: 100%;
       padding: 10px;
-      font-size: 16px;
-      width: 90%;
       margin: 10px 0;
-      border: 2px solid white;
       border-radius: 8px;
-      background-color: white;
-      color: black;
-      font-weight: bold;
-    }
-
-    button {
-      padding: 10px 16px;
-      font-size: 16px;
-      background-color: white;
-      color: #d86634;
       border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      margin: 5px;
+      font-size: 16px;
     }
-
-    .mensaje {
-      margin-top: 20px;
-      color: white;
-      font-weight: bold;
-      white-space: pre-line;
-    }
-
-    .galope {
-      width: 80px;
-      animation: galopar 1s infinite ease-in-out alternate;
-      margin: 20px auto 0;
-      display: block;
-    }
-
-    #loader {
-      display: none;
-      margin: 0 auto;
-    }
-
-    #volver {
-      display: none;
-      margin-top: 15px;
-    }
-
-    #volver a {
-      background: white;
+    button {
+      background-color: white;
       color: #d86634;
-      padding: 8px 16px;
-      border-radius: 8px;
       font-weight: bold;
-      text-decoration: none;
+      cursor: pointer;
     }
-
+    .loader {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      background: rgba(255, 255, 255, 0.6);
+    }
+    .loader img {
+      width: 100px;
+      animation: galopar 1s infinite ease-in-out alternate;
+    }
     @keyframes galopar {
       0% { transform: translateY(0); }
       100% { transform: translateY(-10px); }
@@ -94,100 +58,76 @@
   </style>
 </head>
 <body>
-  <script>
-    if (localStorage.getItem("admin") !== "true") {
-      window.location.href = "login.html";
-    }
-  </script>
-
-  <div class="contenedor">
-    <h1>Registrar nuevo cliente</h1>
-    <form id="registroForm">
-      <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]*" required />
-      <input type="text" name="nombre" placeholder="Nombre y apellido" required />
-      <input type="email" name="mail" placeholder="Correo electrónico" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" />
-      <div>
-        <button type="button" id="soloRegistrar">Registrar</button>
-        <button type="button" id="registrarYSumar">Registrar y sumar cafecito</button>
-      </div>
-    </form>
-    <div id="loader">
-      <img src="caballo-logo.png" alt="Cargando..." class="galope">
-    </div>
-    <div class="mensaje" id="mensaje"></div>
-    <div id="volver">
-      <a href="admin.html">Volver al panel</a>
-    </div>
-  </div>
-
-  <script>
+<div class="loader" id="loader">
+  <img src="caballo-logo.png" alt="Cargando...">
+</div>
+<div class="contenedor">
+  <h2>Registrar cliente</h2>
+  <input type="number" id="dni" placeholder="DNI" required />
+  <input type="text" id="nombre" placeholder="Nombre y apellido" required />
+  <input type="email" id="email" placeholder="Email" required />
+  <button id="registrarBtn">Registrar</button>
+  <button id="registrarSumarBtn">Registrar y sumar cafecito</button>
+</div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
     const params = new URLSearchParams(window.location.search);
-    const dniInicial = params.get("dni") || "";
-    const dniInput = document.getElementById("dni");
-    if (dniInicial) dniInput.value = dniInicial;
+    const dni = params.get("dni");
+    if (dni) document.getElementById("dni").value = dni;
 
-    const form = document.getElementById("registroForm");
-    const mensaje = document.getElementById("mensaje");
     const loader = document.getElementById("loader");
-    const volver = document.getElementById("volver");
 
-    const submitHandler = async (sumarCafecito) => {
-      const dni = dniInput.value.trim();
-      const nombre = form.nombre.value.trim();
-      const mail = form.mail.value.trim();
+    document.getElementById("registrarBtn").addEventListener("click", (e) => {
+      e.preventDefault();
+      registrarCliente(false);
+    });
+
+    document.getElementById("registrarSumarBtn").addEventListener("click", (e) => {
+      e.preventDefault();
+      registrarCliente(true);
+    });
+
+    async function registrarCliente(sumarCafecito) {
+      const dni = document.getElementById("dni").value.trim();
+      const nombre = document.getElementById("nombre").value.trim();
+      const email = document.getElementById("email").value.trim();
       const usuario = localStorage.getItem("usuario");
+      if (!dni || !nombre || !email) return alert("Completa todos los campos");
 
-      loader.style.display = "block";
-      mensaje.innerText = "";
-
-      await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-        method: "POST",
-        body: JSON.stringify({ dni, nombre, mail })
-      });
-
-      if (usuario) {
+      loader.style.display = "flex";
+      try {
         await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
           method: "POST",
-          body: JSON.stringify({
-            log: true,
-            usuario: usuario,
-            accion: "registrar_usuario",
-            detalles: `DNI: ${dni}`
-          })
+          body: JSON.stringify({ dni, nombre, mail: email })
         });
-      }
 
-      if (sumarCafecito) {
-  await fetch(".../exec", {
-    method: "POST",
-    body: JSON.stringify({
-      dni,
-      log: false  // evitamos loguear desde Apps Script
-    })
-  });
-}
+        if (sumarCafecito) {
+          await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+            method: "POST",
+            body: JSON.stringify({ dni, log: false })
+          });
+        }
 
         if (usuario) {
           await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
             method: "POST",
             body: JSON.stringify({
               log: true,
-              usuario: usuario,
-              accion: "cargar_cafecito",
-              detalles: `DNI: ${dni}`
+              usuario,
+              accion: sumarCafecito ? "registro_manual + cargar_cafecito" : "registro_manual",
+              detalles: `DNI: ${dni} - ${nombre}`
             })
           });
         }
+
+        alert("¡Registro exitoso!");
+      } catch (e) {
+        alert("Error al registrar");
+      } finally {
+        loader.style.display = "none";
       }
-
-      loader.style.display = "none";
-      mensaje.innerText = `¡Registro exitoso!\nEl cliente ${dni} fue registrado correctamente.` + (sumarCafecito ? "\nY ya se sumó un cafecito ☕" : "");
-      volver.style.display = "block";
-      form.reset();
-    };
-
-    document.getElementById("soloRegistrar").addEventListener("click", () => submitHandler(false));
-    document.getElementById("registrarYSumar").addEventListener("click", () => submitHandler(true));
-  </script>
+    }
+  });
+</script>
 </body>
 </html>
