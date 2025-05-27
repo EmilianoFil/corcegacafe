@@ -180,9 +180,8 @@
           grid.style.display = "none";
           document.getElementById("mensaje-error").style.display = "block";
           document.getElementById("mensaje-error").innerHTML = `
-            <p>El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.<br>
-            Pero no te preocupes, podés registrarte:</p>
-            <a href="registro.html?dni=${dni}" class="boton">Acá</a>
+            <p>El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.</p>
+            <a href="registro.html?dni=${dni}" class="boton">Resgistrate</a>
             <a href="index.html" class="otro">Buscar otro DNI</a>
           `;
           return;
