@@ -131,13 +131,15 @@
     <div class="logout">
       <a href="#" onclick="cerrarSesion()">Cerrar sesión</a>
     </div>
-    <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
   </div>
 
   <script>
     async function cerrarSesion() {
       const usuario = localStorage.getItem("usuario");
-
+      
+      // 🔥 Mostramos loader
+      document.getElementById("loader").style.display = "block";
+      
       if (usuario) {
         await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
           method: "POST",
