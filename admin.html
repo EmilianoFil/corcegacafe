@@ -187,7 +187,7 @@
 
       if (!estadoCliente) {
         // Paso 1: consultar estado
-        const consulta = await fetch(`https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec?formato=json&dni=${dni}`);
+        const consulta = await fetch(`https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec?formato=json&dni=${dni}&fuente=admin`);
         const result = await consulta.json();
 
         loader.style.display = "none";
