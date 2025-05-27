@@ -117,7 +117,15 @@
     if (localStorage.getItem("admin") !== "true") {
       window.location.href = "login.html";
     }
-  </script>
+  function reiniciarFormulario() {
+  estadoCliente = null;
+  document.getElementById("adminForm").reset();
+  document.getElementById("respuesta").innerHTML = "";
+  document.getElementById("submitBtn").innerText = "Consultar estado";
+  document.getElementById("volverBoton").style.display = "none";
+  document.getElementById("volverLink").style.display = "none";
+}
+</script>
 
   <div class="contenedor">
     <div style="font-size: 14px; margin-bottom: 10px; font-weight: bold;">
@@ -133,7 +141,11 @@
     <div id="volverLink" style="margin-top: 20px; display: none;">
   <a href="index.html" style="display: inline-block; background: none; color: white; font-weight: bold; text-decoration: underline; font-size: 14px; border: none;">← Volver a consulta</a>
 </div>
-    <div class="logout">
+    <div id="volverBoton" class="logout" style="display: none;">
+  <a href="#" onclick="reiniciarFormulario()">Volver a consultar</a>
+</div>
+
+$1
       <a href="#" onclick="cerrarSesion()">Cerrar sesión</a>
     </div>
   </div>
@@ -180,6 +192,7 @@
 
       if (!estadoCliente) {
         document.getElementById("volverLink").style.display = "none";
+        document.getElementById("volverBoton").style.display = "none";
         // Paso 1: consultar estado
         const consulta = await fetch(`https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec?formato=json&dni=${dni}`);
         const result = await consulta.json();
@@ -196,14 +209,8 @@
 
         estadoCliente = { dni, nombre: result.nombre, cafes: result.cafes };
         div.className = "mensaje ok";
-
-        if (result.cafes >= 8) {
-          div.innerText = `Cliente ya tiene 8 cafecitos acumulados.\nEste nos toca a nosotros\n🐎`;
-          button.innerText = "Invitar cafecito";
-        } else {
-          div.innerText = `✅ ${result.nombre} tiene ${result.cafes} cafecitos acumulados.`;
-          button.innerText = "Sumar cafecito";
-        }
+        div.innerText = `✅ ${result.nombre} tiene ${result.cafes} cafecitos acumulados.`;
+        button.innerText = result.cafes >= 8 ? "Invitar cafecito" : "Sumar cafecito";
         document.getElementById("volverLink").style.display = "none";
         return;
       }
@@ -238,6 +245,7 @@ El próximo se lo invitamos nosotros ☕🎉`
         div.innerText = mensajeFinal;
       } else if (result.estado === "invitado") {
         document.getElementById("volverLink").style.display = "block";
+        document.getElementById("volverBoton").style.display = "block";
         div.className = "mensaje ok";
         div.innerText = `🎁 Invitamos un cafecito a ${result.nombre}.
 ¡Gracias por su fidelidad!`;
@@ -253,6 +261,7 @@ El próximo se lo invitamos nosotros ☕🎉`
       estadoCliente = null;
       button.innerText = "Consultar estado";
       document.getElementById("volverLink").style.display = "none";
+      document.getElementById("volverBoton").style.display = "none";
     });
   </script>
 </body>
