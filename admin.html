@@ -182,8 +182,13 @@
       button.disabled = false;
 
       if (result.estado === "ok") {
-        div.className = "mensaje ok";
-        div.innerText = `✅ Se sumó 1 cafecito a ${result.nombre}. Total: ${result.cafes}`;
+          div.className = "mensaje ok";
+        
+          const mensajeFinal = result.cafes >= 8
+            ? `✅ Se sumó 1 cafecito a ${result.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
+            : `✅ Se sumó 1 cafecito a ${result.nombre}. Total: ${result.cafes}`;
+        
+          div.innerText = mensajeFinal;
 
         const usuario = localStorage.getItem("usuario");
         if (usuario) {
