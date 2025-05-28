@@ -145,37 +145,41 @@
   </div>
 
   <script type="module">
-    import { app, db } from './js/firebase-config.js';
-    import { doc, getDoc, updateDoc, increment, serverTimestamp, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { app, db } from './js/firebase-config.js';
+  import { doc, getDoc, updateDoc, increment, serverTimestamp, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-    document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
+  document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
 
-    async function cerrarSesion() {
-      const usuario = localStorage.getItem("usuario") || "admin";
-      await addDoc(collection(db, "logs"), {
-        usuario,
-        accion: "cerrar_sesion",
-        detalles: "Cierre de sesión",
-        timestamp: new Date()
-      });
-      localStorage.clear();
-      window.location.href = "login.html";
-    }
+  async function cerrarSesion() {
+    const usuario = localStorage.getItem("usuario") || "admin";
+    await addDoc(collection(db, "logs"), {
+      usuario,
+      accion: "cerrar_sesion",
+      detalles: "Cierre de sesión",
+      timestamp: new Date()
+    });
+    localStorage.clear();
+    window.location.href = "login.html";
+  }
 
-    // Loguear inicio sesión
-    (async () => {
-      const usuario = localStorage.getItem("usuario") || "admin";
-      await addDoc(collection(db, "logs"), {
-        usuario,
-        accion: "iniciar_sesion",
-        detalles: "Ingreso al panel de administración",
-        timestamp: new Date()
-      });
-    })();
+  // 🔥 EXPONERLA AL DOM GLOBAL
+  window.cerrarSesion = cerrarSesion;
 
-    let estadoCliente = null;
+  // Loguear inicio sesión
+  (async () => {
+    const usuario = localStorage.getItem("usuario") || "admin";
+    await addDoc(collection(db, "logs"), {
+      usuario,
+      accion: "iniciar_sesion",
+      detalles: "Ingreso al panel de administración",
+      timestamp: new Date()
+    });
+  })();
 
-    document.getElementById("adminForm").addEventListener("submit", async function(e) {
+  let estadoCliente = null;
+
+  document.getElementById("adminForm").addEventListener("submit", async function(e) {
+
       e.preventDefault();
 
       const input = document.getElementById("dni");
