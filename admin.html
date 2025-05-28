@@ -107,6 +107,7 @@
       color: white;
       font-weight: bold;
       margin: 8px 0;
+      cursor: pointer;
     }
 
     .logout a.volver {
@@ -126,13 +127,16 @@
     <button id="consultarBtn">Consultar</button>
     <div id="resultado"></div>
     <div class="logout">
-      <a onclick="cerrarSesion()">Cerrar sesión</a>
+      <a class="cerrar" onclick="cerrarSesion()">Cerrar sesión</a>
     </div>
   </div>
 
   <script type="module">
     import { app, db } from './js/firebase-config.js';
-    import { collection, getDocs, query, where, doc, updateDoc, increment, Timestamp, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import {
+      collection, getDocs, query, where, doc, updateDoc,
+      increment, Timestamp, addDoc
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     const dniInput = document.getElementById("dni");
     const resultado = document.getElementById("resultado");
@@ -223,24 +227,12 @@
         console.error("Error invitando café:", error);
       }
     };
-  </script>
 
-  <script>
-    function cerrarSesion() {
-      const usuario = localStorage.getItem("usuario") || "admin";
-
-      fetch('https://corcega-api.emilianofilgueira.workers.dev/', {
-        method: 'POST',
-        body: JSON.stringify({
-          log: true,
-          usuario,
-          accion: "logout"
-        })
-      }).finally(() => {
-        localStorage.clear();
-        window.location.href = "login.html";
-      });
-    }
+    window.cerrarSesion = async () => {
+      await logAccion("logout");
+      localStorage.clear();
+      window.location.href = "login.html";
+    };
   </script>
 </body>
 </html>
