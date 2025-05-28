@@ -1,7 +1,6 @@
 // Import the functions from Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // Configuración del proyecto Firebase
 const firebaseConfig = {
@@ -17,7 +16,3 @@ const firebaseConfig = {
 // Inicializar Firebase y Analytics
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-const db = getFirestore(app);
-
-// 👇 ESTA LÍNEA ES FUNDAMENTAL
-export { app, db };

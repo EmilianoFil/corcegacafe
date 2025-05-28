@@ -61,16 +61,13 @@
       white-space: pre-line;
     }
 
-    .mensaje.error {
-      color: white;
-    }
-
-    .mensaje.ok {
+    .mensaje.error,
+    .mensaje.ok,
+    .mensaje a {
       color: white;
     }
 
     .mensaje a {
-      color: white;
       text-decoration: underline;
       display: inline-block;
       margin: 5px;
@@ -98,28 +95,29 @@
     }
 
     .logout {
-  margin-top: 20px;
-}
+      margin-top: 20px;
+    }
 
-.logout a {
-  display: block;
-  background: none;
-  border: none;
-  text-align: center;
-  text-decoration: none;
-  color: white;
-  font-weight: bold;
-  margin: 8px 0;
-}
+    .logout a {
+      display: block;
+      background: none;
+      border: none;
+      text-align: center;
+      text-decoration: none;
+      color: white;
+      font-weight: bold;
+      margin: 8px 0;
+      cursor: pointer;
+    }
 
-.logout a.volver {
-  font-size: 15px;
-}
+    .logout a.volver {
+      font-size: 15px;
+    }
 
-.logout a.cerrar {
-  font-size: 13px;
-  opacity: 0.8;
-}
+    .logout a.cerrar {
+      font-size: 13px;
+      opacity: 0.8;
+    }
   </style>
 </head>
 <body>
@@ -140,44 +138,69 @@
     </form>
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div id="respuesta" class="mensaje"></div>
-<div class="logout">
-  <a href="admin.html" class="volver">Volver a consultar</a>
-  <a href="#" onclick="cerrarSesion()" class="cerrar">Cerrar sesión</a>
-</div>
+    <div class="logout">
+      <a href="admin.html" class="volver">Volver a consultar</a>
+      <a href="#" onclick="cerrarSesion()" class="cerrar">Cerrar sesión</a>
+    </div>
   </div>
 
-  <script>
-    document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
+  <script type="module">
+  import { app, db } from './js/firebase-config.js';
+  import { doc, getDoc, updateDoc, increment, serverTimestamp, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-    async function cerrarSesion() {
-      const usuario = localStorage.getItem("usuario");
-      document.getElementById("loader").style.display = "block";
+  document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
 
-      if (usuario) {
-        await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-          method: "POST",
-          body: JSON.stringify({
-            log: true,
-            usuario: usuario,
-            accion: "cerrar_sesion"
-          })
-        });
-      }
+  // Mostrar loader
+  function mostrarLoader() {
+    document.getElementById("loader").style.display = "block";
+  }
 
+  // Ocultar loader
+  function ocultarLoader() {
+    document.getElementById("loader").style.display = "none";
+  }
+
+  async function cerrarSesion() {
+    mostrarLoader();
+    const usuario = localStorage.getItem("usuario") || "admin";
+    try {
+      await addDoc(collection(db, "logs"), {
+        usuario,
+        accion: "cerrar_sesion",
+        detalles: "Cierre de sesión",
+        timestamp: new Date()
+      });
+    } catch (error) {
+      console.error("Error al registrar cierre de sesión:", error);
+    } finally {
       localStorage.clear();
       window.location.href = "login.html";
     }
+  }
 
-    let estadoCliente = null;
+  window.cerrarSesion = cerrarSesion;
 
-    document.getElementById("adminForm").addEventListener("submit", async function(e) {
+  (async () => {
+    const usuario = localStorage.getItem("usuario") || "admin";
+    await addDoc(collection(db, "logs"), {
+      usuario,
+      accion: "iniciar_sesion",
+      detalles: "Ingreso al panel de administración",
+      timestamp: new Date()
+    });
+  })();
+
+  let estadoCliente = null;
+
+  document.getElementById("adminForm").addEventListener("submit", async function(e) {
+
       e.preventDefault();
 
       const input = document.getElementById("dni");
       const button = document.getElementById("submitBtn");
       const div = document.getElementById("respuesta");
       const loader = document.getElementById("loader");
-      const usuario = localStorage.getItem("usuario");
+      const usuario = localStorage.getItem("usuario") || "admin";
 
       div.innerHTML = "";
       loader.style.display = "block";
@@ -185,91 +208,83 @@
       button.disabled = true;
 
       const dni = input.value.trim();
+      const ref = doc(db, "clientes", dni);
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()) {
+        div.className = "mensaje error";
+        div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
+        loader.style.display = "none";
+        input.disabled = false;
+        button.disabled = false;
+        return;
+      }
+
+      const data = snap.data();
 
       if (!estadoCliente) {
-        // Paso 1: consultar estado
-        const usuario = localStorage.getItem("usuario") || "admin";
-        const consulta = await fetch(`https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec?formato=json&dni=${dni}&fuente=admin&usuario=${encodeURIComponent(usuario)}`);
-        const result = await consulta.json();
+        estadoCliente = { dni, nombre: data.nombre, cafes: data.cafes };
+        div.className = "mensaje ok";
+
+        if (data.cafes >= 8) {
+          div.innerText = `Cliente ya tiene 8 cafecitos acumulados.\nEste nos toca a nosotros\n🐎`;
+          button.innerText = "Invitar cafecito";
+        } else {
+          div.innerText = `✅ ${data.nombre} tiene ${data.cafes} cafecitos acumulados.`;
+          button.innerText = "Sumar cafecito";
+        }
 
         loader.style.display = "none";
         input.disabled = false;
         button.disabled = false;
-
-        if (!result.nombre) {
-          div.className = "mensaje error";
-          div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
-          return;
-        }
-
-        estadoCliente = { dni, nombre: result.nombre, cafes: result.cafes };
-        div.className = "mensaje ok";
-
-        if (result.cafes >= 8) {
-          div.innerText = `Cliente ya tiene 8 cafecitos acumulados.\nEste nos toca a nosotros\n🐎`;
-          button.innerText = "Invitar cafecito";
-        } else {
-          div.innerText = `✅ ${result.nombre} tiene ${result.cafes} cafecitos acumulados.`;
-          button.innerText = "Sumar cafecito";
-        }
         return;
       }
 
-      // Paso 2: sumar o invitar
-      const payload = {
-        dni: estadoCliente.dni,
-        usuario
-      };
+      // Sumar o invitar
+      if (data.cafes >= 8) {
+        await updateDoc(ref, {
+          cafes: 0,
+          cafe_disponible: true,
+          ultimo_cafe: serverTimestamp(),
+          cafes_acumulados_total: increment(1)
+        });
 
-      if (estadoCliente.cafes >= 8) {
-        payload.invitar = true;
+        div.className = "mensaje ok";
+        div.innerText = `🎁 Invitamos un cafecito a ${estadoCliente.nombre}.\n¡Gracias por su fidelidad!`;
+
+        await addDoc(collection(db, "logs"), {
+          usuario,
+          accion: "invitar_cafecito",
+          detalles: `DNI: ${estadoCliente.dni} - ${estadoCliente.nombre}`,
+          timestamp: new Date()
+        });
+      } else {
+        const nuevosCafes = (data.cafes || 0) + 1;
+        await updateDoc(ref, {
+          cafes: nuevosCafes,
+          ultimo_cafe: serverTimestamp(),
+          cafes_acumulados_total: increment(1)
+        });
+
+        div.className = "mensaje ok";
+        const mensajeFinal = nuevosCafes >= 8
+          ? `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
+          : `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}. Total: ${nuevosCafes}`;
+        div.innerText = mensajeFinal;
+
+        await addDoc(collection(db, "logs"), {
+          usuario,
+          accion: "sumar_cafecito",
+          detalles: `DNI: ${estadoCliente.dni} - ${estadoCliente.nombre}`,
+          timestamp: new Date()
+        });
       }
 
-      const response = await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-
-      const result = await response.json();
-
+      estadoCliente = null;
+      button.innerText = "Consultar estado";
       loader.style.display = "none";
       input.disabled = false;
       button.disabled = false;
-
-      if (result.estado === "ok") {
-  div.className = "mensaje ok";
-  const mensajeFinal = result.cafes >= 8
-    ? `✅ Se sumó 1 cafecito a ${result.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
-    : `✅ Se sumó 1 cafecito a ${result.nombre}. Total: ${result.cafes}`;
-  div.innerText = mensajeFinal;
-
-  const usuario = localStorage.getItem("usuario");
-  if (usuario) {
-    await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-      method: "POST",
-      body: JSON.stringify({
-        log: true,
-        usuario: usuario,
-        accion: "consulta_admin",
-        detalles: `DNI: ${dni}`
-      })
-    });
-  }
-} else if (result.estado === "invitado") {
-        div.className = "mensaje ok";
-        div.innerText = `🎁 Invitamos un cafecito a ${result.nombre}.
-¡Gracias por su fidelidad!`;
-      } else if (result.estado === "no_encontrado") {
-        div.className = "mensaje error";
-        div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
-      } else {
-        div.className = "mensaje error";
-        div.innerText = "❌ Ocurrió un error inesperado.";
-      }
-
-      // Reiniciar estado y botón
-      estadoCliente = null;
-      button.innerText = "Consultar estado";
     });
   </script>
 </body>

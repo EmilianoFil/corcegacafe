@@ -121,50 +121,47 @@
     </div>
   </div>
 
-  <script type="module">
-  import { app, db } from './js/firebase-config.js';
-  import {
-    doc, setDoc, updateDoc, serverTimestamp
-  } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const dniInicial = params.get("dni") || "";
+    const dniInput = document.getElementById("dni");
+    if (dniInicial) dniInput.value = dniInicial;
 
-  const params = new URLSearchParams(window.location.search);
-  const dniInicial = params.get("dni") || "";
-  const dniInput = document.getElementById("dni");
-  if (dniInicial) dniInput.value = dniInicial;
+    const form = document.getElementById("registroForm");
+    const mensaje = document.getElementById("mensaje");
+    const loader = document.getElementById("loader");
+    const volver = document.getElementById("volver");
 
-  const form = document.getElementById("registroForm");
-  const mensaje = document.getElementById("mensaje");
-  const loader = document.getElementById("loader");
-  const volver = document.getElementById("volver");
+    const submitHandler = async (sumarCafecito) => {
+      const dni = dniInput.value.trim();
+      const nombre = form.nombre.value.trim();
+      const mail = form.mail.value.trim();
+      const usuario = localStorage.getItem("usuario");
 
-  const submitHandler = async (sumarCafecito) => {
-    const dni = dniInput.value.trim();
-    const nombre = form.nombre.value.trim();
-    const mail = form.mail.value.trim();
-    const usuario = localStorage.getItem("usuario");
+      loader.style.display = "block";
+      mensaje.innerText = "";
 
-    loader.style.display = "block";
-    mensaje.innerText = "";
-
-    try {
-      const clienteRef = doc(db, "clientes", dni);
-      await setDoc(clienteRef, {
-        dni,
-        nombre,
-        email: mail,
-        cafes: sumarCafecito ? 1 : 0,
-        cafes_acumulados_total: sumarCafecito ? 1 : 0,
-        cafe_disponible: sumarCafecito ? false : false,
-        ultimo_cafe: sumarCafecito ? serverTimestamp() : null
+      await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+        method: "POST",
+        body: JSON.stringify({ dni, nombre, mail })
       });
 
+      if (sumarCafecito) {
+        await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+          method: "POST",
+          body: JSON.stringify({ dni, log: false })
+        });
+      }
+
       if (usuario) {
-        const logRef = doc(db, "logs", `${dni}_${Date.now()}`);
-        await setDoc(logRef, {
-          usuario,
-          accion: sumarCafecito ? "registro_manual + cargar_cafecito" : "registro_manual",
-          detalles: `DNI: ${dni} - ${nombre}`,
-          timestamp: serverTimestamp()
+        await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
+          method: "POST",
+          body: JSON.stringify({
+            log: true,
+            usuario,
+            accion: sumarCafecito ? "registro_manual + cargar_cafecito" : "registro_manual",
+            detalles: `DNI: ${dni} - ${nombre}`
+          })
         });
       }
 
@@ -172,15 +169,10 @@
       mensaje.innerText = `¡Registro exitoso!\nEl cliente ${dni} fue registrado correctamente.` + (sumarCafecito ? "\nY ya se sumó un cafecito ☕" : "");
       volver.style.display = "block";
       form.reset();
-    } catch (error) {
-      console.error("Error al registrar:", error);
-      loader.style.display = "none";
-      mensaje.innerText = "⚠️ Ocurrió un error al registrar el cliente.";
-    }
-  };
+    };
 
-  document.getElementById("soloRegistrar").addEventListener("click", () => submitHandler(false));
-  document.getElementById("registrarYSumar").addEventListener("click", () => submitHandler(true));
-</script>
+    document.getElementById("soloRegistrar").addEventListener("click", () => submitHandler(false));
+    document.getElementById("registrarYSumar").addEventListener("click", () => submitHandler(true));
+  </script>
 </body>
 </html>
