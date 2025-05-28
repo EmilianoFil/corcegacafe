@@ -140,30 +140,33 @@
     </form>
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div id="respuesta" class="mensaje"></div>
-<div class="logout">
-  <a href="admin.html" class="volver">Volver a consultar</a>
-  <a href="#" onclick="cerrarSesion()" class="cerrar">Cerrar sesión</a>
-</div>
+    <div class="logout">
+      <a href="admin.html" class="volver">Volver a consultar</a>
+      <a href="#" onclick="cerrarSesion()" class="cerrar">Cerrar sesión</a>
+    </div>
   </div>
 
-  <script>
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc, setDoc, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
+      authDomain: "corcega-loyalty-club.firebaseapp.com",
+      projectId: "corcega-loyalty-club",
+      storageBucket: "corcega-loyalty-club.firebasestorage.app",
+      messagingSenderId: "789184958568",
+      appId: "1:789184958568:web:4990bf50335bec365f2bdd",
+      measurementId: "G-NXMC00DZ81"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
     document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
 
     async function cerrarSesion() {
-      const usuario = localStorage.getItem("usuario");
-      document.getElementById("loader").style.display = "block";
-
-      if (usuario) {
-        await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-          method: "POST",
-          body: JSON.stringify({
-            log: true,
-            usuario: usuario,
-            accion: "cerrar_sesion"
-          })
-        });
-      }
-
       localStorage.clear();
       window.location.href = "login.html";
     }
@@ -177,7 +180,7 @@
       const button = document.getElementById("submitBtn");
       const div = document.getElementById("respuesta");
       const loader = document.getElementById("loader");
-      const usuario = localStorage.getItem("usuario");
+      const usuario = localStorage.getItem("usuario") || "admin";
 
       div.innerHTML = "";
       loader.style.display = "block";
@@ -187,87 +190,76 @@
       const dni = input.value.trim();
 
       if (!estadoCliente) {
-        // Paso 1: consultar estado
-        const usuario = localStorage.getItem("usuario") || "admin";
-        const consulta = await fetch(`https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec?formato=json&dni=${dni}&fuente=admin&usuario=${encodeURIComponent(usuario)}`);
-        const result = await consulta.json();
+        const ref = doc(db, "clientes", dni);
+        const snap = await getDoc(ref);
 
         loader.style.display = "none";
         input.disabled = false;
         button.disabled = false;
 
-        if (!result.nombre) {
+        if (!snap.exists()) {
           div.className = "mensaje error";
           div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
           return;
         }
 
-        estadoCliente = { dni, nombre: result.nombre, cafes: result.cafes };
+        const data = snap.data();
+        estadoCliente = { dni, nombre: data.nombre, cafes: data.cafes };
         div.className = "mensaje ok";
 
-        if (result.cafes >= 8) {
+        if (data.cafes >= 8) {
           div.innerText = `Cliente ya tiene 8 cafecitos acumulados.\nEste nos toca a nosotros\n🐎`;
           button.innerText = "Invitar cafecito";
         } else {
-          div.innerText = `✅ ${result.nombre} tiene ${result.cafes} cafecitos acumulados.`;
+          div.innerText = `✅ ${data.nombre} tiene ${data.cafes} cafecitos acumulados.`;
           button.innerText = "Sumar cafecito";
         }
         return;
       }
 
-      // Paso 2: sumar o invitar
-      const payload = {
-        dni: estadoCliente.dni,
-        usuario
-      };
+      const ref = doc(db, "clientes", estadoCliente.dni);
+      const snap = await getDoc(ref);
 
-      if (estadoCliente.cafes >= 8) {
-        payload.invitar = true;
+      if (!snap.exists()) {
+        div.className = "mensaje error";
+        div.innerHTML = `❌ El DNI ${estadoCliente.dni} no está registrado.<br><a href="registro-admin.html?dni=${estadoCliente.dni}">Registrar</a>`;
+        loader.style.display = "none";
+        input.disabled = false;
+        button.disabled = false;
+        return;
       }
 
-      const response = await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
+      const data = snap.data();
 
-      const result = await response.json();
+      if (estadoCliente.cafes >= 8) {
+        await updateDoc(ref, {
+          cafes: 0,
+          ultimo_cafe: serverTimestamp(),
+          cafe_disponible: true,
+          cafes_acumulados_total: increment(1)
+        });
+
+        div.className = "mensaje ok";
+        div.innerText = `🎁 Invitamos un cafecito a ${estadoCliente.nombre}.\n¡Gracias por su fidelidad!`;
+      } else {
+        const nuevosCafes = (data.cafes || 0) + 1;
+        await updateDoc(ref, {
+          cafes: nuevosCafes,
+          ultimo_cafe: serverTimestamp(),
+          cafes_acumulados_total: increment(1)
+        });
+
+        div.className = "mensaje ok";
+        const mensajeFinal = nuevosCafes >= 8
+          ? `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
+          : `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}. Total: ${nuevosCafes}`;
+        div.innerText = mensajeFinal;
+      }
 
       loader.style.display = "none";
       input.disabled = false;
       button.disabled = false;
 
-      if (result.estado === "ok") {
-  div.className = "mensaje ok";
-  const mensajeFinal = result.cafes >= 8
-    ? `✅ Se sumó 1 cafecito a ${result.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
-    : `✅ Se sumó 1 cafecito a ${result.nombre}. Total: ${result.cafes}`;
-  div.innerText = mensajeFinal;
-
-  const usuario = localStorage.getItem("usuario");
-  if (usuario) {
-    await fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-      method: "POST",
-      body: JSON.stringify({
-        log: true,
-        usuario: usuario,
-        accion: "consulta_admin",
-        detalles: `DNI: ${dni}`
-      })
-    });
-  }
-} else if (result.estado === "invitado") {
-        div.className = "mensaje ok";
-        div.innerText = `🎁 Invitamos un cafecito a ${result.nombre}.
-¡Gracias por su fidelidad!`;
-      } else if (result.estado === "no_encontrado") {
-        div.className = "mensaje error";
-        div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
-      } else {
-        div.className = "mensaje error";
-        div.innerText = "❌ Ocurrió un error inesperado.";
-      }
-
-      // Reiniciar estado y botón
       estadoCliente = null;
       button.innerText = "Consultar estado";
     });
