@@ -150,22 +150,36 @@
 
   document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
 
-  async function cerrarSesion() {
-    const usuario = localStorage.getItem("usuario") || "admin";
-    await addDoc(collection(db, "logs"), {
-      usuario,
-      accion: "cerrar_sesion",
-      detalles: "Cierre de sesión",
-      timestamp: new Date()
-    });
-    localStorage.clear();
-    window.location.href = "login.html";
+  // Mostrar loader
+  function mostrarLoader() {
+    document.getElementById("loader").style.display = "block";
   }
 
-  // 🔥 EXPONERLA AL DOM GLOBAL
+  // Ocultar loader
+  function ocultarLoader() {
+    document.getElementById("loader").style.display = "none";
+  }
+
+  async function cerrarSesion() {
+    mostrarLoader();
+    const usuario = localStorage.getItem("usuario") || "admin";
+    try {
+      await addDoc(collection(db, "logs"), {
+        usuario,
+        accion: "cerrar_sesion",
+        detalles: "Cierre de sesión",
+        timestamp: new Date()
+      });
+    } catch (error) {
+      console.error("Error al registrar cierre de sesión:", error);
+    } finally {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+  }
+
   window.cerrarSesion = cerrarSesion;
 
-  // Loguear inicio sesión
   (async () => {
     const usuario = localStorage.getItem("usuario") || "admin";
     await addDoc(collection(db, "logs"), {
