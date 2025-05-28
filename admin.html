@@ -2,253 +2,138 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" href="favicon.ico" type="image/x-icon" />
-  <title>Panel Admin</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background-color: #d86634;
-      color: #2b2b2b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-
-    .contenedor {
-      background: rgba(255,255,255,0.05);
-      padding: 40px 20px;
-      text-align: center;
-      border-radius: 16px;
-      max-width: 400px;
-      width: 100%;
-    }
-
-    h1 {
-      font-size: 20px;
-      margin-bottom: 20px;
-    }
-
-    input {
-      padding: 10px;
-      font-size: 16px;
-      width: 90%;
-      margin: 10px 0;
-      border: 2px solid white;
-      border-radius: 8px;
-      background-color: white;
-      color: black;
-      font-weight: bold;
-    }
-
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: white;
-      color: #d86634;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      margin-top: 10px;
-    }
-
-    .mensaje {
-      margin-top: 20px;
-      font-weight: bold;
-      white-space: pre-line;
-    }
-
-    .mensaje.error,
-    .mensaje.ok,
-    .mensaje a {
-      color: white;
-    }
-
-    .mensaje a {
-      text-decoration: underline;
-      display: inline-block;
-      margin: 5px;
-    }
-
-    #loader {
-      display: none;
-      margin-top: 20px;
-    }
-
-    .galope {
-      width: 80px;
-      animation: galopar 1s infinite ease-in-out alternate;
-    }
-
-    @keyframes galopar {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(-10px); }
-    }
-
-    #usuarioLogueado {
-      font-size: 14px;
-      margin-bottom: 10px;
-      font-weight: bold;
-    }
-
-    .logout {
-      margin-top: 20px;
-    }
-
-    .logout a {
-      display: block;
-      background: none;
-      border: none;
-      text-align: center;
-      text-decoration: none;
-      color: white;
-      font-weight: bold;
-      margin: 8px 0;
-    }
-
-    .logout a.volver {
-      font-size: 15px;
-    }
-
-    .logout a.cerrar {
-      font-size: 13px;
-      opacity: 0.8;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Córcega</title>
+  <link rel="stylesheet" href="estilos.css" />
 </head>
 <body>
-  <script>
-    if (localStorage.getItem("admin") !== "true") {
-      window.location.href = "login.html";
-    }
-  </script>
-
   <div class="contenedor">
-    <div style="font-size: 14px; margin-bottom: 10px; font-weight: bold;">
-      Usuario logueado: <span id="usuarioLogueado">-</span>
+    <h1>Panel Administrador</h1>
+    <div class="formulario">
+      <input type="text" id="dni" placeholder="DNI del cliente" />
+      <button id="consultarBtn">Consultar</button>
+      <div id="resultado"></div>
     </div>
-    <h1>Cargar Cafecito ☕</h1>
-    <form id="adminForm">
-      <input type="tel" name="dni" id="dni" placeholder="DNI del cliente" inputmode="numeric" pattern="[0-9]*" required />
-      <button type="submit" id="submitBtn">Consultar estado</button>
-    </form>
-    <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
-    <div id="respuesta" class="mensaje"></div>
     <div class="logout">
-      <a href="admin.html" class="volver">Volver a consultar</a>
-      <a href="#" onclick="cerrarSesion()" class="cerrar">Cerrar sesión</a>
+      <a href="#" onclick="cerrarSesion()">Cerrar sesión</a>
     </div>
   </div>
 
   <script type="module">
     import { app, db } from './js/firebase-config.js';
-    import { doc, getDoc, updateDoc, increment, serverTimestamp, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { collection, getDocs, query, where, doc, updateDoc, increment, setDoc, Timestamp, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-    document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
+    const dniInput = document.getElementById("dni");
+    const resultado = document.getElementById("resultado");
 
-    async function cerrarSesion() {
-      localStorage.clear();
-      window.location.href = "login.html";
-    }
+    const usuario = localStorage.getItem("usuario") || "admin";
 
-    let estadoCliente = null;
-
-    document.getElementById("adminForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
-
-      const input = document.getElementById("dni");
-      const button = document.getElementById("submitBtn");
-      const div = document.getElementById("respuesta");
-      const loader = document.getElementById("loader");
-      const usuario = localStorage.getItem("usuario") || "admin";
-
-      div.innerHTML = "";
-      loader.style.display = "block";
-      input.disabled = true;
-      button.disabled = true;
-
-      const dni = input.value.trim();
-      const ref = doc(db, "clientes", dni);
-      const snap = await getDoc(ref);
-
-      if (!snap.exists()) {
-        div.className = "mensaje error";
-        div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
-        loader.style.display = "none";
-        input.disabled = false;
-        button.disabled = false;
-        return;
+    const logAccion = async (accion, detalles = "") => {
+      try {
+        await addDoc(collection(db, "logs"), {
+          usuario,
+          accion,
+          detalles,
+          timestamp: Timestamp.now()
+        });
+      } catch (error) {
+        console.error("Error registrando log:", error);
       }
+    };
 
-      const data = snap.data();
-
-      if (!estadoCliente) {
-        estadoCliente = { dni, nombre: data.nombre, cafes: data.cafes };
-        div.className = "mensaje ok";
-
-        if (data.cafes >= 8) {
-          div.innerText = `Cliente ya tiene 8 cafecitos acumulados.\nEste nos toca a nosotros\n🐎`;
-          button.innerText = "Invitar cafecito";
-        } else {
-          div.innerText = `✅ ${data.nombre} tiene ${data.cafes} cafecitos acumulados.`;
-          button.innerText = "Sumar cafecito";
-        }
-
-        loader.style.display = "none";
-        input.disabled = false;
-        button.disabled = false;
-        return;
+    const verificarAuth = () => {
+      if (!localStorage.getItem("admin")) {
+        window.location.href = "login.html";
+      } else {
+        logAccion("login");
       }
+    };
 
-      // Sumar o invitar
-      if (data.cafes >= 8) {
+    verificarAuth();
+
+    document.getElementById("consultarBtn").addEventListener("click", async () => {
+      const dni = dniInput.value.trim();
+      if (!dni) return;
+
+      resultado.innerHTML = "Consultando...";
+
+      const q = query(collection(db, "clientes"), where("dni", "==", dni));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        resultado.innerHTML = `
+          <p>Cliente no registrado.</p>
+          <a href="registro.html?dni=${dni}">Registrar ahora</a>
+        `;
+        logAccion("consulta_admin_fallida", `DNI: ${dni}`);
+      } else {
+        querySnapshot.forEach(async (docSnap) => {
+          const data = docSnap.data();
+          const nombre = data.nombre || "Sin nombre";
+          const cafes = data.cafes || 0;
+
+          resultado.innerHTML = `
+            <p>${nombre} tiene ${cafes} cafés acumulados.</p>
+            <button onclick="sumarCafe('${docSnap.id}', '${nombre}')">Sumar cafecito</button>
+            <button onclick="invitarCafe('${docSnap.id}', '${nombre}')">Invitar café</button>
+          `;
+
+          logAccion("consulta_admin", `DNI: ${dni}`);
+        });
+      }
+    });
+
+    window.sumarCafe = async (id, nombre) => {
+      try {
+        const ref = doc(db, "clientes", id);
+        await updateDoc(ref, {
+          cafes: increment(1),
+          cafes_acumulados_total: increment(1),
+          ultimo_cafe: Timestamp.now(),
+          cafe_disponible: false
+        });
+        resultado.innerHTML = `<p>Se sumó un cafecito para ${nombre}.</p>`;
+        logAccion("suma", `ID cliente: ${id} - ${nombre}`);
+      } catch (error) {
+        console.error("Error sumando café:", error);
+      }
+    };
+
+    window.invitarCafe = async (id, nombre) => {
+      try {
+        const ref = doc(db, "clientes", id);
         await updateDoc(ref, {
           cafes: 0,
           cafe_disponible: true,
-          ultimo_cafe: serverTimestamp(),
-          cafes_acumulados_total: increment(1)
+          ultimo_cafe: Timestamp.now()
         });
-
-        div.className = "mensaje ok";
-        div.innerText = `🎁 Invitamos un cafecito a ${estadoCliente.nombre}.\n¡Gracias por su fidelidad!`;
-
-        await addDoc(collection(db, "logs"), {
-          usuario,
-          accion: "invitar_cafecito",
-          detalles: `DNI: ${estadoCliente.dni} - ${estadoCliente.nombre}`,
-          timestamp: new Date()
-        });
-      } else {
-        const nuevosCafes = (data.cafes || 0) + 1;
-        await updateDoc(ref, {
-          cafes: nuevosCafes,
-          ultimo_cafe: serverTimestamp(),
-          cafes_acumulados_total: increment(1)
-        });
-
-        div.className = "mensaje ok";
-        const mensajeFinal = nuevosCafes >= 8
-          ? `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
-          : `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}. Total: ${nuevosCafes}`;
-        div.innerText = mensajeFinal;
-
-        await addDoc(collection(db, "logs"), {
-          usuario,
-          accion: "sumar_cafecito",
-          detalles: `DNI: ${estadoCliente.dni} - ${estadoCliente.nombre}`,
-          timestamp: new Date()
-        });
+        resultado.innerHTML = `<p>Se invitó un café a ${nombre}.</p>`;
+        logAccion("invitacion", `ID cliente: ${id} - ${nombre}`);
+      } catch (error) {
+        console.error("Error invitando café:", error);
       }
+    };
+  </script>
 
-      estadoCliente = null;
-      button.innerText = "Consultar estado";
-      loader.style.display = "none";
-      input.disabled = false;
-      button.disabled = false;
-    });
+  <!-- Cierre de sesión separado para que funcione -->
+  <script>
+    function cerrarSesion() {
+      localStorage.clear();
+      fetch("https://firestore.googleapis.com/v1/projects/corcega-loyalty-club/databases/(default)/documents:commit", {
+        method: "POST", // simulamos algo si quisieras
+      }).catch(() => {}); // opcional
+
+      fetch('https://corcega-api.emilianofilgueira.workers.dev/', {
+        method: 'POST',
+        body: JSON.stringify({
+          log: true,
+          usuario: localStorage.getItem("usuario") || "admin",
+          accion: "logout"
+        })
+      }).finally(() => {
+        window.location.href = "login.html";
+      });
+    }
   </script>
 </body>
 </html>
