@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <title>Panel Admin</title>
   <style>
     body {
       font-family: sans-serif;
@@ -23,6 +24,11 @@
       border-radius: 16px;
       max-width: 400px;
       width: 100%;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin-bottom: 20px;
     }
 
     input {
@@ -46,7 +52,46 @@
       border-radius: 8px;
       cursor: pointer;
       font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .mensaje {
+      margin-top: 20px;
+      font-weight: bold;
+      white-space: pre-line;
+    }
+
+    .mensaje.error,
+    .mensaje.ok,
+    .mensaje a {
+      color: white;
+    }
+
+    .mensaje a {
+      text-decoration: underline;
+      display: inline-block;
       margin: 5px;
+    }
+
+    #loader {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .galope {
+      width: 80px;
+      animation: galopar 1s infinite ease-in-out alternate;
+    }
+
+    @keyframes galopar {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-10px); }
+    }
+
+    #usuarioLogueado {
+      font-size: 14px;
+      margin-bottom: 10px;
+      font-weight: bold;
     }
 
     .logout {
@@ -54,13 +99,23 @@
     }
 
     .logout a {
-      background: white;
-      color: #d86634;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-weight: bold;
+      display: block;
+      background: none;
+      border: none;
+      text-align: center;
       text-decoration: none;
-      cursor: pointer;
+      color: white;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+
+    .logout a.volver {
+      font-size: 15px;
+    }
+
+    .logout a.cerrar {
+      font-size: 13px;
+      opacity: 0.8;
     }
   </style>
 </head>
