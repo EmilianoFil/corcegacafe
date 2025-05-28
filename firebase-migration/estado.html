@@ -159,71 +159,74 @@
     </footer>
   </div>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const dni = params.get("dni");
-    const api = "https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec?formato=json&dni=" + encodeURIComponent(dni);
+  <script type="module">
+  // Configuración de Firebase
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    fetch(api)
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("loader").style.display = "none";
-        document.getElementById("contenedor").style.display = "block";
+  const firebaseConfig = {
+    apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
+    authDomain: "corcega-loyalty-club.firebaseapp.com",
+    projectId: "corcega-loyalty-club",
+    storageBucket: "corcega-loyalty-club.firebasestorage.app",
+    messagingSenderId: "789184958568",
+    appId: "1:789184958568:web:4990bf50335bec365f2bdd",
+    measurementId: "G-NXMC00DZ81"
+  };
 
-        const grid = document.getElementById("grid");
-        const cantidad = parseInt(data.cafes);
-        const nombre = data.nombre;
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-        if (!nombre) {
-          document.getElementById("cliente").style.display = "none";
-          document.getElementById("faltan").style.display = "none";
-          grid.style.display = "none";
-          document.getElementById("mensaje-error").style.display = "block";
-          document.getElementById("mensaje-error").innerHTML = `
-            <p>El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.</p>
-            <a href="registro.html?dni=${dni}" class="boton">Registrate</a>
-            <a href="index.html" class="otro">Buscar otro DNI</a>
-          `;
-          return;
-        }
+  const params = new URLSearchParams(window.location.search);
+  const dni = params.get("dni");
 
-        document.getElementById("cliente").textContent = `Hola ${nombre}`;
+  async function consultarCliente(dni) {
+    const ref = doc(db, "clientes", dni);
+    const snap = await getDoc(ref);
 
-// LOGUEAR CONSULTA DEL CLIENTE
-fetch("https://script.google.com/macros/s/AKfycbzhaUl3id0vNL2mJbEC5R3Pxghn9glfJ-SugPqslR3QyhChobGiEtVCEzAmBfpCdks/exec", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    log: true,
-    usuario: "cliente",
-    accion: "consulta",
-    detalles: `DNI: ${dni}`
-  })
-});
-        document.getElementById("faltan").textContent = cantidad < 8 ? `Te faltan ${8 - cantidad} para que te invitemos uno.` : "¡El próximo lo invitamos nosotros! 🐎🎉";
-        
-        for (let i = 1; i <= 9; i++) {
-          const div = document.createElement("div");
-          div.className = "circle";
+    document.getElementById("loader").style.display = "none";
+    document.getElementById("contenedor").style.display = "block";
 
-          if (i === 9) {
-            div.classList.add("noveno");
-          } else if (i <= cantidad) {
-            div.classList.add("lleno");
-          } else {
-            div.style.backgroundImage = "url('caballito-claro.png')";
-          }
+    if (!snap.exists()) {
+      document.getElementById("cliente").style.display = "none";
+      document.getElementById("faltan").style.display = "none";
+      document.getElementById("grid").style.display = "none";
+      document.getElementById("mensaje-error").style.display = "block";
+      document.getElementById("mensaje-error").innerHTML = `
+        <p>El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.</p>
+        <a href="registro.html?dni=${dni}" class="boton">Registrate</a>
+        <a href="index.html" class="otro">Buscar otro DNI</a>
+      `;
+      return;
+    }
 
-          grid.appendChild(div);
-        }
-      })
-      .catch(() => {
-        document.getElementById("loader").style.display = "none";
-        document.getElementById("contenedor").style.display = "block";
-        document.getElementById("grid").innerHTML = "<p>No se pudo cargar la tarjeta.</p>";
-      });
-  </script>
+    const data = snap.data();
+    const nombre = data.nombre || "Amigo";
+    const cafes = parseInt(data.cafes) || 0;
+
+    document.getElementById("cliente").textContent = `Hola ${nombre}`;
+    document.getElementById("faltan").textContent = cafes < 8
+      ? `Te faltan ${8 - cafes} para que te invitemos uno.`
+      : "¡El próximo lo invitamos nosotros! 🐎🎉";
+
+    const grid = document.getElementById("grid");
+    for (let i = 1; i <= 9; i++) {
+      const div = document.createElement("div");
+      div.className = "circle";
+
+      if (i === 9) {
+        div.classList.add("noveno");
+      } else if (i <= cafes) {
+        div.classList.add("lleno");
+      } else {
+        div.style.backgroundImage = "url('caballito-claro.png')";
+      }
+
+      grid.appendChild(div);
+    }
+  }
+
+  consultarCliente(dni);
+</script>
 </body>
 </html>
