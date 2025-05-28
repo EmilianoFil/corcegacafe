@@ -1,2 +1,0 @@
-# corcegacafe
-Córcega Loyalty Club
