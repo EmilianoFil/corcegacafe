@@ -87,14 +87,23 @@
       100% { transform: translateY(-10px); }
     }
   </style>
+
   <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-NXMC00DZ81');
-</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-NXMC00DZ81');
+  </script>
+
+  <!-- EmailJS -->
+  <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+  <script>
+    (function(){
+      emailjs.init("lc7u05rTnl9DZg6wE");
+    })();
+  </script>
 </head>
 <body>
   <div class="contenedor">
@@ -149,25 +158,31 @@
 
         try {
           if (!existing.exists()) {
-  await setDoc(docRef, data);
+            await setDoc(docRef, data);
 
-  // 🔥 Evento personalizado GA4
-  if (typeof gtag === 'function') {
-    gtag('event', 'registro_cliente', {
-      origen: 'registro_publico',
-      dni: data.dni
-    });
-  }
+            if (typeof gtag === 'function') {
+              gtag('event', 'registro_cliente', {
+                origen: 'registro_publico',
+                dni: data.dni
+              });
+            }
 
-  await addDoc(collection(db, "logs"), {
-    usuario: data.dni,
-    accion: "registro_cliente",
-    detalles: `Registro nuevo cliente ${data.dni} - ${data.nombre}`,
-    timestamp: new Date()
-  });
+            await addDoc(collection(db, "logs"), {
+              usuario: data.dni,
+              accion: "registro_cliente",
+              detalles: `Registro nuevo cliente ${data.dni} - ${data.nombre}`,
+              timestamp: new Date()
+            });
 
-  document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🎉☕️";
-} else {
+            // Enviar mail de bienvenida
+            emailjs.send("service_2pfzklo", "template_33mxnzd", {
+              nombre: data.nombre,
+              dni: data.dni,
+              mail: data.email
+            });
+
+            document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🎉☕️";
+          } else {
             document.getElementById("mensaje").innerText = "Ya estás registrado en el club.";
           }
         } catch (error) {
