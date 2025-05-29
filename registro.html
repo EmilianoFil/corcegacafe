@@ -98,7 +98,12 @@
   </script>
 
   <!-- EmailJS -->
-  <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+  <script type="module">
+  import emailjs from 'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
+
+  emailjs.init("lc7u05rTnl9DZg6wE");
+  window.emailjs = emailjs; // para que sea accesible globalmente
+</script>
   <script>
     (function(){
       emailjs.init("lc7u05rTnl9DZg6wE");
