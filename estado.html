@@ -217,6 +217,11 @@
   detalles: `Consulta fallida: DNI ${dni} no encontrado`,
   timestamp: new Date()
 });
+      if (typeof gtag === 'function') {
+  gtag('event', 'consulta_fallida', {
+    dni: dni
+  });
+}
       return;
     }
 
@@ -228,6 +233,12 @@
   detalles: `Consulta exitosa del cliente ${data.dni} - ${data.nombre}`,
   timestamp: new Date()
 });
+
+    if (typeof gtag === 'function') {
+  gtag('event', 'consulta_estado', {
+    dni: data.dni
+  });
+}
     
     const nombre = data.nombre || "Amigo";
     const cafes = parseInt(data.cafes) || 0;
