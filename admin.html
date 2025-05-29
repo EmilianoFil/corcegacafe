@@ -16,7 +16,6 @@
       min-height: 100vh;
       margin: 0;
     }
-
     .contenedor {
       background: rgba(255,255,255,0.05);
       padding: 40px 20px;
@@ -25,12 +24,10 @@
       max-width: 400px;
       width: 100%;
     }
-
     h1 {
       font-size: 20px;
       margin-bottom: 20px;
     }
-
     input {
       padding: 10px;
       font-size: 16px;
@@ -42,7 +39,6 @@
       color: black;
       font-weight: bold;
     }
-
     button {
       padding: 10px 20px;
       font-size: 16px;
@@ -54,50 +50,41 @@
       font-weight: bold;
       margin-top: 10px;
     }
-
     .mensaje {
       margin-top: 20px;
       font-weight: bold;
       white-space: pre-line;
     }
-
     .mensaje.error,
     .mensaje.ok,
     .mensaje a {
       color: white;
     }
-
     .mensaje a {
       text-decoration: underline;
       display: inline-block;
       margin: 5px;
     }
-
     #loader {
       display: none;
       margin-top: 20px;
     }
-
     .galope {
       width: 80px;
       animation: galopar 1s infinite ease-in-out alternate;
     }
-
     @keyframes galopar {
       0% { transform: translateY(0); }
       100% { transform: translateY(-10px); }
     }
-
     #usuarioLogueado {
       font-size: 14px;
       margin-bottom: 10px;
       font-weight: bold;
     }
-
     .logout {
       margin-top: 20px;
     }
-
     .logout a {
       display: block;
       background: none;
@@ -109,11 +96,9 @@
       margin: 8px 0;
       cursor: pointer;
     }
-
     .logout a.volver {
       font-size: 15px;
     }
-
     .logout a.cerrar {
       font-size: 13px;
       opacity: 0.8;
@@ -145,55 +130,70 @@
   </div>
 
   <script type="module">
-  import { app, db } from './js/firebase-config.js';
-  import { doc, getDoc, updateDoc, increment, serverTimestamp, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      updateDoc,
+      increment,
+      serverTimestamp,
+      collection,
+      addDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
+      authDomain: "corcega-loyalty-club.firebaseapp.com",
+      projectId: "corcega-loyalty-club",
+      storageBucket: "corcega-loyalty-club.appspot.com",
+      messagingSenderId: "789184958568",
+      appId: "1:789184958568:web:4990bf50335bec365f2bdd",
+      measurementId: "G-NXMC00DZ81"
+    };
 
-  // Mostrar loader
-  function mostrarLoader() {
-    document.getElementById("loader").style.display = "block";
-  }
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-  // Ocultar loader
-  function ocultarLoader() {
-    document.getElementById("loader").style.display = "none";
-  }
+    document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
 
-  async function cerrarSesion() {
-    mostrarLoader();
-    const usuario = localStorage.getItem("usuario") || "admin";
-    try {
+    function mostrarLoader() {
+      document.getElementById("loader").style.display = "block";
+    }
+
+    async function cerrarSesion() {
+      mostrarLoader();
+      const usuario = localStorage.getItem("usuario") || "admin";
+      try {
+        await addDoc(collection(db, "logs"), {
+          usuario,
+          accion: "cerrar_sesion",
+          detalles: "Cierre de sesión",
+          timestamp: new Date()
+        });
+      } catch (error) {
+        console.error("Error al registrar cierre de sesión:", error);
+      } finally {
+        localStorage.clear();
+        window.location.href = "login.html";
+      }
+    }
+
+    window.cerrarSesion = cerrarSesion;
+
+    (async () => {
+      const usuario = localStorage.getItem("usuario") || "admin";
       await addDoc(collection(db, "logs"), {
         usuario,
-        accion: "cerrar_sesion",
-        detalles: "Cierre de sesión",
+        accion: "iniciar_sesion",
+        detalles: "Ingreso al panel de administración",
         timestamp: new Date()
       });
-    } catch (error) {
-      console.error("Error al registrar cierre de sesión:", error);
-    } finally {
-      localStorage.clear();
-      window.location.href = "login.html";
-    }
-  }
+    })();
 
-  window.cerrarSesion = cerrarSesion;
+    let estadoCliente = null;
 
-  (async () => {
-    const usuario = localStorage.getItem("usuario") || "admin";
-    await addDoc(collection(db, "logs"), {
-      usuario,
-      accion: "iniciar_sesion",
-      detalles: "Ingreso al panel de administración",
-      timestamp: new Date()
-    });
-  })();
-
-  let estadoCliente = null;
-
-  document.getElementById("adminForm").addEventListener("submit", async function(e) {
-
+    document.getElementById("adminForm").addEventListener("submit", async function(e) {
       e.preventDefault();
 
       const input = document.getElementById("dni");
@@ -240,7 +240,6 @@
         return;
       }
 
-      // Sumar o invitar
       if (data.cafes >= 8) {
         await updateDoc(ref, {
           cafes: 0,
