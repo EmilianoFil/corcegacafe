@@ -149,17 +149,22 @@
 
     document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
 
-    async function cerrarSesion() {
-      const usuario = localStorage.getItem("usuario") || "admin";
-      await addDoc(collection(db, "logs"), {
-        usuario,
-        accion: "cerrar_sesion",
-        detalles: "Cierre de sesión",
-        timestamp: new Date()
-      });
-      localStorage.clear();
-      window.location.href = "login.html";
-    }
+    import { auth, signOut } from './js/firebase-auth.js'; // Asegurate que esté arriba
+
+async function cerrarSesion() {
+  const usuario = auth.currentUser?.email || "admin";
+
+  await addDoc(collection(db, "logs"), {
+    usuario,
+    accion: "cerrar_sesion",
+    detalles: "Cierre de sesión",
+    timestamp: new Date()
+  });
+
+  await signOut(auth);
+  localStorage.clear();
+  window.location.href = "login.html";
+}
 
     window.cerrarSesion = cerrarSesion;
 
