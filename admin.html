@@ -231,6 +231,14 @@ Este nos toca a nosotros
           button.innerText = "Sumar cafecito";
         }
 
+//agrego GA Evento-INICIO
+if (typeof gtag === 'function') {
+  gtag('event', 'admin_consulta_estado', {
+    dni: data.dni
+  });
+}
+//agrego GA Evento-FIN        
+        
         loader.style.display = "none";
         input.disabled = false;
         button.disabled = false;
@@ -249,6 +257,14 @@ Este nos toca a nosotros
         div.innerText = `🎁 Invitamos un cafecito a ${estadoCliente.nombre}.
 ¡Gracias por su fidelidad!`;
 
+//agrego GA Evento-INICIO
+if (typeof gtag === 'function') {
+  gtag('event', 'admin_invito_cafe', {
+    dni: data.dni
+  });
+}
+//agrego GA Evento-FIN  
+        
         await addDoc(collection(db, "logs"), {
           usuario,
           accion: "invitar_cafecito",
@@ -269,6 +285,14 @@ Este nos toca a nosotros
 El próximo se lo invitamos nosotros ☕🎉`
           : `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}. Total: ${nuevosCafes}`;
         div.innerText = mensajeFinal;
+
+        //agrego GA Evento-INICIO
+if (typeof gtag === 'function') {
+  gtag('event', 'admin_suma_cafe', {
+    dni: data.dni
+  });
+}
+//agrego GA Evento-FIN  
 
         await addDoc(collection(db, "logs"), {
           usuario,
