@@ -159,16 +159,24 @@
 
     try {
       const clienteRef = doc(db, "clientes", dni);
-      await setDoc(clienteRef, {
-        dni,
-        nombre,
-        email: mail,
-        cafes: sumarCafecito ? 1 : 0,
-        cafes_acumulados_total: sumarCafecito ? 1 : 0,
-        cafe_disponible: sumarCafecito ? false : false,
-        ultimo_cafe: sumarCafecito ? serverTimestamp() : null
-      });
+await setDoc(clienteRef, {
+  dni,
+  nombre,
+  email: mail,
+  cafes: sumarCafecito ? 1 : 0,
+  cafes_acumulados_total: sumarCafecito ? 1 : 0,
+  cafe_disponible: sumarCafecito ? false : false,
+  ultimo_cafe: sumarCafecito ? serverTimestamp() : null
+});
 
+// Evento GA diferenciado por tipo de acción
+if (typeof gtag === 'function') {
+  gtag('event', 'registro_cliente', {
+    origen: 'admin',
+    modo: sumarCafecito ? 'registro_y_cafecito' : 'solo_registro',
+    dni: dni
+  });
+}
       if (usuario) {
         const logRef = doc(db, "logs", `${dni}_${Date.now()}`);
         await setDoc(logRef, {
