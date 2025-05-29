@@ -94,12 +94,15 @@
   </style>
 </head>
 <body>
-  <script>
-    // Proteger acceso si no hay login válido
-    if (localStorage.getItem("admin") !== "true") {
+  <script type="module">
+  import { auth, onAuthStateChanged } from './js/firebase-auth.js';
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
       window.location.href = "login.html";
     }
-  </script>
+  });
+</script>
 
   <div class="contenedor">
     <h1>Registrar nuevo cliente</h1>
