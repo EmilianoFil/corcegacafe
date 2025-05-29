@@ -209,6 +209,16 @@ Este nos toca a nosotros
         return;
       }
 
+      // 👇 AGREGAR ESTO
+      await addDoc(collection(db, "logs"), {
+        usuario,
+        accion: "consulta_cliente",
+        detalles: `DNI: ${dni} - ${data.nombre}`,
+        timestamp: new Date()
+      });
+    
+      return;
+
       if (data.cafes >= 8) {
         await updateDoc(ref, {
           cafes: 0,
