@@ -135,6 +135,12 @@
         try {
           if (!existing.exists()) {
             await setDoc(docRef, data);
+            await addDoc(collection(db, "logs"), {
+              usuario: data.dni,
+              accion: "registro_cliente",
+              detalles: `Registro nuevo cliente ${data.dni} - ${data.nombre}`,
+              timestamp: new Date()
+            });
             document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🎉☕️";
           } else {
             document.getElementById("mensaje").innerText = "Ya estás registrado en el club.";
