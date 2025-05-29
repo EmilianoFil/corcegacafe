@@ -180,7 +180,7 @@
       await addDoc(collection(db, "logs"), {
           usuario,
           accion: "admin_consulta_cliente",
-          detalles: `DNI: ${estadoCliente.dni}`,
+          detalles: `DNI: ${dni}`,
           timestamp: new Date()
         });
 //agrego-fin
