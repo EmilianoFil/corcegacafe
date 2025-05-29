@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -103,7 +104,7 @@
 
   <script type="module">
     import { app, db } from './js/firebase-config.js';
-    import { getDocs, collection, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { getDocs, collection, query, where, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     document.getElementById("loginForm").addEventListener("submit", async function(e) {
       e.preventDefault();
@@ -122,15 +123,15 @@
         if (!querySnapshot.empty) {
           localStorage.setItem("admin", "true");
           localStorage.setItem("usuario", usuario);
-          sessionStorage.setItem("logueado", "true"); // Flag para evitar log duplicado
-          
+          sessionStorage.setItem("logueado", "true");
+
           await addDoc(collection(db, "logs"), {
             usuario,
             accion: "iniciar_sesion",
             detalles: "Login exitoso",
             timestamp: new Date()
           });
-          
+
           window.location.href = "admin.html";
         } else {
           document.getElementById("errorMsg").style.display = "block";
