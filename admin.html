@@ -177,12 +177,14 @@
       const ref = doc(db, "clientes", dni);
       const snap = await getDoc(ref);
 //agregro-inicio
+if(estadoCliente === null){
       await addDoc(collection(db, "logs"), {
           usuario,
           accion: "admin_consulta_cliente",
           detalles: `DNI: ${dni}`,
           timestamp: new Date()
-        });
+        })
+};
 //agrego-fin
 
       if (!snap.exists()) {
