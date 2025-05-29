@@ -176,6 +176,14 @@
       const dni = input.value.trim();
       const ref = doc(db, "clientes", dni);
       const snap = await getDoc(ref);
+//agregro-inicio
+      await addDoc(collection(db, "logs"), {
+          usuario,
+          accion: "admin_consulta_cliente",
+          detalles: `DNI: ${estadoCliente.dni}`,
+          timestamp: new Date()
+        });
+//agrego-fin
 
       if (!snap.exists()) {
         div.className = "mensaje error";
