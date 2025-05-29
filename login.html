@@ -135,6 +135,11 @@
           detalles: "Login exitoso",
           timestamp: new Date()
         });
+//AGREGO PARA GA
+        if (typeof gtag === 'function') {
+  gtag('event', 'admin_login');
+}
+//AGREGO PARA GA - FIN
 
         window.location.href = "admin.html";
       } catch (error) {
