@@ -106,11 +106,17 @@
   </style>
 </head>
 <body>
-  <script>
-    if (localStorage.getItem("admin") !== "true") {
+  <script type="module">
+  import { auth, onAuthStateChanged } from './js/firebase-auth.js';
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
       window.location.href = "login.html";
+    } else {
+      document.getElementById("usuarioLogueado").innerText = user.email;
     }
-  </script>
+  });
+</script>
 
   <div class="contenedor">
     <div style="font-size: 14px; margin-bottom: 10px; font-weight: bold;">
@@ -143,17 +149,22 @@
 
     document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
 
-    async function cerrarSesion() {
-      const usuario = localStorage.getItem("usuario") || "admin";
-      await addDoc(collection(db, "logs"), {
-        usuario,
-        accion: "cerrar_sesion",
-        detalles: "Cierre de sesión",
-        timestamp: new Date()
-      });
-      localStorage.clear();
-      window.location.href = "login.html";
-    }
+    import { auth, signOut } from './js/firebase-auth.js'; // Asegurate que esté arriba
+
+async function cerrarSesion() {
+  const usuario = auth.currentUser?.email || "admin";
+
+  await addDoc(collection(db, "logs"), {
+    usuario,
+    accion: "cerrar_sesion",
+    detalles: "Cierre de sesión",
+    timestamp: new Date()
+  });
+
+  await signOut(auth);
+  localStorage.clear();
+  window.location.href = "login.html";
+}
 
     window.cerrarSesion = cerrarSesion;
 
