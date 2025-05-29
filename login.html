@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -104,7 +103,8 @@
 
   <script type="module">
     import { app, db } from './js/firebase-config.js';
-    import { getDocs, collection, query, where, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { auth, signInWithEmailAndPassword } from './js/firebase-auth.js';
+    import { addDoc, collection } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     document.getElementById("loginForm").addEventListener("submit", async function(e) {
       e.preventDefault();
@@ -115,27 +115,20 @@
       document.getElementById("errorMsg").style.display = "none";
 
       try {
-        const q = query(collection(db, "admin"), where("usuario", "==", usuario), where("clave", "==", clave));
-        const querySnapshot = await getDocs(q);
+        await signInWithEmailAndPassword(auth, usuario, clave);
 
-        document.getElementById("loader").style.display = "none";
+        localStorage.setItem("admin", "true");
+        localStorage.setItem("usuario", usuario);
+        sessionStorage.setItem("logueado", "true");
 
-        if (!querySnapshot.empty) {
-          localStorage.setItem("admin", "true");
-          localStorage.setItem("usuario", usuario);
-          sessionStorage.setItem("logueado", "true");
+        await addDoc(collection(db, "logs"), {
+          usuario,
+          accion: "iniciar_sesion",
+          detalles: "Login exitoso",
+          timestamp: new Date()
+        });
 
-          await addDoc(collection(db, "logs"), {
-            usuario,
-            accion: "iniciar_sesion",
-            detalles: "Login exitoso",
-            timestamp: new Date()
-          });
-
-          window.location.href = "admin.html";
-        } else {
-          document.getElementById("errorMsg").style.display = "block";
-        }
+        window.location.href = "admin.html";
       } catch (error) {
         console.error("Error en login:", error);
         document.getElementById("loader").style.display = "none";
