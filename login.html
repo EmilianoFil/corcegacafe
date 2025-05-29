@@ -122,6 +122,15 @@
         if (!querySnapshot.empty) {
           localStorage.setItem("admin", "true");
           localStorage.setItem("usuario", usuario);
+          sessionStorage.setItem("logueado", "true"); // Flag para evitar log duplicado
+          
+          await addDoc(collection(db, "logs"), {
+            usuario,
+            accion: "iniciar_sesion",
+            detalles: "Login exitoso",
+            timestamp: new Date()
+          });
+          
           window.location.href = "admin.html";
         } else {
           document.getElementById("errorMsg").style.display = "block";
