@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -208,16 +207,6 @@ Este nos toca a nosotros
         button.disabled = false;
         return;
       }
-
-      // 👇 AGREGAR ESTO
-      await addDoc(collection(db, "logs"), {
-        usuario,
-        accion: "consulta_cliente",
-        detalles: `DNI: ${dni} - ${data.nombre}`,
-        timestamp: new Date()
-      });
-    
-      return;
 
       if (data.cafes >= 8) {
         await updateDoc(ref, {
