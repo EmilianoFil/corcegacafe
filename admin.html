@@ -158,16 +158,6 @@
 
     window.cerrarSesion = cerrarSesion;
 
-    (async () => {
-      const usuario = localStorage.getItem("usuario") || "admin";
-      await addDoc(collection(db, "logs"), {
-        usuario,
-        accion: "iniciar_sesion",
-        detalles: "Ingreso al panel de administración",
-        timestamp: new Date()
-      });
-    })();
-
     let estadoCliente = null;
 
     document.getElementById("adminForm").addEventListener("submit", async function(e) {
