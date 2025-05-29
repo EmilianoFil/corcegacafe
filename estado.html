@@ -197,10 +197,24 @@
         <a href="registro.html?dni=${dni}" class="boton">Registrate</a>
         <a href="index.html" class="otro">Buscar otro DNI</a>
       `;
+      await addDoc(collection(db, "logs"), {
+  usuario: dni,
+  accion: "consulta_fallida",
+  detalles: `Consulta fallida: DNI ${dni} no encontrado`,
+  timestamp: new Date()
+});
       return;
     }
 
     const data = snap.data();
+
+    await addDoc(collection(db, "logs"), {
+  usuario: data.dni,
+  accion: "consulta_cliente",
+  detalles: `Consulta exitosa del cliente ${data.dni} - ${data.nombre}`,
+  timestamp: new Date()
+});
+    
     const nombre = data.nombre || "Amigo";
     const cafes = parseInt(data.cafes) || 0;
 
