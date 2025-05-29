@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -16,7 +17,6 @@
       min-height: 100vh;
       margin: 0;
     }
-
     .contenedor {
       background: rgba(255,255,255,0.05);
       padding: 40px 20px;
@@ -25,12 +25,10 @@
       max-width: 400px;
       width: 100%;
     }
-
     h1 {
       font-size: 20px;
       margin-bottom: 20px;
     }
-
     input {
       padding: 10px;
       font-size: 16px;
@@ -42,7 +40,6 @@
       color: black;
       font-weight: bold;
     }
-
     button {
       padding: 10px 20px;
       font-size: 16px;
@@ -54,50 +51,41 @@
       font-weight: bold;
       margin-top: 10px;
     }
-
     .mensaje {
       margin-top: 20px;
       font-weight: bold;
       white-space: pre-line;
     }
-
     .mensaje.error,
     .mensaje.ok,
     .mensaje a {
       color: white;
     }
-
     .mensaje a {
       text-decoration: underline;
       display: inline-block;
       margin: 5px;
     }
-
     #loader {
       display: none;
       margin-top: 20px;
     }
-
     .galope {
       width: 80px;
       animation: galopar 1s infinite ease-in-out alternate;
     }
-
     @keyframes galopar {
       0% { transform: translateY(0); }
       100% { transform: translateY(-10px); }
     }
-
     #usuarioLogueado {
       font-size: 14px;
       margin-bottom: 10px;
       font-weight: bold;
     }
-
     .logout {
       margin-top: 20px;
     }
-
     .logout a {
       display: block;
       background: none;
@@ -109,11 +97,9 @@
       margin: 8px 0;
       cursor: pointer;
     }
-
     .logout a.volver {
       font-size: 15px;
     }
-
     .logout a.cerrar {
       font-size: 13px;
       opacity: 0.8;
@@ -145,41 +131,46 @@
   </div>
 
   <script type="module">
-  import { app, db } from './js/firebase-config.js';
-  import { doc, getDoc, updateDoc, increment, serverTimestamp, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { app, db } from './js/firebase-config.js';
+    import {
+      doc,
+      getDoc,
+      updateDoc,
+      increment,
+      serverTimestamp,
+      collection,
+      addDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
+    document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
 
-  async function cerrarSesion() {
-    const usuario = localStorage.getItem("usuario") || "admin";
-    await addDoc(collection(db, "logs"), {
-      usuario,
-      accion: "cerrar_sesion",
-      detalles: "Cierre de sesión",
-      timestamp: new Date()
-    });
-    localStorage.clear();
-    window.location.href = "login.html";
-  }
+    async function cerrarSesion() {
+      const usuario = localStorage.getItem("usuario") || "admin";
+      await addDoc(collection(db, "logs"), {
+        usuario,
+        accion: "cerrar_sesion",
+        detalles: "Cierre de sesión",
+        timestamp: new Date()
+      });
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
 
-  // 🔥 EXPONERLA AL DOM GLOBAL
-  window.cerrarSesion = cerrarSesion;
+    window.cerrarSesion = cerrarSesion;
 
-  // Loguear inicio sesión
-  (async () => {
-    const usuario = localStorage.getItem("usuario") || "admin";
-    await addDoc(collection(db, "logs"), {
-      usuario,
-      accion: "iniciar_sesion",
-      detalles: "Ingreso al panel de administración",
-      timestamp: new Date()
-    });
-  })();
+    (async () => {
+      const usuario = localStorage.getItem("usuario") || "admin";
+      await addDoc(collection(db, "logs"), {
+        usuario,
+        accion: "iniciar_sesion",
+        detalles: "Ingreso al panel de administración",
+        timestamp: new Date()
+      });
+    })();
 
-  let estadoCliente = null;
+    let estadoCliente = null;
 
-  document.getElementById("adminForm").addEventListener("submit", async function(e) {
-
+    document.getElementById("adminForm").addEventListener("submit", async function(e) {
       e.preventDefault();
 
       const input = document.getElementById("dni");
@@ -213,7 +204,9 @@
         div.className = "mensaje ok";
 
         if (data.cafes >= 8) {
-          div.innerText = `Cliente ya tiene 8 cafecitos acumulados.\nEste nos toca a nosotros\n🐎`;
+          div.innerText = `Cliente ya tiene 8 cafecitos acumulados.
+Este nos toca a nosotros
+🐎`;
           button.innerText = "Invitar cafecito";
         } else {
           div.innerText = `✅ ${data.nombre} tiene ${data.cafes} cafecitos acumulados.`;
@@ -226,7 +219,6 @@
         return;
       }
 
-      // Sumar o invitar
       if (data.cafes >= 8) {
         await updateDoc(ref, {
           cafes: 0,
@@ -236,7 +228,8 @@
         });
 
         div.className = "mensaje ok";
-        div.innerText = `🎁 Invitamos un cafecito a ${estadoCliente.nombre}.\n¡Gracias por su fidelidad!`;
+        div.innerText = `🎁 Invitamos un cafecito a ${estadoCliente.nombre}.
+¡Gracias por su fidelidad!`;
 
         await addDoc(collection(db, "logs"), {
           usuario,
@@ -254,7 +247,8 @@
 
         div.className = "mensaje ok";
         const mensajeFinal = nuevosCafes >= 8
-          ? `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
+          ? `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}.
+El próximo se lo invitamos nosotros ☕🎉`
           : `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}. Total: ${nuevosCafes}`;
         div.innerText = mensajeFinal;
 
