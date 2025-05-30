@@ -23,6 +23,7 @@ body {
 h1 {
   font-size: 20px;
   margin-bottom: 20px;
+  text-align: center;
 }
 
 input {
@@ -36,6 +37,7 @@ input {
   color: black;
   font-weight: bold;
   box-sizing: border-box;
+  text-align: center;
 }
 
 button {
@@ -47,8 +49,8 @@ button {
   border-radius: 12px;
   cursor: pointer;
   font-weight: bold;
-  margin: 12px 0;
-  width: 100%;
+  margin: 12px auto;
+  display: inline-block;
 }
 
 .mensaje {
@@ -90,7 +92,7 @@ button {
   font-size: 14px;
   margin-bottom: 10px;
   font-weight: bold;
-  text-align: left;
+  text-align: center;
 }
 
 .logout {
