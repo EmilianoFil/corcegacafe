@@ -3,31 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <title>Panel Admin</title>
   <style>
     body {
-      font-family: sans-serif;
-      background-color: #d86634;
-      color: #2b2b2b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
       margin: 0;
+      font-family: 'Georgia', serif;
+      background-color: #fdfcf7;
+      color: #1d1d1d;
     }
-    .contenedor {
-      background: rgba(255,255,255,0.05);
-      padding: 40px 20px;
-      text-align: center;
-      border-radius: 16px;
+
+    .menu-style {
       max-width: 400px;
-      width: 100%;
+      margin: 40px auto;
+      padding: 40px 20px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 16px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      text-align: center;
     }
+
     h1 {
       font-size: 20px;
       margin-bottom: 20px;
     }
+
     input {
       padding: 10px;
       font-size: 16px;
@@ -39,94 +39,106 @@
       color: black;
       font-weight: bold;
     }
+
     button {
       padding: 10px 20px;
       font-size: 16px;
-      background-color: white;
-      color: #d86634;
+      background-color: #d86634;
+      color: white;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       font-weight: bold;
       margin-top: 10px;
     }
+
     .mensaje {
       margin-top: 20px;
       font-weight: bold;
       white-space: pre-line;
     }
+
     .mensaje.error,
     .mensaje.ok,
     .mensaje a {
-      color: white;
+      color: #0d2b37;
     }
+
     .mensaje a {
       text-decoration: underline;
       display: inline-block;
       margin: 5px;
     }
+
     #loader {
       display: none;
       margin-top: 20px;
     }
+
     .galope {
       width: 80px;
       animation: galopar 1s infinite ease-in-out alternate;
+      display: block;
+      margin: 0 auto;
     }
+
     @keyframes galopar {
       0% { transform: translateY(0); }
       100% { transform: translateY(-10px); }
     }
+
     #usuarioLogueado {
       font-size: 14px;
       margin-bottom: 10px;
       font-weight: bold;
     }
+
     .logout {
       margin-top: 20px;
     }
+
     .logout a {
       display: block;
-      background: none;
-      border: none;
       text-align: center;
       text-decoration: none;
-      color: white;
+      color: #d86634;
       font-weight: bold;
       margin: 8px 0;
       cursor: pointer;
     }
+
     .logout a.volver {
       font-size: 15px;
     }
+
     .logout a.cerrar {
       font-size: 13px;
       opacity: 0.8;
     }
   </style>
   <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-NXMC00DZ81');
-</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-NXMC00DZ81');
+  </script>
 </head>
 <body>
   <script type="module">
-  import { auth, onAuthStateChanged } from './js/firebase-auth.js';
+    import { auth, onAuthStateChanged } from './js/firebase-auth.js';
 
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.href = "login.html";
-    } else {
-      document.getElementById("usuarioLogueado").innerText = user.email;
-    }
-  });
-</script>
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+      } else {
+        document.getElementById("usuarioLogueado").innerText = user.email;
+      }
+    });
+  </script>
 
-  <div class="contenedor">
+  <div class="menu-style">
     <div style="font-size: 14px; margin-bottom: 10px; font-weight: bold;">
       Usuario logueado: <span id="usuarioLogueado">-</span>
     </div>
@@ -138,8 +150,8 @@
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div id="respuesta" class="mensaje"></div>
     <div class="logout">
-      <a href="admin.html" class="volver">Volver a consultar</a>
-      <a href="#" onclick="cerrarSesion()" class="cerrar">Cerrar sesión</a>
+      <a href="admin.html" class="volver">↻ Volver a consultar</a>
+      <a href="#" onclick="cerrarSesion()" class="cerrar">🚪 Cerrar sesión</a>
     </div>
   </div>
 
@@ -157,22 +169,22 @@
 
     document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
 
-    import { auth, signOut } from './js/firebase-auth.js'; // Asegurate que esté arriba
+    import { auth, signOut } from './js/firebase-auth.js';
 
-async function cerrarSesion() {
-  const usuario = auth.currentUser?.email || "admin";
+    async function cerrarSesion() {
+      const usuario = auth.currentUser?.email || "admin";
 
-  await addDoc(collection(db, "logs"), {
-    usuario,
-    accion: "cerrar_sesion",
-    detalles: "Cierre de sesión",
-    timestamp: new Date()
-  });
+      await addDoc(collection(db, "logs"), {
+        usuario,
+        accion: "cerrar_sesion",
+        detalles: "Cierre de sesión",
+        timestamp: new Date()
+      });
 
-  await signOut(auth);
-  localStorage.clear();
-  window.location.href = "login.html";
-}
+      await signOut(auth);
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
 
     window.cerrarSesion = cerrarSesion;
 
@@ -195,16 +207,15 @@ async function cerrarSesion() {
       const dni = input.value.trim();
       const ref = doc(db, "clientes", dni);
       const snap = await getDoc(ref);
-//agregro-inicio
-if(estadoCliente === null){
-      await addDoc(collection(db, "logs"), {
+
+      if (estadoCliente === null) {
+        await addDoc(collection(db, "logs"), {
           usuario,
           accion: "admin_consulta_cliente",
           detalles: `DNI: ${dni}`,
           timestamp: new Date()
-        })
-};
-//agrego-fin
+        });
+      }
 
       if (!snap.exists()) {
         div.className = "mensaje error";
@@ -231,14 +242,10 @@ Este nos toca a nosotros
           button.innerText = "Sumar cafecito";
         }
 
-//agrego GA Evento-INICIO
-if (typeof gtag === 'function') {
-  gtag('event', 'admin_consulta_estado', {
-    dni: data.dni
-  });
-}
-//agrego GA Evento-FIN        
-        
+        if (typeof gtag === 'function') {
+          gtag('event', 'admin_consulta_estado', { dni: data.dni });
+        }
+
         loader.style.display = "none";
         input.disabled = false;
         button.disabled = false;
@@ -257,14 +264,10 @@ if (typeof gtag === 'function') {
         div.innerText = `🎁 Invitamos un cafecito a ${estadoCliente.nombre}.
 ¡Gracias por su fidelidad!`;
 
-//agrego GA Evento-INICIO
-if (typeof gtag === 'function') {
-  gtag('event', 'admin_invito_cafe', {
-    dni: data.dni
-  });
-}
-//agrego GA Evento-FIN  
-        
+        if (typeof gtag === 'function') {
+          gtag('event', 'admin_invito_cafe', { dni: data.dni });
+        }
+
         await addDoc(collection(db, "logs"), {
           usuario,
           accion: "invitar_cafecito",
@@ -280,19 +283,14 @@ if (typeof gtag === 'function') {
         });
 
         div.className = "mensaje ok";
-        const mensajeFinal = nuevosCafes >= 8
+        div.innerText = nuevosCafes >= 8
           ? `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}.
 El próximo se lo invitamos nosotros ☕🎉`
           : `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}. Total: ${nuevosCafes}`;
-        div.innerText = mensajeFinal;
 
-        //agrego GA Evento-INICIO
-if (typeof gtag === 'function') {
-  gtag('event', 'admin_suma_cafe', {
-    dni: data.dni
-  });
-}
-//agrego GA Evento-FIN  
+        if (typeof gtag === 'function') {
+          gtag('event', 'admin_suma_cafe', { dni: data.dni });
+        }
 
         await addDoc(collection(db, "logs"), {
           usuario,
