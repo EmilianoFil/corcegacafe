@@ -11,7 +11,7 @@ body {
   max-width: 400px;
   margin: 40px auto;
   padding: 40px 20px;
-  background: white;
+  background: #eeeeee;
   border: 1px solid #ccc;
   border-radius: 16px;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
@@ -49,16 +49,18 @@ h2 {
 }
 
 /* Inputs */
-input {
-  padding: 10px;
+nput {
+  padding: 14px;
   font-size: 16px;
-  width: 90%;
-  margin: 10px 0;
+  width: 100%;
+  margin: 14px 0;
   border: 2px solid white;
   border-radius: 8px;
   background-color: white;
   color: black;
   font-weight: bold;
+  box-sizing: border-box;
+  text-align: center;
 }
 
 /* Botones */
