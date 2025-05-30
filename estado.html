@@ -74,7 +74,7 @@
         document.getElementById("mensaje-error").style.display = "block";
         document.getElementById("mensaje-error").innerHTML = `
           <p>El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.</p>
-          <a href="registro.html?dni=${dni}" class="btn-primary">Registrate</a>
+          <a href="registro.html?dni=${dni}" id="boton-registrar" class="boton">Registrate</a>
         `;
         contenedor.classList.remove("tarjeta-fidelidad");
 
