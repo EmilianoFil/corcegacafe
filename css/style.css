@@ -284,7 +284,7 @@ footer a[href*="instagram.com"]::before {
 }
 
 /* Botón blanco en tarjeta de fidelidad */
-.tarjeta-fidelidad .volver {
+.tarjeta-fidelidad .volver-card {
   background-color: white;
   color: #d86634;
   font-weight: bold;
