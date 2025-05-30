@@ -1,112 +1,30 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login Admin</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background-color: #d86634;
-      color: #2b2b2b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-    }
+  <link rel="stylesheet" href="style.css">
 
-    .contenedor {
-      background: rgba(255,255,255,0.05);
-      padding: 40px 20px;
-      text-align: center;
-      border-radius: 16px;
-      max-width: 400px;
-      width: 100%;
-    }
-
-    h1 {
-      font-size: 20px;
-      margin-bottom: 20px;
-    }
-
-    input {
-      padding: 10px;
-      font-size: 16px;
-      width: 90%;
-      margin: 10px 0;
-      border: 2px solid white;
-      border-radius: 8px;
-      background-color: white;
-      color: black;
-      font-weight: bold;
-    }
-
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: white;
-      color: #d86634;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      margin-top: 10px;
-    }
-
-    .error {
-      color: white;
-      margin-top: 15px;
-      font-weight: bold;
-    }
-
-    #loader {
-      display: none;
-      margin-top: 20px;
-    }
-
-    .galope {
-      width: 80px;
-      animation: galopar 1s infinite ease-in-out alternate;
-    }
-
-    @keyframes galopar {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(-10px); }
-    }
-
-    .logout {
-      margin-top: 20px;
-    }
-
-    .logout a {
-      background: white;
-      color: #d86634;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-weight: bold;
-      text-decoration: none;
-    }
-  </style>
   <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-NXMC00DZ81');
-</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-NXMC00DZ81');
+  </script>
 </head>
 <body>
-  <div class="contenedor">
+  <div class="menu-style">
     <h1>Acceso Admin</h1>
     <form id="loginForm">
       <input type="text" id="usuario" placeholder="Usuario" required />
       <input type="password" id="clave" placeholder="Contraseña" required />
-      <button type="submit">Ingresar</button>
+      <button type="submit" class="btn-primary">Ingresar</button>
     </form>
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
-    <div class="error" id="errorMsg" style="display:none;">Usuario o clave incorrecta</div>
+    <div class="mensaje error" id="errorMsg" style="display:none;">Usuario o clave incorrecta</div>
   </div>
 
   <script type="module">
@@ -135,11 +53,12 @@
           detalles: "Login exitoso",
           timestamp: new Date()
         });
-//AGREGO PARA GA
+
+        //AGREGO PARA GA
         if (typeof gtag === 'function') {
-  gtag('event', 'admin_login');
-}
-//AGREGO PARA GA - FIN
+          gtag('event', 'admin_login');
+        }
+        //AGREGO PARA GA - FIN
 
         window.location.href = "admin.html";
       } catch (error) {
