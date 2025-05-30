@@ -1,30 +1,46 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel de Estadísticas - Córcega</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estadísticas Internas - Córcega</title>
   <style>
     body {
-      font-family: sans-serif;
-      background-color: #d86634;
-      color: #fff;
       margin: 0;
-      padding: 20px;
-      text-align: center;
+      font-family: 'Georgia', serif;
+      background-color: #fdfcf7;
+      color: #1d1d1d;
+    }
+
+    .menu-style {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 40px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    .logo {
+      width: 60px;
+      display: block;
+      margin: 0 auto 20px;
     }
 
     h1 {
+      text-align: center;
+      font-size: 28px;
       margin-bottom: 10px;
+      color: #0d2b37;
     }
 
-    .card {
-      background-color: rgba(255, 255, 255, 0.1);
-      padding: 20px;
-      border-radius: 16px;
-      margin: 20px auto;
-      max-width: 500px;
-      box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+    h2 {
+      font-size: 20px;
+      margin-top: 40px;
+      border-bottom: 1px dotted #aaa;
+      padding-bottom: 5px;
+      color: #2b2b2b;
     }
 
     ul {
@@ -32,12 +48,25 @@
       padding: 0;
     }
 
-    li {
-      margin: 5px 0;
+    ul li {
+      margin: 8px 0;
+      padding: 8px;
+      background: #f3f1e8;
+      border-radius: 6px;
+    }
+
+    section {
+      margin-top: 20px;
+    }
+
+    .restriccion {
+      text-align: center;
+      color: #aa0000;
+      font-weight: bold;
+      font-size: 16px;
     }
 
     .galope {
-      width: 80px;
       animation: galopar 1s infinite ease-in-out alternate;
     }
 
@@ -46,81 +75,120 @@
       100% { transform: translateY(-10px); }
     }
   </style>
-</head>
-<body>
-  <div id="loader" style="margin-top: 50px;">
-    <img src="caballo-logo.png" alt="Cargando..." class="galope" />
-    <p>Cargando datos del club...</p>
-  </div>
-
-  <div id="contenedor" style="display:none;">
-    <h1>📊 Estadísticas del Club</h1>
-    <div class="card" id="resumen"></div>
-    <div class="card">
-      <h2>☕ Cafecitos gratis para servir</h2>
-      <ul id="cafecitosGratis"></ul>
-    </div>
-  </div>
-
   <script type="module">
-    import { app, db } from './js/firebase-config.js';
-    import { auth, onAuthStateChanged } from './js/firebase-auth.js';
-    import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { firebaseConfig } from "./js/firebase-config.js";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore();
+
+    document.querySelector(".menu-style").style.display = "none";
+
+    const contenedor = document.getElementById("contenido");
+    const cartel = document.getElementById("cartel");
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        window.location.href = "login.html";
+        cartel.innerText = "No estás autenticado.";
+        document.getElementById("loader").style.display = "none";
         return;
       }
 
-      try {
-        const q = query(collection(db, "clientes"), orderBy("dni"));
-        const querySnapshot = await getDocs(q);
-        const clientes = [];
+      const docRef = doc(db, "admin", user.uid);
+      const snap = await getDoc(docRef);
 
-        querySnapshot.forEach(doc => {
-          clientes.push(doc.data());
-        });
-
-        const total = clientes.length;
-        const conCafes = clientes.filter(c => c.cafes > 0).length;
-        const conGratis = clientes.filter(c => c.cafe_disponible).length;
-
-        document.getElementById("resumen").innerHTML = `
-          Total de clientes: <strong>${total}</strong><br/>
-          Con al menos un cafecito: <strong>${conCafes}</strong><br/>
-          Con cafecito para servir: <strong>${conGratis}</strong>
-        `;
-
-        const listaGratis = clientes
-          .filter(c => c.cafe_disponible)
-          .sort((a, b) => {
-            const tA = a.ultimo_cafe?.toDate?.() ?? new Date(0);
-            const tB = b.ultimo_cafe?.toDate?.() ?? new Date(0);
-            return tA - tB;
-          })
-          .map(c => {
-            const tiempo = c.ultimo_cafe?.toDate?.() ?? null;
-            let haceCuanto = '';
-            if (tiempo) {
-              const diffMs = Date.now() - tiempo.getTime();
-              const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-              haceCuanto = diffDias === 0
-                ? ' (hoy)'
-                : ` (hace ${diffDias} día${diffDias > 1 ? 's' : ''})`;
-            }
-            return `<li><strong>${c.nombre}</strong> (${c.dni})${haceCuanto}</li>`;
-          })
-          .join("");
-
-        document.getElementById("cafecitosGratis").innerHTML = listaGratis;
-      } catch (e) {
-        console.error("Error al cargar estadísticas:", e);
-      } finally {
+      if (!snap.exists() || snap.data().rol !== "dueño") {
+        cartel.innerText = "Acceso restringido. Solo para dueños.";
         document.getElementById("loader").style.display = "none";
-        document.getElementById("contenedor").style.display = "block";
+        return;
       }
+
+      cartel.style.display = "none";
+      contenedor.style.display = "block";
+
+      const clientesSnap = await getDocs(collection(db, "clientes"));
+      const logsSnap = await getDocs(query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(5)));
+
+      let totalClientes = 0;
+      let totalCafes = 0;
+      let cafesGratis = 0;
+      const topClientes = [];
+
+      clientesSnap.forEach(doc => {
+        const data = doc.data();
+        totalClientes++;
+        totalCafes += data.cafes_acumulados_total || 0;
+        if (data.cafe_disponible) cafesGratis++;
+        topClientes.push(data);
+      });
+
+      topClientes.sort((a, b) => (b.cafes_acumulados_total || 0) - (a.cafes_acumulados_total || 0));
+
+      let listaGratis = topClientes
+        .filter(c => c.cafe_disponible)
+        .map(c => {
+          let dias = "";
+          if (c.ultimo_cafe?.toDate) {
+            const diffMs = Date.now() - c.ultimo_cafe.toDate().getTime();
+            const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            dias = ` – hace ${diffDias} día${diffDias === 1 ? "" : "s"}`;
+          }
+          return `<li><strong>${c.nombre}</strong> (${c.dni})${dias}</li>`;
+        })
+        .join("");
+
+      document.getElementById("resumen").innerHTML = `
+        <p><strong>Clientes registrados:</strong> ${totalClientes}</p>
+        <p><strong>Total de cafecitos servidos:</strong> ${totalCafes}</p>
+        <p><strong>Cafecitos a invitar:</strong> ${cafesGratis}</p>
+        ${cafesGratis > 0 ? `<ul>${listaGratis}</ul>` : ""}
+      `;
+
+      document.getElementById("top").innerHTML = topClientes.slice(0, 5).map(c => `
+        <li><strong>${c.nombre}</strong> - ${c.cafes_acumulados_total || 0} cafecitos</li>
+      `).join("");
+
+      document.getElementById("logs").innerHTML = logsSnap.docs.map(doc => {
+        const d = doc.data();
+        const t = d.timestamp?.toDate().toLocaleString() || "-";
+        return `<li><strong>${d.usuario}</strong>: ${d.accion} - ${d.detalles} <em>${t}</em></li>`;
+      }).join("");
+
+      document.getElementById("loader").style.display = "none";
+      document.querySelector(".menu-style").style.display = "block";
     });
   </script>
+</head>
+<body>
+  <div id="loader" style="text-align:center; margin-top: 60px;">
+    <img src="caballo-logo.png" alt="Cargando..." class="galope" style="width:80px;">
+    <p style="margin-top: 10px; font-weight: bold;">Cargando estadísticas...</p>
+  </div>
+
+  <div class="menu-style">
+    <img src="caballo-logo.png" alt="Córcega" class="logo">
+    <h1>Estadísticas Internas</h1>
+    <p id="cartel" class="restriccion"></p>
+
+    <div id="contenido" style="display:none">
+      <section>
+        <h2>Resumen general</h2>
+        <div id="resumen"></div>
+      </section>
+
+      <section>
+        <h2>Top 5 clientes</h2>
+        <ul id="top"></ul>
+      </section>
+
+      <section>
+        <h2>Últimas acciones</h2>
+        <ul id="logs"></ul>
+      </section>
+    </div>
+  </div>
 </body>
 </html>
