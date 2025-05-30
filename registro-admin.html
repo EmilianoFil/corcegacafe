@@ -157,6 +157,14 @@
     loader.style.display = "block";
     mensaje.innerText = "";
 
+// VALIDACIÓN DE DNI
+  if (!/^\d{1,10}$/.test(dni)) {
+    mensaje.innerText = "⚠️ El DNI debe tener hasta 10 números.";
+    loader.style.display = "none";
+    return;
+  }
+
+    
     try {
       const clienteRef = doc(db, "clientes", dni);
 await setDoc(clienteRef, {
