@@ -158,6 +158,15 @@
 
         try {
           if (!existing.exists()) {
+
+            // VALIDACIÓN DE DNI
+    if (!/^\d{1,10}$/.test(data.dni)) {
+      document.getElementById("mensaje").innerText = "El DNI debe tener hasta 10 números.";
+      form.style.display = "block";
+      document.getElementById("loader").style.display = "none";
+      return;
+    }
+            
             await setDoc(docRef, data);
 
             if (typeof gtag === 'function') {
