@@ -88,7 +88,7 @@
     }
   </style>
 
-  <!-- Google tag (gtag.js) -->
+  <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -98,16 +98,11 @@
   </script>
 
   <!-- EmailJS -->
-  <script type="module">
-  import emailjs from 'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
-
-  emailjs.init("lc7u05rTnl9DZg6wE");
-  window.emailjs = emailjs; // para que sea accesible globalmente
-</script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <script>
-    (function(){
+    document.addEventListener('DOMContentLoaded', function() {
       emailjs.init("lc7u05rTnl9DZg6wE");
-    })();
+    });
   </script>
 </head>
 <body>
@@ -179,7 +174,7 @@
               timestamp: new Date()
             });
 
-            // Enviar mail de bienvenida
+            // Email de bienvenida
             emailjs.send("service_2pfzklo", "template_33mxnzd", {
               nombre: data.nombre,
               dni: data.dni,
