@@ -112,7 +112,6 @@
 
         loader.style.display = "none";
         mensaje.innerText = `¡Registro exitoso!\nEl cliente ${dni} fue registrado correctamente.` + (sumarCafecito ? "\nY ya se sumó un cafecito ☕" : "");
-        volver.style.display = "block";
         form.reset();
       } catch (error) {
         console.error("Error al registrar:", error);
