@@ -74,6 +74,26 @@
       0% { transform: translateY(0); }
       100% { transform: translateY(-10px); }
     }
+
+    #loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(253, 252, 247, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      font-weight: bold;
+    }
+
+    #loader img {
+      width: 80px;
+      margin-bottom: 15px;
+    }
   </style>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -133,7 +153,7 @@
           let dias = "";
           if (c.ultimo_cafe?.toDate) {
             const diffMs = Date.now() - c.ultimo_cafe.toDate().getTime();
-            const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
             dias = ` – hace ${diffDias} día${diffDias === 1 ? "" : "s"}`;
           }
           return `<li><strong>${c.nombre}</strong> (${c.dni})${dias}</li>`;
@@ -163,9 +183,9 @@
   </script>
 </head>
 <body>
-  <div id="loader" style="text-align:center; margin-top: 60px;">
-    <img src="caballo-logo.png" alt="Cargando..." class="galope" style="width:80px;">
-    <p style="margin-top: 10px; font-weight: bold;">Cargando estadísticas...</p>
+  <div id="loader">
+    <img src="caballo-logo.png" alt="Cargando..." class="galope">
+    <p>Cargando estadísticas...</p>
   </div>
 
   <div class="menu-style">
