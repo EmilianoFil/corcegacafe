@@ -3,42 +3,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Estadísticas del Club</title>
+  <title>Panel de Estadísticas - Córcega</title>
   <style>
     body {
       font-family: sans-serif;
       background-color: #d86634;
-      color: white;
-      padding: 40px;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
       text-align: center;
     }
+
     h1 {
-      font-size: 24px;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
-    p, li {
-      font-size: 18px;
-      margin: 8px 0;
+
+    .card {
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 16px;
+      margin: 20px auto;
+      max-width: 500px;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
     }
+
     ul {
-      padding-left: 20px;
-      text-align: left;
-      display: inline-block;
-      margin-top: 10px;
+      list-style: none;
+      padding: 0;
     }
-    .logout {
-      margin-top: 40px;
+
+    li {
+      margin: 5px 0;
     }
-    .logout a {
-      background: white;
-      color: #d86634;
-      padding: 10px 20px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: bold;
-      margin: 0 10px;
-      display: inline-block;
+
+    .galope {
+      width: 80px;
+      animation: galopar 1s infinite ease-in-out alternate;
     }
+
     @keyframes galopar {
       0% { transform: translateY(0); }
       100% { transform: translateY(-10px); }
@@ -46,38 +48,24 @@
   </style>
 </head>
 <body>
-  <div id="loader" style="display: none; text-align: center; margin-top: 40px;">
-    <img src="caballo-logo.png" alt="Cargando..." class="galope" style="width: 80px; animation: galopar 1s infinite ease-in-out alternate;">
-    <p style="color: white; font-weight: bold;">Cargando datos del club...</p>
+  <div id="loader" style="margin-top: 50px;">
+    <img src="caballo-logo.png" alt="Cargando..." class="galope" />
+    <p>Cargando datos del club...</p>
   </div>
 
-  <div id="contenedor" style="display: none;">
-    <h1>Estadísticas del Club</h1>
-    <div id="resumen"></div>
-    <div class="logout">
-      <a href="admin.html">Volver al panel</a>
-      <a href="#" onclick="cerrarSesion()">Cerrar sesión</a>
+  <div id="contenedor" style="display:none;">
+    <h1>📊 Estadísticas del Club</h1>
+    <div class="card" id="resumen"></div>
+    <div class="card">
+      <h2>☕ Cafecitos gratis para servir</h2>
+      <ul id="cafecitosGratis"></ul>
     </div>
   </div>
 
   <script type="module">
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
-      authDomain: "corcega-loyalty-club.firebaseapp.com",
-      projectId: "corcega-loyalty-club",
-      storageBucket: "corcega-loyalty-club.firebasestorage.app",
-      messagingSenderId: "789184958568",
-      appId: "1:789184958568:web:4990bf50335bec365f2bdd",
-      measurementId: "G-NXMC00DZ81"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+    import { app, db } from './js/firebase-config.js';
+    import { auth, onAuthStateChanged } from './js/firebase-auth.js';
+    import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -85,42 +73,54 @@
         return;
       }
 
-      document.getElementById("loader").style.display = "block";
-      document.getElementById("contenedor").style.display = "none";
-
       try {
-        const querySnapshot = await getDocs(collection(db, "clientes"));
-        const clientes = querySnapshot.docs.map(doc => doc.data());
+        const q = query(collection(db, "clientes"), orderBy("dni"));
+        const querySnapshot = await getDocs(q);
+        const clientes = [];
 
-        const totalClientes = clientes.length;
-        const totalCafes = clientes.reduce((sum, c) => sum + (c.cafes_acumulados_total || 0), 0);
-        const cafesGratis = clientes.filter(c => c.cafe_disponible).length;
+        querySnapshot.forEach(doc => {
+          clientes.push(doc.data());
+        });
+
+        const total = clientes.length;
+        const conCafes = clientes.filter(c => c.cafes > 0).length;
+        const conGratis = clientes.filter(c => c.cafe_disponible).length;
+
+        document.getElementById("resumen").innerHTML = `
+          Total de clientes: <strong>${total}</strong><br/>
+          Con al menos un cafecito: <strong>${conCafes}</strong><br/>
+          Con cafecito para servir: <strong>${conGratis}</strong>
+        `;
 
         const listaGratis = clientes
           .filter(c => c.cafe_disponible)
-          .map(c => `<li><strong>${c.nombre}</strong> (${c.dni})</li>`)
+          .sort((a, b) => {
+            const tA = a.ultimo_cafe?.toDate?.() ?? new Date(0);
+            const tB = b.ultimo_cafe?.toDate?.() ?? new Date(0);
+            return tA - tB;
+          })
+          .map(c => {
+            const tiempo = c.ultimo_cafe?.toDate?.() ?? null;
+            let haceCuanto = '';
+            if (tiempo) {
+              const diffMs = Date.now() - tiempo.getTime();
+              const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+              haceCuanto = diffDias === 0
+                ? ' (hoy)'
+                : ` (hace ${diffDias} día${diffDias > 1 ? 's' : ''})`;
+            }
+            return `<li><strong>${c.nombre}</strong> (${c.dni})${haceCuanto}</li>`;
+          })
           .join("");
 
-        document.getElementById("resumen").innerHTML = `
-          <p><strong>Clientes registrados:</strong> ${totalClientes}</p>
-          <p><strong>Total de cafecitos servidos:</strong> ${totalCafes}</p>
-          <p><strong>Cafecitos gratis listos para servir:</strong> ${cafesGratis}</p>
-          ${cafesGratis > 0 ? `<ul>${listaGratis}</ul>` : ""}
-        `;
-      } catch (error) {
-        console.error("Error al obtener estadísticas:", error);
+        document.getElementById("cafecitosGratis").innerHTML = listaGratis;
+      } catch (e) {
+        console.error("Error al cargar estadísticas:", e);
       } finally {
         document.getElementById("loader").style.display = "none";
         document.getElementById("contenedor").style.display = "block";
       }
     });
-
-    function cerrarSesion() {
-      signOut(auth).then(() => {
-        window.location.href = "login.html";
-      });
-    }
-    window.cerrarSesion = cerrarSesion;
   </script>
 </body>
 </html>
