@@ -4,130 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
+   <link rel="stylesheet" href="css/style.css">
   <title>Panel Admin</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background-color: #d86634;
-      color: #2b2b2b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-    .contenedor {
-      background: rgba(255,255,255,0.05);
-      padding: 40px 20px;
-      text-align: center;
-      border-radius: 16px;
-      max-width: 400px;
-      width: 100%;
-    }
-    h1 {
-      font-size: 20px;
-      margin-bottom: 20px;
-    }
-    input {
-      padding: 10px;
-      font-size: 16px;
-      width: 90%;
-      margin: 10px 0;
-      border: 2px solid white;
-      border-radius: 8px;
-      background-color: white;
-      color: black;
-      font-weight: bold;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: white;
-      color: #d86634;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      margin-top: 10px;
-    }
-    .mensaje {
-      margin-top: 20px;
-      font-weight: bold;
-      white-space: pre-line;
-    }
-    .mensaje.error,
-    .mensaje.ok,
-    .mensaje a {
-      color: white;
-    }
-    .mensaje a {
-      text-decoration: underline;
-      display: inline-block;
-      margin: 5px;
-    }
-    #loader {
-      display: none;
-      margin-top: 20px;
-    }
-    .galope {
-      width: 80px;
-      animation: galopar 1s infinite ease-in-out alternate;
-    }
-    @keyframes galopar {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(-10px); }
-    }
-    #usuarioLogueado {
-      font-size: 14px;
-      margin-bottom: 10px;
-      font-weight: bold;
-    }
-    .logout {
-      margin-top: 20px;
-    }
-    .logout a {
-      display: block;
-      background: none;
-      border: none;
-      text-align: center;
-      text-decoration: none;
-      color: white;
-      font-weight: bold;
-      margin: 8px 0;
-      cursor: pointer;
-    }
-    .logout a.volver {
-      font-size: 15px;
-    }
-    .logout a.cerrar {
-      font-size: 13px;
-      opacity: 0.8;
-    }
-  </style>
   <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-NXMC00DZ81');
-</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-NXMC00DZ81');
+  </script>
 </head>
 <body>
   <script type="module">
-  import { auth, onAuthStateChanged } from './js/firebase-auth.js';
+    import { auth, onAuthStateChanged } from './js/firebase-auth.js';
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+      } else {
+        document.getElementById("usuarioLogueado").innerText = user.email;
+      }
+    });
+  </script>
 
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.href = "login.html";
-    } else {
-      document.getElementById("usuarioLogueado").innerText = user.email;
-    }
-  });
-</script>
-
-  <div class="contenedor">
-    <div style="font-size: 14px; margin-bottom: 10px; font-weight: bold;">
+  <div class="menu-style">
+    <div class="info-usuario">
       Usuario logueado: <span id="usuarioLogueado">-</span>
     </div>
     <h1>Cargar Cafecito ☕</h1>
@@ -146,41 +47,30 @@
   <script type="module">
     import { app, db } from './js/firebase-config.js';
     import {
-      doc,
-      getDoc,
-      updateDoc,
-      increment,
-      serverTimestamp,
-      collection,
-      addDoc
+      doc, getDoc, updateDoc, increment, serverTimestamp, collection, addDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { auth, signOut } from './js/firebase-auth.js';
 
     document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
 
-    import { auth, signOut } from './js/firebase-auth.js'; // Asegurate que esté arriba
-
-async function cerrarSesion() {
-  const usuario = auth.currentUser?.email || "admin";
-
-  await addDoc(collection(db, "logs"), {
-    usuario,
-    accion: "cerrar_sesion",
-    detalles: "Cierre de sesión",
-    timestamp: new Date()
-  });
-
-  await signOut(auth);
-  localStorage.clear();
-  window.location.href = "login.html";
-}
-
+    async function cerrarSesion() {
+      const usuario = auth.currentUser?.email || "admin";
+      await addDoc(collection(db, "logs"), {
+        usuario,
+        accion: "cerrar_sesion",
+        detalles: "Cierre de sesión",
+        timestamp: new Date()
+      });
+      await signOut(auth);
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
     window.cerrarSesion = cerrarSesion;
 
     let estadoCliente = null;
 
     document.getElementById("adminForm").addEventListener("submit", async function(e) {
       e.preventDefault();
-
       const input = document.getElementById("dni");
       const button = document.getElementById("submitBtn");
       const div = document.getElementById("respuesta");
@@ -195,16 +85,15 @@ async function cerrarSesion() {
       const dni = input.value.trim();
       const ref = doc(db, "clientes", dni);
       const snap = await getDoc(ref);
-//agregro-inicio
-if(estadoCliente === null){
-      await addDoc(collection(db, "logs"), {
+
+      if(estadoCliente === null){
+        await addDoc(collection(db, "logs"), {
           usuario,
           accion: "admin_consulta_cliente",
           detalles: `DNI: ${dni}`,
           timestamp: new Date()
         })
-};
-//agrego-fin
+      };
 
       if (!snap.exists()) {
         div.className = "mensaje error";
@@ -220,25 +109,16 @@ if(estadoCliente === null){
       if (!estadoCliente) {
         estadoCliente = { dni, nombre: data.nombre, cafes: data.cafes };
         div.className = "mensaje ok";
-
         if (data.cafes >= 8) {
-          div.innerText = `Cliente ya tiene 8 cafecitos acumulados.
-Este nos toca a nosotros
-🐎`;
+          div.innerText = `Cliente ya tiene 8 cafecitos acumulados.\nEste nos toca a nosotros\n🐎`;
           button.innerText = "Invitar cafecito";
         } else {
           div.innerText = `✅ ${data.nombre} tiene ${data.cafes} cafecitos acumulados.`;
           button.innerText = "Sumar cafecito";
         }
-
-//agrego GA Evento-INICIO
-if (typeof gtag === 'function') {
-  gtag('event', 'admin_consulta_estado', {
-    dni: data.dni
-  });
-}
-//agrego GA Evento-FIN        
-        
+        if (typeof gtag === 'function') {
+          gtag('event', 'admin_consulta_estado', { dni: data.dni });
+        }
         loader.style.display = "none";
         input.disabled = false;
         button.disabled = false;
@@ -252,19 +132,11 @@ if (typeof gtag === 'function') {
           ultimo_cafe: serverTimestamp(),
           cafes_acumulados_total: increment(1)
         });
-
         div.className = "mensaje ok";
-        div.innerText = `🎁 Invitamos un cafecito a ${estadoCliente.nombre}.
-¡Gracias por su fidelidad!`;
-
-//agrego GA Evento-INICIO
-if (typeof gtag === 'function') {
-  gtag('event', 'admin_invito_cafe', {
-    dni: data.dni
-  });
-}
-//agrego GA Evento-FIN  
-        
+        div.innerText = `🎁 Invitamos un cafecito a ${estadoCliente.nombre}.\n¡Gracias por su fidelidad!`;
+        if (typeof gtag === 'function') {
+          gtag('event', 'admin_invito_cafe', { dni: data.dni });
+        }
         await addDoc(collection(db, "logs"), {
           usuario,
           accion: "invitar_cafecito",
@@ -278,22 +150,13 @@ if (typeof gtag === 'function') {
           ultimo_cafe: serverTimestamp(),
           cafes_acumulados_total: increment(1)
         });
-
         div.className = "mensaje ok";
-        const mensajeFinal = nuevosCafes >= 8
-          ? `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}.
-El próximo se lo invitamos nosotros ☕🎉`
+        div.innerText = nuevosCafes >= 8
+          ? `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
           : `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}. Total: ${nuevosCafes}`;
-        div.innerText = mensajeFinal;
-
-        //agrego GA Evento-INICIO
-if (typeof gtag === 'function') {
-  gtag('event', 'admin_suma_cafe', {
-    dni: data.dni
-  });
-}
-//agrego GA Evento-FIN  
-
+        if (typeof gtag === 'function') {
+          gtag('event', 'admin_suma_cafe', { dni: data.dni });
+        }
         await addDoc(collection(db, "logs"), {
           usuario,
           accion: "sumar_cafecito",
