@@ -4,210 +4,124 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Registro Rápido - Admin</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background-color: #d86634;
-      color: #2b2b2b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-    }
+  <link rel="stylesheet" href="css/style.css" />
 
-    .contenedor {
-      background: rgba(255,255,255,0.05);
-      padding: 40px 20px;
-      text-align: center;
-      border-radius: 16px;
-      max-width: 400px;
-      width: 100%;
-    }
-
-    h1 {
-      font-size: 20px;
-      margin-bottom: 20px;
-    }
-
-    input {
-      padding: 10px;
-      font-size: 16px;
-      width: 90%;
-      margin: 10px 0;
-      border: 2px solid white;
-      border-radius: 8px;
-      background-color: white;
-      color: black;
-      font-weight: bold;
-    }
-
-    button {
-      padding: 10px 16px;
-      font-size: 16px;
-      background-color: white;
-      color: #d86634;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      margin: 5px;
-    }
-
-    .mensaje {
-      margin-top: 20px;
-      color: white;
-      font-weight: bold;
-      white-space: pre-line;
-    }
-
-    .galope {
-      width: 80px;
-      animation: galopar 1s infinite ease-in-out alternate;
-      margin: 20px auto 0;
-      display: block;
-    }
-
-    #loader {
-      display: none;
-      margin: 0 auto;
-    }
-
-    #volver {
-      display: none;
-      margin-top: 15px;
-    }
-
-    #volver a {
-      background: white;
-      color: #d86634;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-weight: bold;
-      text-decoration: none;
-    }
-
-    @keyframes galopar {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(-10px); }
-    }
-  </style>
   <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-NXMC00DZ81');
-</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-NXMC00DZ81');
+  </script>
 </head>
 <body>
   <script type="module">
-  import { auth, onAuthStateChanged } from './js/firebase-auth.js';
+    import { auth, onAuthStateChanged } from './js/firebase-auth.js';
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+      }
+    });
+  </script>
 
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.href = "login.html";
-    }
-  });
-</script>
-
-  <div class="contenedor">
+  <div class="menu-style">
     <h1>Registrar nuevo cliente</h1>
     <form id="registroForm">
       <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]*" maxlength="10" required />
       <input type="text" name="nombre" placeholder="Nombre y apellido" required />
       <input type="email" name="mail" placeholder="Correo electrónico" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" />
       <div>
-        <button type="button" id="soloRegistrar">Registrar</button>
-        <button type="button" id="registrarYSumar">Registrar y sumar cafecito</button>
+        <button type="button" class="btn-primary" id="soloRegistrar">Registrar</button>
       </div>
+      <div>
+        <button type="button" class="btn-secondary" id="registrarYSumar">Registrar y sumar cafecito</button>
+      </div>
+      <div class="logout">
+      <a href="admin.html" class="volver">Volver a consultar</a>
+    </div>
     </form>
-    <div id="loader">
-      <img src="caballo-logo.png" alt="Cargando..." class="galope">
-    </div>
+
+    <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div class="mensaje" id="mensaje"></div>
-    <div id="volver">
-      <a href="admin.html">Volver al panel</a>
-    </div>
+
   </div>
 
   <script type="module">
-  import { app, db } from './js/firebase-config.js';
-  import {
-    doc, setDoc, updateDoc, serverTimestamp
-  } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { app, db } from './js/firebase-config.js';
+    import {
+      doc, setDoc, updateDoc, serverTimestamp
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-  const params = new URLSearchParams(window.location.search);
-  const dniInicial = params.get("dni") || "";
-  const dniInput = document.getElementById("dni");
-  if (dniInicial) dniInput.value = dniInicial;
+    const params = new URLSearchParams(window.location.search);
+    const dniInicial = params.get("dni") || "";
+    const dniInput = document.getElementById("dni");
+    if (dniInicial) dniInput.value = dniInicial;
 
-  const form = document.getElementById("registroForm");
-  const mensaje = document.getElementById("mensaje");
-  const loader = document.getElementById("loader");
-  const volver = document.getElementById("volver");
+    const form = document.getElementById("registroForm");
+    const mensaje = document.getElementById("mensaje");
+    const loader = document.getElementById("loader");
+    const volver = document.getElementById("volver");
 
-  const submitHandler = async (sumarCafecito) => {
-    const dni = dniInput.value.trim();
-    const nombre = form.nombre.value.trim();
-    const mail = form.mail.value.trim();
-    const usuario = localStorage.getItem("usuario");
+    const submitHandler = async (sumarCafecito) => {
+      const dni = dniInput.value.trim();
+      const nombre = form.nombre.value.trim();
+      const mail = form.mail.value.trim();
+      const usuario = localStorage.getItem("usuario");
 
-    loader.style.display = "block";
-    mensaje.innerText = "";
+      loader.style.display = "block";
+      mensaje.innerText = "";
 
-// VALIDACIÓN DE DNI
-  if (!/^\d{1,10}$/.test(dni)) {
-    mensaje.innerText = "⚠️ El DNI debe tener hasta 10 números.";
-    loader.style.display = "none";
-    return;
-  }
-
-    
-    try {
-      const clienteRef = doc(db, "clientes", dni);
-await setDoc(clienteRef, {
-  dni,
-  nombre,
-  email: mail,
-  cafes: sumarCafecito ? 1 : 0,
-  cafes_acumulados_total: sumarCafecito ? 1 : 0,
-  cafe_disponible: sumarCafecito ? false : false,
-  ultimo_cafe: sumarCafecito ? serverTimestamp() : null
-});
-
-// Evento GA diferenciado por tipo de acción
-if (typeof gtag === 'function') {
-  gtag('event', 'registro_cliente', {
-    origen: 'admin',
-    modo: sumarCafecito ? 'registro_y_cafecito' : 'solo_registro',
-    dni: dni
-  });
-}
-      if (usuario) {
-        const logRef = doc(db, "logs", `${dni}_${Date.now()}`);
-        await setDoc(logRef, {
-          usuario,
-          accion: sumarCafecito ? "registro_manual + cargar_cafecito" : "registro_manual",
-          detalles: `DNI: ${dni} - ${nombre}`,
-          timestamp: serverTimestamp()
-        });
+      // VALIDACIÓN DE DNI
+      if (!/^\d{1,10}$/.test(dni)) {
+        mensaje.innerText = "⚠️ El DNI debe tener hasta 10 números.";
+        loader.style.display = "none";
+        return;
       }
 
-      loader.style.display = "none";
-      mensaje.innerText = `¡Registro exitoso!\nEl cliente ${dni} fue registrado correctamente.` + (sumarCafecito ? "\nY ya se sumó un cafecito ☕" : "");
-      volver.style.display = "block";
-      form.reset();
-    } catch (error) {
-      console.error("Error al registrar:", error);
-      loader.style.display = "none";
-      mensaje.innerText = "⚠️ Ocurrió un error al registrar el cliente.";
-    }
-  };
+      try {
+        const clienteRef = doc(db, "clientes", dni);
+        await setDoc(clienteRef, {
+          dni,
+          nombre,
+          email: mail,
+          cafes: sumarCafecito ? 1 : 0,
+          cafes_acumulados_total: sumarCafecito ? 1 : 0,
+          cafe_disponible: sumarCafecito ? false : false,
+          ultimo_cafe: sumarCafecito ? serverTimestamp() : null
+        });
 
-  document.getElementById("soloRegistrar").addEventListener("click", () => submitHandler(false));
-  document.getElementById("registrarYSumar").addEventListener("click", () => submitHandler(true));
-</script>
+        // Evento GA
+        if (typeof gtag === 'function') {
+          gtag('event', 'registro_cliente', {
+            origen: 'admin',
+            modo: sumarCafecito ? 'registro_y_cafecito' : 'solo_registro',
+            dni: dni
+          });
+        }
+
+        if (usuario) {
+          const logRef = doc(db, "logs", `${dni}_${Date.now()}`);
+          await setDoc(logRef, {
+            usuario,
+            accion: sumarCafecito ? "registro_manual + cargar_cafecito" : "registro_manual",
+            detalles: `DNI: ${dni} - ${nombre}`,
+            timestamp: serverTimestamp()
+          });
+        }
+
+        loader.style.display = "none";
+        mensaje.innerText = `¡Registro exitoso!\nEl cliente ${dni} fue registrado correctamente.` + (sumarCafecito ? "\nY ya se sumó un cafecito ☕" : "");
+        form.reset();
+      } catch (error) {
+        console.error("Error al registrar:", error);
+        loader.style.display = "none";
+        mensaje.innerText = "⚠️ Ocurrió un error al registrar el cliente.";
+      }
+    };
+
+    document.getElementById("soloRegistrar").addEventListener("click", () => submitHandler(false));
+    document.getElementById("registrarYSumar").addEventListener("click", () => submitHandler(true));
+  </script>
 </body>
 </html>

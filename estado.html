@@ -3,269 +3,137 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tu Cafecitoo</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background-color: #d86634;
-      color: #2b2b2b;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    .contenedor {
-      max-width: 400px;
-      width: 100%;
-      padding: 40px 20px;
-      text-align: center;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 16px;
-      display: none;
-    }
-
-    h1 {
-      text-transform: uppercase;
-      font-size: 14px;
-      letter-spacing: 1px;
-      margin-bottom: 5px;
-    }
-
-    h2 {
-      font-size: 22px;
-      margin-bottom: 10px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin: 20px auto;
-      justify-content: center;
-      align-items: center;
-      max-width: 280px;
-    }
-
-    .circle {
-      width: 80px;
-      height: 80px;
-      border: 2px solid white;
-      border-radius: 50%;
-      background-size: 60%;
-      background-repeat: no-repeat;
-      background-position: center;
-      opacity: 0.3;
-    }
-
-    .circle.lleno {
-      background-image: url("caballito-oscuro.png");
-      opacity: 1;
-    }
-
-    .circle.noveno {
-      background-image: url("logo-corcega-color.png");
-      opacity: 1;
-    }
-
-    #cliente {
-      font-weight: bold;
-      font-size: 18px;
-      margin-bottom: 10px;
-    }
-
-    #faltan {
-      margin-bottom: 20px;
-      font-weight: normal;
-    }
-
-    #mensaje-error {
-      font-size: 16px;
-      margin-top: 20px;
-      line-height: 1.4;
-    }
-
-    #mensaje-error p {
-      margin-bottom: 20px;
-    }
-
-    #mensaje-error a.boton {
-      background-color: white;
-      color: #d86634;
-      font-weight: bold;
-      text-decoration: none;
-      padding: 8px 16px;
-      border-radius: 8px;
-      display: inline-block;
-      margin-bottom: 10px;
-    }
-
-    #mensaje-error a.otro {
-      display: block;
-      margin-top: 10px;
-      font-size: 14px;
-      text-decoration: underline;
-      color: white;
-    }
-
-    footer {
-      font-size: 14px;
-      margin-top: 30px;
-      line-height: 1.4;
-    }
-
-    footer a {
-      color: white;
-      text-decoration: none;
-      font-size: 16px;
-      font-weight: bold;
-    }
-
-    #loader {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      width: 100vw;
-    }
-
-    .galope {
-      width: 100px;
-      animation: galopar 1s infinite ease-in-out alternate;
-    }
-
-    @keyframes galopar {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(-10px); }
-    }
-  </style>
+  <title>Tu Cafecito</title>
+  <link rel="stylesheet" href="css/style.css" />
   <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-NXMC00DZ81');
-</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-NXMC00DZ81');
+  </script>
 </head>
 <body>
   <div id="loader">
     <img src="caballo-logo.png" alt="Cargando..." class="galope">
   </div>
 
-  <div class="contenedor" id="contenedor">
+  <div class="menu-style" id="contenedor" style="display:none;">
     <p id="cliente"></p>
-    <h1>COMPLETÁ LAS VISITAS Y TE REGALAMOS</h1>
-    <h2>UN CAFECITO</h2>
+    <h1>Completá las visitas y te invitamos un<br><span style="font-size: 21px; display:block; margin-top: 6px;">CAFECITO</span></h1>
     <p id="faltan"></p>
     <div id="grid" class="grid"></div>
     <div id="mensaje-error" style="display:none;"></div>
-    <footer>
-      <div>Seguinos en Instagram</div>
-      <a href="https://www.instagram.com/corcegacafe" target="_blank">@corcegacafe</a>
+    <div class="logout">
+      <a href="index.html" class="Volver">Volver</a>
+    </div>
+    <footer style="margin-top: 30px;">
+      <p>Seguinos en Instagram<br>
+      <a href="https://www.instagram.com/corcegacafe" target="_blank">@corcegacafe</a></p>
     </footer>
   </div>
 
   <script type="module">
-  // Configuración de Firebase
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getFirestore,
-    doc,
-    getDoc,
-    addDoc,
-    collection
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      addDoc,
+      collection
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
-    authDomain: "corcega-loyalty-club.firebaseapp.com",
-    projectId: "corcega-loyalty-club",
-    storageBucket: "corcega-loyalty-club.firebasestorage.app",
-    messagingSenderId: "789184958568",
-    appId: "1:789184958568:web:4990bf50335bec365f2bdd",
-    measurementId: "G-NXMC00DZ81"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
+      authDomain: "corcega-loyalty-club.firebaseapp.com",
+      projectId: "corcega-loyalty-club",
+      storageBucket: "corcega-loyalty-club.firebasestorage.app",
+      messagingSenderId: "789184958568",
+      appId: "1:789184958568:web:4990bf50335bec365f2bdd",
+      measurementId: "G-NXMC00DZ81"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-  const params = new URLSearchParams(window.location.search);
-  const dni = params.get("dni");
+    const params = new URLSearchParams(window.location.search);
+    const dni = params.get("dni");
 
-  async function consultarCliente(dni) {
-    const ref = doc(db, "clientes", dni);
-    const snap = await getDoc(ref);
+    async function consultarCliente(dni) {
+      const ref = doc(db, "clientes", dni);
+      const snap = await getDoc(ref);
 
-    document.getElementById("loader").style.display = "none";
-    document.getElementById("contenedor").style.display = "block";
+      document.getElementById("loader").style.display = "none";
+      const contenedor = document.getElementById("contenedor");
+      contenedor.style.display = "block";
 
-    if (!snap.exists()) {
-      document.getElementById("cliente").style.display = "none";
-      document.getElementById("faltan").style.display = "none";
-      document.getElementById("grid").style.display = "none";
-      document.getElementById("mensaje-error").style.display = "block";
-      document.getElementById("mensaje-error").innerHTML = `
-        <p>El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.</p>
-        <a href="registro.html?dni=${dni}" class="boton">Registrate</a>
-        <a href="index.html" class="otro">Buscar otro DNI</a>
-      `;
-      await addDoc(collection(db, "logs"), {
-  usuario: dni,
-  accion: "consulta_fallida",
-  detalles: `Consulta fallida: DNI ${dni} no encontrado`,
-  timestamp: new Date()
-});
-      if (typeof gtag === 'function') {
-  gtag('event', 'consulta_fallida', {
-    dni: dni
-  });
-}
-      return;
-    }
+      if (!snap.exists()) {
+        document.getElementById("cliente").style.display = "none";
+        document.getElementById("faltan").style.display = "none";
+        document.getElementById("grid").style.display = "none";
+        document.getElementById("mensaje-error").style.display = "block";
+        document.getElementById("mensaje-error").innerHTML = `
+          <p>El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.</p>
+          <a href="registro.html?dni=${dni}" id="boton-registrar" class="boton">Registrate</a>
+        `;
+        contenedor.classList.remove("tarjeta-fidelidad");
 
-    const data = snap.data();
+        await addDoc(collection(db, "logs"), {
+          usuario: dni,
+          accion: "consulta_fallida",
+          detalles: `Consulta fallida: DNI ${dni} no encontrado`,
+          timestamp: new Date()
+        });
 
-    await addDoc(collection(db, "logs"), {
-  usuario: data.dni,
-  accion: "consulta_cliente",
-  detalles: `Consulta exitosa del cliente ${data.dni} - ${data.nombre}`,
-  timestamp: new Date()
-});
-
-    if (typeof gtag === 'function') {
-  gtag('event', 'consulta_estado', {
-    dni: data.dni
-  });
-}
-    
-    const nombre = data.nombre || "Amigo";
-    const cafes = parseInt(data.cafes) || 0;
-
-    document.getElementById("cliente").textContent = `Hola ${nombre}`;
-    document.getElementById("faltan").textContent = cafes < 8
-      ? `Te faltan ${8 - cafes} para que te invitemos uno.`
-      : "¡El próximo lo invitamos nosotros! 🐎🎉";
-
-    const grid = document.getElementById("grid");
-    for (let i = 1; i <= 9; i++) {
-      const div = document.createElement("div");
-      div.className = "circle";
-
-      if (i === 9) {
-        div.classList.add("noveno");
-      } else if (i <= cafes) {
-        div.classList.add("lleno");
-      } else {
-        div.style.backgroundImage = "url('caballito-claro.png')";
+        if (typeof gtag === 'function') {
+          gtag('event', 'consulta_fallida', { dni });
+        }
+        return;
       }
 
-      grid.appendChild(div);
-    }
-  }
+      // Si existe, modo tarjeta fidelidad
+      contenedor.classList.add("tarjeta-fidelidad");
 
-  consultarCliente(dni);
-</script>
+      const data = snap.data();
+
+      await addDoc(collection(db, "logs"), {
+        usuario: data.dni,
+        accion: "consulta_cliente",
+        detalles: `Consulta exitosa del cliente ${data.dni} - ${data.nombre}`,
+        timestamp: new Date()
+      });
+
+      if (typeof gtag === 'function') {
+        gtag('event', 'consulta_estado', { dni: data.dni });
+      }
+
+      const nombre = data.nombre || "Amigo";
+      const cafes = parseInt(data.cafes) || 0;
+
+      document.getElementById("cliente").textContent = `Hola ${nombre}`;
+      document.getElementById("faltan").textContent = cafes < 8
+        ? `Te faltan ${8 - cafes} para que te invitemos uno.`
+        : "¡El próximo lo invitamos nosotros! 🐎🎉";
+
+      const grid = document.getElementById("grid");
+      for (let i = 1; i <= 9; i++) {
+        const div = document.createElement("div");
+        div.className = "circle";
+
+        if (i === 9) {
+          div.classList.add("noveno");
+        } else if (i <= cafes) {
+          div.classList.add("lleno");
+        } else {
+          div.style.backgroundImage = "url('caballito-claro.png')";
+        }
+
+        grid.appendChild(div);
+      }
+    }
+
+    consultarCliente(dni);
+  </script>
 </body>
 </html>

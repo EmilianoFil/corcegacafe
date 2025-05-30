@@ -4,104 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="light" />
-  <style>
-    html {
-      color-scheme: only light;
-    }
-  </style>
   <title>Registro - Club de Recompensas</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background-color: #d86634;
-      color: #2b2b2b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-
-    .contenedor {
-      background: rgba(255,255,255,0.05);
-      padding: 40px 20px;
-      text-align: center;
-      border-radius: 16px;
-      max-width: 400px;
-      width: 100%;
-    }
-
-    h1 {
-      font-size: 20px;
-      margin-bottom: 20px;
-    }
-
-    input {
-      padding: 10px;
-      font-size: 16px;
-      width: 90%;
-      margin: 10px 0;
-      border: 2px solid white;
-      border-radius: 8px;
-      background-color: white !important;
-      color: black !important;
-      font-weight: bold;
-    }
-
-    input::placeholder {
-      color: #666 !important;
-    }
-
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: white !important;
-      color: #d86634 !important;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      margin-top: 15px;
-    }
-
-    .exito {
-      margin-top: 20px;
-      color: white;
-      font-weight: bold;
-      white-space: pre-line;
-    }
-
-    #loader {
-      margin-top: 20px;
-      display: none;
-    }
-
-    .galope {
-      width: 80px;
-      animation: galopar 1s infinite ease-in-out alternate;
-    }
-
-    .volver {
-      margin-top: 20px;
-      display: inline-block;
-      padding: 8px 16px;
-      background-color: white !important;
-      color: #d86634 !important;
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: bold;
-    }
-
-    html, body {
-      background-color: #d86634 !important;
-      color: #2b2b2b !important;
-    }
-
-    @keyframes galopar {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(-10px); }
-    }
-  </style>
+  <link rel="stylesheet" href="css/style.css" />
 
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
@@ -121,18 +25,22 @@
   </script>
 </head>
 <body>
-  <div class="contenedor">
+  <div class="menu-style">
     <h1>Registrate al Club de Recompensas</h1>
     <form id="registroForm">
       <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]*" maxlength="10" required />
       <input type="text" name="nombre" placeholder="Nombre y apellido" required />
       <input type="email" name="mail" placeholder="Correo electrónico" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" />
-      <button type="submit">Registrarme</button>
+      <button type="submit" class="btn-primary">Registrarme</button>
     </form>
 
-    <div id="loader"><img src="caballo-logo.png" class="galope" /></div>
+    <div id="loader">
+      <img src="caballo-logo.png" class="galope" />
+    </div>
     <div class="exito" id="mensaje"></div>
-    <a href="index.html" class="volver" id="volver" style="display: none;">Inicio</a>
+    <div class="logout">
+      <a href="index.html" class="volver">Volver</a>
+    </div>
   </div>
 
   <script type="module">
@@ -175,8 +83,8 @@
           if (!existing.exists()) {
 
             // VALIDACIÓN DE DNI
-            if (!/^\d{1,10}$/.test(data.dni)) {
-              document.getElementById("mensaje").innerText = "El DNI debe tener hasta 10 números.";
+            if (!/^\d{1,8}$/.test(data.dni)) {
+              document.getElementById("mensaje").innerText = "El DNI debe tener hasta 8 números.";
               form.style.display = "block";
               document.getElementById("loader").style.display = "none";
               return;
@@ -198,13 +106,16 @@
               timestamp: new Date()
             });
 
-            emailjs.send("service_2pfzklo", "template_33mxnzd", {
-              nombre: data.nombre,
-              dni: data.dni,
-              mail: data.email
-            });
+            const enviarMail = false;
+            if (enviarMail) {
+              emailjs.send("service_2pfzklo", "template_33mxnzd", {
+                  nombre: data.nombre,
+                  dni: data.dni,
+                  mail: data.email
+                });
+            }
 
-            document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🎉☕️";
+            document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🐎 ☕️\n";
           } else {
             document.getElementById("mensaje").innerText = "Ya estás registrado en el club.";
           }
