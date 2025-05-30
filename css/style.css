@@ -257,3 +257,26 @@ footer a[href*="instagram.com"]::before {
   padding: 10px 20px;
   border-radius: 8px;
 }
+
+/* Media query para responsive */
+@media (max-width: 600px) {
+  body {
+    padding: 20px;
+    flex-direction: column;
+  }
+  .menu-style,
+  .tarjeta-fidelidad {
+    min-width: unset;
+    max-width: 100%;
+    padding: 30px 16px;
+    margin: 20px auto;
+  }
+  .tarjeta-fidelidad .grid .circle {
+    width: 64px;
+    height: 64px;
+    background-size: 50%;
+  }
+  input, button, .btn-primary, .btn-secondary {
+    font-size: 14px;
+  }
+}
