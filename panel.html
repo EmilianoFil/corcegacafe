@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estadísticas Internas - Córcega</title>
+  <link rel="stylesheet" href="/css/panel.css">
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { firebaseConfig } from "./js/firebase-config.js";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore();
+
+    const contenedor = document.getElementById("contenido");
+    const cartel = document.getElementById("cartel");
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        cartel.innerText = "No estás autenticado.";
+        return;
+      }
+
+      const docRef = doc(db, "admin", user.uid);
+      const snap = await getDoc(docRef);
+
+      if (!snap.exists() || snap.data().rol !== "dueño") {
+        cartel.innerText = "Acceso restringido. Solo para dueños.";
+        return;
+      }
+
+      cartel.style.display = "none";
+      contenedor.style.display = "block";
+
+      const clientesSnap = await getDocs(collection(db, "clientes"));
+      const logsSnap = await getDocs(query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(5)));
+
+      let totalClientes = 0;
+      let totalCafes = 0;
+      let cafesGratis = 0;
+      const topClientes = [];
+
+      clientesSnap.forEach(doc => {
+        const data = doc.data();
+        totalClientes++;
+        totalCafes += data.cafes_acumulados_total || 0;
+        if (data.cafe_disponible) cafesGratis++;
+        topClientes.push(data);
+      });
+
+      topClientes.sort((a, b) => (b.cafes_acumulados_total || 0) - (a.cafes_acumulados_total || 0));
+
+      document.getElementById("resumen").innerHTML = `
+        <p><strong>Clientes registrados:</strong> ${totalClientes}</p>
+        <p><strong>Total de cafecitos servidos:</strong> ${totalCafes}</p>
+        <p><strong>Cafecitos gratis listos para servir:</strong> ${cafesGratis}</p>
+      `;
+
+      document.getElementById("top").innerHTML = topClientes.slice(0, 5).map(c => `
+        <li><strong>${c.nombre}</strong> - ${c.cafes_acumulados_total || 0} cafecitos</li>
+      `).join("");
+
+      document.getElementById("logs").innerHTML = logsSnap.docs.map(doc => {
+        const d = doc.data();
+        const t = d.timestamp?.toDate().toLocaleString() || "-";
+        return `<li><strong>${d.usuario}</strong>: ${d.accion} - ${d.detalles} <em>${t}</em></li>`;
+      }).join("");
+    });
+  </script>
+</head>
+<body>
+  <div class="menu-style">
+    <img src="caballo-logo.png" alt="Córcega" class="logo">
+    <h1>Estadísticas Internas</h1>
+    <p id="cartel" class="restriccion"></p>
+
+    <div id="contenido" style="display:none">
+      <section>
+        <h2>Resumen general</h2>
+        <div id="resumen"></div>
+      </section>
+
+      <section>
+        <h2>Top 5 clientes</h2>
+        <ul id="top"></ul>
+      </section>
+
+      <section>
+        <h2>Últimas acciones</h2>
+        <ul id="logs"></ul>
+      </section>
+    </div>
+  </div>
+</body>
+</html>
