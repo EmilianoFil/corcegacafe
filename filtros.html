@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filtros - Logs de Actividad</title>
+  <link rel="stylesheet" href="css/panel.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+</head>
+<body>
+  <div class="menu-style">
+    <img src="caballo-logo.png" alt="Logo" class="logo">
+    <h1>Historial de actividad</h1>
+
+    <section>
+      <label for="fechaInicio">Desde:</label>
+      <input type="date" id="fechaInicio">
+
+      <label for="fechaFin" style="margin-left: 20px;">Hasta:</label>
+      <input type="date" id="fechaFin">
+
+      <label for="texto" style="margin-left: 20px;">Buscar:</label>
+      <input type="text" id="texto" placeholder="dni, usuario, acción..." style="width: 200px;">
+
+      <label for="accion" style="margin-left: 20px;">Acción:</label>
+      <select id="accion">
+        <option value="">Todas</option>
+        <option value="registro_cliente">Registro público</option>
+        <option value="registro_manual">Registro admin</option>
+        <option value="registro_manual + cargar_cafecito">Registro y carga admin</option>
+        <option value="consulta_cliente">Consulta cliente</option>
+        <option value="consulta_fallida">Consulta fallida</option>
+        <option value="iniciar_sesion">Login admin</option>
+        <option value="cerrar_sesion">Logout admin</option>
+      </select>
+    </section>
+
+    <section>
+      <table id="tablaLogs" class="display" style="width:100%; margin-top: 20px;">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Usuario</th>
+            <th>Acción</th>
+            <th>Detalles</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script type="module">
+    import { app, db } from './js/firebase-config.js';
+    import {
+      collection,
+      getDocs,
+      query,
+      orderBy
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    let logsOriginal = [];
+    const tabla = new DataTable('#tablaLogs');
+
+    async function cargarLogs() {
+      const q = query(collection(db, "logs"), orderBy("timestamp", "desc"));
+      const snapshot = await getDocs(q);
+      logsOriginal = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          fecha: data.timestamp?.toDate?.().toLocaleString?.("es-AR") || "-",
+          usuario: data.usuario || "-",
+          accion: data.accion || "-",
+          detalles: data.detalles || "-",
+          raw: data.timestamp?.toDate?.() || new Date(0)
+        }
+      });
+      actualizarTabla();
+    }
+
+    function actualizarTabla() {
+      const desde = new Date(document.getElementById("fechaInicio").value);
+      const hasta = new Date(document.getElementById("fechaFin").value);
+      hasta.setDate(hasta.getDate() + 1);
+      const texto = document.getElementById("texto").value.toLowerCase();
+      const accion = document.getElementById("accion").value;
+
+      const filtrado = logsOriginal.filter(log => {
+        return (!isNaN(desde) ? log.raw >= desde : true)
+          && (!isNaN(hasta) ? log.raw < hasta : true)
+          && (accion ? log.accion === accion : true)
+          && (texto ? (log.usuario + log.accion + log.detalles).toLowerCase().includes(texto) : true);
+      });
+
+      tabla.clear();
+      tabla.rows.add(filtrado.map(l => [l.fecha, l.usuario, l.accion, l.detalles]));
+      tabla.draw();
+    }
+
+    document.getElementById("fechaInicio").addEventListener("change", actualizarTabla);
+    document.getElementById("fechaFin").addEventListener("change", actualizarTabla);
+    document.getElementById("texto").addEventListener("input", actualizarTabla);
+    document.getElementById("accion").addEventListener("change", actualizarTabla);
+
+    cargarLogs();
+  </script>
+</body>
+</html>
