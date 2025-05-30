@@ -14,6 +14,8 @@ body {
 /* Card principal */
 .menu-style {
   min-width: 400px;
+  max-width: 480px; /* opcional, para no volarte en pantallas grandes */
+  width: 100%;
   margin: 40px auto;
   padding: 40px 20px;
   background: #eeeeee;
