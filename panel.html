@@ -1,165 +1,126 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Estadísticas Internas - Córcega</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Estadísticas del Club</title>
   <style>
     body {
-      margin: 0;
-      font-family: 'Georgia', serif;
-      background-color: #fdfcf7;
-      color: #1d1d1d;
-    }
-
-    .menu-style {
-      max-width: 800px;
-      margin: 40px auto;
+      font-family: sans-serif;
+      background-color: #d86634;
+      color: white;
       padding: 40px;
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      text-align: center;
     }
-
-    .logo {
-      width: 60px;
-      display: block;
-      margin: 0 auto 20px;
-    }
-
     h1 {
-      text-align: center;
-      font-size: 28px;
-      margin-bottom: 10px;
-      color: #0d2b37;
+      font-size: 24px;
+      margin-bottom: 20px;
     }
-
-    h2 {
-      font-size: 20px;
-      margin-top: 40px;
-      border-bottom: 1px dotted #aaa;
-      padding-bottom: 5px;
-      color: #2b2b2b;
-    }
-
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    ul li {
+    p, li {
+      font-size: 18px;
       margin: 8px 0;
-      padding: 8px;
-      background: #f3f1e8;
-      border-radius: 6px;
     }
-
-    section {
-      margin-top: 20px;
+    ul {
+      padding-left: 20px;
+      text-align: left;
+      display: inline-block;
+      margin-top: 10px;
     }
-
-    .restriccion {
-      text-align: center;
-      color: #aa0000;
+    .logout {
+      margin-top: 40px;
+    }
+    .logout a {
+      background: white;
+      color: #d86634;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
       font-weight: bold;
-      font-size: 16px;
+      margin: 0 10px;
+      display: inline-block;
+    }
+    @keyframes galopar {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-10px); }
     }
   </style>
+</head>
+<body>
+  <div id="loader" style="display: none; text-align: center; margin-top: 40px;">
+    <img src="caballo-logo.png" alt="Cargando..." class="galope" style="width: 80px; animation: galopar 1s infinite ease-in-out alternate;">
+    <p style="color: white; font-weight: bold;">Cargando datos del club...</p>
+  </div>
+
+  <div id="contenedor" style="display: none;">
+    <h1>Estadísticas del Club</h1>
+    <div id="resumen"></div>
+    <div class="logout">
+      <a href="admin.html">Volver al panel</a>
+      <a href="#" onclick="cerrarSesion()">Cerrar sesión</a>
+    </div>
+  </div>
+
   <script type="module">
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { firebaseConfig } from "./js/firebase-config.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
+      authDomain: "corcega-loyalty-club.firebaseapp.com",
+      projectId: "corcega-loyalty-club",
+      storageBucket: "corcega-loyalty-club.firebasestorage.app",
+      messagingSenderId: "789184958568",
+      appId: "1:789184958568:web:4990bf50335bec365f2bdd",
+      measurementId: "G-NXMC00DZ81"
+    };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth();
-    const db = getFirestore();
-
-    const contenedor = document.getElementById("contenido");
-    const cartel = document.getElementById("cartel");
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        cartel.innerText = "No estás autenticado.";
+        window.location.href = "login.html";
         return;
       }
 
-      const docRef = doc(db, "admin", user.uid);
-      const snap = await getDoc(docRef);
+      document.getElementById("loader").style.display = "block";
+      document.getElementById("contenedor").style.display = "none";
 
-      if (!snap.exists() || snap.data().rol !== "dueño") {
-        cartel.innerText = "Acceso restringido. Solo para dueños.";
-        return;
+      try {
+        const querySnapshot = await getDocs(collection(db, "clientes"));
+        const clientes = querySnapshot.docs.map(doc => doc.data());
+
+        const totalClientes = clientes.length;
+        const totalCafes = clientes.reduce((sum, c) => sum + (c.cafes_acumulados_total || 0), 0);
+        const cafesGratis = clientes.filter(c => c.cafe_disponible).length;
+
+        const listaGratis = clientes
+          .filter(c => c.cafe_disponible)
+          .map(c => `<li><strong>${c.nombre}</strong> (${c.dni})</li>`)
+          .join("");
+
+        document.getElementById("resumen").innerHTML = `
+          <p><strong>Clientes registrados:</strong> ${totalClientes}</p>
+          <p><strong>Total de cafecitos servidos:</strong> ${totalCafes}</p>
+          <p><strong>Cafecitos gratis listos para servir:</strong> ${cafesGratis}</p>
+          ${cafesGratis > 0 ? `<ul>${listaGratis}</ul>` : ""}
+        `;
+      } catch (error) {
+        console.error("Error al obtener estadísticas:", error);
+      } finally {
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("contenedor").style.display = "block";
       }
-
-      cartel.style.display = "none";
-      contenedor.style.display = "block";
-
-      const clientesSnap = await getDocs(collection(db, "clientes"));
-      const logsSnap = await getDocs(query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(5)));
-
-      let totalClientes = 0;
-      let totalCafes = 0;
-      let cafesGratis = 0;
-      const topClientes = [];
-
-      clientesSnap.forEach(doc => {
-        const data = doc.data();
-        totalClientes++;
-        totalCafes += data.cafes_acumulados_total || 0;
-        if (data.cafe_disponible) cafesGratis++;
-        topClientes.push(data);
-      });
-
-      topClientes.sort((a, b) => (b.cafes_acumulados_total || 0) - (a.cafes_acumulados_total || 0));
-
-      let listaGratis = topClientes
-  .filter(c => c.cafe_disponible)
-  .map(c => `<li><strong>${c.nombre}</strong> (${c.dni})</li>`)
-  .join("");
-
-document.getElementById("resumen").innerHTML = `
-  <p><strong>Clientes registrados:</strong> ${totalClientes}</p>
-  <p><strong>Total de cafecitos servidos:</strong> ${totalCafes}</p>
-  <p><strong>Cafecitos a invitar:</strong> ${cafesGratis}</p>
-  ${cafesGratis > 0 ? `<ul>${listaGratis}</ul>` : ""}
-`;
-
-      document.getElementById("top").innerHTML = topClientes.slice(0, 5).map(c => `
-        <li><strong>${c.nombre}</strong> - ${c.cafes_acumulados_total || 0} cafecitos</li>
-      `).join("");
-
-      document.getElementById("logs").innerHTML = logsSnap.docs.map(doc => {
-        const d = doc.data();
-        const t = d.timestamp?.toDate().toLocaleString() || "-";
-        return `<li><strong>${d.usuario}</strong>: ${d.accion} - ${d.detalles} <em>${t}</em></li>`;
-      }).join("");
     });
+
+    function cerrarSesion() {
+      signOut(auth).then(() => {
+        window.location.href = "login.html";
+      });
+    }
+    window.cerrarSesion = cerrarSesion;
   </script>
-</head>
-<body>
-  <div class="menu-style">
-    <img src="caballo-logo.png" alt="Córcega" class="logo">
-    <h1>Estadísticas Internas</h1>
-    <p id="cartel" class="restriccion"></p>
-
-    <div id="contenido" style="display:none">
-      <section>
-        <h2>Resumen general</h2>
-        <div id="resumen"></div>
-      </section>
-
-      <section>
-        <h2>Top 5 clientes</h2>
-        <ul id="top"></ul>
-      </section>
-
-      <section>
-        <h2>Últimas acciones</h2>
-        <ul id="logs"></ul>
-      </section>
-    </div>
-  </div>
 </body>
 </html>
