@@ -7,6 +7,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  text-align: center;
 }
 
 .menu-style {
@@ -17,7 +18,6 @@ body {
   border: 1px solid #ccc;
   border-radius: 16px;
   box-shadow: 0 0 10px rgba(0,0,0,0.05);
-  text-align: center;
 }
 
 h1 {
@@ -50,7 +50,7 @@ button {
   cursor: pointer;
   font-weight: bold;
   margin: 12px auto;
-  display: inline-block;
+  display: block;
 }
 
 .mensaje {
