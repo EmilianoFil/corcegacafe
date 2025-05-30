@@ -3,16 +3,16 @@ body {
   font-family: 'Georgia', serif;
   background-color: #fdfcf7;
   color: #1d1d1d;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 }
 
 .menu-style {
   max-width: 400px;
   width: 100%;
-  padding: 40px 20px;
+  padding: 40px 24px;
   background: white;
   border: 1px solid #ccc;
   border-radius: 16px;
@@ -26,27 +26,29 @@ h1 {
 }
 
 input {
-  padding: 10px;
+  padding: 14px;
   font-size: 16px;
-  width: 90%;
-  margin: 10px 0;
+  width: 100%;
+  margin: 14px 0;
   border: 2px solid white;
   border-radius: 8px;
   background-color: white;
   color: black;
   font-weight: bold;
+  box-sizing: border-box;
 }
 
 button {
-  padding: 10px 20px;
+  padding: 12px 24px;
   font-size: 16px;
   background-color: #d86634;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   font-weight: bold;
-  margin-top: 10px;
+  margin: 12px 0;
+  width: 100%;
 }
 
 .mensaje {
@@ -88,19 +90,22 @@ button {
   font-size: 14px;
   margin-bottom: 10px;
   font-weight: bold;
+  text-align: left;
 }
 
 .logout {
-  margin-top: 20px;
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
 }
 
 .logout a {
-  display: block;
   text-align: center;
   text-decoration: none;
   color: #d86634;
   font-weight: bold;
-  margin: 8px 0;
   cursor: pointer;
 }
 
