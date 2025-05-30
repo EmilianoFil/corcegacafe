@@ -282,3 +282,16 @@ footer a[href*="instagram.com"]::before {
     height: 65px;
   }
 }
+
+/* Botón blanco en tarjeta de fidelidad */
+.tarjeta-fidelidad .volver {
+  background-color: white;
+  color: #d86634;
+  font-weight: bold;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-block;
+  margin-top: 20px;
+}
