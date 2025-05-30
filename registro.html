@@ -81,8 +81,8 @@
           if (!existing.exists()) {
 
             // VALIDACIÓN DE DNI
-            if (!/^\d{1,10}$/.test(data.dni)) {
-              document.getElementById("mensaje").innerText = "El DNI debe tener hasta 10 números.";
+            if (!/^\d{1,8}$/.test(data.dni)) {
+              document.getElementById("mensaje").innerText = "El DNI debe tener hasta 8 números.";
               form.style.display = "block";
               document.getElementById("loader").style.display = "none";
               return;
@@ -104,11 +104,14 @@
               timestamp: new Date()
             });
 
-            emailjs.send("service_2pfzklo", "template_33mxnzd", {
-              nombre: data.nombre,
-              dni: data.dni,
-              mail: data.email
-            });
+            const enviarMail = false;
+            if (enviarMail) {
+              emailjs.send("service_2pfzklo", "template_33mxnzd", {
+                  nombre: data.nombre,
+                  dni: data.dni,
+                  mail: data.email
+                });
+            }
 
             document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🎉☕️";
           } else {
