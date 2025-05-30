@@ -14,33 +14,15 @@ body {
 /* Card principal */
 .menu-style {
   min-width: 400px;
-  max-width: 480px;
+  max-width: 480px; /* opcional, para no volarte en pantallas grandes */
   width: 100%;
   margin: 40px auto;
   padding: 40px 20px;
-  background: #ffffff;
+  background: #eeeeee;
   border: 1px solid #ccc;
   border-radius: 16px;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
   text-align: center;
-}
-
-/* Tarjeta de fidelidad */
-.tarjeta-fidelidad {
-  max-width: 400px;
-  width: 100%;
-  padding: 40px 20px;
-  background: #d86634;
-  color: white;
-  border-radius: 16px;
-  text-align: center;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-}
-
-.tarjeta-fidelidad h1,
-.tarjeta-fidelidad h2,
-.tarjeta-fidelidad p {
-  color: white;
 }
 
 /* Logo (caballito) */
@@ -192,24 +174,4 @@ section {
   color: #aa0000;
   font-weight: bold;
   font-size: 16px;
-}
-
-/* Footer Instagram */
-footer {
-  margin-top: 30px;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-footer a {
-  color: white;
-  text-decoration: none;
-  font-size: 16px;
-  font-weight: bold;
-}
-
-footer img {
-  width: 18px;
-  vertical-align: middle;
-  margin-right: 6px;
 }
