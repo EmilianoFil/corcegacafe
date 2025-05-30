@@ -1,86 +1,85 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Filtros de actividad - Córcega</title>
-
-  <!-- DataTables CSS -->
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Historial de actividad</title>
+  <link rel="stylesheet" href="css/panel.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
   <style>
-    body {
-      margin: 0;
-      font-family: 'Georgia', serif;
-      background-color: #fdfcf7;
-      color: #1d1d1d;
-    }
-
-    .menu-style {
-      max-width: 800px;
-      margin: 40px auto;
-      padding: 40px;
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    }
-
-    .logo {
-      width: 60px;
-      display: block;
-      margin: 0 auto 20px;
-    }
-
-    h1 {
-      text-align: center;
-      font-size: 28px;
-      margin-bottom: 30px;
-      color: #0d2b37;
-    }
-
     .filtros {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
       justify-content: center;
+      gap: 10px;
       margin-bottom: 20px;
     }
-
     .filtros label {
       font-weight: bold;
-      margin-right: 5px;
     }
-
     .filtros input,
     .filtros select {
-      padding: 6px 10px;
-      font-family: 'Georgia', serif;
+      padding: 8px;
       font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
-
-    table.dataTable thead th {
-      background-color: #f3f1e8;
-      color: #0d2b37;
-    }
-
-    #tablaLogs {
-      width: 100%;
-    }
-
-    .restriccion {
-      text-align: center;
-      color: #aa0000;
+    .btn-secondary {
+      padding: 8px 16px;
+      font-size: 14px;
+      background: white;
+      color: #d86634;
+      border: 2px solid #d86634;
+      border-radius: 8px;
+      cursor: pointer;
       font-weight: bold;
-      font-size: 16px;
     }
   </style>
+</head>
+<body>
+  <div class="menu-style">
+    <img src="caballo-logo.png" alt="Logo" class="logo">
+    <h1>Historial de actividad</h1>
 
-  <!-- Firebase + DataTables + jQuery -->
+    <div class="filtros">
+      <label>Desde: <input type="date" id="desde"></label>
+      <label>Hasta: <input type="date" id="hasta"></label>
+      <label>Buscar: <input type="text" id="buscar" placeholder="dni, usuario, acción..."></label>
+      <label>Acción:
+        <select id="accion">
+          <option value="">Todas</option>
+          <option value="registro_cliente">Registro cliente</option>
+          <option value="registro_manual">Registro manual</option>
+          <option value="admin_consulta_cliente">Admin consulta cliente</option>
+          <option value="consulta_cliente">Consulta cliente</option>
+          <option value="consulta_fallida">Consulta fallida</option>
+          <option value="sumar_cafecito">Sumar cafecito</option>
+          <option value="invitar_cafecito">Invitar cafecito</option>
+          <option value="iniciar_sesion">Login admin</option>
+          <option value="cerrar_sesion">Logout admin</option>
+        </select>
+      </label>
+      <button id="aplicarFiltros" class="btn-secondary">Aplicar filtros</button>
+    </div>
+
+    <table id="tablaLogs" class="display" style="width:100%">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Usuario</th>
+          <th>Acción</th>
+          <th>Detalles</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
@@ -94,97 +93,54 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const logsRef = collection(db, "logs");
+    let todosLosLogs = [];
+    let tabla;
 
-    window.addEventListener("DOMContentLoaded", async () => {
-      const logsRef = collection(db, "logs");
-      const logsQuery = query(logsRef, orderBy("timestamp", "desc"));
-      const logsSnap = await getDocs(logsQuery);
-      const datos = [];
+    async function cargarDatos() {
+      const snap = await getDocs(logsRef);
+      todosLosLogs = snap.docs.map(doc => doc.data());
+      actualizarTabla(todosLosLogs);
+    }
 
-      logsSnap.forEach(doc => {
-        const d = doc.data();
-        const fecha = d.timestamp?.toDate()?.toLocaleString() || "-";
-        datos.push([
-          fecha,
-          d.usuario || "",
-          d.accion || "",
-          d.detalles || ""
-        ]);
-      });
-
-      const tabla = new DataTable("#tablaLogs", {
-        data: datos,
+    function actualizarTabla(data) {
+      if (tabla) tabla.destroy();
+      tabla = $('#tablaLogs').DataTable({
+        data: data.map(log => [
+          new Date(log.timestamp?.seconds * 1000).toLocaleString(),
+          log.usuario,
+          log.accion,
+          log.detalles
+        ]),
         columns: [
           { title: "Fecha" },
           { title: "Usuario" },
           { title: "Acción" },
           { title: "Detalles" }
-        ],
-        language: {
-          url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
-        }
+        ]
+      });
+    }
+
+    function filtrarFechas() {
+      const desde = new Date(document.getElementById("desde").value);
+      const hasta = new Date(document.getElementById("hasta").value);
+      const buscar = document.getElementById("buscar").value.toLowerCase();
+      const accion = document.getElementById("accion").value;
+
+      const filtrados = todosLosLogs.filter(log => {
+        const fecha = new Date(log.timestamp?.seconds * 1000);
+        const coincideFecha = (!isNaN(desde) ? fecha >= desde : true) && (!isNaN(hasta) ? fecha <= hasta : true);
+        const coincideTexto = [log.usuario, log.accion, log.detalles].some(campo => campo?.toLowerCase().includes(buscar));
+        const coincideAccion = accion ? log.accion === accion : true;
+        return coincideFecha && coincideTexto && coincideAccion;
       });
 
-      document.getElementById("filtro").addEventListener("input", function() {
-        tabla.search(this.value).draw();
-      });
+      actualizarTabla(filtrados);
+    }
 
-      document.getElementById("desde").addEventListener("change", filtrarFechas);
-      document.getElementById("hasta").addEventListener("change", filtrarFechas);
-      document.getElementById("accion").addEventListener("change", filtrarFechas);
+    document.getElementById("aplicarFiltros").addEventListener("click", filtrarFechas);
 
-      function filtrarFechas() {
-        const desde = new Date(document.getElementById("desde").value);
-        const hasta = new Date(document.getElementById("hasta").value);
-        const accion = document.getElementById("accion").value.toLowerCase();
-
-        tabla.rows().every(function() {
-          const data = this.data();
-          const fechaTexto = data[0];
-          const accionTexto = data[2].toLowerCase();
-          const fecha = new Date(fechaTexto);
-
-          const enRango =
-            (!isNaN(desde) ? fecha >= desde : true) &&
-            (!isNaN(hasta) ? fecha <= hasta : true);
-          const coincideAccion = !accion || accionTexto.includes(accion);
-
-          this.visible(enRango && coincideAccion);
-        });
-      }
-    });
+    cargarDatos();
   </script>
-
-</head>
-<body>
-  <div class="menu-style">
-    <img src="caballo-logo.png" alt="Logo" class="logo" />
-    <h1>Historial de actividad</h1>
-
-    <div class="filtros">
-      <label for="desde">Desde:</label>
-      <input type="date" id="desde">
-      <label for="hasta">Hasta:</label>
-      <input type="date" id="hasta">
-      <label for="filtro">Buscar:</label>
-      <input type="text" id="filtro" placeholder="dni, usuario, acción...">
-      <label for="accion">Acción:</label>
-      <select id="accion">
-        <option value="">Todas</option>
-        <option value="registro">Registro</option>
-        <option value="sumar_cafecito">Sumar cafecito</option>
-        <option value="invitar_cafecito">Invitar cafecito</option>
-        <option value="consulta">Consulta</option>
-        <option value="fallida">Consulta fallida</option>
-        <option value="login">Login</option>
-      </select>
-    </div>
-
-    <table id="tablaLogs" class="display"></table>
-  </div>
-
-  <!-- jQuery y DataTables -->
-  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 </body>
 </html>
