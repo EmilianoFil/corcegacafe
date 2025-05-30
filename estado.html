@@ -1,36 +1,45 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tu Cafecito</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-NXMC00DZ81');
-  </script>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div id="loader">
-    <img src="caballo-logo.png" alt="Cargando..." class="galope" />
+    <img src="caballo-logo.png" alt="Cargando..." class="galope">
   </div>
 
-  <div class="menu-style tarjeta-fidelidad" id="contenedor" style="display: none;">
+  <!-- Tarjeta -->
+  <div class="menu-style tarjeta-fidelidad" id="contenedor" style="display:none;">
     <p id="cliente"></p>
-    <h1>COMPLETÁ LAS VISITAS Y TE REGALAMOS</h1>
-    <h2>UN CAFECITO</h2>
+    <h1>COMPLETÁ LAS VISITAS Y TE REGALAMOS<br><span class="subrayado">UN CAFECITO</span></h1>
     <p id="faltan"></p>
     <div id="grid" class="grid"></div>
-    <div id="mensaje-error" style="display: none;"></div>
-    <a href="index.html" class="btn-secondary" style="margin-top: 20px;">Volver al inicio</a>
-    <footer style="margin-top: 30px;">
+    <div class="logout" style="margin-top: 30px;">
+      <a href="index.html" class="volver">Volver al inicio</a>
+    </div>
+    <footer class="footer-instagram">
       <p>Seguinos en Instagram</p>
       <a href="https://www.instagram.com/corcegacafe" target="_blank">
-        <img src="img/instagram-icon.svg" alt="Instagram" style="width: 20px; vertical-align: middle; margin-right: 5px;" />
+        <img src="img/instagram.png" alt="Instagram" style="width:20px; vertical-align:middle; margin-right:5px;">
+        @corcegacafe
+      </a>
+    </footer>
+  </div>
+
+  <!-- Error -->
+  <div class="menu-style" id="error" style="display:none;">
+    <h1>COMPLETÁ LAS VISITAS Y TE REGALAMOS<br><span class="subrayado">UN CAFECITO</span></h1>
+    <p id="mensaje-error"></p>
+    <div class="logout">
+      <a href="index.html" class="volver">Volver al inicio</a>
+    </div>
+    <footer class="footer-instagram">
+      <p>Seguinos en Instagram</p>
+      <a href="https://www.instagram.com/corcegacafe" target="_blank">
+        <img src="img/instagram.png" alt="Instagram" style="width:20px; vertical-align:middle; margin-right:5px;">
         @corcegacafe
       </a>
     </footer>
@@ -50,7 +59,7 @@
       apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
       authDomain: "corcega-loyalty-club.firebaseapp.com",
       projectId: "corcega-loyalty-club",
-      storageBucket: "corcega-loyalty-club.firebasestorage.app",
+      storageBucket: "corcega-loyalty-club.appspot.com",
       messagingSenderId: "789184958568",
       appId: "1:789184958568:web:4990bf50335bec365f2bdd",
       measurementId: "G-NXMC00DZ81"
@@ -58,6 +67,7 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+
     const params = new URLSearchParams(window.location.search);
     const dni = params.get("dni");
 
@@ -66,30 +76,30 @@
       const snap = await getDoc(ref);
 
       document.getElementById("loader").style.display = "none";
-      document.getElementById("contenedor").style.display = "block";
 
       if (!snap.exists()) {
-        document.getElementById("cliente").style.display = "none";
-        document.getElementById("faltan").style.display = "none";
-        document.getElementById("grid").style.display = "none";
-        document.getElementById("mensaje-error").style.display = "block";
+        document.getElementById("error").style.display = "block";
         document.getElementById("mensaje-error").innerHTML = `
-          <p>El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.</p>
+          El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.<br><br>
           <a href="registro.html?dni=${dni}" class="btn-primary">Registrate</a>
         `;
+
         await addDoc(collection(db, "logs"), {
           usuario: dni,
           accion: "consulta_fallida",
           detalles: `Consulta fallida: DNI ${dni} no encontrado`,
           timestamp: new Date()
         });
+
         if (typeof gtag === 'function') {
           gtag('event', 'consulta_fallida', { dni });
         }
+
         return;
       }
 
       const data = snap.data();
+
       await addDoc(collection(db, "logs"), {
         usuario: data.dni,
         accion: "consulta_cliente",
@@ -104,6 +114,7 @@
       const nombre = data.nombre || "Amigo";
       const cafes = parseInt(data.cafes) || 0;
 
+      document.getElementById("contenedor").style.display = "block";
       document.getElementById("cliente").textContent = `Hola ${nombre}`;
       document.getElementById("faltan").textContent = cafes < 8
         ? `Te faltan ${8 - cafes} para que te invitemos uno.`
@@ -113,6 +124,7 @@
       for (let i = 1; i <= 9; i++) {
         const div = document.createElement("div");
         div.className = "circle";
+
         if (i === 9) {
           div.classList.add("noveno");
         } else if (i <= cafes) {
@@ -120,6 +132,7 @@
         } else {
           div.style.backgroundImage = "url('caballito-claro.png')";
         }
+
         grid.appendChild(div);
       }
     }
