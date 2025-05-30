@@ -4,9 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
-   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css">
   <title>Panel Admin</title>
-  <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -86,14 +85,14 @@
       const ref = doc(db, "clientes", dni);
       const snap = await getDoc(ref);
 
-      if(estadoCliente === null){
+      if (estadoCliente === null) {
         await addDoc(collection(db, "logs"), {
           usuario,
           accion: "admin_consulta_cliente",
           detalles: `DNI: ${dni}`,
           timestamp: new Date()
-        })
-      };
+        });
+      }
 
       if (!snap.exists()) {
         div.className = "mensaje error";
@@ -128,7 +127,7 @@
       if (data.cafes >= 8) {
         await updateDoc(ref, {
           cafes: 0,
-          cafe_disponible: true,
+          cafe_disponible: false,
           ultimo_cafe: serverTimestamp(),
           cafes_acumulados_total: increment(1)
         });
@@ -145,11 +144,15 @@
         });
       } else {
         const nuevosCafes = (data.cafes || 0) + 1;
-        await updateDoc(ref, {
+        const updates = {
           cafes: nuevosCafes,
           ultimo_cafe: serverTimestamp(),
           cafes_acumulados_total: increment(1)
-        });
+        };
+        if (nuevosCafes >= 8) {
+          updates.cafe_disponible = true;
+        }
+        await updateDoc(ref, updates);
         div.className = "mensaje ok";
         div.innerText = nuevosCafes >= 8
           ? `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
