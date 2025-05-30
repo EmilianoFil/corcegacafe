@@ -13,7 +13,7 @@ body {
 
 /* Card principal */
 .menu-style {
-  max-width: 400px;
+  min-width: 400px;
   margin: 40px auto;
   padding: 40px 20px;
   background: #eeeeee;
