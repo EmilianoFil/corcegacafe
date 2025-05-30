@@ -4,42 +4,33 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tu Cafecito</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-NXMC00DZ81');
+  </script>
 </head>
 <body>
   <div id="loader">
     <img src="caballo-logo.png" alt="Cargando..." class="galope">
   </div>
 
-  <!-- Tarjeta -->
-  <div class="menu-style tarjeta-fidelidad" id="contenedor" style="display:none;">
+  <div class="menu-style" id="contenedor" style="display:none;">
     <p id="cliente"></p>
-    <h1>COMPLETÁ LAS VISITAS Y TE REGALAMOS<br><span class="subrayado">UN CAFECITO</span></h1>
+    <h1>COMPLETÁ LAS VISITAS Y TE REGALAMOS<br><span style="font-size: 26px; display:block; margin-top: 6px;">UN CAFECITO</span></h1>
     <p id="faltan"></p>
     <div id="grid" class="grid"></div>
-    <div class="logout" style="margin-top: 30px;">
-      <a href="index.html" class="volver">Volver al inicio</a>
-    </div>
-    <footer class="footer-instagram">
+    <div id="mensaje-error" style="display:none;"></div>
+    <br>
+    <a href="index.html" class="btn-secondary">Volver al inicio</a>
+    <footer>
       <p>Seguinos en Instagram</p>
       <a href="https://www.instagram.com/corcegacafe" target="_blank">
-        <img src="img/instagram.png" alt="Instagram" style="width:20px; vertical-align:middle; margin-right:5px;">
-        @corcegacafe
-      </a>
-    </footer>
-  </div>
-
-  <!-- Error -->
-  <div class="menu-style" id="error" style="display:none;">
-    <h1>COMPLETÁ LAS VISITAS Y TE REGALAMOS<br><span class="subrayado">UN CAFECITO</span></h1>
-    <p id="mensaje-error"></p>
-    <div class="logout">
-      <a href="index.html" class="volver">Volver al inicio</a>
-    </div>
-    <footer class="footer-instagram">
-      <p>Seguinos en Instagram</p>
-      <a href="https://www.instagram.com/corcegacafe" target="_blank">
-        <img src="img/instagram.png" alt="Instagram" style="width:20px; vertical-align:middle; margin-right:5px;">
+        <img src="img/instagram.png" alt="Instagram" style="width: 20px; vertical-align: middle; margin-right: 5px;">
         @corcegacafe
       </a>
     </footer>
@@ -59,7 +50,7 @@
       apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
       authDomain: "corcega-loyalty-club.firebaseapp.com",
       projectId: "corcega-loyalty-club",
-      storageBucket: "corcega-loyalty-club.appspot.com",
+      storageBucket: "corcega-loyalty-club.firebasestorage.app",
       messagingSenderId: "789184958568",
       appId: "1:789184958568:web:4990bf50335bec365f2bdd",
       measurementId: "G-NXMC00DZ81"
@@ -76,13 +67,19 @@
       const snap = await getDoc(ref);
 
       document.getElementById("loader").style.display = "none";
+      const contenedor = document.getElementById("contenedor");
+      contenedor.style.display = "block";
 
       if (!snap.exists()) {
-        document.getElementById("error").style.display = "block";
+        document.getElementById("cliente").style.display = "none";
+        document.getElementById("faltan").style.display = "none";
+        document.getElementById("grid").style.display = "none";
+        document.getElementById("mensaje-error").style.display = "block";
         document.getElementById("mensaje-error").innerHTML = `
-          El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.<br><br>
+          <p>El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.</p>
           <a href="registro.html?dni=${dni}" class="btn-primary">Registrate</a>
         `;
+        contenedor.classList.remove("tarjeta-fidelidad");
 
         await addDoc(collection(db, "logs"), {
           usuario: dni,
@@ -94,9 +91,11 @@
         if (typeof gtag === 'function') {
           gtag('event', 'consulta_fallida', { dni });
         }
-
         return;
       }
+
+      // Si existe, modo tarjeta fidelidad
+      contenedor.classList.add("tarjeta-fidelidad");
 
       const data = snap.data();
 
@@ -114,7 +113,6 @@
       const nombre = data.nombre || "Amigo";
       const cafes = parseInt(data.cafes) || 0;
 
-      document.getElementById("contenedor").style.display = "block";
       document.getElementById("cliente").textContent = `Hola ${nombre}`;
       document.getElementById("faltan").textContent = cafes < 8
         ? `Te faltan ${8 - cafes} para que te invitemos uno.`
