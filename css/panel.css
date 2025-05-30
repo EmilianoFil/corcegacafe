@@ -58,3 +58,37 @@ section {
   font-weight: bold;
   font-size: 16px;
 }
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .menu-style {
+    padding: 20px;
+    margin: 20px auto;
+  }
+
+  .logo {
+    width: 50px;
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    font-size: 22px;
+  }
+
+  h2 {
+    font-size: 18px;
+  }
+
+  ul li {
+    padding: 6px;
+    font-size: 14px;
+  }
+
+  section {
+    margin-top: 16px;
+  }
+
+  .restriccion {
+    font-size: 14px;
+  }
+}
