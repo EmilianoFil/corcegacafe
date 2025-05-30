@@ -114,11 +114,17 @@
 
       topClientes.sort((a, b) => (b.cafes_acumulados_total || 0) - (a.cafes_acumulados_total || 0));
 
-      document.getElementById("resumen").innerHTML = `
-        <p><strong>Clientes registrados:</strong> ${totalClientes}</p>
-        <p><strong>Total de cafecitos servidos:</strong> ${totalCafes}</p>
-        <p><strong>Cafecitos gratis listos para servir:</strong> ${cafesGratis}</p>
-      `;
+      let listaGratis = topClientes
+  .filter(c => c.cafe_disponible)
+  .map(c => `<li><strong>${c.nombre}</strong> (${c.dni})</li>`)
+  .join("");
+
+document.getElementById("resumen").innerHTML = `
+  <p><strong>Clientes registrados:</strong> ${totalClientes}</p>
+  <p><strong>Total de cafecitos servidos:</strong> ${totalCafes}</p>
+  <p><strong>Cafecitos a invitar:</strong> ${cafesGratis}</p>
+  ${cafesGratis > 0 ? `<ul>${listaGratis}</ul>` : ""}
+`;
 
       document.getElementById("top").innerHTML = topClientes.slice(0, 5).map(c => `
         <li><strong>${c.nombre}</strong> - ${c.cafes_acumulados_total || 0} cafecitos</li>
