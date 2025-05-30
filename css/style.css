@@ -245,3 +245,15 @@ footer a[href*="instagram.com"]::before {
   margin-right: 6px;
   vertical-align: middle;
 }
+
+/* Botón destacado dentro de mensaje de error */
+#mensaje-error .boton {
+  margin-top: 20px;
+  display: inline-block;
+  background-color: #d86634;
+  color: white;
+  font-weight: bold;
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+}
