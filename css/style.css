@@ -1,59 +1,92 @@
+/* Base general */
 body {
   margin: 0;
   font-family: 'Georgia', serif;
   background-color: #fdfcf7;
   color: #1d1d1d;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
 }
 
+/* Card principal */
 .menu-style {
   max-width: 400px;
-  width: 100%;
-  padding: 40px 24px;
-  background: #eeeeee;
+  margin: 40px auto;
+  padding: 40px 20px;
+  background: white;
   border: 1px solid #ccc;
-  border-radius: 24px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
+/* Logo (caballito) */
+.logo, .galope {
+  width: 80px;
+  display: block;
+  margin: 0 auto 20px;
+}
+
+.galope {
+  animation: galopar 1s infinite ease-in-out alternate;
+}
+
+@keyframes galopar {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-10px); }
+}
+
+/* Títulos */
 h1 {
   font-size: 20px;
   margin-bottom: 20px;
-  text-align: center;
 }
 
+h2 {
+  font-size: 20px;
+  margin-top: 40px;
+  border-bottom: 1px dotted #aaa;
+  padding-bottom: 5px;
+  color: #2b2b2b;
+}
+
+/* Inputs */
 input {
-  padding: 14px;
+  padding: 10px;
   font-size: 16px;
-  width: 100%;
-  margin: 14px 0;
+  width: 90%;
+  margin: 10px 0;
   border: 2px solid white;
   border-radius: 8px;
   background-color: white;
   color: black;
   font-weight: bold;
-  box-sizing: border-box;
-  text-align: center;
 }
 
-button {
-  padding: 12px 24px;
+/* Botones */
+button, .btn-primary {
+  padding: 10px 20px;
   font-size: 16px;
   background-color: #d86634;
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
-  margin: 12px auto;
-  display: block;
+  margin-top: 10px;
 }
 
+.btn-secondary {
+  padding: 8px 16px;
+  font-size: 14px;
+  background: white;
+  color: #d86634;
+  border: 2px solid #d86634;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+/* Mensajes */
 .mensaje {
   margin-top: 20px;
   font-weight: bold;
@@ -72,23 +105,14 @@ button {
   margin: 5px;
 }
 
+/* Loader */
 #loader {
   display: none;
   margin-top: 20px;
+  text-align: center;
 }
 
-.galope {
-  width: 80px;
-  animation: galopar 1s infinite ease-in-out alternate;
-  display: block;
-  margin: 0 auto;
-}
-
-@keyframes galopar {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-10px); }
-}
-
+/* Usuario y logout */
 #usuarioLogueado {
   font-size: 14px;
   margin-bottom: 10px;
@@ -97,18 +121,16 @@ button {
 }
 
 .logout {
-  margin-top: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
+  margin-top: 20px;
 }
 
 .logout a {
+  display: block;
   text-align: center;
   text-decoration: none;
   color: #d86634;
   font-weight: bold;
+  margin: 8px 0;
   cursor: pointer;
 }
 
@@ -119,4 +141,28 @@ button {
 .logout a.cerrar {
   font-size: 13px;
   opacity: 0.8;
+}
+
+/* Resumen y listas */
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+ul li {
+  margin: 8px 0;
+  padding: 8px;
+  background: #f3f1e8;
+  border-radius: 6px;
+}
+
+section {
+  margin-top: 20px;
+}
+
+.restriccion {
+  text-align: center;
+  color: #aa0000;
+  font-weight: bold;
+  font-size: 16px;
 }
