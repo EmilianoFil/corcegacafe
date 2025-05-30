@@ -1,22 +1,19 @@
-
 body {
-  font-family: sans-serif;
-  background-color: #d86634;
-  color: #2b2b2b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
   margin: 0;
+  font-family: 'Georgia', serif;
+  background-color: #fdfcf7;
+  color: #1d1d1d;
 }
 
-.contenedor {
-  background: rgba(255,255,255,0.05);
-  padding: 40px 20px;
-  text-align: center;
-  border-radius: 16px;
+.menu-style {
   max-width: 400px;
-  width: 100%;
+  margin: 40px auto;
+  padding: 40px 20px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 16px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+  text-align: center;
 }
 
 h1 {
@@ -39,8 +36,8 @@ input {
 button {
   padding: 10px 20px;
   font-size: 16px;
-  background-color: white;
-  color: #d86634;
+  background-color: #d86634;
+  color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -57,7 +54,7 @@ button {
 .mensaje.error,
 .mensaje.ok,
 .mensaje a {
-  color: white;
+  color: #0d2b37;
 }
 
 .mensaje a {
@@ -74,6 +71,8 @@ button {
 .galope {
   width: 80px;
   animation: galopar 1s infinite ease-in-out alternate;
+  display: block;
+  margin: 0 auto;
 }
 
 @keyframes galopar {
@@ -93,11 +92,9 @@ button {
 
 .logout a {
   display: block;
-  background: none;
-  border: none;
   text-align: center;
   text-decoration: none;
-  color: white;
+  color: #d86634;
   font-weight: bold;
   margin: 8px 0;
   cursor: pointer;
