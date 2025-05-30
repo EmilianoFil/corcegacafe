@@ -4,7 +4,7 @@ import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebas
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // Configuración del proyecto Firebase
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
   authDomain: "corcega-loyalty-club.firebaseapp.com",
   projectId: "corcega-loyalty-club",
@@ -14,10 +14,9 @@ const firebaseConfig = {
   measurementId: "G-NXMC00DZ81"
 };
 
-// Inicializar Firebase y Analytics
+// Si querés seguir usando app y db desde este archivo, podés exportarlos también:
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getFirestore(app);
 
-// 👇 ESTA LÍNEA ES FUNDAMENTAL
 export { app, db };
