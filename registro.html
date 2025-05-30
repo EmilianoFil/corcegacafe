@@ -38,7 +38,9 @@
       <img src="caballo-logo.png" class="galope" />
     </div>
     <div class="exito" id="mensaje"></div>
-    <a href="index.html" class="volver" id="volver" style="display: none;">Inicio</a>
+    <div class="logout">
+      <a href="admin.html" class="volver">Volver</a>
+    </div>
   </div>
 
   <script type="module">
@@ -113,7 +115,7 @@
                 });
             }
 
-            document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🎉☕️";
+            document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🐎 ☕️\n";
           } else {
             document.getElementById("mensaje").innerText = "Ya estás registrado en el club.";
           }
