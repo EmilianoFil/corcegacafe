@@ -14,7 +14,7 @@ body {
 /* Card principal */
 .menu-style {
   min-width: 400px;
-  max-width: 480px; /* opcional, para no volarte en pantallas grandes */
+  max-width: 480px;
   width: 100%;
   margin: 40px auto;
   padding: 40px 20px;
@@ -174,4 +174,59 @@ section {
   color: #aa0000;
   font-weight: bold;
   font-size: 16px;
+}
+
+/* Tarjeta de fidelidad */
+.tarjeta-fidelidad {
+  background: #d86634;
+  color: white;
+  padding: 40px 20px;
+  border-radius: 16px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+  text-align: center;
+}
+
+/* Grid de círculos */
+.tarjeta-fidelidad .grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  justify-content: center;
+  margin: 20px auto;
+  max-width: 280px;
+}
+
+.tarjeta-fidelidad .circle {
+  width: 80px;
+  height: 80px;
+  border: 2px solid white;
+  border-radius: 50%;
+  background-size: 60%;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.3;
+}
+
+.tarjeta-fidelidad .circle.lleno {
+  background-image: url("caballito-oscuro.png");
+  opacity: 1;
+}
+
+.tarjeta-fidelidad .circle.noveno {
+  background-image: url("logo-corcega-color.png");
+  opacity: 1;
+}
+
+/* Instagram */
+footer a[href*="instagram.com"]::before {
+  content: "";
+  display: inline-block;
+  background-image: url("https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png");
+  background-size: 16px 16px;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  vertical-align: middle;
 }
