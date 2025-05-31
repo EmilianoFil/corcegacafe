@@ -17,11 +17,18 @@
 <body>
   <script type="module">
     import { auth, onAuthStateChanged } from './js/firebase-auth.js';
-    onAuthStateChanged(auth, (user) => {
+    import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    const db = getFirestore();
+
+    onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = "login.html";
       } else {
-        document.getElementById("usuarioLogueado").innerText = user.email;
+        const ref = doc(db, "admin", user.uid);
+        const snap = await getDoc(ref);
+        const nombre = snap.exists() ? (snap.data().nombre || user.email) : user.email;
+        document.getElementById("usuarioLogueado").innerText = nombre;
       }
     });
   </script>
@@ -50,8 +57,6 @@
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { auth, signOut } from './js/firebase-auth.js';
 
-    document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
-
     async function cerrarSesion() {
       const usuario = auth.currentUser?.email || "admin";
       await addDoc(collection(db, "logs"), {
@@ -74,7 +79,7 @@
       const button = document.getElementById("submitBtn");
       const div = document.getElementById("respuesta");
       const loader = document.getElementById("loader");
-      const usuario = localStorage.getItem("usuario") || "admin";
+      const usuario = auth.currentUser?.email || "admin";
 
       div.innerHTML = "";
       loader.style.display = "block";
