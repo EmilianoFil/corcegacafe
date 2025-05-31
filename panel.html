@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Estadísticas Internas - Córcega</title>
   <style>
     body {
@@ -94,7 +94,45 @@
       width: 80px;
       margin-bottom: 15px;
     }
+
+    .skeleton-card {
+      width: 100%;
+      max-width: 600px;
+      background-color: #ffffff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      border: 1px solid #ccc;
+      margin-top: 20px;
+    }
+
+    .skeleton-title,
+    .skeleton-line {
+      height: 20px;
+      background: linear-gradient(90deg, #f3f1e8 25%, #e8e6dd 50%, #f3f1e8 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+      border-radius: 6px;
+      margin-bottom: 16px;
+    }
+
+    .skeleton-title {
+      width: 60%;
+      height: 24px;
+      margin: 0 auto 20px;
+    }
+
+    .skeleton-line.short {
+      width: 40%;
+      margin: 0 auto;
+    }
+
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
   </style>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -106,7 +144,6 @@
     const db = getFirestore();
 
     document.querySelector(".menu-style").style.display = "none";
-
     const contenedor = document.getElementById("contenido");
     const cartel = document.getElementById("cartel");
 
@@ -186,6 +223,13 @@
   <div id="loader">
     <img src="caballo-logo.png" alt="Cargando..." class="galope">
     <p>Cargando estadísticas...</p>
+    <div class="skeleton-card">
+      <div class="skeleton-title"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+    </div>
   </div>
 
   <div class="menu-style">
