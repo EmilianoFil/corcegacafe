@@ -92,3 +92,47 @@ section {
     font-size: 14px;
   }
 }
+
+/* Skeleton loader */
+#skeleton-loader {
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.skeleton-card {
+  width: 100%;
+  max-width: 800px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+  border: 1px solid #ccc;
+}
+
+.skeleton-title,
+.skeleton-line {
+  height: 20px;
+  background: linear-gradient(90deg, #f3f1e8 25%, #e8e6dd 50%, #f3f1e8 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.skeleton-title {
+  width: 60%;
+  height: 24px;
+  margin: 0 auto 30px;
+}
+
+.skeleton-line.short {
+  width: 30%;
+  margin: 0 auto;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
