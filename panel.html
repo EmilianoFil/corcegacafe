@@ -94,6 +94,20 @@
       width: 80px;
       margin-bottom: 15px;
     }
+
+    .variacion {
+      font-weight: bold;
+      font-size: 14px;
+      margin-left: 8px;
+    }
+
+    .variacion.sube {
+      color: green;
+    }
+
+    .variacion.baja {
+      color: red;
+    }
   </style>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -136,15 +150,40 @@
       let cafesGratis = 0;
       const topClientes = [];
 
+      const ahora = new Date();
+      const semanaActualInicio = new Date(ahora);
+      semanaActualInicio.setDate(ahora.getDate() - 7);
+
+      const semanaPasadaInicio = new Date(ahora);
+      semanaPasadaInicio.setDate(ahora.getDate() - 14);
+      const semanaPasadaFin = new Date(ahora);
+      semanaPasadaFin.setDate(ahora.getDate() - 7);
+
+      let semanaActual = 0;
+      let semanaPasada = 0;
+
       clientesSnap.forEach(doc => {
         const data = doc.data();
         totalClientes++;
         totalCafes += data.cafes_acumulados_total || 0;
         if (data.cafe_disponible) cafesGratis++;
         topClientes.push(data);
+
+        const creado = doc.createTime.toDate();
+
+        if (creado >= semanaActualInicio) semanaActual++;
+        else if (creado >= semanaPasadaInicio && creado < semanaPasadaFin) semanaPasada++;
       });
 
       topClientes.sort((a, b) => (b.cafes_acumulados_total || 0) - (a.cafes_acumulados_total || 0));
+
+      let variacionHtml = "";
+      if (semanaPasada > 0) {
+        const variacion = ((semanaActual - semanaPasada) / semanaPasada) * 100;
+        const esSubida = variacion >= 0;
+        const simbolo = esSubida ? '⬆️' : '⬇️';
+        variacionHtml = `<span class="variacion ${esSubida ? "sube" : "baja"}">${esSubida ? '+' : '-'}${Math.abs(variacion.toFixed(1))}% ${simbolo}</span>`;
+      }
 
       let listaGratis = topClientes
         .filter(c => c.cafe_disponible)
@@ -160,7 +199,7 @@
         .join("");
 
       document.getElementById("resumen").innerHTML = `
-        <p><strong>Clientes registrados:</strong> ${totalClientes}</p>
+        <p><strong>Clientes registrados:</strong> ${totalClientes} ${variacionHtml}</p>
         <p><strong>Total de cafecitos servidos:</strong> ${totalCafes}</p>
         <p><strong>Cafecitos a invitar:</strong> ${cafesGratis}</p>
         ${cafesGratis > 0 ? `<ul>${listaGratis}</ul>` : ""}
