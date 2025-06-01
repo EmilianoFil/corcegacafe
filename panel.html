@@ -169,7 +169,11 @@
         if (data.cafe_disponible) cafesGratis++;
         topClientes.push(data);
 
-        const creado = doc.createTime.toDate();
+        const creado = data.creado?.toDate?.();
+        if (creado) {
+          if (creado >= semanaActualInicio) semanaActual++;
+          else if (creado >= semanaPasadaInicio && creado < semanaPasadaFin) semanaPasada++;
+        }
 
         if (creado >= semanaActualInicio) semanaActual++;
         else if (creado >= semanaPasadaInicio && creado < semanaPasadaFin) semanaPasada++;
