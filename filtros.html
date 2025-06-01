@@ -78,77 +78,88 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
-    authDomain: "corcega-loyalty-club.firebaseapp.com",
-    projectId: "corcega-loyalty-club",
-    storageBucket: "corcega-loyalty-club.appspot.com",
-    messagingSenderId: "789184958568",
-    appId: "1:789184958568:web:4990bf50335bec365f2bdd",
-    measurementId: "G-NXMC00DZ81"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
+      authDomain: "corcega-loyalty-club.firebaseapp.com",
+      projectId: "corcega-loyalty-club",
+      storageBucket: "corcega-loyalty-club.appspot.com",
+      messagingSenderId: "789184958568",
+      appId: "1:789184958568:web:4990bf50335bec365f2bdd",
+      measurementId: "G-NXMC00DZ81"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-  const logsRef = collection(db, "logs");
-  let todosLosLogs = [];
-  let tabla;
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const logsRef = collection(db, "logs");
+    let todosLosLogs = [];
+    let tabla;
 
-  onAuthStateChanged(auth, user => {
-    if (!user) {
-      window.location.href = "login.html";
-    } else {
-      cargarDatos();
+    onAuthStateChanged(auth, user => {
+      if (!user) {
+        window.location.href = "login.html";
+      } else {
+        cargarDatos();
+      }
+    });
+
+    async function cargarDatos() {
+      const snap = await getDocs(logsRef);
+      todosLosLogs = snap.docs.map(doc => doc.data());
+      actualizarTabla(todosLosLogs);
     }
-  });
 
-  async function cargarDatos() {
-    const snap = await getDocs(logsRef);
-    todosLosLogs = snap.docs.map(doc => doc.data());
-    actualizarTabla(todosLosLogs);
-  }
+    function actualizarTabla(data) {
+      if (tabla) tabla.destroy();
+      tabla = $('#tablaLogs').DataTable({
+        data: data.map(log => [
+          new Date(log.timestamp?.seconds * 1000).toLocaleString(),
+          log.usuario,
+          log.accion,
+          log.detalles
+        ]),
+        columns: [
+          { title: "Fecha" },
+          { title: "Usuario" },
+          { title: "Acción" },
+          { title: "Detalles" }
+        ]
+      });
+    }
 
-  function actualizarTabla(data) {
-    if (tabla) tabla.destroy();
-    tabla = $('#tablaLogs').DataTable({
-      data: data.map(log => [
-        new Date(log.timestamp?.seconds * 1000).toLocaleString(),
-        log.usuario,
-        log.accion,
-        log.detalles
-      ]),
-      columns: [
-        { title: "Fecha" },
-        { title: "Usuario" },
-        { title: "Acción" },
-        { title: "Detalles" }
-      ]
+    function filtrarFechas() {
+      const desdeInput = document.getElementById("desde").value;
+      const hastaInput = document.getElementById("hasta").value;
+
+      const desde = desdeInput ? new Date(`${desdeInput}T00:00:00`) : null;
+      const hasta = hastaInput ? new Date(`${hastaInput}T23:59:59`) : null;
+
+      const buscar = document.getElementById("buscar").value.toLowerCase();
+      const accion = document.getElementById("accion").value;
+
+      const filtrados = todosLosLogs.filter(log => {
+        const fecha = new Date(log.timestamp?.seconds * 1000);
+        const coincideFecha = (!desde || fecha >= desde) && (!hasta || fecha <= hasta);
+        const coincideTexto = [log.usuario, log.accion, log.detalles].some(campo => campo?.toLowerCase().includes(buscar));
+        const coincideAccion = accion ? log.accion === accion : true;
+        return coincideFecha && coincideTexto && coincideAccion;
+      });
+
+      actualizarTabla(filtrados);
+    }
+
+    document.getElementById("aplicarFiltros").addEventListener("click", filtrarFechas);
+
+    // Setear fecha actual como valor por defecto
+    document.addEventListener("DOMContentLoaded", () => {
+      const hoy = new Date().toISOString().split("T")[0];
+      document.getElementById("desde").value = hoy;
+      document.getElementById("hasta").value = hoy;
     });
-  }
-
-  function filtrarFechas() {
-    const desde = new Date(document.getElementById("desde").value);
-    const hasta = new Date(document.getElementById("hasta").value);
-    const buscar = document.getElementById("buscar").value.toLowerCase();
-    const accion = document.getElementById("accion").value;
-
-    const filtrados = todosLosLogs.filter(log => {
-      const fecha = new Date(log.timestamp?.seconds * 1000);
-      const coincideFecha = (!isNaN(desde) ? fecha >= desde : true) && (!isNaN(hasta) ? fecha <= hasta : true);
-      const coincideTexto = [log.usuario, log.accion, log.detalles].some(campo => campo?.toLowerCase().includes(buscar));
-      const coincideAccion = accion ? log.accion === accion : true;
-      return coincideFecha && coincideTexto && coincideAccion;
-    });
-
-    actualizarTabla(filtrados);
-  }
-
-  document.getElementById("aplicarFiltros").addEventListener("click", filtrarFechas);
-</script>
+  </script>
 </body>
 </html>
