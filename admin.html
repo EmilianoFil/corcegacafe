@@ -15,9 +15,22 @@
   </script>
 </head>
 <body>
+  <style>
+    .btn-estadisticas {
+      background-color: white;
+      color: #d86634;
+      padding: 6px 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 14px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+  </style>
+
   <script type="module">
     import { auth, onAuthStateChanged } from './js/firebase-auth.js';
-    import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { getFirestore, doc, getDoc, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     const db = getFirestore();
 
@@ -25,14 +38,27 @@
       if (!user) {
         window.location.href = "login.html";
       } else {
-        const ref = doc(db, "admin", user.uid);
-        const snap = await getDoc(ref);
-        const nombre = snap.exists() ? (snap.data().nombre || user.email) : user.email;
-        document.getElementById("usuarioLogueado").innerText = nombre;
+        try {
+          const ref = doc(db, "admin", user.uid);
+          const snap = await getDoc(ref);
+          const nombre = snap.exists() ? (snap.data().nombre || user.email) : user.email;
+          document.getElementById("usuarioLogueado").innerText = nombre;
 
-       if (snap.exists() && snap.data().rol === "dueño") {
-         document.getElementById("botonEstadisticas").style.display = "block";
-       }         
+          if (snap.exists() && snap.data().rol === "dueño") {
+            document.getElementById("botonEstadisticas").style.display = "block";
+          }
+
+          // (Opcional) Log de acceso al panel
+          await addDoc(collection(db, "logs"), {
+            usuario: user.email,
+            accion: "iniciar_sesion",
+            detalles: "Acceso a panel admin",
+            timestamp: new Date()
+          });
+
+        } catch (error) {
+          console.error("Error al obtener datos del usuario:", error);
+        }
       }
     });
   </script>
