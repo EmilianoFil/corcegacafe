@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <meta name="color-scheme" content="light" />
-  <title>Registro - Club de Recompensas</title>
+  <title>Registro Cliente</title>
   <link rel="stylesheet" href="css/style.css" />
 
   <!-- Google Analytics -->
@@ -107,6 +107,8 @@
               timestamp: new Date()
             });
 
+            document.title = "Cliente registrado"; // ← esta es la línea nueva
+            
             const enviarMail = false;
             if (enviarMail) {
               emailjs.send("service_2pfzklo", "template_33mxnzd", {
