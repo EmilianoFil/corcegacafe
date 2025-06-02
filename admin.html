@@ -55,86 +55,96 @@
   </style>
 
   <script type="module">
-    import { auth, onAuthStateChanged } from './js/firebase-auth.js';
-    import { getFirestore, doc, getDoc, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { auth, onAuthStateChanged } from './js/firebase-auth.js';
+  import { getFirestore, doc, getDoc, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-    const db = getFirestore();
+  const db = getFirestore();
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = "login.html";
+  onAuthStateChanged(auth, async (user) => {
+    const sesionExpirada = localStorage.getItem("sesion_expirada");
+
+    if (!user) {
+      if (sesionExpirada === "true") {
+        mostrarMensajeSesionExpirada("Tu sesión expiró automáticamente.");
+        return;
       } else {
-        try {
-          const ref = doc(db, "admin", user.uid);
-          const snap = await getDoc(ref);
-          const nombre = snap.exists() ? (snap.data().nombre || user.email) : user.email;
-          document.getElementById("usuarioLogueado").innerText = nombre;
+        window.location.href = "login.html";
+        return;
+      }
+    }
 
-          if (snap.exists() && snap.data().rol === "dueño") {
-            document.getElementById("botonEstadisticas").style.display = "block";
-          }
+    try {
+      const ref = doc(db, "admin", user.uid);
+      const snap = await getDoc(ref);
+      const nombre = snap.exists() ? (snap.data().nombre || user.email) : user.email;
+      document.getElementById("usuarioLogueado").innerText = nombre;
 
+      if (snap.exists() && snap.data().rol === "dueño") {
+        document.getElementById("botonEstadisticas").style.display = "block";
+      }
+
+      await addDoc(collection(db, "logs"), {
+        usuario: user.email,
+        accion: "iniciar_sesion",
+        detalles: "Acceso a panel admin",
+        timestamp: new Date()
+      });
+
+      const ahora = Date.now();
+      localStorage.setItem("loginTimestamp", ahora.toString());
+      localStorage.setItem("ultimoEvento", ahora.toString());
+
+      ["click", "keydown", "mousemove", "scroll", "touchstart"].forEach(evento => {
+        document.addEventListener(evento, () => {
+          localStorage.setItem("ultimoEvento", Date.now().toString());
+        });
+      });
+
+      setInterval(async () => {
+        const tsLogin = parseInt(localStorage.getItem("loginTimestamp") || "0");
+        const tsUltimoEvento = parseInt(localStorage.getItem("ultimoEvento") || "0");
+        const ahora = Date.now();
+
+        const INACTIVIDAD_MAX_MS = 30 * 60 * 1000;
+        const SESION_MAX_MS = 300 * 60 * 1000;
+
+        const usuario = auth.currentUser?.email || "admin";
+
+        if (ahora - tsLogin > SESION_MAX_MS) {
           await addDoc(collection(db, "logs"), {
-            usuario: user.email,
-            accion: "iniciar_sesion",
-            detalles: "Acceso a panel admin",
+            usuario,
+            accion: "admin_max_cerrar_sesion",
+            detalles: "Se cerró la sesión por máximo de tiempo abierto",
             timestamp: new Date()
           });
-
-          const ahora = Date.now();
-          localStorage.setItem("loginTimestamp", ahora.toString());
-          localStorage.setItem("ultimoEvento", ahora.toString());
-
-          ["click", "keydown", "mousemove", "scroll", "touchstart"].forEach(evento => {
-            document.addEventListener(evento, () => {
-              localStorage.setItem("ultimoEvento", Date.now().toString());
-            });
+          localStorage.setItem("sesion_expirada", "true");
+          await auth.signOut();
+        } else if (ahora - tsUltimoEvento > INACTIVIDAD_MAX_MS) {
+          await addDoc(collection(db, "logs"), {
+            usuario,
+            accion: "admin_inact_cerrar_sesion",
+            detalles: "Se cerró la sesión por inactividad",
+            timestamp: new Date()
           });
-
-          setInterval(async () => {
-            const tsLogin = parseInt(localStorage.getItem("loginTimestamp") || "0");
-            const tsUltimoEvento = parseInt(localStorage.getItem("ultimoEvento") || "0");
-            const ahora = Date.now();
-
-            const INACTIVIDAD_MAX_MS = 1 * 60 * 1000;
-            const SESION_MAX_MS = 300 * 60 * 1000;
-
-            const usuario = auth.currentUser?.email || "admin";
-
-            if (ahora - tsLogin > SESION_MAX_MS) {
-              await addDoc(collection(db, "logs"), {
-                usuario,
-                accion: "admin_max_cerrar_sesion",
-                detalles: "Se cerró la sesión por máximo de tiempo abierto",
-                timestamp: new Date()
-              });
-              mostrarMensajeSesionExpirada("Se cerró tu sesión por tiempo máximo abierta.");
-            } else if (ahora - tsUltimoEvento > INACTIVIDAD_MAX_MS) {
-              await addDoc(collection(db, "logs"), {
-                usuario,
-                accion: "admin_inact_cerrar_sesion",
-                detalles: "Se cerró la sesión por inactividad",
-                timestamp: new Date()
-              });
-              mostrarMensajeSesionExpirada("Se cerró tu sesión por inactividad.");
-            }
-          }, 60 * 1000);
-
-        } catch (error) {
-          console.error("Error al obtener datos del usuario:", error);
+          localStorage.setItem("sesion_expirada", "true");
+          await auth.signOut();
         }
-      }
-    });
+      }, 60 * 1000);
 
-    function mostrarMensajeSesionExpirada(mensaje) {
-      document.querySelector(".menu-style").style.display = "none";
-      const cartel = document.getElementById("sesion-expirada");
-      cartel.querySelector("p").textContent = mensaje;
-      cartel.style.display = "block";
-      localStorage.clear();
-      auth.signOut();
+    } catch (error) {
+      console.error("Error al obtener datos del usuario:", error);
     }
-  </script>
+  });
+
+  function mostrarMensajeSesionExpirada(mensaje) {
+    document.querySelector(".menu-style").style.display = "none";
+    const cartel = document.getElementById("sesion-expirada");
+    cartel.querySelector("p").textContent = mensaje;
+    cartel.style.display = "block";
+    localStorage.clear();
+    localStorage.removeItem("sesion_expirada");
+  }
+</script>
 
   <div class="menu-style">
     <div id="botonEstadisticas" style="display:none; text-align: right; margin-bottom: 10px;">
