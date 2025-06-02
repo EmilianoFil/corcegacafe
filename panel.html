@@ -23,6 +23,27 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
 
+    .botones-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn-izquierda,
+    .btn-derecha {
+      background-color: white;
+      color: #d86634;
+      padding: 8px 14px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 14px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
     .logo {
       width: 60px;
       display: block;
@@ -109,37 +130,7 @@
     .variacion.baja {
       color: red;
     }
-    
-    .botones-superiores {
-      position: absolute;
-      top: 20px;
-      left: 0;
-      right: 0;
-      display: flex;
-      justify-content: space-between;
-      padding: 0 20px;
-      z-index: 999;
-    }
-    
-    .btn-izquierda,
-    .btn-derecha {
-      background-color: white;
-      color: #d86634;
-      padding: 8px 14px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: bold;
-      font-size: 14px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
   </style>
-  
-  <div class="botones-superiores">
-    <a href="panel.html" class="btn-izquierda">← Volver al panel</a>
-    <a href="filtros.html" class="btn-derecha">Buscar detalles</a>
-  </div>
-  
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -262,6 +253,10 @@
   </div>
 
   <div class="menu-style">
+    <div class="botones-panel">
+      <a href="panel.html" class="btn-izquierda">← Volver al panel</a>
+      <a href="filtros.html" class="btn-derecha">Buscar detalles</a>
+    </div>
     <img src="caballo-logo.png" alt="Córcega" class="logo">
     <h1>Estadísticas Internas</h1>
     <p id="cartel" class="restriccion"></p>
