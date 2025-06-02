@@ -34,9 +34,33 @@
       cursor: pointer;
       font-weight: bold;
     }
+
+    .boton-volver {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 999;
+}
+
+.btn-izquierda {
+  background-color: white;
+  color: #d86634;
+  padding: 8px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+    
   </style>
 </head>
 <body>
+
+  <div class="boton-volver">
+  <a href="panel.html" class="btn-izquierda">← Volver al panel</a>
+</div>
+  
   <div class="menu-style">
     <img src="caballo-logo.png" alt="Logo" class="logo">
     <h1>Historial de actividad</h1>
