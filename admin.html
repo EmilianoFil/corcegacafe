@@ -212,6 +212,7 @@
       }
 
       if (!snap.exists()) {
+        document.title = "Resultado consulta cliente"; // ← esta es la línea nueva
         div.className = "mensaje error";
         div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
         loader.style.display = "none";
@@ -225,6 +226,7 @@
       if (!estadoCliente) {
         estadoCliente = { dni, nombre: data.nombre, cafes: data.cafes };
         div.className = "mensaje ok";
+        document.title = "Resultado consulta cliente"; // ← esta es la línea nueva
         if (data.cafes >= 8) {
           div.innerText = `Cliente ya tiene 8 cafecitos acumulados.\nEste nos toca a nosotros\n🐎`;
           button.innerText = "Invitar cafecito";
@@ -249,6 +251,7 @@
           cafes_acumulados_total: increment(1)
         });
         div.className = "mensaje ok";
+        document.title = "Invitación cafecito"; // ← esta es la línea nueva
         div.innerText = `🎁 Invitamos un cafecito a ${estadoCliente.nombre}.\n¡Gracias por su fidelidad!`;
         if (typeof gtag === 'function') {
           gtag('event', 'admin_invito_cafe', { dni: data.dni });
@@ -271,6 +274,7 @@
         }
         await updateDoc(ref, updates);
         div.className = "mensaje ok";
+        document.title = "Suma cafecito"; // ← esta es la línea nueva
         div.innerText = nuevosCafes >= 8
           ? `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
           : `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}. Total: ${nuevosCafes}`;
