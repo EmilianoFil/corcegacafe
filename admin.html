@@ -96,15 +96,15 @@
             const tsUltimoEvento = parseInt(localStorage.getItem("ultimoEvento") || "0");
             const ahora = Date.now();
 
-            const INACTIVIDAD_MAX_MS = 1 * 60 * 1000; // 30 min
-            const SESION_MAX_MS = 300 * 60 * 1000;     // 5 hs
+            const INACTIVIDAD_MAX_MS = 1 * 60 * 1000;
+            const SESION_MAX_MS = 300 * 60 * 1000;
 
             const usuario = auth.currentUser?.email || "admin";
 
             if (ahora - tsLogin > SESION_MAX_MS) {
               await addDoc(collection(db, "logs"), {
                 usuario,
-                accion: "admin_inact_cerrar_sesion",
+                accion: "admin_max_cerrar_sesion",
                 detalles: "Se cerró la sesión por máximo de tiempo abierto",
                 timestamp: new Date()
               });
@@ -112,7 +112,7 @@
             } else if (ahora - tsUltimoEvento > INACTIVIDAD_MAX_MS) {
               await addDoc(collection(db, "logs"), {
                 usuario,
-                accion: "admin_max_cerrar_sesion",
+                accion: "admin_inact_cerrar_sesion",
                 detalles: "Se cerró la sesión por inactividad",
                 timestamp: new Date()
               });
@@ -160,7 +160,6 @@
     <p></p>
     <a href="login.html">Volver a ingresar</a>
   </div>
-
   <script type="module">
     import { app, db } from './js/firebase-config.js';
     import {
