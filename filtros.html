@@ -65,6 +65,9 @@
 
     .filtros label {
       font-weight: bold;
+      display: flex;
+      flex-direction: column;
+      width: auto;
     }
 
     .filtros input,
@@ -87,25 +90,25 @@
     }
 
     @media (max-width: 600px) {
-  .filtros {
-    flex-direction: column;
-    align-items: stretch;
-  }
+      .filtros {
+        flex-direction: column;
+        align-items: stretch;
+      }
 
-  .filtros label {
-    width: 100%;
-  }
+      .filtros label {
+        width: 100%;
+      }
 
-  .filtros input,
-  .filtros select {
-    width: 100%;
-    box-sizing: border-box;
-  }
+      .filtros input,
+      .filtros select {
+        width: 100%;
+        box-sizing: border-box;
+      }
 
-  #aplicarFiltros {
-    width: 100%;
-  }
-}
+      #aplicarFiltros {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
