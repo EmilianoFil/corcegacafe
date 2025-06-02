@@ -48,13 +48,36 @@
             document.getElementById("botonEstadisticas").style.display = "block";
           }
 
-          // (Opcional) Log de acceso al panel
           await addDoc(collection(db, "logs"), {
             usuario: user.email,
             accion: "iniciar_sesion",
             detalles: "Acceso a panel admin",
             timestamp: new Date()
           });
+
+          // ⏱️ Control de expiración de sesión
+          const ahora = Date.now();
+          localStorage.setItem("loginTimestamp", ahora.toString());
+          localStorage.setItem("ultimoEvento", ahora.toString());
+
+          ["click", "keydown", "mousemove", "scroll", "touchstart"].forEach(evento => {
+            document.addEventListener(evento, () => {
+              localStorage.setItem("ultimoEvento", Date.now().toString());
+            });
+          });
+
+          setInterval(() => {
+            const tsLogin = parseInt(localStorage.getItem("loginTimestamp") || "0");
+            const tsUltimoEvento = parseInt(localStorage.getItem("ultimoEvento") || "0");
+            const ahora = Date.now();
+
+            const INACTIVIDAD_MAX_MS = 1 * 60 * 1000;
+            const SESION_MAX_MS = 30 * 60 * 1000;
+
+            if ((ahora - tsLogin > SESION_MAX_MS) || (ahora - tsUltimoEvento > INACTIVIDAD_MAX_MS)) {
+              cerrarSesion();
+            }
+          }, 60 * 1000);
 
         } catch (error) {
           console.error("Error al obtener datos del usuario:", error);
