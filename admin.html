@@ -73,14 +73,15 @@
           if (snap.exists() && snap.data().rol === "dueño") {
             document.getElementById("botonEstadisticas").style.display = "block";
           }
-
+          
+/* Borro este log porque lo registra cada vez que acceso a admin.html
           await addDoc(collection(db, "logs"), {
             usuario: user.email,
             accion: "iniciar_sesion",
             detalles: "Acceso a panel admin",
             timestamp: new Date()
           });
-
+*/
           const ahora = Date.now();
           localStorage.setItem("loginTimestamp", ahora.toString());
           localStorage.setItem("ultimoEvento", ahora.toString());
@@ -97,7 +98,7 @@
             const ahora = Date.now();
 
             const INACTIVIDAD_MAX_MS = 1 * 60 * 1000; // 30 min
-            const SESION_MAX_MS = 300 * 60 * 1000;     // 5 hs
+            const SESION_MAX_MS = 2 * 60 * 1000;     // 5 hs
 
             const usuario = auth.currentUser?.email || "admin";
 
