@@ -29,11 +29,18 @@
         const snap = await getDoc(ref);
         const nombre = snap.exists() ? (snap.data().nombre || user.email) : user.email;
         document.getElementById("usuarioLogueado").innerText = nombre;
+
+       if (snap.exists() && snap.data().rol === "dueño") {
+         document.getElementById("botonEstadisticas").style.display = "block";
+       }         
       }
     });
   </script>
 
   <div class="menu-style">
+       <div id="botonEstadisticas" style="display:none;">
+     <a href="panel.html" class="btn-estadisticas">📊 Estadísticas</a>
+   </div>
     <div class="info-usuario">
       Usuario logueado: <span id="usuarioLogueado">-</span>
     </div>
