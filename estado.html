@@ -70,6 +70,7 @@
       contenedor.style.display = "block";
 
       if (!snap.exists()) {
+        document.title = "Resultado consulta cliente"; // ← esta es la línea nueva
         document.getElementById("cliente").style.display = "none";
         document.getElementById("faltan").style.display = "none";
         document.getElementById("grid").style.display = "none";
@@ -112,6 +113,7 @@
       const nombre = data.nombre || "Amigo";
       const cafes = parseInt(data.cafes) || 0;
 
+      document.title = "Tarjeta cliente"; // ← esta es la línea nueva
       document.getElementById("cliente").textContent = `Hola ${nombre}`;
       document.getElementById("faltan").textContent = cafes < 8
         ? `Te faltan ${8 - cafes} para que te invitemos uno.`
