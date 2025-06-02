@@ -97,8 +97,8 @@
             const tsUltimoEvento = parseInt(localStorage.getItem("ultimoEvento") || "0");
             const ahora = Date.now();
 
-            const INACTIVIDAD_MAX_MS = 1 * 60 * 1000; // 30 min
-            const SESION_MAX_MS = 2 * 60 * 1000;     // 5 hs
+            const INACTIVIDAD_MAX_MS = 30 * 60 * 1000; // 30 min
+            const SESION_MAX_MS = 300 * 60 * 1000;     // 5 hs
 
             const usuario = auth.currentUser?.email || "admin";
 
