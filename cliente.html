@@ -3,76 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Buscar Cliente - Dueño</title>
+  <title>Admin - Detalle Cliente</title>
   <link rel="stylesheet" href="css/panel.css">
   <style>
     body {
-      font-family: sans-serif;
-      background-color: #d86634;
-      color: #2b2b2b;
       margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
+      font-family: 'Georgia', serif;
+      background-color: #fdfcf7;
+      color: #1d1d1d;
     }
 
-    .contenedor {
-      background: rgba(255, 255, 255, 0.05);
-      padding: 40px 20px;
-      border-radius: 16px;
-      max-width: 600px;
-      width: 100%;
-      text-align: center;
-    }
-
-    h1 {
-      margin-bottom: 20px;
+    .menu-style {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 40px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
 
     input {
-      width: 80%;
       padding: 10px;
-      margin: 10px 0;
       font-size: 16px;
+      width: 100%;
+      max-width: 400px;
+      margin: 10px auto 20px;
+      display: block;
       border-radius: 8px;
-      border: 2px solid white;
-      background: white;
-      color: black;
+      border: 1px solid #ccc;
     }
 
     button {
-      background: white;
-      color: #d86634;
       padding: 10px 20px;
+      background-color: #d86634;
+      color: white;
       border: none;
       border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
     }
 
-    .info-cliente {
-      margin-top: 30px;
-      text-align: left;
-      background: white;
-      color: black;
-      padding: 20px;
-      border-radius: 12px;
-    }
-
-    .info-cliente strong {
-      display: inline-block;
-      width: 140px;
-    }
-
     #loader {
-      margin-top: 20px;
       display: none;
+      margin: 20px auto;
+      text-align: center;
     }
 
     .galope {
-      width: 60px;
+      width: 80px;
       animation: galopar 1s infinite ease-in-out alternate;
     }
 
@@ -81,20 +60,53 @@
       100% { transform: translateY(-10px); }
     }
 
-    .volver {
+    .resultado {
+      margin-top: 30px;
+    }
+
+    .info-cliente {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 20px;
       margin-top: 20px;
+      background-color: #fafafa;
+    }
+
+    .info-cliente p {
+      margin: 10px 0;
+    }
+
+    .info-cliente strong {
       display: inline-block;
-      color: white;
-      text-decoration: underline;
+      width: 200px;
+    }
+
+    .volver {
+      display: inline-block;
+      margin-top: 30px;
+      color: #d86634;
+      text-decoration: none;
       font-weight: bold;
     }
   </style>
 </head>
 <body>
+  <div class="menu-style">
+    <h1>Buscar Cliente</h1>
+    <input type="text" id="busqueda" placeholder="DNI o nombre y apellido" />
+    <button id="buscarBtn">Buscar</button>
+
+    <div id="loader"><img src="caballo-logo.png" class="galope" /></div>
+    <div id="resultado" class="resultado"></div>
+    <a href="admin.html" class="volver">⬅ Volver al panel</a>
+  </div>
+
   <script type="module">
     import { auth, onAuthStateChanged } from './js/firebase-auth.js';
     import { db } from './js/firebase-config.js';
-    import { collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      doc, getDoc, collection, getDocs
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -110,64 +122,54 @@
       }
     });
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const form = document.getElementById("busquedaForm");
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const termino = document.getElementById("busqueda").value.trim().toLowerCase();
-        const loader = document.getElementById("loader");
-        const resultado = document.getElementById("resultado");
-        resultado.innerHTML = "";
-        loader.style.display = "block";
+    document.getElementById("buscarBtn").addEventListener("click", async () => {
+      const termino = document.getElementById("busqueda").value.trim().toLowerCase();
+      const loader = document.getElementById("loader");
+      const resultado = document.getElementById("resultado");
+      resultado.innerHTML = "";
+      loader.style.display = "block";
 
-        const ref = collection(db, "clientes");
-        const snapshot = await getDocs(ref);
+      const ref = collection(db, "clientes");
+      const snapshot = await getDocs(ref);
 
-        loader.style.display = "none";
+      loader.style.display = "none";
 
-        let encontrado = null;
-        snapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          if (
-            data.dni.toLowerCase() === termino ||
-            data.nombre.toLowerCase().includes(termino)
-          ) {
-            encontrado = data;
-          }
-        });
-
-        if (!encontrado) {
-          resultado.innerHTML = "<p>No se encontró ningún cliente con ese dato.</p>";
-          return;
+      let encontrado = null;
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (
+          data.dni.toLowerCase() === termino ||
+          data.nombre.toLowerCase().includes(termino)
+        ) {
+          encontrado = data;
         }
-
-        resultado.innerHTML = `
-          <div class="info-cliente">
-            <p><strong>DNI:</strong> ${encontrado.dni}</p>
-            <p><strong>Nombre:</strong> ${encontrado.nombre}</p>
-            <p><strong>Email:</strong> ${encontrado.email}</p>
-            <p><strong>Cafecitos acumulados:</strong> ${encontrado.cafes}</p>
-            <p><strong>Total histórico:</strong> ${encontrado.cafes_acumulados_total}</p>
-            <p><strong>¿Tiene café gratis?</strong> ${encontrado.cafe_disponible ? "Sí ☕" : "No"}</p>
-            <p><strong>Último café:</strong> ${encontrado.ultimo_cafe?.toDate?.().toLocaleString?.() || "—"}</p>
-          </div>
-        `;
       });
+
+      if (!encontrado) {
+        resultado.innerHTML = "<p>No se encontró ningún cliente con ese dato.</p>";
+        return;
+      }
+
+      const alta = encontrado.alta?.toDate?.();
+      const dias = alta ? Math.floor((Date.now() - alta.getTime()) / (1000 * 60 * 60 * 24)) : null;
+      const altaTexto = alta ? `${alta.toLocaleDateString()} (${dias} días)` : "—";
+
+      const ultimo = encontrado.ultimo_cafe?.toDate?.();
+      const ultimoTexto = ultimo ? ultimo.toLocaleString() : "—";
+
+      resultado.innerHTML = `
+        <div class="info-cliente">
+          <p><strong>DNI:</strong> ${encontrado.dni}</p>
+          <p><strong>Nombre:</strong> ${encontrado.nombre}</p>
+          <p><strong>Email:</strong> ${encontrado.email}</p>
+          <p><strong>Fecha de alta:</strong> ${altaTexto}</p>
+          <p><strong>Cafecitos acumulados:</strong> ${encontrado.cafes}</p>
+          <p><strong>Total histórico:</strong> ${encontrado.cafes_acumulados_total}</p>
+          <p><strong>¿Tiene café gratis?</strong> ${encontrado.cafe_disponible ? "Sí ☕" : "No"}</p>
+          <p><strong>Último café:</strong> ${ultimoTexto}</p>
+        </div>
+      `;
     });
   </script>
-
-  <div class="contenedor">
-    <h1>Buscar cliente</h1>
-    <form id="busquedaForm">
-      <input type="text" id="busqueda" placeholder="DNI o nombre" required />
-      <br>
-      <button type="submit">Buscar</button>
-    </form>
-
-    <div id="loader"><img src="caballo-logo.png" class="galope" /></div>
-    <div id="resultado"></div>
-
-    <a href="admin.html" class="volver">Volver al panel</a>
-  </div>
 </body>
 </html>
