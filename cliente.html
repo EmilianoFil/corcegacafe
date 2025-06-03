@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+n<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -8,7 +8,7 @@
   <style>
     body {
       margin: 0;
-      font-family: 'Georgia', serif;
+      font-family: 'roboto', serif;
       background-color: #fdfcf7;
       color: #1d1d1d;
     }
@@ -90,15 +90,30 @@
     }
   </style>
 </head>
-<body>
-  <div class="menu-style">
-    <h1>Buscar Cliente</h1>
-    <input type="text" id="busqueda" placeholder="DNI o nombre y apellido" />
-    <button id="buscarBtn">Buscar</button>
+<body style="margin: 0; background-color: #fdfcf7; font-family: 'roboto', serif; color: #1d1d1d;">
+  <div class="menu-style" style="max-width: 600px; margin: 40px auto; padding: 40px; background: white; border: 1px solid #ccc; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.05); text-align: center;">
+    
+    <h1 style="margin-bottom: 20px;">Buscar Cliente</h1>
 
-    <div id="loader"><img src="caballo-logo.png" class="galope" /></div>
-    <div id="resultado" class="resultado"></div>
-    <a href="admin.html" class="volver">⬅ Volver al panel</a>
+    <input type="text" id="busqueda" placeholder="DNI o nombre y apellido"
+      style="padding: 10px; width: 80%; max-width: 300px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 15px;" />
+
+    <br>
+
+    <button id="buscarBtn"
+      style="background-color: #d86634; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 20px;">
+      Buscar
+    </button>
+
+    <div id="loader" style="display: none; margin-bottom: 20px;">
+      <img src="caballo-logo.png" class="galope" style="width: 80px; animation: galopar 1s infinite ease-in-out alternate;" />
+    </div>
+
+    <div id="resultado" class="resultado" style="text-align: left;"></div>
+
+    <div style="margin-top: 30px;">
+      <a href="admin.html" style="color: #d86634; font-weight: bold; text-decoration: none;">⬅ Volver al panel</a>
+    </div>
   </div>
 
   <script type="module">
@@ -158,11 +173,11 @@
       const ultimoTexto = ultimo ? ultimo.toLocaleString() : "—";
 
       resultado.innerHTML = `
-        <div class="info-cliente">
+        <div class="info-cliente" style="padding: 20px; background: #f8f6f2; border-radius: 10px; border: 1px solid #ccc;">
           <p><strong>DNI:</strong> ${encontrado.dni}</p>
           <p><strong>Nombre:</strong> ${encontrado.nombre}</p>
           <p><strong>Email:</strong> ${encontrado.email}</p>
-          <p><strong>Fecha de alta:</strong> ${altaTexto}</p>
+          <p><strong>Fecha de alta:</strong> ${encontrado.creado}</p>
           <p><strong>Cafecitos acumulados:</strong> ${encontrado.cafes}</p>
           <p><strong>Total histórico:</strong> ${encontrado.cafes_acumulados_total}</p>
           <p><strong>¿Tiene café gratis?</strong> ${encontrado.cafe_disponible ? "Sí ☕" : "No"}</p>
