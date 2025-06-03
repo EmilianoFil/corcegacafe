@@ -89,6 +89,7 @@
           cafes: sumarCafecito ? 1 : 0,
           cafes_acumulados_total: sumarCafecito ? 1 : 0,
           cafe_disponible: sumarCafecito ? false : false,
+          cafecitos_invitados: 0, // <--- agregar esto
           ultimo_cafe: sumarCafecito ? serverTimestamp() : null
         });
 
