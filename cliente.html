@@ -165,7 +165,7 @@ n<!DOCTYPE html>
         return;
       }
 
-      const alta = encontrado.alta?.toDate?.();
+      const alta = encontrado.creado?.toDate?.();
       const dias = alta ? Math.floor((Date.now() - alta.getTime()) / (1000 * 60 * 60 * 24)) : null;
       const altaTexto = alta ? `${alta.toLocaleDateString()} (${dias} días)` : "—";
 
@@ -177,7 +177,7 @@ n<!DOCTYPE html>
           <p><strong>DNI:</strong> ${encontrado.dni}</p>
           <p><strong>Nombre:</strong> ${encontrado.nombre}</p>
           <p><strong>Email:</strong> ${encontrado.email}</p>
-          <p><strong>Fecha de alta:</strong> ${encontrado.creado}</p>
+          <p><strong>Fecha de alta:</strong> ${altaTexto}</p>
           <p><strong>Cafecitos acumulados:</strong> ${encontrado.cafes}</p>
           <p><strong>Total histórico:</strong> ${encontrado.cafes_acumulados_total}</p>
           <p><strong>¿Tiene café gratis?</strong> ${encontrado.cafe_disponible ? "Sí ☕" : "No"}</p>
