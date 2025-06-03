@@ -248,6 +248,7 @@
           cafes: 0,
           cafe_disponible: false,
           ultimo_cafe: serverTimestamp(),
+          cafecitos_invitados: increment(1), // <--- nuevo contador
           cafes_acumulados_total: increment(1)
         });
         div.className = "mensaje ok";
