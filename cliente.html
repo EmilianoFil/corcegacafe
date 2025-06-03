@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buscar Cliente - Dueño</title>
+  <link rel="stylesheet" href="css/panel.css">
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #d86634;
+      color: #2b2b2b;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .contenedor {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 40px 20px;
+      border-radius: 16px;
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 80%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 2px solid white;
+      background: white;
+      color: black;
+    }
+
+    button {
+      background: white;
+      color: #d86634;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .info-cliente {
+      margin-top: 30px;
+      text-align: left;
+      background: white;
+      color: black;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .info-cliente strong {
+      display: inline-block;
+      width: 140px;
+    }
+
+    #loader {
+      margin-top: 20px;
+      display: none;
+    }
+
+    .galope {
+      width: 60px;
+      animation: galopar 1s infinite ease-in-out alternate;
+    }
+
+    @keyframes galopar {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-10px); }
+    }
+
+    .volver {
+      margin-top: 20px;
+      display: inline-block;
+      color: white;
+      text-decoration: underline;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <script type="module">
+    import { auth, onAuthStateChanged } from './js/firebase-auth.js';
+    import { db } from './js/firebase-config.js';
+    import { collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const ref = doc(db, "admin", user.uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists() || snap.data().rol !== "dueño") {
+        alert("Acceso restringido a dueños.");
+        window.location.href = "login.html";
+      }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("busquedaForm");
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const termino = document.getElementById("busqueda").value.trim().toLowerCase();
+        const loader = document.getElementById("loader");
+        const resultado = document.getElementById("resultado");
+        resultado.innerHTML = "";
+        loader.style.display = "block";
+
+        const ref = collection(db, "clientes");
+        const snapshot = await getDocs(ref);
+
+        loader.style.display = "none";
+
+        let encontrado = null;
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          if (
+            data.dni.toLowerCase() === termino ||
+            data.nombre.toLowerCase().includes(termino)
+          ) {
+            encontrado = data;
+          }
+        });
+
+        if (!encontrado) {
+          resultado.innerHTML = "<p>No se encontró ningún cliente con ese dato.</p>";
+          return;
+        }
+
+        resultado.innerHTML = `
+          <div class="info-cliente">
+            <p><strong>DNI:</strong> ${encontrado.dni}</p>
+            <p><strong>Nombre:</strong> ${encontrado.nombre}</p>
+            <p><strong>Email:</strong> ${encontrado.email}</p>
+            <p><strong>Cafecitos acumulados:</strong> ${encontrado.cafes}</p>
+            <p><strong>Total histórico:</strong> ${encontrado.cafes_acumulados_total}</p>
+            <p><strong>¿Tiene café gratis?</strong> ${encontrado.cafe_disponible ? "Sí ☕" : "No"}</p>
+            <p><strong>Último café:</strong> ${encontrado.ultimo_cafe?.toDate?.().toLocaleString?.() || "—"}</p>
+          </div>
+        `;
+      });
+    });
+  </script>
+
+  <div class="contenedor">
+    <h1>Buscar cliente</h1>
+    <form id="busquedaForm">
+      <input type="text" id="busqueda" placeholder="DNI o nombre" required />
+      <br>
+      <button type="submit">Buscar</button>
+    </form>
+
+    <div id="loader"><img src="caballo-logo.png" class="galope" /></div>
+    <div id="resultado"></div>
+
+    <a href="admin.html" class="volver">Volver al panel</a>
+  </div>
+</body>
+</html>
