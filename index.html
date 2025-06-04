@@ -2,77 +2,57 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Córcega Café</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Roboto', serif;
+      background-color: #fdfcf7;
+      color: #1d1d1d;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+    }
 
-  <!-- SEO GOOGLE INICIO -->
-  <meta name="description" content="Sumá cafecitos con tu DNI en Córcega y canjeá el tuyo ☕">
-  <meta name="keywords" content="cafecito, fidelización, Córcega, café gratis, rebeldía cafetera, cafe de especialidad">
-  <meta name="author" content="Córcega Cafe">
-  <meta property="og:title" content="Club de Cafe - Córcega">
-  <meta property="og:description" content="Comprando cafés, acumulás 8 y te invitamos uno. Consultá tu estado con tu DNI.">
-  <meta property="og:image" content="https://corcegacafe.com.ar/logo-corcega-color.png">
-  <meta property="og:url" content="https://corcegacafe.com.ar">
-  <!-- SEO GOOGLE FIN -->
-  
-  <link rel="icon" href="favicon.ico" type="image/x-icon" />
-  <title>Consulta cliente</title>
-  <link rel="stylesheet" href="css/style.css">
+    .logo {
+      width: 100px;
+      margin-bottom: 30px;
+    }
 
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-NXMC00DZ81');
-  </script>
+    h1 {
+      margin-bottom: 20px;
+      color: #d86634;
+    }
+
+    .boton {
+      display: inline-block;
+      margin: 10px;
+      padding: 12px 24px;
+      background-color: #d86634;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background-color 0.3s;
+    }
+
+    .boton:hover {
+      background-color: #b7542c;
+    }
+  </style>
 </head>
 <body>
-  <div class="menu-style">
-    <h1>☕ <strong>Consultá cómo venís</strong></h1>
-    <p>Ingresá tu DNI para ver tu progreso</p>
-    <form id="dniForm">
-      <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]*" maxlength="8" required />
-      <button type="submit" class="btn-primary">Ver</button>
-    </form>
-
-    <footer style="margin-top: 30px;">
-      <p>Seguinos en Instagram<br>
-      <a href="https://www.instagram.com/corcegacafe" target="_blank">@corcegacafe</a></p>
-    </footer>
-  </div>
-
-  <!-- Firebase core + analytics -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
-      authDomain: "corcega-loyalty-club.firebaseapp.com",
-      projectId: "corcega-loyalty-club",
-      storageBucket: "corcega-loyalty-club.appspot.com",
-      messagingSenderId: "789184958568",
-      appId: "1:789184958568:web:4990bf50335bec365f2bdd",
-      measurementId: "G-NXMC00DZ81"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-  </script>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const form = document.getElementById("dniForm");
-      form.addEventListener("submit", function(event) {
-        event.preventDefault();
-        const dniInput = document.getElementById("dni");
-        if (dniInput && dniInput.value.trim()) {
-          const dni = dniInput.value.trim();
-          window.location.href = `estado.html?dni=${encodeURIComponent(dni)}`;
-        }
-      });
-    });
-  </script>
+  <img src="caballo-logo.png" alt="Córcega Café" class="logo" />
+  <h1>Córcega Rebeldía Cafetera ☕</h1>
+  <a href="corcega-menu.html" class="boton">Ver Menú</a>
+  <a href="registro.html" class="boton">Registrate</a>
+  <a href="consulta-cliente.html" class="boton">Tu tarjeta del club</a>
 </body>
 </html>
