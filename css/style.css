@@ -11,6 +11,22 @@ body {
   text-align: center;
 }
 
+/* Agrego para fondo */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('fondo.png');
+  background-repeat: no-repeat;
+  background-size: 600px;
+  background-position: center;
+  opacity: 0.05;
+  z-index: -1;
+  pointer-events: none;
+}
 /* Card principal */
 .menu-style {
   width: 100%;
