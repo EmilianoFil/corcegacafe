@@ -323,3 +323,8 @@ footer a[href*="instagram.com"]::before {
 .input-like option[disabled] {
   color: #999;
 }
+
+.input-like option:first-child {
+  color: #999;
+  font-weight: normal;
+}
