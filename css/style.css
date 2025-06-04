@@ -318,6 +318,7 @@ footer a[href*="instagram.com"]::before {
   background-color: white;
   color: black;
   font-weight: bold;
+  text-align: center;
 }
 
 .input-like option[disabled] {
