@@ -9,6 +9,7 @@ body {
   align-items: center;
   min-height: 100vh;
   text-align: center;
+  position: relative;
 }
 
 /* Agrego para fondo */
