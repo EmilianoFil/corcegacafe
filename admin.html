@@ -26,7 +26,6 @@
       font-size: 14px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-
     #sesion-expirada {
       display: none;
       text-align: center;
@@ -38,12 +37,10 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
       font-family: sans-serif;
     }
-
     #sesion-expirada p {
       font-size: 18px;
       margin-bottom: 20px;
     }
-
     #sesion-expirada a {
       background-color: #d86634;
       color: white;
@@ -57,9 +54,7 @@
   <script type="module">
     import { auth, onAuthStateChanged } from './js/firebase-auth.js';
     import { getFirestore, doc, getDoc, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-
     const db = getFirestore();
-
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = "login.html";
@@ -69,39 +64,32 @@
           const snap = await getDoc(ref);
           const nombre = snap.exists() ? (snap.data().nombre || user.email) : user.email;
           document.getElementById("usuarioLogueado").innerText = nombre;
-
           if (snap.exists() && snap.data().rol === "dueño") {
             document.getElementById("botonEstadisticas").style.display = "block";
           }
-          
-/* Borro este log porque lo registra cada vez que acceso a admin.html
+          /* Borro este log porque lo registra cada vez que acceso a admin.html
           await addDoc(collection(db, "logs"), {
             usuario: user.email,
             accion: "iniciar_sesion",
             detalles: "Acceso a panel admin",
             timestamp: new Date()
           });
-*/
+          */
           const ahora = Date.now();
           localStorage.setItem("loginTimestamp", ahora.toString());
           localStorage.setItem("ultimoEvento", ahora.toString());
-
           ["click", "keydown", "mousemove", "scroll", "touchstart"].forEach(evento => {
             document.addEventListener(evento, () => {
               localStorage.setItem("ultimoEvento", Date.now().toString());
             });
           });
-
           setInterval(async () => {
             const tsLogin = parseInt(localStorage.getItem("loginTimestamp") || "0");
             const tsUltimoEvento = parseInt(localStorage.getItem("ultimoEvento") || "0");
             const ahora = Date.now();
-
-            const INACTIVIDAD_MAX_MS = 30 * 60 * 1000; // 30 min
-            const SESION_MAX_MS = 300 * 60 * 1000;     // 5 hs
-
+            const INACTIVIDAD_MAX_MS = 30 * 60 * 1000;
+            const SESION_MAX_MS = 300 * 60 * 1000;
             const usuario = auth.currentUser?.email || "admin";
-
             if (ahora - tsLogin > SESION_MAX_MS) {
               await addDoc(collection(db, "logs"), {
                 usuario,
@@ -120,7 +108,6 @@
               mostrarMensajeSesionExpirada("Se cerró tu sesión por inactividad.");
             }
           }, 60 * 1000);
-
         } catch (error) {
           console.error("Error al obtener datos del usuario:", error);
         }
@@ -136,8 +123,7 @@
       auth.signOut();
     }
   </script>
-
-  <div class="menu-style">
+    <div class="menu-style">
     <div id="botonEstadisticas" style="display:none; text-align: right; margin-bottom: 10px;">
       <a href="panel.html" class="btn-estadisticas">📊 Estadísticas</a>
     </div>
@@ -147,12 +133,12 @@
     <h1>Cargar Cafecito ☕</h1>
     <form id="adminForm">
       <input type="tel" name="dni" id="dni" placeholder="DNI del cliente" inputmode="numeric" pattern="[0-9]*" required />
-      <button type="submit" id="submitBtn">Consultar estado</button>
+      <button type="submit" id="submitBtn">Sumar cafecito</button>
     </form>
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div id="respuesta" class="mensaje"></div>
     <div class="logout">
-      <a href="admin.html" class="volver">Volver a consultar</a>
+      <!-- <a href="admin.html" class="volver">Volver a consultar</a> comento linea, no es necesario el botón-->
       <a href="#" onclick="cerrarSesion()" class="cerrar">Cerrar sesión</a>
     </div>
   </div>
@@ -183,6 +169,7 @@
     }
     window.cerrarSesion = cerrarSesion;
 
+    // estadoCliente ya no se usa, se conserva por compatibilidad
     let estadoCliente = null;
 
     document.getElementById("adminForm").addEventListener("submit", async function(e) {
@@ -202,17 +189,15 @@
       const ref = doc(db, "clientes", dni);
       const snap = await getDoc(ref);
 
-      if (estadoCliente === null) {
-        await addDoc(collection(db, "logs"), {
-          usuario,
-          accion: "admin_consulta_cliente",
-          detalles: `DNI: ${dni}`,
-          timestamp: new Date()
-        });
-      }
+      await addDoc(collection(db, "logs"), {
+        usuario,
+        accion: "admin_consulta_cliente",
+        detalles: `DNI: ${dni}`,
+        timestamp: new Date()
+      });
 
       if (!snap.exists()) {
-        document.title = "Admin - Resultado consulta cliente"; // ← esta es la línea nueva
+        document.title = "Admin - Resultado consulta cliente";
         div.className = "mensaje error";
         div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
         loader.style.display = "none";
@@ -222,76 +207,58 @@
       }
 
       const data = snap.data();
+      const nombre = data.nombre || dni;
+      const cafes = parseInt(data.cafes || 0);
+      const updates = {
+        ultimo_cafe: serverTimestamp(),
+        cafes_acumulados_total: increment(1)
+      };
+      let mensajeFinal = "";
 
-      if (!estadoCliente) {
-        estadoCliente = { dni, nombre: data.nombre, cafes: data.cafes };
-        div.className = "mensaje ok";
-        document.title = "Admin - Resultado consulta cliente"; // ← esta es la línea nueva
-        if (data.cafes >= 8) {
-          div.innerText = `Cliente ya tiene 8 cafecitos acumulados.\nEste nos toca a nosotros\n🐎`;
-          button.innerText = "Invitar cafecito";
-        } else {
-          div.innerText = `✅ ${data.nombre} tiene ${data.cafes} cafecitos acumulados.`;
-          button.innerText = "Sumar cafecito";
-        }
-        if (typeof gtag === 'function') {
-          gtag('event', 'admin_consulta_estado', { dni: data.dni });
-        }
-        loader.style.display = "none";
-        input.disabled = false;
-        button.disabled = false;
-        return;
-      }
-
-      if (data.cafes >= 8) {
-        await updateDoc(ref, {
-          cafes: 0,
-          cafe_disponible: false,
-          ultimo_cafe: serverTimestamp(),
-          cafecitos_invitados: increment(1), // <--- nuevo contador
-          cafes_acumulados_total: increment(1)
-        });
-        div.className = "mensaje ok";
-        document.title = "Admin - Invitación cafecito"; // ← esta es la línea nueva
-        div.innerText = `🎁 Invitamos un cafecito a ${estadoCliente.nombre}.\n¡Gracias por su fidelidad!`;
-        if (typeof gtag === 'function') {
-          gtag('event', 'admin_invito_cafe', { dni: data.dni });
-        }
+      if (cafes >= 8) {
+        updates.cafes = 0;
+        updates.cafe_disponible = false;
+        updates.cafecitos_invitados = increment(1);
+        mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!.\n¡Gracias por su fidelidad!`;
+        document.title = "Admin - Invitación cafecito";
         await addDoc(collection(db, "logs"), {
           usuario,
           accion: "invitar_cafecito",
-          detalles: `DNI: ${estadoCliente.dni} - ${estadoCliente.nombre}`,
+          detalles: `DNI: ${dni} - ${nombre}`,
           timestamp: new Date()
         });
+        if (typeof gtag === 'function') gtag('event', 'admin_invito_cafe', { dni });
       } else {
-        const nuevosCafes = (data.cafes || 0) + 1;
-        const updates = {
-          cafes: nuevosCafes,
-          ultimo_cafe: serverTimestamp(),
-          cafes_acumulados_total: increment(1)
-        };
-        if (nuevosCafes >= 8) {
-          updates.cafe_disponible = true;
-        }
-        await updateDoc(ref, updates);
-        div.className = "mensaje ok";
-        document.title = "Admin - Suma cafecito"; // ← esta es la línea nueva
-        div.innerText = nuevosCafes >= 8
-          ? `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
-          : `✅ Se sumó 1 cafecito a ${estadoCliente.nombre}. Total: ${nuevosCafes}`;
-        if (typeof gtag === 'function') {
-          gtag('event', 'admin_suma_cafe', { dni: data.dni });
-        }
+        updates.cafes = cafes + 1;
+        if (updates.cafes >= 8) updates.cafe_disponible = true;
+        mensajeFinal = updates.cafes >= 8
+          ? `✅ Se sumó 1 cafecito a ${nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
+          : `✅ Se sumó 1 cafecito a ${nombre}. Total: ${updates.cafes}`;
+        document.title = "Admin - Suma cafecito";
         await addDoc(collection(db, "logs"), {
           usuario,
           accion: "sumar_cafecito",
-          detalles: `DNI: ${estadoCliente.dni} - ${estadoCliente.nombre}`,
+          detalles: `DNI: ${dni} - ${nombre}`,
           timestamp: new Date()
         });
+        if (typeof gtag === 'function') gtag('event', 'admin_suma_cafe', { dni });
       }
 
+      await updateDoc(ref, updates);
+
+      // Comentado: lógica antigua de doble paso
+      /*
+      if (!estadoCliente) {
+        estadoCliente = { dni, nombre: data.nombre, cafes: data.cafes };
+        ...
+        return;
+      }
+      */
+
       estadoCliente = null;
-      button.innerText = "Consultar estado";
+      button.innerText = "Sumar Cafecito";
+      div.className = "mensaje ok";
+      div.innerText = mensajeFinal;
       loader.style.display = "none";
       input.disabled = false;
       button.disabled = false;
