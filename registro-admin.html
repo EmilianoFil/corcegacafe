@@ -32,6 +32,8 @@
       <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]*" maxlength="10" required />
       <input type="text" name="nombre" placeholder="Nombre y apellido" required />
       <input type="email" name="mail" placeholder="Correo electrónico" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" />
+      <input type="number" name="cumple_dia" placeholder="Día de cumpleaños (1-31)" min="1" max="31" required />
+      <input type="number" name="cumple_mes" placeholder="Mes de cumpleaños (1-12)" min="1" max="12" required />
       <div>
         <button type="button" class="btn-primary" id="soloRegistrar">Registrar</button>
       </div>
@@ -39,13 +41,12 @@
         <button type="button" class="btn-secondary" id="registrarYSumar">Registrar y sumar cafecito</button>
       </div>
       <div class="logout">
-      <a href="admin.html" class="volver">Volver a consultar</a>
-    </div>
+        <a href="admin.html" class="volver">Volver a consultar</a>
+      </div>
     </form>
 
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div class="mensaje" id="mensaje"></div>
-
   </div>
 
   <script type="module">
@@ -68,12 +69,13 @@
       const dni = dniInput.value.trim();
       const nombre = form.nombre.value.trim();
       const mail = form.mail.value.trim();
+      const cumple_dia = parseInt(form.cumple_dia.value);
+      const cumple_mes = parseInt(form.cumple_mes.value);
       const usuario = localStorage.getItem("usuario");
 
       loader.style.display = "block";
       mensaje.innerText = "";
 
-      // VALIDACIÓN DE DNI
       if (!/^\d{1,10}$/.test(dni)) {
         mensaje.innerText = "⚠️ El DNI debe tener hasta 10 números.";
         loader.style.display = "none";
@@ -86,14 +88,17 @@
           dni,
           nombre,
           email: mail,
+          cumple_dia,
+          cumple_mes,
           cafes: sumarCafecito ? 1 : 0,
           cafes_acumulados_total: sumarCafecito ? 1 : 0,
-          cafe_disponible: sumarCafecito ? false : false,
-          cafecitos_invitados: 0, // <--- agregar esto
+          cafe_disponible: false,
+          cafecitos_invitados: 0,
+          sigue_instagram: false,
+          sello_instagram_usado: false,
           ultimo_cafe: sumarCafecito ? serverTimestamp() : null
         });
 
-        // Evento GA
         if (typeof gtag === 'function') {
           gtag('event', 'registro_cliente', {
             origen: 'admin',
@@ -113,7 +118,7 @@
         }
 
         loader.style.display = "none";
-        document.title = "Admin - Cliente registrado"; // ← esta es la línea nueva
+        document.title = "Admin - Cliente registrado";
         mensaje.innerText = `¡Registro exitoso!\nEl cliente ${dni} fue registrado correctamente.` + (sumarCafecito ? "\nY ya se sumó un cafecito ☕" : "");
         form.reset();
       } catch (error) {
