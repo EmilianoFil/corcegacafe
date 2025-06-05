@@ -53,7 +53,8 @@
       doc,
       getDoc,
       addDoc,
-      collection
+      collection,
+      updateDoc
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -81,7 +82,7 @@
       contenedor.style.display = "block";
 
       if (!snap.exists()) {
-        document.title = "Resultado consulta cliente"; // ← esta es la línea nueva
+        document.title = "Resultado consulta cliente";
         document.getElementById("cliente").style.display = "none";
         document.getElementById("faltan").style.display = "none";
         document.getElementById("grid").style.display = "none";
@@ -105,10 +106,19 @@
         return;
       }
 
-      // Si existe, modo tarjeta fidelidad
       contenedor.classList.add("tarjeta-fidelidad");
-
       const data = snap.data();
+
+      // 🧠 ACTUALIZACIÓN: si ya usó el sello de Instagram y tiene cafés >= 8, lo marcamos como usado
+      if (data.sigue_instagram === true && data.sello_instagram_usado === false && (data.cafes || 0) >= 8) {
+        await updateDoc(ref, { sello_instagram_usado: true });
+        await addDoc(collection(db, "logs"), {
+          usuario: dni,
+          accion: "usar_sello_instagram",
+          detalles: `Se marca sello de Instagram como usado para ${dni}`,
+          timestamp: new Date()
+        });
+      }
 
       await addDoc(collection(db, "logs"), {
         usuario: data.dni,
@@ -123,8 +133,7 @@
 
       const nombre = data.nombre || "Amigo";
       const cafes = parseInt(data.cafes) || 0;
-
-      document.title = "Tarjeta cliente"; // ← esta es la línea nueva
+      document.title = "Tarjeta cliente";
       document.getElementById("cliente").textContent = `Hola ${nombre}`;
       document.getElementById("faltan").textContent = cafes < 8
         ? `Te faltan ${8 - cafes} para que te invitemos uno.`
@@ -135,7 +144,11 @@
         const div = document.createElement("div");
         div.className = "circle";
 
-        if (i === 9) {
+        // 💡 MODIFICACIÓN: sello especial de Instagram en el slot 8
+        if (i === 8 && data.sigue_instagram === true && data.sello_instagram_usado !== true) {
+          div.style.backgroundImage = "url('css/img/Corcega_Logo_Blanco_Instagram.png')";
+          div.style.opacity = "1";
+        } else if (i === 9) {
           div.classList.add("noveno");
         } else if (i <= cafes) {
           div.classList.add("lleno");
