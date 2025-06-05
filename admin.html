@@ -258,7 +258,9 @@
         btnInsta.style.display = "inline-block";
         btnInsta.onclick = async () => {
           await updateDoc(ref, {
-            sigue_instagram: true
+          sigue_instagram: true,
+          cafes: increment(1),
+          cafes_acumulados_total: increment(1)
           });
           await addDoc(collection(db, "logs"), {
             usuario,
