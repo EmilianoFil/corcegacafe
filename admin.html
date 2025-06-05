@@ -67,14 +67,7 @@
           if (snap.exists() && snap.data().rol === "dueño") {
             document.getElementById("botonEstadisticas").style.display = "block";
           }
-          /* Borro este log porque lo registra cada vez que acceso a admin.html
-          await addDoc(collection(db, "logs"), {
-            usuario: user.email,
-            accion: "iniciar_sesion",
-            detalles: "Acceso a panel admin",
-            timestamp: new Date()
-          });
-          */
+          // Logueo de sesión desactivado por ahora
           const ahora = Date.now();
           localStorage.setItem("loginTimestamp", ahora.toString());
           localStorage.setItem("ultimoEvento", ahora.toString());
@@ -135,10 +128,12 @@
       <input type="tel" name="dni" id="dni" placeholder="DNI del cliente" inputmode="numeric" pattern="[0-9]*" required />
       <button type="submit" id="submitBtn">Sumar cafecito</button>
     </form>
+    <div style="margin-top: 10px;">
+      <button id="btnInstagram" style="display:none;" class="btn-estadisticas">📸 Sigue Instagram</button>
+    </div>
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div id="respuesta" class="mensaje"></div>
     <div class="logout">
-      <!-- <a href="admin.html" class="volver">Volver a consultar</a> comento linea, no es necesario el botón-->
       <a href="#" onclick="cerrarSesion()" class="cerrar">Cerrar sesión</a>
     </div>
   </div>
@@ -169,21 +164,20 @@
     }
     window.cerrarSesion = cerrarSesion;
 
-    // estadoCliente ya no se usa, se conserva por compatibilidad
-    let estadoCliente = null;
-
     document.getElementById("adminForm").addEventListener("submit", async function(e) {
       e.preventDefault();
       const input = document.getElementById("dni");
       const button = document.getElementById("submitBtn");
       const div = document.getElementById("respuesta");
       const loader = document.getElementById("loader");
+      const btnInsta = document.getElementById("btnInstagram");
       const usuario = auth.currentUser?.email || "admin";
 
       div.innerHTML = "";
       loader.style.display = "block";
       input.disabled = true;
       button.disabled = true;
+      btnInsta.style.display = "none";
 
       const dni = input.value.trim();
       const ref = doc(db, "clientes", dni);
@@ -215,10 +209,23 @@
       };
       let mensajeFinal = "";
 
+      // Validación para uso único del sello Instagram
+      if (data.sigue_instagram && data.sello_instagram_usado) {
+        div.className = "mensaje error";
+        div.innerText = `⚠️ El sello de Instagram ya fue usado para este cliente.`;
+        loader.style.display = "none";
+        input.disabled = false;
+        button.disabled = false;
+        return;
+      }
+
       if (cafes >= 8) {
         updates.cafes = 0;
         updates.cafe_disponible = false;
         updates.cafecitos_invitados = increment(1);
+        if (data.sigue_instagram && !data.sello_instagram_usado) {
+          updates.sello_instagram_usado = true;
+        }
         mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!.\n¡Gracias por su fidelidad!`;
         document.title = "Admin - Invitación cafecito";
         await addDoc(collection(db, "logs"), {
@@ -246,17 +253,24 @@
 
       await updateDoc(ref, updates);
 
-      // Comentado: lógica antigua de doble paso
-      /*
-      if (!estadoCliente) {
-        estadoCliente = { dni, nombre: data.nombre, cafes: data.cafes };
-        ...
-        return;
+      // Mostrar botón de Instagram si aún no fue usado
+      if (!data.sigue_instagram && !data.sello_instagram_usado) {
+        btnInsta.style.display = "inline-block";
+        btnInsta.onclick = async () => {
+          await updateDoc(ref, {
+            sigue_instagram: true
+          });
+          await addDoc(collection(db, "logs"), {
+            usuario,
+            accion: "marcar_instagram",
+            detalles: `DNI: ${dni} - ${nombre}`,
+            timestamp: new Date()
+          });
+          btnInsta.disabled = true;
+          div.innerText += `\n📸 Marcado como seguidor en Instagram.`;
+        };
       }
-      */
 
-      estadoCliente = null;
-      button.innerText = "Sumar Cafecito";
       div.className = "mensaje ok";
       div.innerText = mensajeFinal;
       loader.style.display = "none";
