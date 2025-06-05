@@ -67,7 +67,6 @@
           if (snap.exists() && snap.data().rol === "dueño") {
             document.getElementById("botonEstadisticas").style.display = "block";
           }
-          // Logueo de sesión desactivado por ahora
           const ahora = Date.now();
           localStorage.setItem("loginTimestamp", ahora.toString());
           localStorage.setItem("ultimoEvento", ahora.toString());
@@ -116,7 +115,8 @@
       auth.signOut();
     }
   </script>
-    <div class="menu-style">
+
+  <div class="menu-style">
     <div id="botonEstadisticas" style="display:none; text-align: right; margin-bottom: 10px;">
       <a href="panel.html" class="btn-estadisticas">📊 Estadísticas</a>
     </div>
@@ -170,7 +170,7 @@
       const button = document.getElementById("submitBtn");
       const div = document.getElementById("respuesta");
       const loader = document.getElementById("loader");
-      const btnInsta = document.getElementById("btnInstagram");
+      let btnInsta = document.getElementById("btnInstagram");
       const usuario = auth.currentUser?.email || "admin";
 
       div.innerHTML = "";
@@ -209,16 +209,6 @@
       };
       let mensajeFinal = "";
 
-      // Validación para uso único del sello Instagram
-      if (data.sigue_instagram && data.sello_instagram_usado) {
-        div.className = "mensaje error";
-        div.innerText = `⚠️ El sello de Instagram ya fue usado para este cliente.`;
-        loader.style.display = "none";
-        input.disabled = false;
-        button.disabled = false;
-        return;
-      }
-
       if (cafes >= 8) {
         updates.cafes = 0;
         updates.cafe_disponible = false;
@@ -226,7 +216,8 @@
         if (data.sigue_instagram && !data.sello_instagram_usado) {
           updates.sello_instagram_usado = true;
         }
-        mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!.\n¡Gracias por su fidelidad!`;
+        mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!.
+¡Gracias por su fidelidad!`;
         document.title = "Admin - Invitación cafecito";
         await addDoc(collection(db, "logs"), {
           usuario,
@@ -239,7 +230,8 @@
         updates.cafes = cafes + 1;
         if (updates.cafes >= 8) updates.cafe_disponible = true;
         mensajeFinal = updates.cafes >= 8
-          ? `✅ Se sumó 1 cafecito a ${nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
+          ? `✅ Se sumó 1 cafecito a ${nombre}.
+El próximo se lo invitamos nosotros ☕🎉`
           : `✅ Se sumó 1 cafecito a ${nombre}. Total: ${updates.cafes}`;
         document.title = "Admin - Suma cafecito";
         await addDoc(collection(db, "logs"), {
@@ -253,23 +245,30 @@
 
       await updateDoc(ref, updates);
 
-      // Mostrar botón de Instagram si aún no fue usado
       if (!data.sigue_instagram && !data.sello_instagram_usado) {
         btnInsta.style.display = "inline-block";
+        const nuevoBtn = btnInsta.cloneNode(true);
+        btnInsta.parentNode.replaceChild(nuevoBtn, btnInsta);
+        btnInsta = nuevoBtn;
         btnInsta.onclick = async () => {
-          await updateDoc(ref, {
-          sigue_instagram: true,
-          cafes: increment(1),
-          cafes_acumulados_total: increment(1)
-          });
-          await addDoc(collection(db, "logs"), {
-            usuario,
-            accion: "marcar_instagram",
-            detalles: `DNI: ${dni} - ${nombre}`,
-            timestamp: new Date()
-          });
           btnInsta.disabled = true;
-          div.innerText += `\n📸 Marcado como seguidor en Instagram.`;
+          try {
+            await updateDoc(ref, {
+              sigue_instagram: true,
+              cafes: increment(1),
+              cafes_acumulados_total: increment(1)
+            });
+            await addDoc(collection(db, "logs"), {
+              usuario,
+              accion: "marcar_instagram",
+              detalles: `DNI: ${dni} - ${nombre}`,
+              timestamp: new Date()
+            });
+            div.innerText += `\n📸 Marcado como seguidor en Instagram.`;
+          } catch (e) {
+            console.error("Error marcando Instagram:", e);
+            div.innerText += `\n❌ Error al marcar Instagram.`;
+          }
         };
       }
 
