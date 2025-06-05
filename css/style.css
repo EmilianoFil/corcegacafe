@@ -9,8 +9,25 @@ body {
   align-items: center;
   min-height: 100vh;
   text-align: center;
+  position: relative;
 }
 
+/* Agrego para fondo */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('fondo5.png');
+  background-repeat: repeat;
+  background-size: 600px;
+  background-position: center;
+  opacity: 0.1;
+  z-index: -1;
+  pointer-events: none;
+}
 /* Card principal */
 .menu-style {
   width: 100%;
@@ -74,7 +91,7 @@ input {
 button, .btn-primary {
   padding: 10px 20px;
   font-size: 16px;
-  background-color: #d86634;
+  background-color: #ed7053;
   color: white;
   border: none;
   border-radius: 8px;
@@ -88,7 +105,7 @@ button, .btn-primary {
   font-size: 14px;
   background: white;
   color: #d86634;
-  border: 2px solid #d86634;
+  border: 2px solid #ed7053;
   border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
@@ -137,7 +154,7 @@ button, .btn-primary {
   display: block;
   text-align: center;
   text-decoration: none;
-  color: #d86634;
+  color: #ed7053;
   font-weight: bold;
   margin: 8px 0;
   cursor: pointer;
@@ -178,8 +195,8 @@ section {
 
 /* Tarjeta de fidelidad */
 .tarjeta-fidelidad {
-  background: #d86634;
-  color: white;
+  background: #ed7053;
+  color: #01323f;
   padding: 40px 20px;
   border-radius: 16px;
   max-width: 400px;
@@ -210,12 +227,12 @@ section {
 }
 
 .tarjeta-fidelidad .circle.lleno {
-  background-image: url("caballito-oscuro.png");
+  background-image: url("img/Corcega_Logo_Blanco.png");
   opacity: 1;
 }
 
 .tarjeta-fidelidad .circle.noveno {
-  background-image: url("logo-corcega-color.png");
+  background-image: url("img/Corcega_Logo_Original.png");
   opacity: 1;
 }
 
@@ -224,14 +241,14 @@ section {
   font-size: 18px;
   font-weight: bold;
   margin-bottom: 10px;
-  color: white;
+  color: #01323f;
 }
 
 .tarjeta-fidelidad #faltan {
   font-size: 16px;
   font-weight: normal;
   margin-bottom: 20px;
-  color: white;
+  color: #01323f;
 }
 
 /* Instagram */
@@ -250,7 +267,7 @@ footer a[href*="instagram.com"]::before {
 #mensaje-error .boton {
   margin-top: 20px;
   display: inline-block;
-  background-color: #d86634;
+  background-color: #ed7053;
   color: white;
   font-weight: bold;
   text-decoration: none;
@@ -286,7 +303,7 @@ footer a[href*="instagram.com"]::before {
 /* Botón blanco en tarjeta de fidelidad */
 .tarjeta-fidelidad .volver-card {
   background-color: white;
-  color: #d86634;
+  color: #ed7053;
   font-weight: bold;
   border: none;
   padding: 10px 20px;
@@ -298,11 +315,34 @@ footer a[href*="instagram.com"]::before {
 
 .btn-estadisticas {
   background-color: white;
-  color: #d86634;
+  color: #ed7053;
   padding: 6px 12px;
   border-radius: 8px;
   text-decoration: none;
   font-weight: bold;
   font-size: 14px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Boton día y mes de cumpleaños */
+.input-like {
+  padding: 10px;
+  font-size: 16px;
+  width: 43%;
+  margin: 10px 0;
+  border: 2px solid white;
+  border-radius: 8px;
+  background-color: white;
+  color: black;
+  font-weight: bold;
+  text-align: center;
+}
+
+.input-like option[disabled] {
+  color: #999;
+}
+
+.input-like option:first-child {
+  color: #999;
+  font-weight: normal;
 }
