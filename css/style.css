@@ -196,7 +196,7 @@ section {
 /* Tarjeta de fidelidad */
 .tarjeta-fidelidad {
   background: #ed7053;
-  color: white;
+  color: #01323f;
   padding: 40px 20px;
   border-radius: 16px;
   max-width: 400px;
@@ -241,14 +241,14 @@ section {
   font-size: 18px;
   font-weight: bold;
   margin-bottom: 10px;
-  color: white;
+  color: #01323f;
 }
 
 .tarjeta-fidelidad #faltan {
   font-size: 16px;
   font-weight: normal;
   margin-bottom: 20px;
-  color: white;
+  color: #01323f;
 }
 
 /* Instagram */
