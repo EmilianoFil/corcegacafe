@@ -219,7 +219,7 @@
         updates.cafes = 0;
         updates.cafe_disponible = false;
         updates.cafecitos_invitados = increment(1);
-        mensajeFinal = `🎁 Invitamos un cafecito a ${nombre}.\n¡Gracias por su fidelidad!`;
+        mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!.\n¡Gracias por su fidelidad!`;
         document.title = "Admin - Invitación cafecito";
         await addDoc(collection(db, "logs"), {
           usuario,
@@ -256,7 +256,7 @@
       */
 
       estadoCliente = null;
-      button.innerText = "Consultar otro";
+      button.innerText = "Sumar Cafecito";
       div.className = "mensaje ok";
       div.innerText = mensajeFinal;
       loader.style.display = "none";
