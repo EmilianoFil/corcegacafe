@@ -227,12 +227,12 @@ section {
 }
 
 .tarjeta-fidelidad .circle.lleno {
-  background-image: url("caballito-oscuro.png");
+  background-image: url("img/Corcega_Logo_Blanco.png");
   opacity: 1;
 }
 
 .tarjeta-fidelidad .circle.noveno {
-  background-image: url("logo-corcega-color.png");
+  background-image: url("img/Corcega_Logo_Original.png");
   opacity: 1;
 }
 
