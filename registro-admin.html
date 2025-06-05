@@ -32,6 +32,25 @@
       <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]*" maxlength="10" required />
       <input type="text" name="nombre" placeholder="Nombre y apellido" required />
       <input type="email" name="mail" placeholder="Correo electrónico" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" />
+      <p style="margin-top: 16px; margin-bottom: 4px; font-weight: bold; font-size: 15px;">¿Cuándo es su cumpleaños?</p>
+      <div style="display: flex; gap: 4%; justify-content: center; flex-wrap: wrap;">
+        <select name="cumple_dia" required class="input-like">
+          <option value="" disabled selected hidden>Día</option>
+          <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+          <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+          <option>11</option><option>12</option><option>13</option><option>14</option><option>15</option>
+          <option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
+          <option>21</option><option>22</option><option>23</option><option>24</option><option>25</option>
+          <option>26</option><option>27</option><option>28</option><option>29</option><option>30</option>
+          <option>31</option>
+        </select>
+        <select name="cumple_mes" required class="input-like">
+          <option value="" disabled selected hidden>Mes</option>
+          <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+          <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+          <option>11</option><option>12</option>
+        </select>
+      </div>
       <div>
         <button type="button" class="btn-primary" id="soloRegistrar">Registrar</button>
       </div>
@@ -39,13 +58,12 @@
         <button type="button" class="btn-secondary" id="registrarYSumar">Registrar y sumar cafecito</button>
       </div>
       <div class="logout">
-      <a href="admin.html" class="volver">Volver a consultar</a>
-    </div>
+        <a href="admin.html" class="volver">Volver a consultar</a>
+      </div>
     </form>
 
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div class="mensaje" id="mensaje"></div>
-
   </div>
 
   <script type="module">
@@ -62,18 +80,18 @@
     const form = document.getElementById("registroForm");
     const mensaje = document.getElementById("mensaje");
     const loader = document.getElementById("loader");
-    const volver = document.getElementById("volver");
 
     const submitHandler = async (sumarCafecito) => {
       const dni = dniInput.value.trim();
       const nombre = form.nombre.value.trim();
       const mail = form.mail.value.trim();
+      const cumple_dia = parseInt(form.cumple_dia.value);
+      const cumple_mes = parseInt(form.cumple_mes.value);
       const usuario = localStorage.getItem("usuario");
 
       loader.style.display = "block";
       mensaje.innerText = "";
 
-      // VALIDACIÓN DE DNI
       if (!/^\d{1,10}$/.test(dni)) {
         mensaje.innerText = "⚠️ El DNI debe tener hasta 10 números.";
         loader.style.display = "none";
@@ -86,14 +104,17 @@
           dni,
           nombre,
           email: mail,
+          cumple_dia,
+          cumple_mes,
           cafes: sumarCafecito ? 1 : 0,
           cafes_acumulados_total: sumarCafecito ? 1 : 0,
-          cafe_disponible: sumarCafecito ? false : false,
-          cafecitos_invitados: 0, // <--- agregar esto
+          cafe_disponible: false,
+          cafecitos_invitados: 0,
+          sigue_instagram: false,
+          sello_instagram_usado: false,
           ultimo_cafe: sumarCafecito ? serverTimestamp() : null
         });
 
-        // Evento GA
         if (typeof gtag === 'function') {
           gtag('event', 'registro_cliente', {
             origen: 'admin',
@@ -113,7 +134,7 @@
         }
 
         loader.style.display = "none";
-        document.title = "Admin - Cliente registrado"; // ← esta es la línea nueva
+        document.title = "Admin - Cliente registrado";
         mensaje.innerText = `¡Registro exitoso!\nEl cliente ${dni} fue registrado correctamente.` + (sumarCafecito ? "\nY ya se sumó un cafecito ☕" : "");
         form.reset();
       } catch (error) {
