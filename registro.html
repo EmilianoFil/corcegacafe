@@ -109,6 +109,12 @@
         return;
       }
 
+      if (!cumple_dia || !cumple_mes) {
+        mensaje.innerText = "⚠️ El día y mes de cumpleaños son obligatorios.";
+        loader.style.display = "none";
+        return;
+      }
+
       const docRef = doc(db, "clientes", dni);
       const existing = await getDoc(docRef);
 
