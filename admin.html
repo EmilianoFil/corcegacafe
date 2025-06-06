@@ -133,6 +133,7 @@
     </div>
     <div id="loader"><img src="caballo-logo.png" alt="Cargando..." class="galope"></div>
     <div id="respuesta" class="mensaje"></div>
+    <button id="btnDeshacer" style="display:none;" class="btn-estadisticas">↩️ Deshacer operación</button>
     <div class="logout">
       <a href="admin.html" class="volver">Otro Cliente</a>
       <a href="#" onclick="cerrarSesion()" class="cerrar">Cerrar sesión</a>
@@ -202,6 +203,7 @@
       }
 
       const data = snap.data();
+      const estadoAnterior = structuredClone(data); // 💾 Backup antes de actualizar
       const nombre = data.nombre || dni;
       const cafes = parseInt(data.cafes || 0);
       const updates = {
@@ -217,8 +219,7 @@
         if (data.sigue_instagram && !data.sello_instagram_usado) {
           updates.sello_instagram_usado = true;
         }
-        mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!.
-¡Gracias por su fidelidad!`;
+        mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!.\n¡Gracias por su fidelidad!`;
         document.title = "Admin - Invitación cafecito";
         await addDoc(collection(db, "logs"), {
           usuario,
@@ -231,8 +232,7 @@
         updates.cafes = cafes + 1;
         if (updates.cafes >= 8) updates.cafe_disponible = true;
         mensajeFinal = updates.cafes >= 8
-          ? `✅ Se sumó 1 cafecito a ${nombre}.
-El próximo se lo invitamos nosotros ☕🎉`
+          ? `✅ Se sumó 1 cafecito a ${nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
           : `✅ Se sumó 1 cafecito a ${nombre}. Total: ${updates.cafes}`;
         document.title = "Admin - Suma cafecito";
         await addDoc(collection(db, "logs"), {
@@ -245,6 +245,15 @@ El próximo se lo invitamos nosotros ☕🎉`
       }
 
       await updateDoc(ref, updates);
+
+      // Mostramos botón de deshacer
+      const btnDeshacer = document.getElementById("btnDeshacer");
+      btnDeshacer.style.display = "inline-block";
+      window.ultimaOperacion = {
+        dni,
+        prevData: estadoAnterior,
+        usuario
+      };
 
       if (!data.sigue_instagram && !data.sello_instagram_usado) {
         btnInsta.style.display = "inline-block";
@@ -272,6 +281,30 @@ El próximo se lo invitamos nosotros ☕🎉`
           }
         };
       }
+
+      // Acción del botón Deshacer
+      btnDeshacer.onclick = async () => {
+        const { dni, prevData, usuario } = window.ultimaOperacion;
+        const ref = doc(db, "clientes", dni);
+        await updateDoc(ref, {
+          cafes: prevData.cafes,
+          cafes_acumulados_total: prevData.cafes_acumulados_total,
+          cafe_disponible: prevData.cafe_disponible,
+          cafecitos_invitados: prevData.cafecitos_invitados,
+          sello_instagram_usado: prevData.sello_instagram_usado ?? false,
+          sigue_instagram: prevData.sigue_instagram ?? false
+        });
+
+        await addDoc(collection(db, "logs"), {
+          usuario,
+          accion: "deshacer_operacion",
+          detalles: `Reversión manual sobre DNI ${dni}`,
+          timestamp: new Date()
+        });
+
+        document.getElementById("respuesta").innerText = `↩️ Se deshizo la última operación para ${prevData.nombre || dni}`;
+        btnDeshacer.style.display = "none";
+      };
 
       div.className = "mensaje ok";
       div.innerText = mensajeFinal;
