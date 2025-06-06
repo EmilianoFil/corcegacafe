@@ -202,7 +202,14 @@
       }
 
       const data = snap.data();
-      const estadoAnterior = structuredClone(data); // 💾 Backup antes de actualizar
+      
+      // cambio por lo de abajo // const estadoAnterior = structuredClone(data); // 💾 Backup antes de actualizar
+      const estadoAnterior = {
+        ...data,
+        ultimo_cafe: data.ultimo_cafe?.toDate?.() || null
+      };
+    //hasta acá.
+      
       const nombre = data.nombre || dni;
       const cafes = parseInt(data.cafes || 0);
       const updates = {
@@ -307,7 +314,8 @@ Y además se aplicó el sello pendiente de Instagram.`;
           cafecitos_invitados: prevData.cafecitos_invitados,
           sello_instagram_usado: prevData.sello_instagram_usado ?? false,
           sigue_instagram: prevData.sigue_instagram ?? false,
-          sello_pendiente: prevData.sello_pendiente ?? false
+          sello_pendiente: prevData.sello_pendiente ?? false,
+          ultimo_cafe: estadoAnterior.ultimo_cafe ? new Date(estadoAnterior.ultimo_cafe) : null
         });
 
         await addDoc(collection(db, "logs"), {
