@@ -144,197 +144,195 @@
     <p></p>
     <a href="login.html">Volver a ingresar</a>
   </div>
-    <script type="module">
-    import { app, db } from './js/firebase-config.js';
-    import {
-      doc, getDoc, updateDoc, increment, serverTimestamp, collection, addDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { auth, signOut } from './js/firebase-auth.js';
+<script type="module">
+  import { app, db } from './js/firebase-config.js';
+  import {
+    doc, getDoc, updateDoc, increment, serverTimestamp, collection, addDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { auth, signOut } from './js/firebase-auth.js';
 
-    async function cerrarSesion() {
-      const usuario = auth.currentUser?.email || "admin";
-      await addDoc(collection(db, "logs"), {
-        usuario,
-        accion: "cerrar_sesion",
-        detalles: "Cierre de sesión",
-        timestamp: new Date()
-      });
-      await signOut(auth);
-      localStorage.clear();
-      window.location.href = "login.html";
-    }
-    window.cerrarSesion = cerrarSesion;
+  async function cerrarSesion() {
+    const usuario = auth.currentUser?.email || "admin";
+    await addDoc(collection(db, "logs"), {
+      usuario,
+      accion: "cerrar_sesion",
+      detalles: "Cierre de sesión",
+      timestamp: new Date()
+    });
+    await signOut(auth);
+    localStorage.clear();
+    window.location.href = "login.html";
+  }
+  window.cerrarSesion = cerrarSesion;
 
-    document.getElementById("adminForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      const input = document.getElementById("dni");
-      const button = document.getElementById("submitBtn");
-      const div = document.getElementById("respuesta");
-      const loader = document.getElementById("loader");
-      let btnInsta = document.getElementById("btnInstagram");
-      const usuario = auth.currentUser?.email || "admin";
+  document.getElementById("adminForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const input = document.getElementById("dni");
+    const button = document.getElementById("submitBtn");
+    const div = document.getElementById("respuesta");
+    const loader = document.getElementById("loader");
+    let btnInsta = document.getElementById("btnInstagram");
+    const usuario = auth.currentUser?.email || "admin";
 
-      div.innerHTML = "";
-      loader.style.display = "block";
-      input.disabled = true;
-      button.disabled = true;
-      btnInsta.style.display = "none";
+    div.innerHTML = "";
+    loader.style.display = "block";
+    input.disabled = true;
+    button.disabled = true;
+    btnInsta.style.display = "none";
 
-      const dni = input.value.trim();
-      const ref = doc(db, "clientes", dni);
-      const snap = await getDoc(ref);
+    const dni = input.value.trim();
+    const ref = doc(db, "clientes", dni);
+    const snap = await getDoc(ref);
 
-      await addDoc(collection(db, "logs"), {
-        usuario,
-        accion: "admin_consulta_cliente",
-        detalles: `DNI: ${dni}`,
-        timestamp: new Date()
-      });
+    await addDoc(collection(db, "logs"), {
+      usuario,
+      accion: "admin_consulta_cliente",
+      detalles: `DNI: ${dni}`,
+      timestamp: new Date()
+    });
 
-      if (!snap.exists()) {
-        document.title = "Admin - Resultado consulta cliente";
-        div.className = "mensaje error";
-        div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
-        loader.style.display = "none";
-        input.disabled = false;
-        button.disabled = false;
-        return;
-      }
-
-      const data = snap.data();
-      
-      // cambio por lo de abajo // const estadoAnterior = structuredClone(data); // 💾 Backup antes de actualizar
-      const estadoAnterior = {
-        ...data,
-        ultimo_cafe: data.ultimo_cafe?.toDate?.() || null
-      };
-    //hasta acá.
-      
-      const nombre = data.nombre || dni;
-      const cafes = parseInt(data.cafes || 0);
-      const updates = {
-        ultimo_cafe: serverTimestamp(),
-        cafes_acumulados_total: increment(1)
-      };
-      let mensajeFinal = "";
-
-      if (cafes >= 8) {
-        updates.cafes = 0;
-        updates.cafe_disponible = false;
-        updates.cafecitos_invitados = increment(1);
-        if (data.sigue_instagram && !data.sello_instagram_usado) {
-          updates.sello_instagram_usado = true;
-        }
-        if (data.sello_pendiente) {
-          updates.cafes = 1;
-          updates.cafes_acumulados_total = increment(1);
-          updates.sello_pendiente = false;
-          mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!.
-Y además se aplicó el sello pendiente de Instagram.`;
-        } else {
-          mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!.\n¡Gracias por su fidelidad!`;
-        }
-        document.title = "Admin - Invitación cafecito";
-        await addDoc(collection(db, "logs"), {
-          usuario,
-          accion: "invitar_cafecito",
-          detalles: `DNI: ${dni} - ${nombre}`,
-          timestamp: new Date()
-        });
-        if (typeof gtag === 'function') gtag('event', 'admin_invito_cafe', { dni });
-      } else {
-        updates.cafes = cafes + 1;
-        if (updates.cafes >= 8) updates.cafe_disponible = true;
-        mensajeFinal = updates.cafes >= 8
-          ? `✅ Se sumó 1 cafecito a ${nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
-          : `✅ Se sumó 1 cafecito a ${nombre}. Total: ${updates.cafes}`;
-        document.title = "Admin - Suma cafecito";
-        await addDoc(collection(db, "logs"), {
-          usuario,
-          accion: "sumar_cafecito",
-          detalles: `DNI: ${dni} - ${nombre}`,
-          timestamp: new Date()
-        });
-        if (typeof gtag === 'function') gtag('event', 'admin_suma_cafe', { dni });
-      }
-
-      await updateDoc(ref, updates);
-
-      const btnDeshacer = document.getElementById("btnDeshacer");
-      btnDeshacer.style.display = "inline-block";
-      window.ultimaOperacion = {
-        dni,
-        prevData: estadoAnterior,
-        usuario
-      };
-
-      if (!data.sigue_instagram && !data.sello_instagram_usado) {
-        btnInsta.style.display = "inline-block";
-        const nuevoBtn = btnInsta.cloneNode(true);
-        btnInsta.parentNode.replaceChild(nuevoBtn, btnInsta);
-        btnInsta = nuevoBtn;
-        btnInsta.onclick = async () => {
-          btnInsta.disabled = true;
-          const snapActualizado = await getDoc(ref);
-          const cliente = snapActualizado.data();
-          const cafesActuales = cliente.cafes || 0;
-          const updatesInstagram = {
-            sigue_instagram: true
-          };
-          if (cafesActuales >= 8) {
-            updatesInstagram.sello_pendiente = true;
-          } else {
-            updatesInstagram.cafes = cafesActuales + 1;
-            updatesInstagram.cafes_acumulados_total = increment(1);
-          }
-
-          try {
-            await updateDoc(ref, updatesInstagram);
-            await addDoc(collection(db, "logs"), {
-              usuario,
-              accion: "marcar_instagram",
-              detalles: `DNI: ${dni} - ${nombre}`,
-              timestamp: new Date()
-            });
-            div.innerText += `\n📸 Marcado como seguidor en Instagram.`;
-          } catch (e) {
-            console.error("Error marcando Instagram:", e);
-            div.innerText += `\n❌ Error al marcar Instagram.`;
-          }
-        };
-      }
-
-      btnDeshacer.onclick = async () => {
-        const { dni, prevData, usuario } = window.ultimaOperacion;
-        const ref = doc(db, "clientes", dni);
-        await updateDoc(ref, {
-          cafes: prevData.cafes,
-          cafes_acumulados_total: prevData.cafes_acumulados_total,
-          cafe_disponible: prevData.cafe_disponible,
-          cafecitos_invitados: prevData.cafecitos_invitados,
-          sello_instagram_usado: prevData.sello_instagram_usado ?? false,
-          sigue_instagram: prevData.sigue_instagram ?? false,
-          sello_pendiente: prevData.sello_pendiente ?? false,
-          ultimo_cafe: estadoAnterior.ultimo_cafe ? new Date(estadoAnterior.ultimo_cafe) : null
-        });
-
-        await addDoc(collection(db, "logs"), {
-          usuario,
-          accion: "deshacer_operacion",
-          detalles: `Reversión manual sobre DNI ${dni}`,
-          timestamp: new Date()
-        });
-
-        document.getElementById("respuesta").innerText = `↩️ Se deshizo la última operación para ${prevData.nombre || dni}`;
-        btnDeshacer.style.display = "none";
-      };
-
-      div.className = "mensaje ok";
-      div.innerText = mensajeFinal;
+    if (!snap.exists()) {
+      document.title = "Admin - Resultado consulta cliente";
+      div.className = "mensaje error";
+      div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
       loader.style.display = "none";
       input.disabled = false;
       button.disabled = false;
-    });
-  </script>
+      return;
+    }
+
+    const data = snap.data();
+    const estadoAnterior = {
+      ...data,
+      ultimo_cafe: data.ultimo_cafe?.toDate?.() || null
+    };
+
+    const nombre = data.nombre || dni;
+    const cafes = parseInt(data.cafes || 0);
+    const updates = {
+      ultimo_cafe: serverTimestamp(),
+      cafes_acumulados_total: increment(1)
+    };
+    let mensajeFinal = "";
+
+    if (cafes >= 8) {
+      updates.cafes = 0;
+      updates.cafe_disponible = false;
+      updates.cafecitos_invitados = increment(1);
+      if (data.sigue_instagram && !data.sello_instagram_usado) {
+        updates.sello_instagram_usado = true;
+      }
+      if (data.sello_pendiente) {
+        updates.cafes = 1;
+        updates.cafes_acumulados_total = increment(1);
+        updates.sello_pendiente = false;
+        updates.sigue_instagram = true;
+        updates.sello_instagram_usado = true;
+        mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!\nY además se aplicó el sello pendiente de Instagram.`;
+      } else {
+        mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!\n¡Gracias por su fidelidad!`;
+      }
+      document.title = "Admin - Invitación cafecito";
+      await addDoc(collection(db, "logs"), {
+        usuario,
+        accion: "invitar_cafecito",
+        detalles: `DNI: ${dni} - ${nombre}`,
+        timestamp: new Date()
+      });
+      if (typeof gtag === 'function') gtag('event', 'admin_invito_cafe', { dni });
+    } else {
+      updates.cafes = cafes + 1;
+      if (updates.cafes >= 8) updates.cafe_disponible = true;
+      mensajeFinal = updates.cafes >= 8
+        ? `✅ Se sumó 1 cafecito a ${nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
+        : `✅ Se sumó 1 cafecito a ${nombre}. Total: ${updates.cafes}`;
+      document.title = "Admin - Suma cafecito";
+      await addDoc(collection(db, "logs"), {
+        usuario,
+        accion: "sumar_cafecito",
+        detalles: `DNI: ${dni} - ${nombre}`,
+        timestamp: new Date()
+      });
+      if (typeof gtag === 'function') gtag('event', 'admin_suma_cafe', { dni });
+    }
+
+    await updateDoc(ref, updates);
+
+    // Guardamos para deshacer
+    const btnDeshacer = document.getElementById("btnDeshacer");
+    btnDeshacer.style.display = "inline-block";
+    window.ultimaOperacion = { dni, prevData: estadoAnterior, usuario };
+
+    // Mostrar botón Instagram si corresponde
+    if (!data.sigue_instagram && !data.sello_instagram_usado && !data.sello_pendiente) {
+      btnInsta.style.display = "inline-block";
+      const nuevoBtn = btnInsta.cloneNode(true);
+      btnInsta.parentNode.replaceChild(nuevoBtn, btnInsta);
+      btnInsta = nuevoBtn;
+      btnInsta.onclick = async () => {
+        btnInsta.disabled = true;
+        const snapActual = await getDoc(ref);
+        const cliente = snapActual.data();
+        const cafesActuales = cliente.cafes || 0;
+        const updatesInstagram = {};
+
+        if (cafesActuales >= 8) {
+          updatesInstagram.sello_pendiente = true;
+        } else {
+          updatesInstagram.sigue_instagram = true;
+          updatesInstagram.sello_instagram_usado = true;
+          updatesInstagram.cafes = cafesActuales + 1;
+          updatesInstagram.cafes_acumulados_total = increment(1);
+        }
+
+        try {
+          await updateDoc(ref, updatesInstagram);
+          await addDoc(collection(db, "logs"), {
+            usuario,
+            accion: "marcar_instagram",
+            detalles: `DNI: ${dni} - ${nombre}`,
+            timestamp: new Date()
+          });
+          div.innerText += `\n📸 Marcado como seguidor en Instagram.`;
+        } catch (e) {
+          console.error("Error marcando Instagram:", e);
+          div.innerText += `\n❌ Error al marcar Instagram.`;
+        }
+      };
+    }
+
+    // Acción botón Deshacer
+    btnDeshacer.onclick = async () => {
+      const { dni, prevData, usuario } = window.ultimaOperacion;
+      const ref = doc(db, "clientes", dni);
+      await updateDoc(ref, {
+        cafes: prevData.cafes,
+        cafes_acumulados_total: prevData.cafes_acumulados_total,
+        cafe_disponible: prevData.cafe_disponible,
+        cafecitos_invitados: prevData.cafecitos_invitados,
+        sigue_instagram: prevData.sigue_instagram ?? false,
+        sello_instagram_usado: prevData.sello_instagram_usado ?? false,
+        sello_pendiente: prevData.sello_pendiente ?? false,
+        ultimo_cafe: prevData.ultimo_cafe ? new Date(prevData.ultimo_cafe) : null
+      });
+
+      await addDoc(collection(db, "logs"), {
+        usuario,
+        accion: "deshacer_operacion",
+        detalles: `Reversión manual sobre DNI ${dni}`,
+        timestamp: new Date()
+      });
+
+      document.getElementById("respuesta").innerText = `↩️ Se deshizo la última operación para ${prevData.nombre || dni}`;
+      btnDeshacer.style.display = "none";
+    };
+
+    div.className = "mensaje ok";
+    div.innerText = mensajeFinal;
+    loader.style.display = "none";
+    input.disabled = false;
+    button.disabled = false;
+  });
+</script>
 </body>
 </html>
