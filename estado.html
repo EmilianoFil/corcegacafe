@@ -17,7 +17,7 @@
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <title>Consulta cliente</title>
   <link rel="stylesheet" href="css/style.css" />
-  
+
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
   <script>
@@ -51,7 +51,7 @@
     import { app, db } from './js/firebase-config.js';
     import {
       doc, getDoc, addDoc, collection, updateDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const params = new URLSearchParams(window.location.search);
     const dni = params.get("dni");
