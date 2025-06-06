@@ -128,6 +128,14 @@
         });
       }
 
+      if (sumarCafecito) {
+        await updateDoc(clienteRef, {
+          cafes: 1,
+          cafes_acumulados_total: 1,
+          ultimo_cafe: serverTimestamp()
+        });
+      }
+      
       if (usuario) {
         const logRef = doc(db, "logs", `${dni}_${Date.now()}`);
         await setDoc(logRef, {
