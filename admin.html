@@ -219,7 +219,8 @@
       updates.cafes = 0;
       updates.cafe_disponible = false;
       updates.cafecitos_invitados = increment(1);
-      if (data.sigue_instagram && !data.sello_instagram_usado) {
+     // if (data.sigue_instagram && !data.sello_instagram_usado) { 
+      if (data.sigue_instagram && !data.sello_instagram_usado && !data.sello_pendiente) { 
         updates.sello_instagram_usado = true;
       }
       if (data.sello_pendiente) {
