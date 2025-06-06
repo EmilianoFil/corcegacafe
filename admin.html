@@ -144,8 +144,7 @@
     <p></p>
     <a href="login.html">Volver a ingresar</a>
   </div>
-
-  <script type="module">
+    <script type="module">
     import { app, db } from './js/firebase-config.js';
     import {
       doc, getDoc, updateDoc, increment, serverTimestamp, collection, addDoc
@@ -219,7 +218,15 @@
         if (data.sigue_instagram && !data.sello_instagram_usado) {
           updates.sello_instagram_usado = true;
         }
-        mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!.\n¡Gracias por su fidelidad!`;
+        if (data.sello_pendiente) {
+          updates.cafes = 1;
+          updates.cafes_acumulados_total = increment(1);
+          updates.sello_pendiente = false;
+          mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!.
+Y además se aplicó el sello pendiente de Instagram.`;
+        } else {
+          mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!.\n¡Gracias por su fidelidad!`;
+        }
         document.title = "Admin - Invitación cafecito";
         await addDoc(collection(db, "logs"), {
           usuario,
@@ -246,7 +253,6 @@
 
       await updateDoc(ref, updates);
 
-      // Mostramos botón de deshacer
       const btnDeshacer = document.getElementById("btnDeshacer");
       btnDeshacer.style.display = "inline-block";
       window.ultimaOperacion = {
@@ -262,12 +268,21 @@
         btnInsta = nuevoBtn;
         btnInsta.onclick = async () => {
           btnInsta.disabled = true;
+          const snapActualizado = await getDoc(ref);
+          const cliente = snapActualizado.data();
+          const cafesActuales = cliente.cafes || 0;
+          const updatesInstagram = {
+            sigue_instagram: true
+          };
+          if (cafesActuales >= 8) {
+            updatesInstagram.sello_pendiente = true;
+          } else {
+            updatesInstagram.cafes = cafesActuales + 1;
+            updatesInstagram.cafes_acumulados_total = increment(1);
+          }
+
           try {
-            await updateDoc(ref, {
-              sigue_instagram: true,
-              cafes: increment(1),
-              cafes_acumulados_total: increment(1)
-            });
+            await updateDoc(ref, updatesInstagram);
             await addDoc(collection(db, "logs"), {
               usuario,
               accion: "marcar_instagram",
@@ -282,7 +297,6 @@
         };
       }
 
-      // Acción del botón Deshacer
       btnDeshacer.onclick = async () => {
         const { dni, prevData, usuario } = window.ultimaOperacion;
         const ref = doc(db, "clientes", dni);
@@ -292,7 +306,8 @@
           cafe_disponible: prevData.cafe_disponible,
           cafecitos_invitados: prevData.cafecitos_invitados,
           sello_instagram_usado: prevData.sello_instagram_usado ?? false,
-          sigue_instagram: prevData.sigue_instagram ?? false
+          sigue_instagram: prevData.sigue_instagram ?? false,
+          sello_pendiente: prevData.sello_pendiente ?? false
         });
 
         await addDoc(collection(db, "logs"), {
