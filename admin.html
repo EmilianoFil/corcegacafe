@@ -79,8 +79,8 @@
             const tsLogin = parseInt(localStorage.getItem("loginTimestamp") || "0");
             const tsUltimoEvento = parseInt(localStorage.getItem("ultimoEvento") || "0");
             const ahora = Date.now();
-            const INACTIVIDAD_MAX_MS = 30 * 60 * 1000;
-            const SESION_MAX_MS = 300 * 60 * 1000;
+            const INACTIVIDAD_MAX_MS = 3000 * 60 * 1000;
+            const SESION_MAX_MS = 3000 * 60 * 1000;
             const usuario = auth.currentUser?.email || "admin";
             if (ahora - tsLogin > SESION_MAX_MS) {
               await addDoc(collection(db, "logs"), {
