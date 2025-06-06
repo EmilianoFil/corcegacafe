@@ -99,40 +99,38 @@
       return;
     }
 
+    if (!cumple_dia || !cumple_mes) {
+      mensaje.innerText = "⚠️ El día y mes de cumpleaños son obligatorios.";
+      loader.style.display = "none";
+      return;
+    }
+
     try {
       const clienteRef = doc(db, "clientes", dni);
       await setDoc(clienteRef, {
-        dni: dni,
-        nombre: nombre,
-        email: email,
-        cafes: 0,
-        cafes_acumulados_total: 0,
-        cafecitos_invitados: 0,
-        ultimo_cafe: null,
-        cafe_disponible: false,
-        sigue_instagram: false,
-        sello_instagram_usado: false,
-        sello_pendiente: false,
-        sello_cumpleanios_activo: false,
-        sello_cumpleanios_ultimo: null,
-        creado: serverTimestamp(),
-        cumple_dia: cumple_dia || null,
-        cumple_mes: cumple_mes || null
-      });
+      dni,
+      nombre,
+      email,
+      cafes: sumarCafecito ? 1 : 0,
+      cafes_acumulados_total: sumarCafecito ? 1 : 0,
+      cafecitos_invitados: 0,
+      ultimo_cafe: sumarCafecito ? serverTimestamp() : null,
+      cafe_disponible: false,
+      sigue_instagram: false,
+      sello_instagram_usado: false,
+      sello_pendiente: false,
+      sello_cumpleanios_activo: false,
+      sello_cumpleanios_ultimo: null,
+      creado: serverTimestamp(),
+      cumple_dia: cumple_dia || null,
+      cumple_mes: cumple_mes || null
+    });
 
       if (typeof gtag === 'function') {
         gtag('event', 'registro_cliente', {
           origen: 'admin',
           modo: sumarCafecito ? 'registro_y_cafecito' : 'solo_registro',
           dni: dni
-        });
-      }
-
-      if (sumarCafecito) {
-        await updateDoc(clienteRef, {
-          cafes: 1,
-          cafes_acumulados_total: 1,
-          ultimo_cafe: serverTimestamp()
         });
       }
       
