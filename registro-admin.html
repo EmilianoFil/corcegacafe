@@ -101,19 +101,22 @@
 
       try {
         const clienteRef = doc(db, "clientes", dni);
-        await setDoc(clienteRef, {
-          dni,
-          nombre,
-          email: mail,
-          cumple_dia,
-          cumple_mes,
-          cafes: sumarCafecito ? 1 : 0,
-          cafes_acumulados_total: sumarCafecito ? 1 : 0,
-          cafe_disponible: false,
+        await setDoc(doc(db, "clientes", dni), {
+          dni: dni,
+          nombre: nombre,
+          email: email,
+          cafes: 0,
+          cafes_acumulados_total: 0,
           cafecitos_invitados: 0,
+          ultimo_cafe: null,
+          cafe_disponible: false,
           sigue_instagram: false,
           sello_instagram_usado: false,
-          ultimo_cafe: sumarCafecito ? serverTimestamp() : null
+          sello_pendiente: false,
+          sello_cumpleanios_activo: false,
+          sello_cumpleanios_ultimo: null,
+          cumple_dia: cumple_dia || null,
+          cumple_mes: cumple_mes || null
         });
 
         if (typeof gtag === 'function') {
