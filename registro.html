@@ -78,102 +78,102 @@
   <div id="coupon-birds-embed-div"></div>
 </div>
 
-  <script type="module">
-    import { db } from './js/firebase-config.js';
-    import {
-      setDoc,
-      doc,
-      getDoc,
-      serverTimestamp,
-      addDoc,
-      collection
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<script type="module">
+  import { db } from './js/firebase-config.js';
+  import {
+    setDoc,
+    doc,
+    getDoc,
+    serverTimestamp,
+    addDoc,
+    collection
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const params = new URLSearchParams(window.location.search);
-      const dni = params.get("dni");
-      if (dni) document.querySelector('input[name="dni"]').value = dni;
+  document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    const dniParam = params.get("dni");
+    if (dniParam) document.querySelector('input[name="dni"]').value = dniParam;
 
-      document.getElementById("registroForm").addEventListener("submit", async function(e) {
-        e.preventDefault();
+    document.getElementById("registroForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
 
-        const form = e.target;
-        await setDoc(doc(db, "clientes", dni), {
-          dni: dni,
-          nombre: nombre,
-          email: email,
-          cafes: 0,
-          cafes_acumulados_total: 0,
-          cafecitos_invitados: 0,
-          ultimo_cafe: null,
-          cafe_disponible: false,
-          sigue_instagram: false,
-          sello_instagram_usado: false,
-          sello_pendiente: false,
-          sello_cumpleanios_activo: false,
-          sello_cumpleanios_ultimo: null,
-          cumple_dia: cumple_dia || null,
-          cumple_mes: cumple_mes || null
-        });
+      const form = e.target;
+      const dni = form.dni.value.trim();
+      const nombre = form.nombre.value.trim();
+      const email = form.mail.value.trim();
+      const cumple_dia = parseInt(form.cumple_dia.value);
+      const cumple_mes = parseInt(form.cumple_mes.value);
 
-        const docRef = doc(db, "clientes", data.dni);
-        const existing = await getDoc(docRef);
+      if (!/^\d{1,10}$/.test(dni)) {
+        document.getElementById("mensaje").innerText = "El DNI debe tener hasta 10 números.";
+        return;
+      }
 
-        document.getElementById("loader").style.display = "block";
-        form.style.display = "none";
+      const docRef = doc(db, "clientes", dni);
+      const existing = await getDoc(docRef);
 
-        try {
-          if (!existing.exists()) {
+      document.getElementById("loader").style.display = "block";
+      form.style.display = "none";
 
-            // VALIDACIÓN DE DNI
-            if (!/^\d{1,8}$/.test(data.dni)) {
-              document.getElementById("mensaje").innerText = "El DNI debe tener hasta 8 números.";
-              form.style.display = "block";
-              document.getElementById("loader").style.display = "none";
-              return;
-            }
+      try {
+        if (!existing.exists()) {
+          await setDoc(docRef, {
+            dni: dni,
+            nombre: nombre,
+            email: email,
+            cafes: 0,
+            cafes_acumulados_total: 0,
+            cafecitos_invitados: 0,
+            ultimo_cafe: null,
+            cafe_disponible: false,
+            sigue_instagram: false,
+            sello_instagram_usado: false,
+            sello_pendiente: false,
+            sello_cumpleanios_activo: false,
+            sello_cumpleanios_ultimo: null,
+            cumple_dia: cumple_dia || null,
+            cumple_mes: cumple_mes || null
+          });
 
-            await setDoc(docRef, data);
-
-            if (typeof gtag === 'function') {
-              gtag('event', 'registro_cliente', {
-                origen: 'registro_publico',
-                dni: data.dni
-              });
-            }
-
-            await addDoc(collection(db, "logs"), {
-              usuario: data.dni,
-              accion: "registro_cliente",
-              detalles: `Registro nuevo cliente ${data.dni} - ${data.nombre}`,
-              timestamp: new Date()
+          if (typeof gtag === 'function') {
+            gtag('event', 'registro_cliente', {
+              origen: 'registro_publico',
+              dni: dni
             });
-
-            document.title = "Cliente registrado"; // ← esta es la línea nueva
-            
-            const enviarMail = false;
-            if (enviarMail) {
-              emailjs.send("service_2pfzklo", "template_33mxnzd", {
-                  nombre: data.nombre,
-                  dni: data.dni,
-                  mail: data.email
-                });
-            }
-
-            document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🐎 ☕️\n";
-          } else {
-            document.getElementById("mensaje").innerText = "Ya estás registrado en el club.";
           }
-        } catch (error) {
-          console.error("Error en el registro:", error);
-          document.getElementById("mensaje").innerText = "Hubo un error. Probá de nuevo más tarde.";
+
+          await addDoc(collection(db, "logs"), {
+            usuario: dni,
+            accion: "registro_cliente",
+            detalles: `Registro nuevo cliente ${dni} - ${nombre}`,
+            timestamp: serverTimestamp()
+          });
+
+          document.title = "Cliente registrado";
+          document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🐎 ☕️\n";
+
+          // Si querés activar envío de mail:
+          const enviarMail = false;
+          if (enviarMail) {
+            emailjs.send("service_2pfzklo", "template_33mxnzd", {
+              nombre: nombre,
+              dni: dni,
+              mail: email
+            });
+          }
+        } else {
+          document.getElementById("mensaje").innerText = "Ya estás registrado en el club.";
           form.style.display = "block";
-        } finally {
-          document.getElementById("loader").style.display = "none";
-          document.getElementById("volver").style.display = "inline-block";
         }
-      });
+      } catch (error) {
+        console.error("Error en el registro:", error);
+        document.getElementById("mensaje").innerText = "Hubo un error. Probá de nuevo más tarde.";
+        form.style.display = "block";
+      } finally {
+        document.getElementById("loader").style.display = "none";
+      }
     });
-  </script>
+  });
+</script>
 </body>
 </html>
