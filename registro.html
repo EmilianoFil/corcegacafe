@@ -98,20 +98,23 @@
         e.preventDefault();
 
         const form = e.target;
-        const data = {
-          dni: form.dni.value.trim(),
-          nombre: form.nombre.value.trim(),
-          email: form.mail.value.trim(),
-          cumple_dia: parseInt(form.cumple_dia.value),
-          cumple_mes: parseInt(form.cumple_mes.value),
+        await setDoc(doc(db, "clientes", dni), {
+          dni: dni,
+          nombre: nombre,
+          email: email,
           cafes: 0,
           cafes_acumulados_total: 0,
           cafecitos_invitados: 0,
-          cafe_disponible: false,
           ultimo_cafe: null,
+          cafe_disponible: false,
           sigue_instagram: false,
-          sello_instagram_usado: false
-        };
+          sello_instagram_usado: false,
+          sello_pendiente: false,
+          sello_cumpleanios_activo: false,
+          sello_cumpleanios_ultimo: null,
+          cumple_dia: cumple_dia || null,
+          cumple_mes: cumple_mes || null
+        });
 
         const docRef = doc(db, "clientes", data.dni);
         const existing = await getDoc(docRef);
