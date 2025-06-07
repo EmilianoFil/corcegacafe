@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin + Consulta Cliente</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Playfair Display', serif;
+      background-color: #fdfcf7;
+      color: #1d1d1d;
+    }
+
+    .container {
+      display: flex;
+      width: 100%;
+      transition: all 0.4s ease-in-out;
+    }
+
+    .admin-panel, .client-panel {
+      width: 100%;
+      padding: 40px 20px;
+      transition: width 0.4s ease-in-out;
+    }
+
+    .client-panel {
+      display: none;
+      background-color: white;
+      border-left: 1px solid #ccc;
+    }
+
+    .container.split .admin-panel, 
+    .container.split .client-panel {
+      width: 50%;
+    }
+
+    .container.split .client-panel {
+      display: block;
+    }
+
+    .btn {
+      background-color: #d86634;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="mainContainer">
+    <div class="admin-panel">
+      <h1>Panel Admin</h1>
+      <button class="btn" onclick="sumarCafecito()">Sumar cafecito</button>
+      <button class="btn" onclick="consultarCliente()">Consultar cliente</button>
+    </div>
+    <div class="client-panel" id="clienteInfo">
+      <h2>Estado del Cliente</h2>
+      <p><strong>Nombre:</strong> Benicio Filgueira</p>
+      <p><strong>DNI:</strong> 32531743</p>
+      <p><strong>Cafés:</strong> ☕☕☕☕☕☕☕☕ 🟠</p>
+      <p><strong>Sello cumple:</strong> ✅ activo</p>
+      <p><strong>Instagram:</strong> ✅</p>
+    </div>
+  </div>
+
+  <script>
+    function consultarCliente() {
+      document.getElementById("mainContainer").classList.add("split");
+    }
+
+    function sumarCafecito() {
+      alert("+1 cafecito (¡sólo demo!) ☕");
+    }
+  </script>
+</body>
+</html>
