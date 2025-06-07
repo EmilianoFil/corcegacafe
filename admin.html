@@ -128,6 +128,7 @@
     <form id="adminForm">
       <input type="tel" name="dni" id="dni" placeholder="DNI del cliente" inputmode="numeric" pattern="[0-9]*" required />
       <button type="submit" id="submitBtn">Sumar cafecito</button>
+      <button type="button" id="consultarCliente" class="btn-estadisticas">Consultar cliente</button>
     </form>
     <div style="margin-top: 10px;">
       <button id="btnInstagram" style="display:none;" class="btn-estadisticas">📸 Sigue Instagram</button>
@@ -329,6 +330,13 @@
       btnDeshacer.style.display = "none";
     };
 
+    document.getElementById("consultarCliente").addEventListener("click", () => {
+      const dni = document.getElementById("dni").value.trim();
+      if (dni) {
+        window.open(`estado.html?dni=${dni}`, '_blank');
+      }
+    });
+    
     div.className = "mensaje ok";
     div.innerText = mensajeFinal;
     loader.style.display = "none";
