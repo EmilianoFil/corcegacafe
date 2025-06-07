@@ -167,6 +167,18 @@
   }
   window.cerrarSesion = cerrarSesion;
 
+  // Listener para el botón "Consultar cliente"
+  document.getElementById("consultarCliente").addEventListener("click", () => {
+    const dni = document.getElementById("dni").value.trim();
+    if (dni) {
+      window.open(`estado.html?dni=${dni}`, '_blank');
+    } else {
+      const div = document.getElementById("respuesta");
+      div.className = "mensaje error";
+      div.innerText = "⚠️ Ingresá un DNI válido para consultar.";
+    }
+  });
+
   document.getElementById("adminForm").addEventListener("submit", async function(e) {
     e.preventDefault();
     const input = document.getElementById("dni");
@@ -330,17 +342,6 @@
       btnDeshacer.style.display = "none";
     };
 
-  // Listener para el botón "Consultar cliente"
-  document.getElementById("consultarCliente").addEventListener("click", () => {
-    const dni = document.getElementById("dni").value.trim();
-    if (dni) {
-      window.open(`estado.html?dni=${dni}`, '_blank');
-    } else {
-      const div = document.getElementById("respuesta");
-      div.className = "mensaje error";
-      div.innerText = "⚠️ Ingresá un DNI válido para consultar.";
-    }
-  });
     div.className = "mensaje ok";
     div.innerText = mensajeFinal;
     loader.style.display = "none";
