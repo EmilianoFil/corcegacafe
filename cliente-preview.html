@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="css/style.css">
-  <title>Adminnn - Consulta Cliente</title>
+  <title>Admin - Consulta Cliente</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap" rel="stylesheet"> <!--//Agrego para uso de letra -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
   <script>
@@ -66,6 +66,31 @@
       border: none;
       font-size: 18px;
       cursor: pointer;
+    }
+
+    /* --- Animación de desplazamiento y preview --- */
+    .menu-style.desplazar {
+      transform: translateX(-50%);
+      transition: transform 0.4s ease-in-out;
+    }
+
+    #clientePreview.derecha {
+      right: 0;
+      opacity: 1;
+      transition: right 0.4s ease-in-out, opacity 0.4s ease-in-out;
+    }
+
+    #clientePreview {
+      position: fixed;
+      top: 80px;
+      right: -100%;
+      width: 48%;
+      background: #fff7f0;
+      padding: 24px;
+      box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+      border-radius: 12px 0 0 12px;
+      opacity: 0;
+      z-index: 999;
     }
   </style>
 
@@ -209,10 +234,14 @@
       ).join('');
     }
     preview.style.display = "block";
+    preview.classList.add("derecha");
+    document.querySelector(".menu-style").classList.add("desplazar");
   });
 
   document.getElementById("cerrarPreview").addEventListener("click", () => {
-    document.getElementById("clientePreview").style.display = "none";
+    // document.getElementById("clientePreview").style.display = "none";
+    document.getElementById("clientePreview").classList.remove("derecha");
+    document.querySelector(".menu-style").classList.remove("desplazar");
   });
 
   document.getElementById("adminForm").addEventListener("submit", async function(e) {
