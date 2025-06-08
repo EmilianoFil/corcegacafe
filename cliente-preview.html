@@ -211,7 +211,7 @@
     <div class="tarjeta-fidelidad">
       <button id="cerrarPreview" class="cerrar-preview">❌</button>
       <h3>📋 Info del cliente</h3>
-      <div id="contenidoCliente"></div>
+      <iframe id="iframeEstado" style="width: 100%; height: 600px; border: none;"></iframe>
     </div>
   </div>
 
@@ -243,24 +243,10 @@
   // Listener para el botón "Consultar cliente"
   document.getElementById("consultarCliente").addEventListener("click", async () => {
     const dni = document.getElementById("dni").value.trim();
-    const contenido = document.getElementById("contenidoCliente");
     const preview = document.getElementById("clientePreview");
     if (!dni) return;
-
-    const ref = doc(db, "clientes", dni);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      contenido.innerHTML = "<p>Cliente no encontrado.</p>";
-    } else {
-      const data = snap.data();
-      contenido.innerHTML = Object.entries(data).map(
-        ([key, value]) => `
-          <div style="text-align: left; margin-bottom: 8px;">
-            <strong>${key}:</strong> ${value}
-          </div>
-        `
-      ).join('');
-    }
+    const iframe = document.getElementById("iframeEstado");
+    iframe.src = `estado.html?dni=${dni}`;
     preview.classList.add("active");
   });
 
