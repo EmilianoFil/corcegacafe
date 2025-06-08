@@ -55,9 +55,17 @@
 <body>
   <div class="container" id="mainContainer">
     <div class="admin-panel">
-      <h1>Panel Admin</h1>
-      <button class="btn" onclick="sumarCafecito()">Sumar cafecito</button>
-      <button class="btn" onclick="consultarCliente()">Consultar cliente</button>
+      <h1>Cliente Preview</h1>
+      <form id="adminForm">
+        <input type="tel" name="dni" id="dni" placeholder="DNI del cliente" inputmode="numeric" pattern="[0-9]*" required />
+        <button type="submit" id="submitBtn" class="btn">Sumar cafecito</button>
+        <button type="button" id="consultarCliente" class="btn">Consultar cliente</button>
+      </form>
+      <div id="loader" style="display:none; margin-top: 10px;">
+        <img src="css/img/Corcega_Logo_Original.png" alt="Cargando..." class="galope">
+      </div>
+      <div id="respuesta" class="mensaje"></div>
+      <button id="btnDeshacer" style="display:none;" class="btn">↩️ Deshacer</button>
     </div>
     <div class="client-panel" id="clienteInfo">
       <h2>Estado del Cliente</h2>
@@ -69,14 +77,55 @@
     </div>
   </div>
 
-  <script>
-    function consultarCliente() {
-      document.getElementById("mainContainer").classList.add("split");
-    }
+</body>
+<script type="module">
+  import { app, db } from './js/firebase-config.js';
+  import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-    function sumarCafecito() {
-      alert("+1 cafecito (¡sólo demo!) ☕");
+  document.getElementById("consultarCliente").addEventListener("click", async () => {
+    const dni = document.getElementById("dni").value.trim();
+    const clientePanel = document.getElementById("clienteInfo");
+    const container = document.getElementById("mainContainer");
+    const loader = document.getElementById("loader");
+    const respuesta = document.getElementById("respuesta");
+
+    if (!dni) return;
+
+    loader.style.display = "block";
+    respuesta.innerText = "";
+    clientePanel.innerHTML = "";
+
+    try {
+      const ref = doc(db, "clientes", dni);
+      const snap = await getDoc(ref);
+
+      loader.style.display = "none";
+      container.classList.add("split");
+
+      if (!snap.exists()) {
+        clientePanel.innerHTML = `<h2>Estado del Cliente</h2><p>❌ Cliente no encontrado.</p>`;
+        return;
+      }
+
+      const data = snap.data();
+      const cafes = "☕".repeat(data.cafes || 0);
+      const sello = data.sello_cumpleanios_activo ? "✅ activo" : "❌ inactivo";
+      const insta = data.sigue_instagram ? "✅" : "❌";
+
+      clientePanel.innerHTML = `
+        <h2>Estado del Cliente</h2>
+        <p><strong>Nombre:</strong> ${data.nombre || "-"}</p>
+        <p><strong>DNI:</strong> ${dni}</p>
+        <p><strong>Cafés:</strong> ${cafes} ${data.cafe_disponible ? "🟠" : ""}</p>
+        <p><strong>Sello cumple:</strong> ${sello}</p>
+        <p><strong>Instagram:</strong> ${insta}</p>
+      `;
+    } catch (e) {
+      console.error(e);
+      respuesta.innerText = "Error al consultar cliente.";
+      loader.style.display = "none";
     }
-  </script>
+  });
+</script>
 </body>
 </html>
