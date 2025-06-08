@@ -69,9 +69,13 @@
     }
 
     /* --- Animación de desplazamiento y preview --- */
+    .menu-style {
+      transition: transform 0.4s ease-in-out, width 0.4s ease-in-out;
+    }
     .menu-style.desplazar {
       transform: translateX(-50%);
-      transition: transform 0.4s ease-in-out;
+      width: 48%;
+      transition: transform 0.4s ease-in-out, width 0.4s ease-in-out;
     }
 
     #clientePreview {
@@ -179,16 +183,17 @@
     </div>
     <div id="loader"><img src="css/img/Corcega_Logo_Original.png" alt="Cargando..." class="galope"></div>
     <div id="respuesta" class="mensaje"></div>
-    <div id="clientePreview" class="tarjeta-fidelidad">
-      <button id="cerrarPreview" class="cerrar-preview">❌</button>
-      <h3>📋 Info del cliente</h3>
-      <div id="contenidoCliente"></div>
-    </div>
     <button id="btnDeshacer" style="display:none;" class="btn-estadisticas">↩️ Deshacer operación</button>
     <div class="logout">
       <a href="admin.html" class="volver">Otro Cliente</a>
       <a href="#" onclick="cerrarSesion()" class="cerrar">Cerrar sesión</a>
     </div>
+  </div>
+
+  <div id="clientePreview" class="tarjeta-fidelidad">
+    <button id="cerrarPreview" class="cerrar-preview">❌</button>
+    <h3>📋 Info del cliente</h3>
+    <div id="contenidoCliente"></div>
   </div>
 
   <div id="sesion-expirada">
