@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="css/style.css">
-  <title>ACdmin - Consulta Cliente</title>
+  <title>ADdmin - Consulta Cliente</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap" rel="stylesheet"> <!--//Agrego para uso de letra -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
   <script>
@@ -58,6 +58,13 @@
       border-radius: 12px;
       position: relative;
     }
+    .tarjeta-fidelidad.sin-titulo {
+      padding: 0;
+      border: none;
+      background: transparent;
+      max-width: 380px;
+      max-height: 620px;
+    }
     .cerrar-preview {
       position: absolute;
       top: 6px;
@@ -100,6 +107,13 @@
       max-height: 80%;
       overflow-y: auto;
       position: relative;
+    }
+    #iframeEstado {
+      width: 100%;
+      height: 100%;
+      border: none;
+      overflow: hidden;
+      border-radius: 12px;
     }
     #clientePreview.active {
       display: flex;
@@ -208,10 +222,9 @@
   </div>
 
   <div id="clientePreview">
-    <div class="tarjeta-fidelidad">
+    <div class="tarjeta-fidelidad sin-titulo">
       <button id="cerrarPreview" class="cerrar-preview">❌</button>
-      <h3>📋 Info del cliente</h3>
-      <iframe id="iframeEstado" style="width: 100%; height: 600px; border: none;"></iframe>
+      <iframe id="iframeEstado" style="width: 100%; height: 100%; border: none;"></iframe>
     </div>
   </div>
 
