@@ -29,6 +29,7 @@
       display: none;
       background-color: white;
       border-left: 1px solid #ccc;
+      position: relative;
     }
 
     .container.split .admin-panel, 
@@ -50,6 +51,24 @@
       cursor: pointer;
       margin-right: 10px;
     }
+
+    .input-dni {
+      width: 300px;
+      max-width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #333;
+    }
   </style>
 </head>
 <body>
@@ -57,7 +76,7 @@
     <div class="admin-panel">
       <h1>Cliente Preview</h1>
       <form id="adminForm">
-        <input type="tel" name="dni" id="dni" placeholder="DNI del cliente" inputmode="numeric" pattern="[0-9]*" required />
+        <input type="tel" name="dni" id="dni" class="input-dni" placeholder="DNI del cliente" inputmode="numeric" pattern="[0-9]*" required />
         <button type="submit" id="submitBtn" class="btn">Sumar cafecito</button>
         <button type="button" id="consultarCliente" class="btn">Consultar cliente</button>
       </form>
@@ -68,6 +87,7 @@
       <button id="btnDeshacer" style="display:none;" class="btn">↩️ Deshacer</button>
     </div>
     <div class="client-panel" id="clienteInfo">
+      <button class="close-btn" id="cerrarPanel">✖️</button>
       <h2>Estado del Cliente</h2>
       <p><strong>Nombre:</strong> Benicio Filgueira</p>
       <p><strong>DNI:</strong> 32531743</p>
@@ -113,6 +133,7 @@
       const insta = data.sigue_instagram ? "✅" : "❌";
 
       clientePanel.innerHTML = `
+        <button class="close-btn" id="cerrarPanel">✖️</button>
         <h2>Estado del Cliente</h2>
         <p><strong>Nombre:</strong> ${data.nombre || "-"}</p>
         <p><strong>DNI:</strong> ${dni}</p>
@@ -120,11 +141,19 @@
         <p><strong>Sello cumple:</strong> ${sello}</p>
         <p><strong>Instagram:</strong> ${insta}</p>
       `;
+
+      document.getElementById("cerrarPanel")?.addEventListener("click", () => {
+        document.getElementById("mainContainer").classList.remove("split");
+      });
     } catch (e) {
       console.error(e);
       respuesta.innerText = "Error al consultar cliente.";
       loader.style.display = "none";
     }
+  });
+
+  document.getElementById("cerrarPanel")?.addEventListener("click", () => {
+    document.getElementById("mainContainer").classList.remove("split");
   });
 </script>
 </body>
