@@ -74,15 +74,15 @@
     }
     .menu-style.desplazar {
       transform: translateX(-50%);
-      width: 48%;
+      width: 50%;
       transition: transform 0.4s ease-in-out, width 0.4s ease-in-out;
     }
 
     #clientePreview {
       position: fixed;
       top: 80px;
-      right: -48%;
-      width: 48%;
+      right: -50%;
+      width: 50%;
       background: #fff7f0;
       padding: 24px;
       box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
@@ -90,6 +90,12 @@
       opacity: 0;
       z-index: 999;
       transition: right 0.4s ease-in-out, opacity 0.4s ease-in-out;
+    }
+    #adminForm .button-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
     }
 
     #clientePreview.derecha {
@@ -173,7 +179,7 @@
     <h1>Cargar Cafecito ☕</h1>
     <form id="adminForm">
       <input type="tel" name="dni" id="dni" placeholder="DNI del cliente" inputmode="numeric" pattern="[0-9]*" required />
-      <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+      <div class="button-row">
         <button type="submit" id="submitBtn">Sumar cafecito</button>
         <button type="button" id="consultarCliente" class="btn-estadisticas">👁️ Consultar cliente</button>
       </div>
