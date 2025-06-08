@@ -74,16 +74,10 @@
       transition: transform 0.4s ease-in-out;
     }
 
-    #clientePreview.derecha {
-      right: 0;
-      opacity: 1;
-      transition: right 0.4s ease-in-out, opacity 0.4s ease-in-out;
-    }
-
     #clientePreview {
       position: fixed;
       top: 80px;
-      right: -100%;
+      right: -48%;
       width: 48%;
       background: #fff7f0;
       padding: 24px;
@@ -91,6 +85,12 @@
       border-radius: 12px 0 0 12px;
       opacity: 0;
       z-index: 999;
+      transition: right 0.4s ease-in-out, opacity 0.4s ease-in-out;
+    }
+
+    #clientePreview.derecha {
+      right: 0;
+      opacity: 1;
     }
   </style>
 
@@ -179,7 +179,7 @@
     </div>
     <div id="loader"><img src="css/img/Corcega_Logo_Original.png" alt="Cargando..." class="galope"></div>
     <div id="respuesta" class="mensaje"></div>
-    <div id="clientePreview" style="display:none;" class="tarjeta-fidelidad">
+    <div id="clientePreview" class="tarjeta-fidelidad">
       <button id="cerrarPreview" class="cerrar-preview">❌</button>
       <h3>📋 Info del cliente</h3>
       <div id="contenidoCliente"></div>
