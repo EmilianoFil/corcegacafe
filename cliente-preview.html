@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="css/style.css">
-  <title>ADdmin - Consulta Cliente</title>
+  <title>ACdmin - Consulta Cliente</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap" rel="stylesheet"> <!--//Agrego para uso de letra -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
   <script>
@@ -254,7 +254,11 @@
     } else {
       const data = snap.data();
       contenido.innerHTML = Object.entries(data).map(
-        ([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`
+        ([key, value]) => `
+          <div style="text-align: left; margin-bottom: 8px;">
+            <strong>${key}:</strong> ${value}
+          </div>
+        `
       ).join('');
     }
     preview.classList.add("active");
