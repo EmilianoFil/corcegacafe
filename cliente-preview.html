@@ -68,39 +68,37 @@
       cursor: pointer;
     }
 
-    /* --- Animación de desplazamiento y preview --- */
-    .menu-style {
-      transition: transform 0.4s ease-in-out, width 0.4s ease-in-out;
-    }
-    .menu-style.desplazar {
-      transform: translateX(-40%);
-      width: 50%;
-      transition: transform 0.4s ease-in-out, width 0.4s ease-in-out;
-    }
-
+    /* --- Modal de preview cliente --- */
     #clientePreview {
       position: fixed;
-      top: 80px;
-      right: 12px;
-      width: 38%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    #clientePreview .tarjeta-fidelidad {
       background: #fff7f0;
-      padding: 24px;
-      box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-      border-radius: 12px 0 0 12px;
-      opacity: 0;
-      z-index: 999;
-      transition: right 0.4s ease-in-out, opacity 0.4s ease-in-out;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80%;
+      overflow-y: auto;
+      position: relative;
+    }
+    #clientePreview.active {
+      display: flex;
     }
     #adminForm .button-row {
       display: flex;
       justify-content: center;
       gap: 10px;
       margin-top: 10px;
-    }
-
-    #clientePreview.derecha {
-      right: 0;
-      opacity: 1;
     }
   </style>
 
@@ -196,10 +194,12 @@
     </div>
   </div>
 
-  <div id="clientePreview" class="tarjeta-fidelidad">
-    <button id="cerrarPreview" class="cerrar-preview">❌</button>
-    <h3>📋 Info del cliente</h3>
-    <div id="contenidoCliente"></div>
+  <div id="clientePreview">
+    <div class="tarjeta-fidelidad">
+      <button id="cerrarPreview" class="cerrar-preview">❌</button>
+      <h3>📋 Info del cliente</h3>
+      <div id="contenidoCliente"></div>
+    </div>
   </div>
 
   <div id="sesion-expirada">
@@ -244,15 +244,11 @@
         ([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`
       ).join('');
     }
-    preview.style.display = "block";
-    preview.classList.add("derecha");
-    document.querySelector(".menu-style").classList.add("desplazar");
+    preview.classList.add("active");
   });
 
   document.getElementById("cerrarPreview").addEventListener("click", () => {
-    // document.getElementById("clientePreview").style.display = "none";
-    document.getElementById("clientePreview").classList.remove("derecha");
-    document.querySelector(".menu-style").classList.remove("desplazar");
+    document.getElementById("clientePreview").classList.remove("active");
   });
 
   document.getElementById("adminForm").addEventListener("submit", async function(e) {
