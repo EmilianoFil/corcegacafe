@@ -43,7 +43,7 @@
     <div id="grid" class="grid"></div>
     <div id="mensaje-error" style="display:none;"></div>
     <div class="logout">
-      <a href="consulta-cliente.html" class="volver-card">Volver</a>
+      <a href="index.html" class="volver-card">Volver</a>
     </div>
     <footer style="margin-top: 30px;">
       <p>Seguinos en Instagram<br>
@@ -122,7 +122,7 @@
       document.title = "Tarjeta cliente";
       document.getElementById("cliente").textContent = `Hola ${nombre}`;
       document.getElementById("faltan").textContent = cafes < 8
-        ? `Te faltan ${8 - cafes} para que te invitemos uno.`
+        ? `Te faltan ${8 - cafes} para alcanzarlo.`
         : "¡El próximo lo invitamos nosotros! 🐎🎉";
 
       const grid = document.getElementById("grid");
