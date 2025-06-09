@@ -346,3 +346,10 @@ footer a[href*="instagram.com"]::before {
   color: #999;
   font-weight: normal;
 }
+
+#adminForm .button-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
