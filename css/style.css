@@ -3,7 +3,7 @@ body {
   margin: 0;
   font-family: 'Playfair Display', serif;
   background-color: #fdfcf7;
-  color: #1d1d1d;
+  color: #ffffff;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -20,7 +20,7 @@ body::before {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-image: url('fondo5.png');
+  background-image: url('img/wallpaper.png');
   background-repeat: repeat;
   background-size: 600px;
   background-position: center;
@@ -34,7 +34,7 @@ body::before {
   max-width: 480px;
   margin: 40px auto;
   padding: 40px 20px;
-  background: #eeeeee;
+  background: #01323f;
   border: 1px solid #ccc;
   border-radius: 16px;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
@@ -154,7 +154,7 @@ button, .btn-primary {
   display: block;
   text-align: center;
   text-decoration: none;
-  color: #ed7053;
+  color: #ffffff;
   font-weight: bold;
   margin: 8px 0;
   cursor: pointer;
