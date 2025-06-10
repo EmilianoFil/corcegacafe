@@ -39,10 +39,14 @@ exports.enviarMailRegistro = onRequest(
             <img src="https://emilianofil.github.io/corcegacafe/css/img/tarjeta-vacia.png" alt="Tarjeta de cafecitos" style="max-width:100%; margin:20px 0; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
 
             <div style="margin-bottom: 30px;">
-              <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="display: block; margin: 0 auto 12px; max-width: 120px;">
-              <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
-                Ver mi estado
-              </a>
+              <div style="margin-bottom: 12px;">
+                <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="display: block; margin: 0 auto; max-width: 120px;">
+              </div>
+              <div>
+                <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
+                  Ver mi estado
+                </a>
+              </div>
             </div>
 
             <p style="margin-top:30px;">Nos vemos pronto en la isla 🏝️.</p>
