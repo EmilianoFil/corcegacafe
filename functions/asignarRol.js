@@ -1,6 +1,10 @@
 const admin = require("firebase-admin");
 
-admin.initializeApp();
+const serviceAccount = require("/Users/emi/.secrets/serviceAccount.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 const uid = "RZIzXw3gsGSmEHf3oG7jxpWh9RF3"; // reemplazá por el UID real
 const rol = "dueño"; // o 'empleado', etc.
