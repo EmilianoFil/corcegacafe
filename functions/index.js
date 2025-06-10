@@ -179,21 +179,29 @@ exports.selloCumpleaniosDiario = onSchedule(
           subject: "¡Feliz cumpleaños! 🎂 Te regalamos un sello",
           html: `
             <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b;">
-              <h2>¡Feliz cumple, ${nombre}! 🎉</h2>
-              <p>Hoy es tu día, y queremos regalarte un sello especial en tu tarjeta de cafecitos.</p>
-              <p>Ya está activo, y se va a usar automáticamente la próxima vez que pases por el café.</p>
-              <img src="https://emilianofil.github.io/corcegacafe/css/img/sello_cumpleanos.png" alt="Sello de cumpleaños" style="max-width:100px; margin:20px auto; border-radius:50%; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
-              <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
-                Ver mi tarjeta
-              </a>
-              <p style="margin-top:30px;">Te esperamos para festejarlo como se debe 🐎.</p>
-              <hr style="margin:30px auto; max-width:80%; border:none; border-top:1px solid #ccc;" />
-              <p style="margin: 0;">Seguinos en Instagram</p>
-              <a href="https://www.instagram.com/corcegacafe" target="_blank" style="display:inline-flex; align-items:center; color:#d86634; font-weight:bold; text-decoration:none; margin-top:5px;">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" width="20" height="20" style="margin-right:8px;">
-                @corcegacafe
-              </a>
-            </div>
+  <h2>¡Feliz cumple, ${nombre}! 🎉</h2>
+  <p>Hoy es tu día, y queremos regalarte un sello especial en tu tarjeta de cafecitos.</p>
+  <p>Ya está activo, y se va a usar automáticamente la próxima vez que pases por el café.</p>
+
+  <div style="margin-bottom: 30px;">
+    <div style="margin-bottom: 12px;">
+      <img src="https://emilianofil.github.io/corcegacafe/css/img/sello_cumpleanos.png" alt="Sello de cumpleaños" style="max-width:140px; margin:0 auto 16px; border-radius:50%; box-shadow:0 2px 10px rgba(0,0,0,0.1); display:block;">
+    </div>
+    <div>
+      <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
+        Ver mi tarjeta
+      </a>
+    </div>
+  </div>
+
+  <p style="margin-top:30px;">Te esperamos para festejarlo como se debe 🐎.</p>
+  <hr style="margin:30px auto; max-width:80%; border:none; border-top:1px solid #ccc;" />
+  <p style="margin: 0;">Seguinos en Instagram</p>
+  <a href="https://www.instagram.com/corcegacafe" target="_blank" style="display:inline-flex; align-items:center; color:#d86634; font-weight:bold; text-decoration:none; margin-top:5px;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" width="20" height="20" style="margin-right:8px;">
+    @corcegacafe
+  </a>
+</div>
           `,
         };
 
