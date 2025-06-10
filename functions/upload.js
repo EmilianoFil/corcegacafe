@@ -10,10 +10,6 @@ exports.uploadMenuToGitHub = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("unauthenticated", "Debés estar logueado.");
   }
 
-  const adminDoc = await admin.firestore().collection("admin").doc(context.auth.uid).get();
-  if (!adminDoc.exists || adminDoc.data()?.rol !== "dueño") {
-    throw new functions.https.HttpsError("permission-denied", "Acceso restringido al dueño.");
-  }
 
   if (!fileBase64 || !comment || comment.length > 30) {
     throw new functions.https.HttpsError("invalid-argument", "Datos incompletos o comentario demasiado largo.");

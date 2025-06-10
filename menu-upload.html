@@ -130,6 +130,13 @@
     menuForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      if (!auth.currentUser) {
+        mensaje.textContent = "⚠️ Error: sesión expirada. Volvé a iniciar sesión.";
+        return;
+      }
+
+      await auth.currentUser.getIdToken(true);
+
       const file = document.getElementById('menuFile').files[0];
       const comment = document.getElementById('comentario').value.trim();
 
