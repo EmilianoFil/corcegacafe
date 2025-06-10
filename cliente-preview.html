@@ -17,6 +17,45 @@
 </head>
 <body>
   <style>
+    .menu-hamburguesa {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+    .menu-icon {
+      cursor: pointer;
+      display: inline-block;
+      padding: 10px 16px;
+      background-color: #d86634;
+      color: white;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    #menu-toggle {
+      display: none;
+    }
+    .menu-links {
+      display: none;
+      position: absolute;
+      background-color: white;
+      border: 1px solid #ccc;
+      list-style: none;
+      padding: 10px;
+      margin: 5px 0 0 0;
+      border-radius: 8px;
+      z-index: 999;
+    }
+    #menu-toggle:checked + .menu-icon + .menu-links {
+      display: block;
+    }
+    .menu-links li {
+      margin-bottom: 8px;
+    }
+    .menu-links li a {
+      text-decoration: none;
+      color: #d86634;
+      font-weight: bold;
+    }
     .btn-estadisticas {
       background-color: white;
       color: #d86634;
@@ -199,6 +238,16 @@
   </script>
 
   <div class="menu-style">
+    <nav class="menu-hamburguesa">
+      <input type="checkbox" id="menu-toggle">
+      <label for="menu-toggle" class="menu-icon">☰ Menú</label>
+      <ul class="menu-links">
+        <li><a href="menu-upload.html">Subir Menú</a></li>
+        <li><a href="filtros.html">Filtros</a></li>
+        <li><a href="panel.html">Panel</a></li>
+        <li><a href="registro-admin.html">Registrar Admin</a></li>
+      </ul>
+    </nav>
     <div id="botonEstadisticas" style="display:none; text-align: right; margin-bottom: 10px;">
       <a href="panel.html" class="btn-estadisticas">📊 Estadísticas</a>
     </div>
