@@ -37,9 +37,14 @@ exports.enviarMailRegistro = onRequest(
             <p>Hola <strong>${nombre}</strong>, ya estás registrado con el DNI <strong>${dni}</strong>.</p>
             <p>Esta es tu tarjeta, hay que empezar a llenarla:</p>
             <img src="https://emilianofil.github.io/corcegacafe/css/img/tarjeta-vacia.png" alt="Tarjeta de cafecitos" style="max-width:100%; margin:20px 0; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
-            <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
-              Ver mi estado
-            </a>
+
+            <div style="margin-bottom: 30px;">
+              <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="display: block; margin: 0 auto 12px; max-width: 120px;">
+              <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
+                Ver mi estado
+              </a>
+            </div>
+
             <p style="margin-top:30px;">Nos vemos pronto en la isla 🏝️.</p>
             <hr style="margin:30px auto; max-width:80%; border:none; border-top:1px solid #ccc;" />
             <p style="margin: 0;">Seguinos en Instagram</p>
