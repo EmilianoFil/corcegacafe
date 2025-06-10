@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Subir Menú</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body {
+      background-color: #fdfcf7;
+      font-family: sans-serif;
+      padding: 40px;
+      max-width: 500px;
+      margin: auto;
+    }
+    h1 {
+      font-size: 22px;
+      margin-bottom: 20px;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin: 10px 0;
+      border-radius: 8px;
+    }
+    input[type="file"] {
+      border: 1px solid #ccc;
+      padding: 8px;
+    }
+    button {
+      background-color: #d86634;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+    }
+    .msg {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Subir nuevo Menú</h1>
+  <form id="menuForm">
+    <input type="file" id="menuFile" accept="application/pdf" required />
+    <input type="text" id="comentario" placeholder="Comentario del cambio" maxlength="30" required />
+    <button type="submit">Subir Menú</button>
+  </form>
+  <div id="mensaje" class="msg"></div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
+      authDomain: "corcega-loyalty-club.firebaseapp.com",
+      projectId: "corcega-loyalty-club",
+      storageBucket: "corcega-loyalty-club.appspot.com",
+      messagingSenderId: "789184958568",
+      appId: "1:789184958568:web:4990bf50335bec365f2bdd"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const functions = getFunctions(app);
+
+    const menuForm = document.getElementById('menuForm');
+    const mensaje = document.getElementById('mensaje');
+
+    onAuthStateChanged(auth, user => {
+      if (!user) {
+        mensaje.textContent = "Acceso restringido. Debés estar logueado.";
+        menuForm.style.display = "none";
+        return;
+      }
+    });
+
+    menuForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const file = document.getElementById('menuFile').files[0];
+      const comment = document.getElementById('comentario').value.trim();
+
+      if (!file || file.name !== 'Menu_Corcega.pdf') {
+        mensaje.textContent = "El archivo debe llamarse exactamente 'Menu_Corcega.pdf'";
+        return;
+      }
+
+      if (comment.length > 30) {
+        mensaje.textContent = "El comentario no puede tener más de 30 caracteres.";
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result.split(',')[1];
+        const subirMenu = httpsCallable(functions, 'uploadMenuToGitHub');
+
+        try {
+          await subirMenu({ fileBase64: base64, comment });
+          mensaje.textContent = "✅ Menú subido correctamente.";
+          menuForm.reset();
+        } catch (error) {
+          console.error("Error al subir:", error);
+          mensaje.textContent = `⚠️ Error al subir el menú: ${error.message}`;
+        }
+      };
+
+      reader.readAsDataURL(file);
+    });
+  </script>
+</body>
+</html>
