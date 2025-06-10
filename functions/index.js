@@ -36,11 +36,11 @@ exports.enviarMailRegistro = onRequest(
             <h2>¡Bienvenido/a al Club de Cafecitos de Córcega! ☕</h2>
             <p>Hola <strong>${nombre}</strong>, ya estás registrado con el DNI <strong>${dni}</strong>.</p>
             <p>Esta es tu tarjeta, hay que empezar a llenarla:</p>
-            <img src="https://emilianofil.github.io/corcegacafe/img/tarjeta-vacia.png" alt="Tarjeta de cafecitos" style="max-width:100%; margin:20px 0; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <img src="https://emilianofil.github.io/corcegacafe/css/img/tarjeta-vacia.png" alt="Tarjeta de cafecitos" style="max-width:100%; margin:20px 0; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
             <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
               Ver mi estado
             </a>
-            <p style="margin-top:30px;">Nos vemos pronto en la barra 🐎</p>
+            <p style="margin-top:30px;">Nos vemos pronto en la isla 🏝️.</p>
             <hr style="margin:30px auto; max-width:80%; border:none; border-top:1px solid #ccc;" />
             <p style="margin: 0;">Seguinos en Instagram</p>
             <a href="https://www.instagram.com/corcegacafe" target="_blank" style="display:inline-flex; align-items:center; color:#d86634; font-weight:bold; text-decoration:none; margin-top:5px;">
@@ -93,11 +93,11 @@ exports.enviarMailFelicitaciones = onRequest(
             <h2>¡Felicitaciones, ${nombre}! 🎉</h2>
             <p>Completaste tu tarjeta de cafecitos con el DNI <strong>${dni}</strong>.</p>
             <p>Así se ve ahora tu tarjeta:</p>
-            <img src="https://emilianofil.github.io/corcegacafe/img/tarjeta-llena.png" alt="Tarjeta completa" style="max-width:100%; margin:20px 0; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <img src="https://emilianofil.github.io/corcegacafe/css/img/tarjeta-llena.png" alt="Tarjeta completa" style="max-width:100%; margin:20px 0; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
             <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
               Ver mi estado
             </a>
-            <p style="margin-top:30px;">Pasá a buscar tu cafecito invitado 🐎</p>
+            <p style="margin-top:30px;">Pasá a buscar tu cafecito por la isla 🏝️.</p>
             <hr style="margin:30px auto; max-width:80%; border:none; border-top:1px solid #ccc;" />
             <p style="margin: 0;">Seguinos en Instagram</p>
             <a href="https://www.instagram.com/corcegacafe" target="_blank" style="display:inline-flex; align-items:center; color:#d86634; font-weight:bold; text-decoration:none; margin-top:5px;">
@@ -173,11 +173,11 @@ exports.selloCumpleaniosDiario = onSchedule(
               <h2>¡Feliz cumple, ${nombre}! 🎉</h2>
               <p>Hoy es tu día, y queremos regalarte un sello especial en tu tarjeta de cafecitos.</p>
               <p>Ya está activo, y se va a usar automáticamente la próxima vez que pases por el café.</p>
-              <img src="https://emilianofil.github.io/corcegacafe/img/sello_cumpleanos.png" alt="Sello de cumpleaños" style="max-width:100px; margin:20px auto; border-radius:50%; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+              <img src="https://emilianofil.github.io/corcegacafe/css/img/sello_cumpleanos.png" alt="Sello de cumpleaños" style="max-width:100px; margin:20px auto; border-radius:50%; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
               <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
                 Ver mi tarjeta
               </a>
-              <p style="margin-top:30px;">Te esperamos para festejarlo como se debe 🐎</p>
+              <p style="margin-top:30px;">Te esperamos para festejarlo como se debe 🐎.</p>
               <hr style="margin:30px auto; max-width:80%; border:none; border-top:1px solid #ccc;" />
               <p style="margin: 0;">Seguinos en Instagram</p>
               <a href="https://www.instagram.com/corcegacafe" target="_blank" style="display:inline-flex; align-items:center; color:#d86634; font-weight:bold; text-decoration:none; margin-top:5px;">

@@ -1,72 +1,72 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const fetch = require("node-fetch");
+const cors = require("cors")({ origin: true });
 const db = admin.firestore();
 
-exports.uploadMenuToGitHub = functions.https.onCall(async (data, context) => {
-  console.log("uploadMenuToGitHub invocado por:", context.auth?.token?.email || context.auth?.uid || "anónimo");
+exports.uploadMenuToGitHub = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const { fileBase64, comment } = req.body.data || {};
 
-  const { fileBase64, comment } = data;
+      if (!fileBase64 || !comment || comment.length > 30) {
+        return res.status(400).json({ error: 'Datos incompletos o comentario demasiado largo.' });
+      }
 
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Debés estar logueado.");
-  }
+      const githubToken = functions.config().github.token;
+      const repoOwner = "emilianofil";
+      const repoName = "sandboxcafe";
+      const filePath = "Menu_Corcega.pdf";
+      const branch = "main";
 
+      const getUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`;
 
-  if (!fileBase64 || !comment || comment.length > 30) {
-    throw new functions.https.HttpsError("invalid-argument", "Datos incompletos o comentario demasiado largo.");
-  }
+      const getRes = await fetch(getUrl, {
+        headers: {
+          Authorization: `Bearer ${githubToken}`,
+          Accept: "application/vnd.github+json",
+        },
+      });
 
-  const githubToken = functions.config().github.token;
-  const repoOwner = "emilianofil"; // cambiá si usás otro usuario
-  const repoName = "sandboxcafe";
-  const filePath = "Menu_Corcega.pdf";
-  const branch = "main";
+      if (!getRes.ok) {
+        console.error("No se pudo obtener el SHA del archivo actual:", await getRes.text());
+        return res.status(404).json({ error: 'No se pudo obtener el SHA del archivo actual.' });
+      }
 
-  // Paso 1: Obtener el SHA del archivo actual
-  const getUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`;
+      const fileData = await getRes.json();
+      const sha = fileData.sha;
 
-  const getRes = await fetch(getUrl, {
-    headers: {
-      Authorization: `Bearer ${githubToken}`,
-      Accept: "application/vnd.github+json",
-    },
+      const uploadRes = await fetch(getUrl, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${githubToken}`,
+          Accept: "application/vnd.github+json",
+        },
+        body: JSON.stringify({
+          message: comment,
+          content: fileBase64,
+          branch: branch,
+          sha: sha,
+        }),
+      });
+
+      if (!uploadRes.ok) {
+        const errText = await uploadRes.text();
+        console.error("Error al subir a GitHub:", errText);
+        return res.status(500).json({ error: 'Error al subir el menú.' });
+      }
+
+      await db.collection("logs").add({
+        usuario: "usuario_desconocido",
+        accion: "subida_menu",
+        comentario: comment,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      return res.json({ data: { success: true } });
+    } catch (err) {
+      console.error("Error en uploadMenuToGitHub:", err);
+      return res.status(500).json({ error: 'Error interno del servidor.' });
+    }
   });
-
-  if (!getRes.ok) {
-    throw new functions.https.HttpsError("not-found", "No se pudo obtener el SHA del archivo actual.");
-  }
-
-  const fileData = await getRes.json();
-  const sha = fileData.sha;
-
-  // Paso 2: Hacer commit nuevo con el archivo
-  const uploadRes = await fetch(getUrl, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${githubToken}`,
-      Accept: "application/vnd.github+json",
-    },
-    body: JSON.stringify({
-      message: comment,
-      content: fileBase64,
-      branch: branch,
-      sha: sha,
-    }),
-  });
-
-  if (!uploadRes.ok) {
-    const errText = await uploadRes.text();
-    throw new functions.https.HttpsError("internal", `Error al subir: ${errText}`);
-  }
-
-  // Log a Firestore
-  await db.collection("logs").add({
-    usuario: context.auth.token.email || context.auth.uid,
-    accion: "subida_menu",
-    comentario: comment,
-    timestamp: admin.firestore.FieldValue.serverTimestamp(),
-  });
-
-  return { status: "ok" };
 });
