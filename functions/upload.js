@@ -6,7 +6,12 @@ const db = admin.firestore();
 exports.uploadMenuToGitHub = functions.https.onCall(async (data, context) => {
   const { fileBase64, comment } = data;
 
-  if (!context.auth || context.auth.token.rol !== "dueño") {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Debés estar logueado.");
+  }
+
+  const adminDoc = await admin.firestore().collection("admin").doc(context.auth.uid).get();
+  if (!adminDoc.exists || adminDoc.data()?.rol !== "dueño") {
     throw new functions.https.HttpsError("permission-denied", "Acceso restringido al dueño.");
   }
 
