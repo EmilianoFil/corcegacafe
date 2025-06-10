@@ -9,60 +9,72 @@
     body {
       background-color: #fdfcf7;
       font-family: sans-serif;
-      padding: 40px;
-      max-width: 500px;
-      margin: auto;
     }
-    h1 {
-      font-size: 22px;
+    .menu-style {
+      background-color: #003941;
+      border-radius: 20px;
+      padding: 40px 30px;
+      max-width: 480px;
+      margin: 60px auto;
+      color: white;
+      text-align: center;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    .titulo {
+      font-size: 20px;
+      text-transform: uppercase;
       margin-bottom: 20px;
+      letter-spacing: 1px;
     }
     input, button {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       font-size: 16px;
-      margin: 10px 0;
+      margin: 12px 0;
       border-radius: 8px;
+      border: none;
+      box-sizing: border-box;
     }
     input[type="file"] {
+      background: white;
+    }
+    input[type="text"] {
+      background: #f4f4f4;
       border: 1px solid #ccc;
-      padding: 8px;
     }
     button {
       background-color: #d86634;
       color: white;
       font-weight: bold;
-      border: none;
       cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #c25427;
     }
     .msg {
       margin-top: 20px;
       font-weight: bold;
+      color: white;
     }
   </style>
 </head>
 <body>
-  <h1>Subir nuevo Menú</h1>
-  <form id="menuForm">
-    <input type="file" id="menuFile" accept="application/pdf" required />
-    <input type="text" id="comentario" placeholder="Comentario del cambio" maxlength="30" required />
-    <button type="submit">Subir Menú</button>
-  </form>
-  <div id="mensaje" class="msg"></div>
+  <div class="menu-style">
+    <h1 class="titulo">Subir nuevo Menú</h1>
+    <form id="menuForm">
+      <input type="file" id="menuFile" accept="application/pdf" required />
+      <input type="text" id="comentario" placeholder="Comentario del cambio" maxlength="30" required />
+      <button type="submit">Subir Menú</button>
+    </form>
+    <div id="mensaje" class="msg"></div>
+  </div>
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
     import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
     import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js';
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
-      authDomain: "corcega-loyalty-club.firebaseapp.com",
-      projectId: "corcega-loyalty-club",
-      storageBucket: "corcega-loyalty-club.appspot.com",
-      messagingSenderId: "789184958568",
-      appId: "1:789184958568:web:4990bf50335bec365f2bdd"
-    };
+    import { firebaseConfig } from './js/firebase-config.js';
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
