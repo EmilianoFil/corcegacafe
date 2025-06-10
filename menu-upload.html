@@ -108,6 +108,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const functions = getFunctions(app);
+    functions.region = 'us-central1';
 
     const menuForm = document.getElementById('menuForm');
     const mensaje = document.getElementById('mensaje');
@@ -141,6 +142,13 @@
         mensaje.textContent = "El comentario no puede tener más de 30 caracteres.";
         return;
       }
+
+      if (!auth.currentUser) {
+        mensaje.textContent = "⚠️ Error: sesión expirada. Volvé a iniciar sesión.";
+        return;
+      }
+
+      await auth.currentUser.getIdToken(true);
 
       const reader = new FileReader();
       reader.onloadend = async () => {
