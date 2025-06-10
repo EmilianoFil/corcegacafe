@@ -98,6 +98,14 @@
       font-weight: bold;
     }
 
+    #mensajeAdvertencia {
+      color: #d86634;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 15px;
+      display: none;
+    }
+
     @media (max-width: 600px) {
       .filtros {
         flex-direction: column;
@@ -129,6 +137,8 @@
 
     <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="logo">
     <h1>Historial de actividad</h1>
+
+    <div id="mensajeAdvertencia"></div>
 
     <div class="filtros">
       <label>Desde: <input type="date" id="desde"></label>
@@ -202,7 +212,7 @@
       const logsQuery = query(
         logsRef,
         orderBy("timestamp", "desc"),
-        limit(50)
+        limit(200)
       );
       const snap = await getDocs(logsQuery);
       todosLosLogs = snap.docs
@@ -230,8 +240,22 @@
         order: [[0, 'desc']]
       });
       if(data.length === 0){
-        alert("No se encontraron registros con los filtros aplicados.");
+        mostrarAdvertencia("No se encontraron registros con los filtros aplicados.");
+      } else {
+        ocultarAdvertencia();
       }
+    }
+
+    function mostrarAdvertencia(mensaje) {
+      const div = document.getElementById("mensajeAdvertencia");
+      div.textContent = mensaje;
+      div.style.display = "block";
+    }
+
+    function ocultarAdvertencia() {
+      const div = document.getElementById("mensajeAdvertencia");
+      div.textContent = "";
+      div.style.display = "none";
     }
 
     function filtrarFechas() {
@@ -243,6 +267,18 @@
 
       const desde = desdeInput ? new Date(`${desdeInput}T00:00:00`) : null;
       const hasta = hastaInput ? new Date(`${hastaInput}T23:59:59`) : null;
+
+      if (!desdeInput || !hastaInput) {
+        mostrarAdvertencia("Por favor, seleccione un rango de fechas completo para filtrar.");
+        actualizarTabla([]);
+        return;
+      }
+
+      if (desde > hasta) {
+        mostrarAdvertencia("La fecha 'Desde' no puede ser mayor que la fecha 'Hasta'.");
+        actualizarTabla([]);
+        return;
+      }
 
       const buscar = document.getElementById("buscar").value.toLowerCase();
       const accion = document.getElementById("accion").value;
@@ -256,6 +292,12 @@
         const coincideAccion = accion ? log.accion === accion : true;
         return coincideFecha && coincideTexto && coincideAccion;
       });
+
+      if(filtrados.length === 0) {
+        mostrarAdvertencia("No se encontraron registros con los filtros aplicados.");
+      } else {
+        ocultarAdvertencia();
+      }
 
       actualizarTabla(filtrados);
     }
