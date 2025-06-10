@@ -36,6 +36,7 @@
   <script type="module">
     import { app, db } from './js/firebase-config.js';
     import { auth, signInWithEmailAndPassword } from './js/firebase-auth.js';
+    import { setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
     import { addDoc, collection } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     document.getElementById("loginForm").addEventListener("submit", async function(e) {
@@ -47,6 +48,7 @@
       document.getElementById("errorMsg").style.display = "none";
 
       try {
+        await setPersistence(auth, browserLocalPersistence);
         await signInWithEmailAndPassword(auth, usuario, clave);
 
         localStorage.setItem("admin", "true");
