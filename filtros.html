@@ -209,10 +209,10 @@
       if (tabla) tabla.destroy();
       tabla = $('#tablaLogs').DataTable({
         data: data.length > 0 ? data.map(log => [
-          new Date(log.timestamp?.seconds * 1000).toLocaleString(),
-          log.usuario,
-          log.accion,
-          log.detalles
+          new Date(log.timestamp?.seconds * 1000 || 0).toLocaleString(),
+          log.usuario || "—",
+          log.accion || "—",
+          log.detalles || "—"
         ]) : [],
         columns: [
           { title: "Fecha" },
