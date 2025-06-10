@@ -117,20 +117,11 @@
       document.getElementById('archivoNombre').textContent = fileName;
     });
 
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        mensaje.textContent = "Acceso restringido. Debés estar logueado.";
-        menuForm.style.display = "none";
+        window.location.href = "login.html";
         return;
       }
-
-      user.getIdToken(true).then(() => {
-        console.log("🔄 Token actualizado");
-      });
-
-      user.getIdTokenResult(true).then((idTokenResult) => {
-        console.log("🚨 Claims actuales:", idTokenResult.claims);
-      });
     });
 
     menuForm.addEventListener('submit', async (e) => {
