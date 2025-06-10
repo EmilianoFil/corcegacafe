@@ -4,6 +4,8 @@ const fetch = require("node-fetch");
 const db = admin.firestore();
 
 exports.uploadMenuToGitHub = functions.https.onCall(async (data, context) => {
+  console.log("uploadMenuToGitHub invocado por:", context.auth?.token?.email || context.auth?.uid || "anónimo");
+
   const { fileBase64, comment } = data;
 
   if (!context.auth) {

@@ -163,7 +163,10 @@
           menuForm.reset();
         } catch (error) {
           console.error("Error al subir:", error);
-          mensaje.textContent = `⚠️ Error al subir el menú: ${error.message}`;
+          let msg = "⚠️ Error al subir el menú.";
+          if (error.message) msg += ` ${error.message}`;
+          if (error.code) msg += ` (Código: ${error.code})`;
+          mensaje.textContent = msg;
         }
       };
 
