@@ -122,6 +122,8 @@
         window.location.href = "login.html";
         return;
       }
+
+      await user.getIdToken(true); // 🔄 Fuerza renovación del token con auth actual
     });
 
     menuForm.addEventListener('submit', async (e) => {
