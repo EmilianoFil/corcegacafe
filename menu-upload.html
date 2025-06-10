@@ -143,12 +143,7 @@
         return;
       }
 
-      if (!auth.currentUser) {
-        mensaje.textContent = "⚠️ Error: sesión expirada. Volvé a iniciar sesión.";
-        return;
-      }
 
-      await auth.currentUser.getIdToken(true);
 
       const reader = new FileReader();
       reader.onloadend = async () => {
