@@ -123,6 +123,10 @@
         menuForm.style.display = "none";
         return;
       }
+
+      user.getIdToken(true).then(() => {
+        console.log("🔄 Token actualizado");
+      });
     });
 
     menuForm.addEventListener('submit', async (e) => {
