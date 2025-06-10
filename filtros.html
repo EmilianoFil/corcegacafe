@@ -170,7 +170,7 @@
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -199,7 +199,7 @@
     });
 
     async function cargarDatos() {
-      const logsQuery = query(logsRef, orderBy("timestamp", "desc"), limit(10));
+      const logsQuery = query(logsRef, orderBy("timestamp", "desc")); // sin limit para traer todos los logs
       const snap = await getDocs(logsQuery);
       todosLosLogs = snap.docs.map(doc => doc.data());
       actualizarTabla(todosLosLogs);
@@ -208,12 +208,12 @@
     function actualizarTabla(data) {
       if (tabla) tabla.destroy();
       tabla = $('#tablaLogs').DataTable({
-        data: data.map(log => [
+        data: data.length > 0 ? data.map(log => [
           new Date(log.timestamp?.seconds * 1000).toLocaleString(),
           log.usuario,
           log.accion,
           log.detalles
-        ]),
+        ]) : [],
         columns: [
           { title: "Fecha" },
           { title: "Usuario" },
@@ -222,9 +222,13 @@
         ],
         order: [[0, 'desc']]
       });
+      if(data.length === 0){
+        alert("No se encontraron registros con los filtros aplicados.");
+      }
     }
 
     function filtrarFechas() {
+      console.log("Filtrando...");
       const desdeInput = document.getElementById("desde").value;
       const hastaInput = document.getElementById("hasta").value;
 
