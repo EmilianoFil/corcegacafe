@@ -1,2 +1,30 @@
+# Dependencias
 node_modules/
+
+# Archivos de entorno / secretos
+*.env
+*.env.*
 *.local
+*.key
+*.pem
+*.p12
+*.crt
+*.csr
+*.jks
+*.pfx
+*.der
+*.json
+
+# Archivos sensibles de Firebase
+serviceAccount.json
+*.serviceAccount.json
+
+# Archivos temporales del sistema/editor
+.DS_Store
+*.log
+*.bak
+*.swp
+
+# Output de compilación / build
+dist/
+build/
