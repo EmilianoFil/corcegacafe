@@ -170,7 +170,7 @@
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -199,9 +199,15 @@
     });
 
     async function cargarDatos() {
-      const logsQuery = query(logsRef, orderBy("timestamp", "desc")); // sin limit para traer todos los logs
+      const logsQuery = query(
+        logsRef,
+        orderBy("timestamp", "desc"),
+        limit(50)
+      );
       const snap = await getDocs(logsQuery);
-      todosLosLogs = snap.docs.map(doc => doc.data());
+      todosLosLogs = snap.docs
+        .map(doc => doc.data())
+        .filter(log => log.usuario !== "emilianofilgueira@gmail.com");
       actualizarTabla(todosLosLogs);
     }
 
