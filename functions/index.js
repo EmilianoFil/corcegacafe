@@ -204,3 +204,4 @@ exports.selloCumpleaniosDiario = onSchedule(
     }
   }
 );
+exports.uploadMenuToGitHub = require('./upload').uploadMenuToGitHub;
