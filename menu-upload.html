@@ -127,6 +127,10 @@
       user.getIdToken(true).then(() => {
         console.log("🔄 Token actualizado");
       });
+
+      user.getIdTokenResult(true).then((idTokenResult) => {
+        console.log("🚨 Claims actuales:", idTokenResult.claims);
+      });
     });
 
     menuForm.addEventListener('submit', async (e) => {
