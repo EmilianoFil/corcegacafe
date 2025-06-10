@@ -4,11 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Subir Menú</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Syncopate&display=swap" rel="stylesheet"> <!-- Tipografías personalizadas --> <!--//Agrego para uso de letra -->
   <link rel="stylesheet" href="css/style.css" />
   <style>
     body {
       background-color: #fdfcf7;
-      font-family: sans-serif;
+      font-family: Syncopate, sans-serif;
     }
     .menu-style {
       background-color: #003941;
@@ -57,13 +58,41 @@
       font-weight: bold;
       color: white;
     }
+    .file-upload {
+      text-align: left;
+      margin: 12px 0;
+    }
+    #menuFile {
+      display: none;
+    }
+    .boton-archivo {
+      display: inline-block;
+      padding: 10px 16px;
+      background-color: white;
+      color: #d86634;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      font-size: 14px;
+    }
+    #archivoNombre {
+      display: inline-block;
+      margin-left: 12px;
+      font-size: 14px;
+      color: white;
+    }
   </style>
 </head>
 <body>
   <div class="menu-style">
     <h1 class="titulo">Subir nuevo Menú</h1>
     <form id="menuForm">
-      <input type="file" id="menuFile" accept="application/pdf" required />
+      <div class="file-upload">
+        <label for="menuFile" class="boton-archivo">Seleccionar archivo</label>
+        <span id="archivoNombre">Ningún archivo seleccionado</span>
+        <input type="file" id="menuFile" accept="application/pdf" required />
+      </div>
       <input type="text" id="comentario" placeholder="Comentario del cambio" maxlength="30" required />
       <button type="submit">Subir Menú</button>
     </form>
@@ -82,6 +111,11 @@
 
     const menuForm = document.getElementById('menuForm');
     const mensaje = document.getElementById('mensaje');
+
+    document.getElementById('menuFile').addEventListener('change', (e) => {
+      const fileName = e.target.files.length > 0 ? e.target.files[0].name : 'Ningún archivo seleccionado';
+      document.getElementById('archivoNombre').textContent = fileName;
+    });
 
     onAuthStateChanged(auth, user => {
       if (!user) {
