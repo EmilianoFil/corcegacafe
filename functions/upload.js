@@ -7,8 +7,8 @@ const db = admin.firestore();
 exports.uploadMenuToGitHub = functions.https.onCall(async (data, context) => {
   const { fileBase64, comment } = data;
 
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Sólo administradores pueden subir el menú.");
+  if (!context.auth || context.auth.token.rol !== "dueño") {
+    throw new functions.https.HttpsError("permission-denied", "Acceso restringido al dueño.");
   }
 
   if (!fileBase64 || !comment || comment.length > 30) {
