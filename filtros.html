@@ -239,6 +239,8 @@
       const desdeInput = document.getElementById("desde").value;
       const hastaInput = document.getElementById("hasta").value;
 
+      console.log("⏱ Rango aplicado:", { desdeInput, hastaInput });
+
       const desde = desdeInput ? new Date(`${desdeInput}T00:00:00`) : null;
       const hasta = hastaInput ? new Date(`${hastaInput}T23:59:59`) : null;
 
@@ -247,7 +249,9 @@
 
       const filtrados = todosLosLogs.filter(log => {
         const fecha = new Date(log.timestamp?.seconds * 1000);
-        const coincideFecha = (!desde || fecha >= desde) && (!hasta || fecha <= hasta);
+        const coincideFecha =
+          (!desde || (fecha >= desde && !isNaN(desde))) &&
+          (!hasta || (fecha <= hasta && !isNaN(hasta)));
         const coincideTexto = [log.usuario, log.accion, log.detalles].some(campo => campo?.toLowerCase().includes(buscar));
         const coincideAccion = accion ? log.accion === accion : true;
         return coincideFecha && coincideTexto && coincideAccion;
