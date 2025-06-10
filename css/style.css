@@ -116,6 +116,7 @@ button, .btn-primary {
 .mensaje {
   margin-top: 20px;
   font-weight: bold;
+  color: #008ba4;
   white-space: pre-line;
 }
 
