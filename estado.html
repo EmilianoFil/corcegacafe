@@ -45,13 +45,7 @@
     <div id="grid" class="grid"></div>
     <div id="mensaje-error" style="display:none;">
       <div style="padding: 30px 20px; background: #01323f; border-radius: 12px; font-size: 18px; color: white; text-align: center;">
-        <h2>
-          <span style="color: white; font-size: 17px; display:block; margin-top: 6px;">COMPLETÁ LAS VISITAS Y TE INVITAMOS</span>
-        </h2>
-        <h1>
-          <span style="font-size: 37px; display:block; margin-top: 6px; font-family: 'Syncopate', sans-serif; color: white;">UN CAFECITO</span>
-        </h1>
-        <p style="white-space: pre-line; margin: 20px 0;">El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.</p>
+        <p id="mensaje-no-registrado" style="white-space: pre-line; margin: 20px 0;"></p>
         <div style="display: flex; justify-content: center;">
           <a href="registro.html?dni=${dni}" id="boton-registrar" class="btn-primary" style="min-width: 220px;">Registrate</a>
         </div>
@@ -92,6 +86,7 @@
         document.getElementById("grid").style.display = "none";
         const mensajeError = document.getElementById("mensaje-error");
         mensajeError.style.display = "block";
+        document.getElementById("mensaje-no-registrado").innerHTML = `El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.`;
         contenedor.classList.remove("tarjeta-fidelidad");
 
         await addDoc(collection(db, "logs"), {
