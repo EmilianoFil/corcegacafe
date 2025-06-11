@@ -34,14 +34,16 @@
   </div>
 
   <div class="menu-style" id="contenedor" style="display:none;">
-    <p id="cliente"></p>
-    <h2>
-      <span style="color: white; font-size: 17px; display:block; margin-top: 6px;">COMPLETÁ LAS VISITAS Y TE INVITAMOS</span>
-    </h2>
-    <h1>
-      <span style="font-size: 37px; display:block; margin-top: 6px; font-family: 'Syncopate', sans-serif;">UN CAFECITO</span>
-    </h1>
-    <p id="faltan" style="color: #01323f; font-family: 'Playfair Display', serif; text-transform: uppercase; font-size: 17px; display: block; margin-top: 6px;"></p>
+    <div id="info-header">
+      <p id="cliente"></p>
+      <h2>
+        <span style="color: white; font-size: 17px; display:block; margin-top: 6px;">COMPLETÁ LAS VISITAS Y TE INVITAMOS</span>
+      </h2>
+      <h1>
+        <span style="font-size: 37px; display:block; margin-top: 6px; font-family: 'Syncopate', sans-serif;">UN CAFECITO</span>
+      </h1>
+      <p id="faltan" style="color: #01323f; font-family: 'Playfair Display', serif; text-transform: uppercase; font-size: 17px; display: block; margin-top: 6px;"></p>
+    </div>
     <div id="grid" class="grid"></div>
     <div id="mensaje-error" style="display:none;">
       <div style="padding: 30px 20px; background: #01323f; border-radius: 12px; font-size: 18px; color: white; text-align: center;">
@@ -89,6 +91,11 @@
         document.getElementById("mensaje-no-registrado").innerHTML = `El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.`;
         contenedor.classList.remove("tarjeta-fidelidad");
 
+        // Set colors for error state
+        document.querySelector("#info-header span").style.color = "white";
+        document.getElementById("faltan").style.color = "#008ba4";
+        document.getElementById("cliente").style.color = "white";
+
         await addDoc(collection(db, "logs"), {
           usuario: dni,
           accion: "consulta_fallida",
@@ -103,6 +110,11 @@
       }
 
       contenedor.classList.add("tarjeta-fidelidad");
+
+      document.querySelector("#info-header span").style.color = "#01323f";
+      document.getElementById("faltan").style.color = "#01323f";
+      document.getElementById("cliente").style.color = "#01323f";
+
       const data = snap.data();
 
       if (data.sigue_instagram === true && data.sello_instagram_usado === false && (data.cafes || 0) >= 8) {
