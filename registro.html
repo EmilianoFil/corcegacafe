@@ -41,7 +41,7 @@
   <div class="menu-style">
   <img src="css/img/Corcega_Logo_Letras_Blanco.png" alt="Córcega Café" class="logo" />
   <form id="registroForm" data-gtm-form-interact-id="0">
-    <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]*" maxlength="10" required="">
+    <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="[0-9]{7,8}" maxlength="8" required title="Debe tener entre 7 y 8 números">
     <input type="text" name="nombre" placeholder="Nombre y apellido" required pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$" title="Sólo letras y espacios">
     <input type="email" name="mail" placeholder="Correo electrónico" required="" pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$">
     <p style="margin-top: 16px; margin-bottom: 4px; font-weight: bold; font-size: 15px;">¿Cuándo es tu cumpleaños?</p>
@@ -118,8 +118,8 @@
       const cumple_dia = parseInt(form.cumple_dia.value);
       const cumple_mes = parseInt(form.cumple_mes.value);
 
-      if (!/^\d{1,10}$/.test(dni)) {
-        document.getElementById("mensaje").innerText = "El DNI debe tener hasta 10 números.";
+      if (!/^\d{7,8}$/.test(dni)) {
+        document.getElementById("mensaje").innerText = "El DNI debe tener entre 7 y 8 números.";
         document.getElementById("mensaje-container").style.display = "block";
         document.getElementById("volverBtn").addEventListener("click", () => {
           form.reset();

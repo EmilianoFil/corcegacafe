@@ -30,9 +30,9 @@
   <div class="menu-style">
     <h1>Registrar nuevo cliente</h1>
     <form id="registroForm">
-      <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="^[0-9]+$" maxlength="10" required title="Sólo números">
+      <input type="tel" name="dni" id="dni" placeholder="DNI" inputmode="numeric" pattern="^\d{7,8}$" maxlength="8" required title="Debe contener entre 7 y 8 números">
       <input type="text" name="nombre" placeholder="Nombre y apellido" required pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$" title="Sólo letras y espacios">
-      <input type="email" name="mail" placeholder="Correo electrónico" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" />
+      <input type="email" name="mail" placeholder="Correo electrónico" pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" />
       <p style="margin-top: 16px; margin-bottom: 4px; font-weight: bold; font-size: 15px;">¿Cuándo es su cumpleaños?</p>
       <div style="display: flex; gap: 4%; justify-content: center; flex-wrap: wrap;">
         <select name="cumple_dia" required class="input-like">
@@ -93,8 +93,8 @@
     loader.style.display = "block";
     mensaje.innerText = "";
 
-    if (!/^\d{1,10}$/.test(dni)) {
-      mensaje.innerText = "⚠️ El DNI debe tener hasta 10 números.";
+    if (!/^\d{7,8}$/.test(dni)) {
+      mensaje.innerText = "⚠️ El DNI debe tener entre 7 y 8 números.";
       loader.style.display = "none";
       return;
     }
