@@ -43,7 +43,15 @@
     </h1>
     <p id="faltan" style="color: #01323f; font-family: 'Playfair Display', serif; text-transform: uppercase; font-size: 17px; display: block; margin-top: 6px;"></p>
     <div id="grid" class="grid"></div>
-    <div id="mensaje-error" style="display:none;"></div>
+    <div id="mensaje-error" style="display:none;">
+      <div style="padding: 30px 20px; background: #01323f; border-radius: 12px; font-size: 18px; color: #008ba4; text-align: center;">
+        <p style="white-space: pre-line; margin-bottom: 20px;">El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.</p>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+          <a href="registro.html?dni=${dni}" id="boton-registrar" class="btn-primary" style="min-width: 220px;">Registrate</a>
+          <a href="index.html" class="btn-primary" style="min-width: 220px;">Volver</a>
+        </div>
+      </div>
+    </div>
     <div class="logout">
       <a href="index.html" class="volver-card">Volver</a>
     </div>
@@ -77,11 +85,8 @@
         document.getElementById("cliente").style.display = "none";
         document.getElementById("faltan").style.display = "none";
         document.getElementById("grid").style.display = "none";
-        document.getElementById("mensaje-error").style.display = "block";
-        document.getElementById("mensaje-error").innerHTML = `
-          <p>El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.</p>
-          <a href="registro.html?dni=${dni}" id="boton-registrar" class="boton">Registrate</a>
-        `;
+        const mensajeError = document.getElementById("mensaje-error");
+        mensajeError.style.display = "block";
         contenedor.classList.remove("tarjeta-fidelidad");
 
         await addDoc(collection(db, "logs"), {
