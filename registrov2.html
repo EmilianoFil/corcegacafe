@@ -74,7 +74,10 @@
   <div id="mensaje-container" style="display: none; text-align: center;">
     <div style="padding: 30px 20px; background: #01323f; border-radius: 12px; font-size: 18px; color: #008ba4;">
       <p id="mensaje" style="white-space: pre-line; margin-bottom: 20px;"></p>
-      <button id="volverBtn" class="btn-primary">Volver al formulario</button>
+      <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+        <button id="volverBtn" class="btn-primary">Volver al formulario</button>
+        <button id="verTarjetaBtn" class="btn-primary" style="display: none;">Mirá tu tarjeta</button>
+      </div>
     </div>
   </div>
   <div class="logout">
@@ -175,6 +178,11 @@
 
           document.title = "Cliente registrado";
           document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🐎 ☕️\n";
+          const verTarjetaBtn = document.getElementById("verTarjetaBtn");
+          verTarjetaBtn.style.display = "inline-block";
+          verTarjetaBtn.onclick = () => {
+            window.location.href = `estado.html?dni=${dni}`;
+          };
 
           // Si querés activar envío de mail:
           const enviarMail = false;
