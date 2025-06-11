@@ -43,7 +43,7 @@ body::before {
 
 /* Logo (caballito) */
 .logo, .galope {
-  width: 100px;
+  width: 250px;
   display: block;
   margin: 0 auto 20px;
 }
