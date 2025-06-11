@@ -64,12 +64,11 @@ h1 {
 }
 
 h2 {
-  font-size: 20px;
+  font-size: 18px;
   font-family: 'Playfair Display', serif;
-  margin-top: 40px;
-  border-bottom: 1px dotted #aaa;
+  margin-top: 10px;
   padding-bottom: 5px;
-  color: #2b2b2b;
+  color: white;
 }
 
 /* Inputs */
