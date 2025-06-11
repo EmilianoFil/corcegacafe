@@ -290,6 +290,12 @@ footer a[href*="instagram.com"]::before {
     font-size: 18px;
   }
 
+  h2 {
+    font-size: 16px;
+    font-family: 'Playfair Display', serif;
+    color: white;
+  }
+
   input, button {
     font-size: 15px;
   }
