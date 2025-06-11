@@ -187,6 +187,12 @@
           }
         } else {
           document.getElementById("mensaje").innerText = "Ya estás registrado en el club.";
+          const volverBtn = document.getElementById("volverBtn");
+          volverBtn.textContent = "Mirá tu tarjeta";
+          // Remover cualquier handler previo para evitar superposición de handlers
+          volverBtn.onclick = () => {
+            window.location.href = `estado.html?dni=${dni}`;
+          };
         }
       } catch (error) {
         console.error("Error en el registro:", error);
@@ -194,11 +200,14 @@
       } finally {
         document.getElementById("loader").style.display = "none";
         document.getElementById("mensaje-container").style.display = "block";
-        document.getElementById("volverBtn").addEventListener("click", () => {
-          form.reset();
-          form.style.display = "block";
-          document.getElementById("mensaje-container").style.display = "none";
-        }, { once: true });
+        // Solo agregar el handler por defecto si NO fue el caso de "ya registrado"
+        if (!existing.exists()) {
+          document.getElementById("volverBtn").addEventListener("click", () => {
+            form.reset();
+            form.style.display = "block";
+            document.getElementById("mensaje-container").style.display = "none";
+          }, { once: true });
+        }
       }
     });
   });
