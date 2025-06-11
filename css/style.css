@@ -30,12 +30,11 @@ body::before {
 }
 /* Card principal */
 .menu-style {
-  width: 100%;
+  width: 75%;
   max-width: 480px;
   margin: 40px auto;
-  padding: 40px 20px;
+  padding: 20px 20px;
   background: #01323f;
-  border: 1px solid #ccc;
   border-radius: 16px;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
   text-align: center;
@@ -44,7 +43,7 @@ body::before {
 
 /* Logo (caballito) */
 .logo, .galope {
-  width: 300px;
+  width: 100px;
   display: block;
   margin: 0 auto 20px;
 }
@@ -66,6 +65,7 @@ h1 {
 
 h2 {
   font-size: 20px;
+  font-family: 'Playfair Display', serif;
   margin-top: 40px;
   border-bottom: 1px dotted #aaa;
   padding-bottom: 5px;
@@ -90,14 +90,18 @@ input {
 /* Botones */
 button, .btn-primary {
   padding: 10px 20px;
-  font-size: 16px;
+  font-family: 'Playfair Display', serif;
+  font-size: 12px;
+  margin: 12.5px auto;
   background-color: #ed7053;
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  text-transform: uppercase;
   font-weight: bold;
   margin-top: 10px;
+  white-space: nowrap; 
 }
 
 .btn-secondary {
