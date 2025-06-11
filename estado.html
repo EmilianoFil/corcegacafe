@@ -49,17 +49,17 @@
       <div style="padding: 30px 20px; background: #01323f; border-radius: 12px; font-size: 18px; color: white; text-align: center;">
         <p id="mensaje-no-registrado" style="white-space: pre-line; margin: 20px 0; color: #008ba4;"></p>
         <div style="display: flex; justify-content: center;">
-          <a href="registro.html?dni=${dni}" id="boton-registrar" class="btn-primary" style="min-width: 220px; text-decoration: none;">Registrate</a>
+          <a href="" id="boton-registrar" class="btn-primary" style="min-width: 220px; text-decoration: none;">Registrate</a>
         </div>
       </div>
     </div>
     <div class="logout">
       <a href="index.html" class="volver-card">Volver</a>
     </div>
-    <footer style="margin-top: 30px;">
-      <p style="color: white; font-family: 'Playfair Display', serif; text-transform: uppercase; font-size: 17px; display: block; margin-top: 6px;">
+    <footer id="footer" style="margin-top: 30px;">
+      <p id="footer-text" style="font-family: 'Playfair Display', serif; text-transform: uppercase; font-size: 17px; display: block; margin-top: 6px;">
         Seguinos en Instagram<br>
-        <a href="https://www.instagram.com/corcegacafe" target="_blank" style="color: white; text-transform: lowercase; text-decoration: none;">@corcegacafe</a>
+        <a id="footer-link" href="https://www.instagram.com/corcegacafe" target="_blank" style="text-transform: lowercase; text-decoration: none;">@corcegacafe</a>
       </p>
     </footer>
   </div>
@@ -72,6 +72,7 @@
 
     const params = new URLSearchParams(window.location.search);
     const dni = params.get("dni");
+    document.getElementById("boton-registrar").href = `registro.html?dni=${dni}`;
 
     async function consultarCliente(dni) {
       const ref = doc(db, "clientes", dni);
@@ -95,6 +96,8 @@
         document.querySelector("#info-header span").style.color = "white";
         document.getElementById("faltan").style.color = "#008ba4";
         document.getElementById("cliente").style.color = "white";
+        document.getElementById("footer-text").style.color = "white";
+        document.getElementById("footer-link").style.color = "white";
 
         await addDoc(collection(db, "logs"), {
           usuario: dni,
@@ -114,6 +117,8 @@
       document.querySelector("#info-header span").style.color = "#01323f";
       document.getElementById("faltan").style.color = "#01323f";
       document.getElementById("cliente").style.color = "#01323f";
+      document.getElementById("footer-text").style.color = "#01323f";
+      document.getElementById("footer-link").style.color = "#01323f";
 
       const data = snap.data();
 
