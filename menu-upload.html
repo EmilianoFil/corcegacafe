@@ -103,11 +103,13 @@
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
     import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
     import { getStorage, ref, uploadBytes } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js';
+    import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
     import { firebaseConfig } from './js/firebase-config.js';
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const storage = getStorage(app);
+    const db = getFirestore(app);
 
     const menuForm = document.getElementById('menuForm');
     const mensaje = document.getElementById('mensaje');
@@ -150,6 +152,13 @@
       try {
         const storageRef = ref(storage, 'Menu_Corcega.pdf');
         await uploadBytes(storageRef, file);
+
+        await addDoc(collection(db, 'logs'), {
+          email: auth.currentUser.email,
+          accion: 'subida_menu',
+          comentario: comment,
+          timestamp: serverTimestamp()
+        });
 
         mensaje.textContent = "✅ Menú subido correctamente.";
         menuForm.reset();
