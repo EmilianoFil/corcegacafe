@@ -16,7 +16,7 @@
   
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <meta name="color-scheme" content="light" />
-  <title>Registro Cliente</title>
+  <title>Registro</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Syncopate&display=swap" rel="stylesheet"> <!-- Tipografías personalizadas --> <!--//Agrego para uso de letra -->
   <link rel="stylesheet" href="css/style.css" />
 
@@ -71,11 +71,25 @@
   <div id="loader">
     <img src="css/img/Corcega_Logo_Original.png" class="galope">
   </div>
-  <div class="exito" id="mensaje"></div>
+  <div id="mensaje-container" style="display: none; text-align: center;">
+    <div style="padding: 30px 20px; background: #01323f; border-radius: 12px; font-size: 18px; color: #008ba4;">
+      <p id="mensaje" style="white-space: pre-line; margin-bottom: 20px;"></p>
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <button id="volverBtn" class="btn-primary" style="min-width: 220px;">Volver al formulario</button>
+        <button id="verTarjetaBtn" class="btn-primary" style="display: none; min-width: 220px;">Mirá tu tarjeta</button>
+      </div>
+    </div>
+  </div>
   <div class="logout">
     <a href="index.html" class="volver">Volver</a>
   </div>
   <div id="coupon-birds-embed-div"></div>
+  <footer style="margin-top: 30px;">
+      <p style="color: white; font-family: 'Playfair Display', serif; text-transform: uppercase; font-size: 17px; display: block; margin-top: 6px;">
+      Seguinos en Instagram<br>
+      <a href="https://www.instagram.com/corcegacafe" target="_blank" style="color: white; text-transform: lowercase; text-decoration: none;">@corcegacafe</a>
+    </p>
+  </footer>
 </div>
 
 <script type="module">
@@ -106,11 +120,23 @@
 
       if (!/^\d{1,10}$/.test(dni)) {
         document.getElementById("mensaje").innerText = "El DNI debe tener hasta 10 números.";
+        document.getElementById("mensaje-container").style.display = "block";
+        document.getElementById("volverBtn").addEventListener("click", () => {
+          form.reset();
+          form.style.display = "block";
+          document.getElementById("mensaje-container").style.display = "none";
+        }, { once: true });
         return;
       }
 
       if (!cumple_dia || !cumple_mes) {
-        mensaje.innerText = "⚠️ El día y mes de cumpleaños son obligatorios.";
+        document.getElementById("mensaje").innerText = "⚠️ El día y mes de cumpleaños son obligatorios.";
+        document.getElementById("mensaje-container").style.display = "block";
+        document.getElementById("volverBtn").addEventListener("click", () => {
+          form.reset();
+          form.style.display = "block";
+          document.getElementById("mensaje-container").style.display = "none";
+        }, { once: true });
         loader.style.display = "none";
         return;
       }
@@ -158,6 +184,11 @@
 
           document.title = "Cliente registrado";
           document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n🐎 ☕️\n";
+          const verTarjetaBtn = document.getElementById("verTarjetaBtn");
+          verTarjetaBtn.style.display = "inline-block";
+          verTarjetaBtn.onclick = () => {
+            window.location.href = `estado.html?dni=${dni}`;
+          };
 
           // Si querés activar envío de mail:
           const enviarMail = false;
@@ -170,14 +201,27 @@
           }
         } else {
           document.getElementById("mensaje").innerText = "Ya estás registrado en el club.";
-          form.style.display = "block";
+          const volverBtn = document.getElementById("volverBtn");
+          volverBtn.textContent = "Mirá tu tarjeta";
+          // Remover cualquier handler previo para evitar superposición de handlers
+          volverBtn.onclick = () => {
+            window.location.href = `estado.html?dni=${dni}`;
+          };
         }
       } catch (error) {
         console.error("Error en el registro:", error);
         document.getElementById("mensaje").innerText = "Hubo un error. Probá de nuevo más tarde.";
-        form.style.display = "block";
       } finally {
         document.getElementById("loader").style.display = "none";
+        document.getElementById("mensaje-container").style.display = "block";
+        // Solo agregar el handler por defecto si NO fue el caso de "ya registrado"
+        if (!existing.exists()) {
+          document.getElementById("volverBtn").addEventListener("click", () => {
+            form.reset();
+            form.style.display = "block";
+            document.getElementById("mensaje-container").style.display = "none";
+          }, { once: true });
+        }
       }
     });
   });
