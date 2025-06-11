@@ -30,7 +30,7 @@ body::before {
 }
 /* Card principal */
 .menu-style {
-  width: 75%;
+  width: 90%;
   max-width: 480px;
   margin: 40px auto;
   padding: 20px 20px;
@@ -200,7 +200,7 @@ section {
 /* Tarjeta de fidelidad */
 .tarjeta-fidelidad {
   background: #ed7053;
-  width: 85%;
+  width: 90%;
   color: #01323f;
   padding: 20px 20px;
   border-radius: 16px;
