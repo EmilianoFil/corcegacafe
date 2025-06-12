@@ -418,6 +418,12 @@
         detalles: `DNI: ${dni} - ${nombre}`,
         timestamp: new Date()
       });
+      // Enviar mail de felicitaciones al completar la tarjeta
+      fetch("https://us-central1-corcega-loyalty-club.cloudfunctions.net/enviarMailFelicitaciones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dni, nombre })
+      });
       if (typeof gtag === 'function') gtag('event', 'admin_invito_cafe', { dni });
     } else {
       updates.cafes = cafes + 1;
