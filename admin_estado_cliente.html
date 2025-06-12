@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <title>Consulta cliente</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Syncopate&display=swap" rel="stylesheet"> <!-- Tipografías personalizadas --> <!--//Agrego para uso de letra -->
+  <link rel="stylesheet" href="css/style.css" />
+
+</head>
+<body>
+  <div id="loader">
+    <img src="css/img/Corcega_Logo_Original.png" alt="Cargando..." class="galope">
+  </div>
+
+  <div class="menu-style" id="contenedor" style="display:none;">
+    <div id="info-header">
+      <p id="cliente"></p>
+      <h2>
+        <span style="color: white; font-size: 17px; display:block; margin-top: 6px;">COMPLETÁ LAS VISITAS Y TE INVITAMOS</span>
+      </h2>
+      <h1>
+        <span style="font-size: 37px; display:block; margin-top: 6px; font-family: 'Syncopate', sans-serif;">UN CAFECITO</span>
+      </h1>
+      <p id="faltan" style="color: #01323f; font-family: 'Playfair Display', serif; text-transform: uppercase; font-size: 17px; display: block; margin-top: 6px;"></p>
+    </div>
+    <div id="grid" class="grid"></div>
+    <div id="mensaje-error" style="display:none;">
+      <div style="padding: 30px 20px; background: #01323f; border-radius: 12px; font-size: 18px; color: white; text-align: center;">
+        <p id="mensaje-no-registrado" style="white-space: pre-line; margin: 20px 0; color: #008ba4;"></p>
+        <div style="display: flex; justify-content: center;">
+          <a href="" id="boton-registrar" class="btn-primary" style="min-width: 220px; text-decoration: none;">Registrate</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { app, db } from './js/firebase-config.js';
+    import {
+      doc, getDoc, addDoc, collection, updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const params = new URLSearchParams(window.location.search);
+    const dni = params.get("dni");
+    document.getElementById("boton-registrar").href = `registro.html?dni=${dni}`;
+
+    async function consultarCliente(dni) {
+      const ref = doc(db, "clientes", dni);
+      const snap = await getDoc(ref);
+
+      document.getElementById("loader").style.display = "none";
+      const contenedor = document.getElementById("contenedor");
+      contenedor.style.display = "block";
+
+      if (!snap.exists()) {
+        document.title = "Resultado consulta cliente";
+        document.getElementById("cliente").style.display = "none";
+        document.getElementById("faltan").style.display = "none";
+        document.getElementById("grid").style.display = "none";
+        const mensajeError = document.getElementById("mensaje-error");
+        mensajeError.style.display = "block";
+        document.getElementById("mensaje-no-registrado").innerHTML = `El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.`;
+        contenedor.classList.remove("tarjeta-fidelidad");
+
+        // Set colors for error state
+        document.querySelector("#info-header span").style.color = "white";
+        document.getElementById("faltan").style.color = "#008ba4";
+        document.getElementById("cliente").style.color = "white";
+        document.getElementById("footer-text").style.color = "white";
+        document.getElementById("footer-link").style.color = "white";
+
+        return;
+      }
+
+      contenedor.classList.add("tarjeta-fidelidad");
+
+      document.querySelector("#info-header span").style.color = "#01323f";
+      document.getElementById("faltan").style.color = "#01323f";
+      document.getElementById("cliente").style.color = "#01323f";
+      document.getElementById("footer-text").style.color = "#01323f";
+      document.getElementById("footer-link").style.color = "#01323f";
+
+      const data = snap.data();
+
+      if (data.sigue_instagram === true && data.sello_instagram_usado === false && (data.cafes || 0) >= 8) {
+        await updateDoc(ref, { sello_instagram_usado: true });
+      }
+
+      const nombre = data.nombre || "Amigo";
+      const cafes = parseInt(data.cafes) || 0;
+      document.title = "Tarjeta cliente";
+      document.getElementById("cliente").textContent = `Hola ${nombre}`;
+      document.getElementById("faltan").textContent = cafes < 8
+        ? `Te faltan ${8 - cafes} para alcanzarlo`
+        : "¡El próximo lo invitamos nosotros! 🐎🎉";
+
+      const grid = document.getElementById("grid");
+
+      const selloCumpleActivo = data.sello_cumpleanios_activo === true;
+      const selloInstaActivo = data.sigue_instagram === true && data.sello_instagram_usado === false;
+
+      let cafesRestantes = parseInt(data.cafes) || 0;
+      let selloCumpleUsado = false;
+      let selloInstaUsado = false;
+
+      for (let i = 1; i <= 9; i++) {
+        const div = document.createElement("div");
+        div.className = "circle";
+
+        if (selloCumpleActivo && !selloCumpleUsado) {
+          div.style.backgroundImage = "url('css/img/sello_cumpleanos.png')";
+          div.style.backgroundSize = "cover";
+          div.style.opacity = "1";
+          div.classList.add("glow");
+          cafesRestantes--;
+          selloCumpleUsado = true;
+        } else if (selloInstaActivo && !selloInstaUsado) {
+          div.style.backgroundImage = "url('css/img/Corcega_Logo_Original_Insta.png')";
+          div.style.opacity = "1";
+          div.classList.add("glow");
+          cafesRestantes--;
+          selloInstaUsado = true;
+        } else if (cafesRestantes > 0) {
+          div.classList.add("lleno");
+          cafesRestantes--;
+        } else if (i === 9) {
+          div.classList.add("noveno");
+        } else {
+          div.style.backgroundImage = "url('css/img/Corcega_Logo_Tiza.png')";
+        }
+
+        grid.appendChild(div);
+      }
+    }
+
+    consultarCliente(dni);
+  </script>
+</body>
+</html>
