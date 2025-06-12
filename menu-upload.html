@@ -157,8 +157,9 @@
         await uploadBytes(storageRef, file);
 
         await addDoc(collection(db, 'logs'), {
-          email: auth.currentUser.email,
-          accion: 'subida_menu',
+          usuario: auth.currentUser.email,
+          accion: 'admin_subida_menu',
+          detalles: 'se sube nuevo menú',
           timestamp: serverTimestamp()
         });
 
