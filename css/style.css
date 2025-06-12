@@ -364,3 +364,23 @@ footer a[href*="instagram.com"]::before {
       gap: 10px;
       margin-top: 10px;
     }
+
+.message-container {
+  margin-top: 20px;
+  background: #01323f;
+  border-radius: 12px;
+  padding: 30px 20px;
+  text-align: center;
+  color: #008ba4;
+  font-size: 18px;
+}
+
+.message-container p {
+  white-space: pre-line;
+  margin-bottom: 20px;
+}
+
+.message-container .btn-primary {
+  min-width: 220px;
+  margin: 8px 0;
+}
