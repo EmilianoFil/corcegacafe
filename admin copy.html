@@ -286,10 +286,14 @@
         <button type="button" id="consultarCliente" class="btn-estadisticas">Consultar cliente</button>
       </div>
     </form>
-    <div id="mensaje-container" class="message-container" style="display: none;">
-      <div id="respuesta" class="mensaje"></div>
-      <button id="btnInstagram" style="display:none;" class="btn-estadisticas">📸 Sigue Instagram</button>
-      <button id="btnDeshacer" style="display:none;" class="btn-estadisticas">↩️ Deshacer operación</button>
+    <div id="mensaje-container" style="display: none; text-align: center;">
+      <div style="padding: 30px 20px; background: #01323f; border-radius: 12px; font-size: 18px; color: #008ba4;">
+        <p id="mensaje" style="white-space: pre-line; margin-bottom: 20px;"></p>
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          <button id="btnInstagram" style="display:none; min-width: 220px;" class="btn-primary">📸 Sigue Instagram</button>
+          <button id="btnDeshacer" style="display:none; min-width: 220px;" class="btn-primary">↩️ Deshacer operación</button>
+        </div>
+      </div>
     </div>
     <div id="loader"><img src="css/img/Corcega_Logo_Original.png" alt="Cargando..." class="galope"></div>
     <div class="logout">
@@ -504,12 +508,11 @@ document.getElementById("adminForm").addEventListener("submit", async function(e
         timestamp: new Date()
       });
 
-      document.getElementById("respuesta").innerText = `↩️ Se deshizo la última operación para ${prevData.nombre || dni}`;
+      document.getElementById("mensaje").innerText = `↩️ Se deshizo la última operación para ${prevData.nombre || dni}`;
       btnDeshacer.style.display = "none";
     };
 
-    div.className = "mensaje ok";
-    div.innerText = mensajeFinal;
+    document.getElementById("mensaje").innerText = mensajeFinal;
     document.getElementById("mensaje-container").style.display = "block";
     loader.style.display = "none";
     input.disabled = false;
