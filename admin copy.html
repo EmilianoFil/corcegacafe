@@ -323,7 +323,8 @@
     document.getElementById("clientePreview").classList.remove("active");
   });
 
-  document.getElementById("adminForm").addEventListener("submit", async function(e) {
+document.getElementById("adminForm").addEventListener("submit", async function(e) {
+    console.log("Submit capturado");
     e.preventDefault();
     const input = document.getElementById("dni");
     const button = document.getElementById("submitBtn");
