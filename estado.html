@@ -144,11 +144,7 @@
       }
 
       const nombre = data.nombre || "Amigo";
-      let cafes = parseInt(data.cafes) || 0;
-      let cafesRender = cafes;
-      if (data.sello_cumpleanios_activo) cafesRender++;
-      if (data.sigue_instagram === true && data.sello_instagram_usado === false) cafesRender++;
-
+      const cafes = parseInt(data.cafes) || 0;
       document.title = "Tarjeta cliente";
       document.getElementById("cliente").textContent = `Hola ${nombre}`;
       document.getElementById("faltan").textContent = cafes < 8
@@ -160,7 +156,7 @@
         const div = document.createElement("div");
         div.className = "circle";
 
-        if (i <= cafesRender) {
+        if (i <= cafes) {
           if (
             data.sigue_instagram === true &&
             data.sello_instagram_usado === false &&
