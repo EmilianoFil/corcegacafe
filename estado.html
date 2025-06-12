@@ -168,11 +168,13 @@
           div.style.backgroundImage = "url('css/img/sello_cumpleanos.png')";
           div.style.backgroundSize = "cover";
           div.style.opacity = "1";
+          div.classList.add("glow");
           cafesRestantes--;
           selloCumpleUsado = true;
         } else if (selloInstaActivo && !selloInstaUsado) {
           div.style.backgroundImage = "url('css/img/Corcega_Logo_Original_Insta.png')";
           div.style.opacity = "1";
+          div.classList.add("glow");
           cafesRestantes--;
           selloInstaUsado = true;
         } else if (cafesRestantes > 0) {
