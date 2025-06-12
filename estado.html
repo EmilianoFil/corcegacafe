@@ -157,32 +157,25 @@
       const selloInstaActivo = data.sigue_instagram === true && data.sello_instagram_usado === false;
 
       let cafesRestantes = parseInt(data.cafes) || 0;
-      let posicion = 1;
+      let selloCumpleUsado = false;
+      let selloInstaUsado = false;
 
       for (let i = 1; i <= 9; i++) {
         const div = document.createElement("div");
         div.className = "circle";
 
-        if (selloCumpleActivo && posicion === i) {
+        if (selloCumpleActivo && !selloCumpleUsado) {
           div.style.backgroundImage = "url('css/img/sello_cumpleanos.png')";
           div.style.backgroundSize = "cover";
           div.style.opacity = "1";
-          posicion++;
           cafesRestantes--;
-          grid.appendChild(div);
-          continue;
-        }
-
-        if (selloInstaActivo && posicion === i) {
+          selloCumpleUsado = true;
+        } else if (selloInstaActivo && !selloInstaUsado) {
           div.style.backgroundImage = "url('css/img/Corcega_Logo_Original_Insta.png')";
           div.style.opacity = "1";
-          posicion++;
           cafesRestantes--;
-          grid.appendChild(div);
-          continue;
-        }
-
-        if (cafesRestantes > 0) {
+          selloInstaUsado = true;
+        } else if (cafesRestantes > 0) {
           div.classList.add("lleno");
           cafesRestantes--;
         } else if (i === 9) {
