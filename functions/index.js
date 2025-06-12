@@ -49,7 +49,7 @@ exports.enviarMailRegistro = onRequest(
               </div>
               <div>
                 <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
-                  Ver mi estado
+                  Ver mi tarjeta
                 </a>
               </div>
             </div>
