@@ -93,10 +93,13 @@
         <span id="archivoNombre">Ningún archivo seleccionado</span>
         <input type="file" id="menuFile" accept="application/pdf" required />
       </div>
-      <input type="text" id="comentario" placeholder="Comentario del cambio" maxlength="30" required />
+      <!-- Comentario eliminado -->
       <button type="submit">Subir Menú</button>
     </form>
     <div id="mensaje" class="msg"></div>
+    <div class="logout">
+      <a href="admin.html" class="volver">Volver</a>
+    </div>
   </div>
 
   <script type="module">
@@ -137,15 +140,9 @@
       }
 
       const file = document.getElementById('menuFile').files[0];
-      const comment = document.getElementById('comentario').value.trim();
-
-      if (!file || file.name !== 'Córcega Menú.pdf') {
+      const normalizedName = file ? file.name.normalize("NFC") : '';
+      if (!file || normalizedName !== 'Córcega Menú.pdf') {
         mensaje.textContent = "El archivo debe llamarse exactamente 'Córcega Menú.pdf'";
-        return;
-      }
-
-      if (comment.length > 30) {
-        mensaje.textContent = "El comentario no puede tener más de 30 caracteres.";
         return;
       }
 
@@ -156,7 +153,6 @@
         await addDoc(collection(db, 'logs'), {
           email: auth.currentUser.email,
           accion: 'subida_menu',
-          comentario: comment,
           timestamp: serverTimestamp()
         });
 
