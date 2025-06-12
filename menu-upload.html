@@ -139,8 +139,8 @@
       const file = document.getElementById('menuFile').files[0];
       const comment = document.getElementById('comentario').value.trim();
 
-      if (!file || file.name !== 'Menu_Corcega.pdf') {
-        mensaje.textContent = "El archivo debe llamarse exactamente 'Menu_Corcega.pdf'";
+      if (!file || file.name !== 'Córcega Menú.pdf') {
+        mensaje.textContent = "El archivo debe llamarse exactamente 'Córcega Menú.pdf'";
         return;
       }
 
@@ -150,7 +150,7 @@
       }
 
       try {
-        const storageRef = ref(storage, 'Menu_Corcega.pdf');
+        const storageRef = ref(storage, 'Córcega Menú.pdf');
         await uploadBytes(storageRef, file);
 
         await addDoc(collection(db, 'logs'), {
