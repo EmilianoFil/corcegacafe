@@ -137,6 +137,7 @@ button, .btn-primary {
 
 /* Loader */
 #loader {
+  width: 95px;
   display: none;
   margin-top: 20px;
   text-align: center;
