@@ -235,13 +235,6 @@
       updates.cafes = 0;
       updates.cafe_disponible = false;
       updates.cafecitos_invitados = increment(1);
-      if (data.sello_cumpleanios_activo) {
-        updates.sello_cumpleanios_activo = false;
-      }
-     // if (data.sigue_instagram && !data.sello_instagram_usado) { 
-      if (data.sigue_instagram && !data.sello_instagram_usado && !data.sello_pendiente) { 
-        updates.sello_instagram_usado = true;
-      }
       if (data.sello_pendiente) {
         updates.cafes = 1;
         updates.cafes_acumulados_total = increment(1);
@@ -252,6 +245,11 @@
       } else {
         mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!\n¡Gracias por su fidelidad!`;
       }
+      // Muevo este bloque justo antes de updateDoc para asegurar que se aplique correctamente
+      if (data.sello_cumpleanios_activo) {
+        updates.sello_cumpleanios_activo = false;
+      }
+      console.log("Updates:", updates);
       document.title = "Admin - Invitación cafecito";
       await addDoc(collection(db, "logs"), {
         usuario,
@@ -266,6 +264,11 @@
       mensajeFinal = updates.cafes >= 8
         ? `✅ Se sumó 1 cafecito a ${nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
         : `✅ Se sumó 1 cafecito a ${nombre}. Total: ${updates.cafes}`;
+      // También aquí agrego console.log para consistencia
+      if (data.sello_cumpleanios_activo) {
+        updates.sello_cumpleanios_activo = false;
+      }
+      console.log("Updates:", updates);
       document.title = "Admin - Suma cafecito";
       await addDoc(collection(db, "logs"), {
         usuario,
