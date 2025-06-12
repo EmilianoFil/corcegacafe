@@ -397,7 +397,7 @@
       updates.cafes = 0;
       updates.cafe_disponible = false;
       updates.cafecitos_invitados = increment(1);
-     // if (data.sigue_instagram && !data.sello_instagram_usado) { 
+      // if (data.sigue_instagram && !data.sello_instagram_usado) { 
       if (data.sigue_instagram && !data.sello_instagram_usado && !data.sello_pendiente) { 
         updates.sello_instagram_usado = true;
       }
@@ -418,12 +418,6 @@
         detalles: `DNI: ${dni} - ${nombre}`,
         timestamp: new Date()
       });
-      // Enviar mail de felicitaciones al completar la tarjeta
-      fetch("https://us-central1-corcega-loyalty-club.cloudfunctions.net/enviarMailFelicitaciones", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dni, nombre })
-      });
       if (typeof gtag === 'function') gtag('event', 'admin_invito_cafe', { dni });
     } else {
       updates.cafes = cafes + 1;
@@ -442,6 +436,15 @@
     }
 
     await updateDoc(ref, updates);
+
+    // Enviar mail de felicitaciones SOLO cuando updates.cafes === 8
+    if (updates.cafes === 8) {
+      fetch("https://us-central1-corcega-loyalty-club.cloudfunctions.net/enviarMailFelicitaciones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dni, nombre, mail: data.email || data.mail || "" })
+      });
+    }
 
     // Guardamos para deshacer
     const btnDeshacer = document.getElementById("btnDeshacer");

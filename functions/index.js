@@ -17,7 +17,8 @@ exports.enviarMailRegistro = onRequest(
   { region: "us-central1", secrets: [emailUser, emailPass] },
   (req, res) => {
     corsHandler(req, res, async () => {
-      const { nombre, email, dni } = req.body;
+      const { nombre, mail, dni } = req.body;
+      const email = mail;
       if (dni !== "32531743") {
         res.status(200).send("Correo no enviado (DNI filtrado)");
         return;
@@ -87,7 +88,8 @@ exports.enviarMailFelicitaciones = onRequest(
   { region: "us-central1", secrets: [emailUser, emailPass] },
   (req, res) => {
     corsHandler(req, res, async () => {
-      const { nombre, email, dni } = req.body;
+      const { nombre, mail, dni } = req.body;
+      const email = mail;
       if (dni !== "32531743") {
         res.status(200).send("Correo de felicitación no enviado (DNI filtrado)");
         return;
