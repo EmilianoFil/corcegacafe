@@ -327,11 +327,11 @@ footer a[href*="instagram.com"]::before {
 .btn-estadisticas {
   background-color: white;
   color: #ed7053;
-  padding: 6px 12px;
+  padding: 10px 12px;
   border-radius: 8px;
   text-decoration: none;
   font-weight: bold;
-  font-size: 14px;
+  font-size: 12.5px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
