@@ -172,6 +172,11 @@ exports.selloCumpleaniosDiario = onSchedule(
           sello_cumpleanios_activo: true,
           sello_cumpleanios_ultimo: hoy.getFullYear(),
         });
+        // Sumar un café adicional por cumpleaños
+        await db.collection("clientes").doc(doc.id).update({
+          cafes: admin.firestore.FieldValue.increment(1),
+          cafes_acumulados_total: admin.firestore.FieldValue.increment(1),
+        });
 
         const mailOptions = {
           from: `Córcega Café <${emailUser.value()}>`,
