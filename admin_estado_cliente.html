@@ -4,29 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- SEO GOOGLE INICIO -->
-  <meta name="description" content="Sumá cafecitos con tu DNI en Córcega y canjeá el tuyo ☕">
-  <meta name="keywords" content="cafecito, fidelización, Córcega, café gratis, rebeldía cafetera, cafe de especialidad">
-  <meta name="author" content="Córcega Cafe">
-  <meta property="og:title" content="Club de Cafe - Córcega">
-  <meta property="og:description" content="Comprando cafés, acumulás 8 y te invitamos uno. Consultá tu estado con tu DNI.">
-  <meta property="og:image" content="https://corcegacafe.com.ar/css/img/logo-corcega-color.png">
-  <meta property="og:url" content="https://corcegacafe.com.ar">
-  <!-- SEO GOOGLE FIN -->
-
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <title>Consulta cliente</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Syncopate&display=swap" rel="stylesheet"> <!-- Tipografías personalizadas --> <!--//Agrego para uso de letra -->
   <link rel="stylesheet" href="css/style.css" />
 
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-NXMC00DZ81');
-  </script>
 </head>
 <body>
   <div id="loader">
@@ -101,13 +83,13 @@
 
         await addDoc(collection(db, "logs"), {
           usuario: dni,
-          accion: "consulta_fallida",
+          accion: "admin_consulta_fallida",
           detalles: `Consulta fallida: DNI ${dni} no encontrado`,
           timestamp: new Date()
         });
 
         if (typeof gtag === 'function') {
-          gtag('event', 'consulta_fallida', { dni });
+          gtag('event', 'admin_consulta_fallida', { dni });
         }
         return;
       }
@@ -134,13 +116,13 @@
 
       await addDoc(collection(db, "logs"), {
         usuario: data.dni,
-        accion: "consulta_cliente",
+        accion: "admin_consulta_cliente",
         detalles: `Consulta exitosa del cliente ${data.dni} - ${data.nombre}`,
         timestamp: new Date()
       });
 
       if (typeof gtag === 'function') {
-        gtag('event', 'consulta_estado', { dni: data.dni });
+        gtag('event', 'admin_consulta_estado', { dni: data.dni });
       }
 
       const nombre = data.nombre || "Amigo";
