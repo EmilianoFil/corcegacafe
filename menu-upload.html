@@ -153,7 +153,7 @@
       }
 
       try {
-        const storageRef = ref(storage, 'Córcega Menú.pdf');
+        const storageRef = ref(storage, 'menu.pdf');
         await uploadBytes(storageRef, file);
 
         await addDoc(collection(db, 'logs'), {
