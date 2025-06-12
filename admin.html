@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="css/style.css">
-  <title>ACdmin - Consulta Cliente</title>
+  <title>Admin - Sumar Cafecito</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Syncopate&display=swap" rel="stylesheet"> <!-- Tipografías personalizadas --> <!--//Agrego para uso de letra -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
   <script>
@@ -335,7 +335,7 @@
     const preview = document.getElementById("clientePreview");
     if (!dni) return;
     const iframe = document.getElementById("iframeEstado");
-    iframe.src = `estado.html?dni=${dni}`;
+    iframe.src = `admin_estado_cliente.html?dni=${dni}`;
     preview.classList.add("active");
   });
 

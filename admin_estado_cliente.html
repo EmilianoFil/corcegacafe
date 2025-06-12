@@ -1,142 +1,526 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
-  <title>Consulta cliente</title>
+  <link rel="stylesheet" href="css/style.css">
+  <title>Admin - Sumar Cafecito</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Syncopate&display=swap" rel="stylesheet"> <!-- Tipografías personalizadas --> <!--//Agrego para uso de letra -->
-  <link rel="stylesheet" href="css/style.css" />
-
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-NXMC00DZ81');
+  </script>
 </head>
 <body>
-  <div id="loader">
-    <img src="css/img/Corcega_Logo_Original.png" alt="Cargando..." class="galope">
-  </div>
-
-  <div class="menu-style" id="contenedor" style="display:none;">
-    <div id="info-header">
-      <p id="cliente"></p>
-      <h2>
-        <span style="color: white; font-size: 17px; display:block; margin-top: 6px;">COMPLETÁ LAS VISITAS Y TE INVITAMOS</span>
-      </h2>
-      <h1>
-        <span style="font-size: 37px; display:block; margin-top: 6px; font-family: 'Syncopate', sans-serif;">UN CAFECITO</span>
-      </h1>
-      <p id="faltan" style="color: #01323f; font-family: 'Playfair Display', serif; text-transform: uppercase; font-size: 17px; display: block; margin-top: 6px;"></p>
-    </div>
-    <div id="grid" class="grid"></div>
-    <div id="mensaje-error" style="display:none;">
-      <div style="padding: 30px 20px; background: #01323f; border-radius: 12px; font-size: 18px; color: white; text-align: center;">
-        <p id="mensaje-no-registrado" style="white-space: pre-line; margin: 20px 0; color: #008ba4;"></p>
-        <div style="display: flex; justify-content: center;">
-          <a href="" id="boton-registrar" class="btn-primary" style="min-width: 220px; text-decoration: none;">Registrate</a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script type="module">
-    import { app, db } from './js/firebase-config.js';
-    import {
-      doc, getDoc, addDoc, collection, updateDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-    const params = new URLSearchParams(window.location.search);
-    const dni = params.get("dni");
-    document.getElementById("boton-registrar").href = `registro.html?dni=${dni}`;
-
-    async function consultarCliente(dni) {
-      const ref = doc(db, "clientes", dni);
-      const snap = await getDoc(ref);
-
-      document.getElementById("loader").style.display = "none";
-      const contenedor = document.getElementById("contenedor");
-      contenedor.style.display = "block";
-
-      if (!snap.exists()) {
-        document.title = "Resultado consulta cliente";
-        document.getElementById("cliente").style.display = "none";
-        document.getElementById("faltan").style.display = "none";
-        document.getElementById("grid").style.display = "none";
-        const mensajeError = document.getElementById("mensaje-error");
-        mensajeError.style.display = "block";
-        document.getElementById("mensaje-no-registrado").innerHTML = `El DNI <strong>${dni}</strong> no está registrado en nuestro Club de Recompensas.`;
-        contenedor.classList.remove("tarjeta-fidelidad");
-
-        // Set colors for error state
-        document.querySelector("#info-header span").style.color = "white";
-        document.getElementById("faltan").style.color = "#008ba4";
-        document.getElementById("cliente").style.color = "white";
-        document.getElementById("footer-text").style.color = "white";
-        document.getElementById("footer-link").style.color = "white";
-
-        return;
-      }
-
-      contenedor.classList.add("tarjeta-fidelidad");
-
-      document.querySelector("#info-header span").style.color = "#01323f";
-      document.getElementById("faltan").style.color = "#01323f";
-      document.getElementById("cliente").style.color = "#01323f";
-      document.getElementById("footer-text").style.color = "#01323f";
-      document.getElementById("footer-link").style.color = "#01323f";
-
-      const data = snap.data();
-
-      if (data.sigue_instagram === true && data.sello_instagram_usado === false && (data.cafes || 0) >= 8) {
-        await updateDoc(ref, { sello_instagram_usado: true });
-      }
-
-      const nombre = data.nombre || "Amigo";
-      const cafes = parseInt(data.cafes) || 0;
-      document.title = "Tarjeta cliente";
-      document.getElementById("cliente").textContent = `Hola ${nombre}`;
-      document.getElementById("faltan").textContent = cafes < 8
-        ? `Te faltan ${8 - cafes} para alcanzarlo`
-        : "¡El próximo lo invitamos nosotros! 🐎🎉";
-
-      const grid = document.getElementById("grid");
-
-      const selloCumpleActivo = data.sello_cumpleanios_activo === true;
-      const selloInstaActivo = data.sigue_instagram === true && data.sello_instagram_usado === false;
-
-      let cafesRestantes = parseInt(data.cafes) || 0;
-      let selloCumpleUsado = false;
-      let selloInstaUsado = false;
-
-      for (let i = 1; i <= 9; i++) {
-        const div = document.createElement("div");
-        div.className = "circle";
-
-        if (selloCumpleActivo && !selloCumpleUsado) {
-          div.style.backgroundImage = "url('css/img/sello_cumpleanos.png')";
-          div.style.backgroundSize = "cover";
-          div.style.opacity = "1";
-          div.classList.add("glow");
-          cafesRestantes--;
-          selloCumpleUsado = true;
-        } else if (selloInstaActivo && !selloInstaUsado) {
-          div.style.backgroundImage = "url('css/img/Corcega_Logo_Original_Insta.png')";
-          div.style.opacity = "1";
-          div.classList.add("glow");
-          cafesRestantes--;
-          selloInstaUsado = true;
-        } else if (cafesRestantes > 0) {
-          div.classList.add("lleno");
-          cafesRestantes--;
-        } else if (i === 9) {
-          div.classList.add("noveno");
-        } else {
-          div.style.backgroundImage = "url('css/img/Corcega_Logo_Tiza.png')";
-        }
-
-        grid.appendChild(div);
-      }
+  <style>
+    .menu-hamburguesa {
+      position: relative;
+      display: block;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .menu-icon {
+      cursor: pointer;
+      display: inline-block;
+      padding: 10px 16px;
+      background-color: #d86634;
+      color: white;
+      border-radius: 6px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    #menu-toggle {
+      display: none;
+    }
+    .menu-links {
+      display: none;
+      position: absolute;
+      background-color: white;
+      border: 1px solid #ccc;
+      list-style: none;
+      padding: 10px;
+      margin: 5px 0 0 0;
+      border-radius: 8px;
+      z-index: 999;
+    }
+    #menu-toggle:checked + .menu-icon + .menu-links {
+      display: block;
+    }
+    .menu-links li {
+      margin-bottom: 8px;
+    }
+    .menu-links li a {
+      text-decoration: none;
+      color: #d86634;
+      font-weight: bold;
+    }
+    .btn-estadisticas {
+      background-color: white;
+      color: #d86634;
+      padding: 10px 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 12.5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    #sesion-expirada {
+      display: none;
+      text-align: center;
+      padding: 40px;
+      max-width: 500px;
+      margin: 80px auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      font-family: sans-serif;
+    }
+    #sesion-expirada p {
+      font-size: 18px;
+      margin-bottom: 20px;
+    }
+    #sesion-expirada a {
+      background-color: #d86634;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .tarjeta-fidelidad {
+      margin-top: 20px;
+      padding: 20px;
+      background: #fff7f0;
+      border: 2px dashed #d86634;
+      border-radius: 12px;
+      position: relative;
+    }
+    .tarjeta-fidelidad.sin-titulo {
+      padding: 0;
+      border: none;
+      background: transparent;
+      width: auto;
+      height: auto;
+      max-width: none;
+      max-height: none;
+    }
+    .cerrar-preview {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
     }
 
-    consultarCliente(dni);
+    /* --- Modal de preview cliente --- */
+    #clientePreview {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    @keyframes fadeInScale {
+      0% {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    #clientePreview .tarjeta-fidelidad {
+      background: #fff7f0;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80%;
+      overflow-y: auto;
+      position: relative;
+    }
+    #iframeEstado {
+      width: 100%;
+      min-width: 300px;
+      height: auto;
+      aspect-ratio: 3 / 4;
+      border: none;
+      border-radius: 12px;
+      display: block;
+    }
+    #clientePreview.active {
+      display: flex;
+    }
+    #clientePreview.active .tarjeta-fidelidad {
+      animation: fadeInScale 0.35s ease forwards;
+    }
+    #adminForm .button-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #adminForm .button-row button {
+      width: 200px;
+    }
+
+.message-container {
+  margin-top: 20px;
+  background: #01323f;
+  border-radius: 12px;
+  padding: 30px 20px;
+  text-align: center;
+  color: #008ba4;
+  font-size: 18px;
+}
+
+.message-container p {
+  white-space: pre-line;
+  margin-bottom: 20px;
+}
+
+.message-container .btn-primary {
+  min-width: 220px;
+  margin: 8px 0;
+}
+  </style>
+
+  <script type="module">
+    import { auth, onAuthStateChanged } from './js/firebase-auth.js';
+    import { getFirestore, doc, getDoc, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    const db = getFirestore();
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+      } else {
+        try {
+          const ref = doc(db, "admin", user.uid);
+          const snap = await getDoc(ref);
+          const nombre = snap.exists() ? (snap.data().nombre || user.email) : user.email;
+          document.getElementById("usuarioLogueado").innerText = nombre;
+          if (snap.exists() && snap.data().rol === "dueño") {
+            document.getElementById("botonEstadisticas").style.display = "block";
+          }
+          const ahora = Date.now();
+          localStorage.setItem("loginTimestamp", ahora.toString());
+          localStorage.setItem("ultimoEvento", ahora.toString());
+          ["click", "keydown", "mousemove", "scroll", "touchstart"].forEach(evento => {
+            document.addEventListener(evento, () => {
+              localStorage.setItem("ultimoEvento", Date.now().toString());
+            });
+          });
+          setInterval(async () => {
+            const tsLogin = parseInt(localStorage.getItem("loginTimestamp") || "0");
+            const tsUltimoEvento = parseInt(localStorage.getItem("ultimoEvento") || "0");
+            const ahora = Date.now();
+            const INACTIVIDAD_MAX_MS = 3000 * 60 * 1000;
+            const SESION_MAX_MS = 3000 * 60 * 1000;
+            const usuario = auth.currentUser?.email || "admin";
+            if (ahora - tsLogin > SESION_MAX_MS) {
+              await addDoc(collection(db, "logs"), {
+                usuario,
+                accion: "admin_max_cerrar_sesion",
+                detalles: "Se cerró la sesión por máximo de tiempo abierto",
+                timestamp: new Date()
+              });
+              mostrarMensajeSesionExpirada("Se cerró tu sesión por tiempo máximo abierta.");
+            } else if (ahora - tsUltimoEvento > INACTIVIDAD_MAX_MS) {
+              await addDoc(collection(db, "logs"), {
+                usuario,
+                accion: "admin_inact_cerrar_sesion",
+                detalles: "Se cerró la sesión por inactividad",
+                timestamp: new Date()
+              });
+              mostrarMensajeSesionExpirada("Se cerró tu sesión por inactividad.");
+            }
+          }, 60 * 1000);
+        } catch (error) {
+          console.error("Error al obtener datos del usuario:", error);
+        }
+      }
+    });
+
+    function mostrarMensajeSesionExpirada(mensaje) {
+      document.querySelector(".menu-style").style.display = "none";
+      const cartel = document.getElementById("sesion-expirada");
+      cartel.querySelector("p").textContent = mensaje;
+      cartel.style.display = "block";
+      localStorage.clear();
+      auth.signOut();
+    }
   </script>
+
+  <div class="menu-style">
+    <nav class="menu-hamburguesa">
+      <input type="checkbox" id="menu-toggle">
+      <label for="menu-toggle" class="menu-icon">☰</label>
+      <ul class="menu-links">
+        <li><a href="registro-admin.html">Registrar Admin</a></li>
+        <li><a href="menu-upload.html">Subir Menú</a></li>
+        <li><a href="panel.html">Estadísticas</a></li>
+        <li><a href="filtros.html">Detalle logs</a></li>
+      </ul>
+    </nav>
+    <div class="info-usuario">
+      Usuario logueado: <span id="usuarioLogueado">-</span>
+    </div>
+    <h1>Cargar Cafecito ☕</h1>
+    <form id="adminForm">
+      <input type="tel" name="dni" id="dni" placeholder="DNI del cliente" inputmode="numeric" pattern="[0-9]*" required />
+      <div class="button-row">
+        <button type="submit" id="submitBtn">Sumar cafecito</button>
+        <button type="button" id="consultarCliente" class="btn-estadisticas">Consultar cliente</button>
+      </div>
+    </form>
+    <div style="margin-top: 10px;">
+      <button id="btnInstagram" style="display:none;" class="btn-estadisticas">📸 Sigue Instagram</button>
+    </div>
+    <div id="loader"><img src="css/img/Corcega_Logo_Original.png" alt="Cargando..." class="galope"></div>
+    <div id="respuesta" class="mensaje"></div>
+    <button id="btnDeshacer" style="display:none;" class="btn-estadisticas">↩️ Deshacer operación</button>
+    <div class="logout">
+      <a href="admin.html" class="volver">Otro Cliente</a>
+      <a href="#" onclick="cerrarSesion()" class="cerrar">Cerrar sesión</a>
+    </div>
+  </div>
+
+  <div id="clientePreview">
+    <div class="tarjeta-fidelidad sin-titulo">
+      <button id="cerrarPreview" class="cerrar-preview">❌</button>
+      <iframe id="iframeEstado" style="width: 100%; height: 100%; border: none;"></iframe>
+    </div>
+  </div>
+
+  <div id="sesion-expirada">
+    <p></p>
+    <a href="login.html">Volver a ingresar</a>
+  </div>
+<script type="module">
+  import { app, db } from './js/firebase-config.js';
+  import {
+    doc, getDoc, updateDoc, increment, serverTimestamp, collection, addDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { auth, signOut } from './js/firebase-auth.js';
+
+  async function cerrarSesion() {
+    const usuario = auth.currentUser?.email || "admin";
+    await addDoc(collection(db, "logs"), {
+      usuario,
+      accion: "cerrar_sesion",
+      detalles: "Cierre de sesión",
+      timestamp: new Date()
+    });
+    await signOut(auth);
+    localStorage.clear();
+    window.location.href = "login.html";
+  }
+  window.cerrarSesion = cerrarSesion;
+
+  // Listener para el botón "Consultar cliente"
+  document.getElementById("consultarCliente").addEventListener("click", async () => {
+    const dni = document.getElementById("dni").value.trim();
+    const preview = document.getElementById("clientePreview");
+    if (!dni) return;
+    const iframe = document.getElementById("iframeEstado");
+    iframe.src = `admin_estado_cliente.html?dni=${dni}`;
+    preview.classList.add("active");
+  });
+
+  document.getElementById("cerrarPreview").addEventListener("click", () => {
+    document.getElementById("clientePreview").classList.remove("active");
+  });
+
+  document.getElementById("adminForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const input = document.getElementById("dni");
+    const button = document.getElementById("submitBtn");
+    const div = document.getElementById("respuesta");
+    const loader = document.getElementById("loader");
+    let btnInsta = document.getElementById("btnInstagram");
+    const usuario = auth.currentUser?.email || "admin";
+
+    div.innerHTML = "";
+    loader.style.display = "block";
+    input.disabled = true;
+    button.disabled = true;
+    btnInsta.style.display = "none";
+
+    const dni = input.value.trim();
+    const ref = doc(db, "clientes", dni);
+    const snap = await getDoc(ref);
+
+    await addDoc(collection(db, "logs"), {
+      usuario,
+      accion: "admin_consulta_cliente",
+      detalles: `DNI: ${dni}`,
+      timestamp: new Date()
+    });
+
+    if (!snap.exists()) {
+      document.title = "Admin - Resultado consulta cliente";
+      div.className = "mensaje error";
+      div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
+      loader.style.display = "none";
+      input.disabled = false;
+      button.disabled = false;
+      return;
+    }
+
+    const data = snap.data();
+    const estadoAnterior = {
+      ...data,
+      ultimo_cafe: data.ultimo_cafe?.toDate?.() || null
+    };
+
+    const nombre = data.nombre || dni;
+    const cafes = parseInt(data.cafes || 0);
+    const updates = {
+      ultimo_cafe: serverTimestamp(),
+      cafes_acumulados_total: increment(1)
+    };
+    let mensajeFinal = "";
+
+    if (cafes >= 8) {
+      updates.cafes = 0;
+      updates.cafe_disponible = false;
+      updates.cafecitos_invitados = increment(1);
+      // if (data.sigue_instagram && !data.sello_instagram_usado) { 
+      if (data.sigue_instagram && !data.sello_instagram_usado && !data.sello_pendiente) { 
+        updates.sello_instagram_usado = true;
+      }
+      if (data.sello_pendiente) {
+        updates.cafes = 1;
+        updates.cafes_acumulados_total = increment(1);
+        updates.sello_pendiente = false;
+        updates.sigue_instagram = true;
+        //updates.sello_instagram_usado = true; --> Este no tenía que setearse en true
+        mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!\nY además se aplicó el sello pendiente de Instagram.`;
+      } else {
+        mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!\n¡Gracias por su fidelidad!`;
+      }
+      document.title = "Admin - Invitación cafecito";
+      await addDoc(collection(db, "logs"), {
+        usuario,
+        accion: "invitar_cafecito",
+        detalles: `DNI: ${dni} - ${nombre}`,
+        timestamp: new Date()
+      });
+      if (typeof gtag === 'function') gtag('event', 'admin_invito_cafe', { dni });
+    } else {
+      updates.cafes = cafes + 1;
+      if (updates.cafes >= 8) updates.cafe_disponible = true;
+      mensajeFinal = updates.cafes >= 8
+        ? `✅ Se sumó 1 cafecito a ${nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
+        : `✅ Se sumó 1 cafecito a ${nombre}. Total: ${updates.cafes}`;
+      document.title = "Admin - Suma cafecito";
+      await addDoc(collection(db, "logs"), {
+        usuario,
+        accion: "sumar_cafecito",
+        detalles: `DNI: ${dni} - ${nombre}`,
+        timestamp: new Date()
+      });
+      if (typeof gtag === 'function') gtag('event', 'admin_suma_cafe', { dni });
+    }
+
+    await updateDoc(ref, updates);
+
+    // Enviar mail de felicitaciones SOLO cuando updates.cafes === 8
+    if (updates.cafes === 8) {
+      fetch("https://us-central1-corcega-loyalty-club.cloudfunctions.net/enviarMailFelicitaciones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dni, nombre, mail: data.email || data.mail || "" })
+      });
+    }
+
+    // Guardamos para deshacer
+    const btnDeshacer = document.getElementById("btnDeshacer");
+    btnDeshacer.style.display = "inline-block";
+    window.ultimaOperacion = { dni, prevData: estadoAnterior, usuario };
+
+    // Mostrar botón Instagram si corresponde
+    if (!data.sigue_instagram && !data.sello_instagram_usado && !data.sello_pendiente) {
+      btnInsta.style.display = "inline-block";
+      const nuevoBtn = btnInsta.cloneNode(true);
+      btnInsta.parentNode.replaceChild(nuevoBtn, btnInsta);
+      btnInsta = nuevoBtn;
+      btnInsta.onclick = async () => {
+        btnInsta.disabled = true;
+        const snapActual = await getDoc(ref);
+        const cliente = snapActual.data();
+        const cafesActuales = cliente.cafes || 0;
+        const updatesInstagram = {};
+
+        if (cafesActuales >= 8) {
+          updatesInstagram.sello_pendiente = true;
+        } else {
+          updatesInstagram.sigue_instagram = true;
+          //updatesInstagram.sello_instagram_usado = true; -->comento siguiendo mi instinto de programador jajaj
+          updatesInstagram.cafes = cafesActuales + 1;
+          updatesInstagram.cafes_acumulados_total = increment(1);
+        }
+
+        try {
+          await updateDoc(ref, updatesInstagram);
+          await addDoc(collection(db, "logs"), {
+            usuario,
+            accion: "marcar_instagram",
+            detalles: `DNI: ${dni} - ${nombre}`,
+            timestamp: new Date()
+          });
+          div.innerText += `\n📸 Marcado como seguidor en Instagram.`;
+        } catch (e) {
+          console.error("Error marcando Instagram:", e);
+          div.innerText += `\n❌ Error al marcar Instagram.`;
+        }
+      };
+    }
+
+    // Acción botón Deshacer
+    btnDeshacer.onclick = async () => {
+      const { dni, prevData, usuario } = window.ultimaOperacion;
+      const ref = doc(db, "clientes", dni);
+      await updateDoc(ref, {
+        cafes: prevData.cafes,
+        cafes_acumulados_total: prevData.cafes_acumulados_total,
+        cafe_disponible: prevData.cafe_disponible,
+        cafecitos_invitados: prevData.cafecitos_invitados,
+        sigue_instagram: prevData.sigue_instagram ?? false,
+        sello_instagram_usado: prevData.sello_instagram_usado ?? false,
+        sello_pendiente: prevData.sello_pendiente ?? false,
+        ultimo_cafe: prevData.ultimo_cafe ? new Date(prevData.ultimo_cafe) : null
+      });
+
+      await addDoc(collection(db, "logs"), {
+        usuario,
+        accion: "deshacer_operacion",
+        detalles: `Reversión manual sobre DNI ${dni}`,
+        timestamp: new Date()
+      });
+
+      document.getElementById("respuesta").innerText = `↩️ Se deshizo la última operación para ${prevData.nombre || dni}`;
+      btnDeshacer.style.display = "none";
+    };
+
+    div.className = "mensaje ok";
+    div.innerText = mensajeFinal;
+    loader.style.display = "none";
+    input.disabled = false;
+    button.disabled = false;
+  });
+</script>
 </body>
 </html>
