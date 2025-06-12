@@ -152,25 +152,28 @@
         : "¡El próximo lo invitamos nosotros! 🐎🎉";
 
       const grid = document.getElementById("grid");
+
+      const selloCumpleActivo = data.sello_cumpleanios_activo === true;
+      const selloInstaActivo = data.sigue_instagram === true && data.sello_instagram_usado === false;
+
+      let selloCumpleUsado = false;
+      let selloInstaUsado = false;
+
       for (let i = 1; i <= 9; i++) {
         const div = document.createElement("div");
         div.className = "circle";
 
         if (i <= cafes) {
-          if (
-            data.sigue_instagram === true &&
-            data.sello_instagram_usado === false &&
-            i === cafes
-          ) {
-            div.style.backgroundImage = "url('css/img/Corcega_Logo_Original_Insta.png')";
-            div.style.opacity = "1";
-          } else {
-            div.classList.add("lleno");
-          }
-        } else if (i === cafes + 1 && data.sello_cumpleanios_activo === true) {
+          div.classList.add("lleno");
+        } else if (selloCumpleActivo && !selloCumpleUsado) {
           div.style.backgroundImage = "url('css/img/sello_cumpleanos.png')";
           div.style.backgroundSize = "cover";
           div.style.opacity = "1";
+          selloCumpleUsado = true;
+        } else if (selloInstaActivo && !selloInstaUsado) {
+          div.style.backgroundImage = "url('css/img/Corcega_Logo_Original_Insta.png')";
+          div.style.opacity = "1";
+          selloInstaUsado = true;
         } else if (i === 9) {
           div.classList.add("noveno");
         } else {
