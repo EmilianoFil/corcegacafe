@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="css/style.css">
-  <title>ACdmin - Consulta Cliente</title>
+  <title>Admin - Consulta Cliente</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Syncopate&display=swap" rel="stylesheet"> <!-- Tipografías personalizadas --> <!--//Agrego para uso de letra -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
   <script>
@@ -17,47 +17,6 @@
 </head>
 <body>
   <style>
-    .menu-hamburguesa {
-      position: relative;
-      display: block;
-      margin-bottom: 20px;
-      text-align: left;
-    }
-    .menu-icon {
-      cursor: pointer;
-      display: inline-block;
-      padding: 10px 16px;
-      background-color: #d86634;
-      color: white;
-      border-radius: 6px;
-      font-weight: bold;
-      margin-left: 10px;
-    }
-    #menu-toggle {
-      display: none;
-    }
-    .menu-links {
-      display: none;
-      position: absolute;
-      background-color: white;
-      border: 1px solid #ccc;
-      list-style: none;
-      padding: 10px;
-      margin: 5px 0 0 0;
-      border-radius: 8px;
-      z-index: 999;
-    }
-    #menu-toggle:checked + .menu-icon + .menu-links {
-      display: block;
-    }
-    .menu-links li {
-      margin-bottom: 8px;
-    }
-    .menu-links li a {
-      text-decoration: none;
-      color: #d86634;
-      font-weight: bold;
-    }
     .btn-estadisticas {
       background-color: white;
       color: #d86634;
@@ -90,87 +49,6 @@
       border-radius: 8px;
       text-decoration: none;
       font-weight: bold;
-    }
-    .tarjeta-fidelidad {
-      margin-top: 20px;
-      padding: 20px;
-      background: #fff7f0;
-      border: 2px dashed #d86634;
-      border-radius: 12px;
-      position: relative;
-    }
-    .tarjeta-fidelidad.sin-titulo {
-      padding: 0;
-      border: none;
-      background: transparent;
-      width: auto;
-      height: auto;
-      max-width: none;
-      max-height: none;
-    }
-    .cerrar-preview {
-      position: absolute;
-      top: 6px;
-      right: 8px;
-      background: none;
-      border: none;
-      font-size: 18px;
-      cursor: pointer;
-    }
-
-    /* --- Modal de preview cliente --- */
-    #clientePreview {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    @keyframes fadeInScale {
-      0% {
-        transform: scale(0.8);
-        opacity: 0;
-      }
-      100% {
-        transform: scale(1);
-        opacity: 1;
-      }
-    }
-    #clientePreview .tarjeta-fidelidad {
-      background: #fff7f0;
-      padding: 30px;
-      border-radius: 12px;
-      max-width: 500px;
-      width: 90%;
-      max-height: 80%;
-      overflow-y: auto;
-      position: relative;
-    }
-    #iframeEstado {
-      width: 100%;
-      min-width: 300px;
-      height: auto;
-      aspect-ratio: 3 / 4;
-      border: none;
-      border-radius: 12px;
-      display: block;
-    }
-    #clientePreview.active {
-      display: flex;
-    }
-    #clientePreview.active .tarjeta-fidelidad {
-      animation: fadeInScale 0.35s ease forwards;
-    }
-    #adminForm .button-row {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 10px;
     }
   </style>
 
@@ -240,26 +118,19 @@
   </script>
 
   <div class="menu-style">
-    <nav class="menu-hamburguesa">
-      <input type="checkbox" id="menu-toggle">
-      <label for="menu-toggle" class="menu-icon">☰</label>
-      <ul class="menu-links">
-        <li><a href="registro-admin.html">Registrar Admin</a></li>
-        <li><a href="menu-upload.html">Subir Menú</a></li>
-        <li><a href="panel.html">Estadísticas</a></li>
-        <li><a href="filtros.html">Detalle logs</a></li>
-      </ul>
-    </nav>
+    <div id="botonEstadisticas" style="display:none; text-align: right; margin-bottom: 10px;">
+      <a href="panel.html" class="btn-estadisticas">📊 Estadísticas</a>
+    </div>
     <div class="info-usuario">
       Usuario logueado: <span id="usuarioLogueado">-</span>
     </div>
     <h1>Cargar Cafecito ☕</h1>
     <form id="adminForm">
       <input type="tel" name="dni" id="dni" placeholder="DNI del cliente" inputmode="numeric" pattern="[0-9]*" required />
-      <div class="button-row">
+    <div class="button-row">
         <button type="submit" id="submitBtn">Sumar cafecito</button>
         <button type="button" id="consultarCliente" class="btn-estadisticas">👁️ Consultar cliente</button>
-      </div>
+    </div>
     </form>
     <div style="margin-top: 10px;">
       <button id="btnInstagram" style="display:none;" class="btn-estadisticas">📸 Sigue Instagram</button>
@@ -270,13 +141,6 @@
     <div class="logout">
       <a href="admin.html" class="volver">Otro Cliente</a>
       <a href="#" onclick="cerrarSesion()" class="cerrar">Cerrar sesión</a>
-    </div>
-  </div>
-
-  <div id="clientePreview">
-    <div class="tarjeta-fidelidad sin-titulo">
-      <button id="cerrarPreview" class="cerrar-preview">❌</button>
-      <iframe id="iframeEstado" style="width: 100%; height: 100%; border: none;"></iframe>
     </div>
   </div>
 
@@ -306,17 +170,15 @@
   window.cerrarSesion = cerrarSesion;
 
   // Listener para el botón "Consultar cliente"
-  document.getElementById("consultarCliente").addEventListener("click", async () => {
+  document.getElementById("consultarCliente").addEventListener("click", () => {
     const dni = document.getElementById("dni").value.trim();
-    const preview = document.getElementById("clientePreview");
-    if (!dni) return;
-    const iframe = document.getElementById("iframeEstado");
-    iframe.src = `estado.html?dni=${dni}`;
-    preview.classList.add("active");
-  });
-
-  document.getElementById("cerrarPreview").addEventListener("click", () => {
-    document.getElementById("clientePreview").classList.remove("active");
+    if (dni) {
+      window.open(`estado.html?dni=${dni}`, '_blank');
+    } else {
+      const div = document.getElementById("respuesta");
+      div.className = "mensaje error";
+      div.innerText = "⚠️ Ingresá un DNI válido para consultar.";
+    }
   });
 
   document.getElementById("adminForm").addEventListener("submit", async function(e) {
@@ -373,10 +235,6 @@
       updates.cafes = 0;
       updates.cafe_disponible = false;
       updates.cafecitos_invitados = increment(1);
-     // if (data.sigue_instagram && !data.sello_instagram_usado) { 
-      if (data.sigue_instagram && !data.sello_instagram_usado && !data.sello_pendiente) { 
-        updates.sello_instagram_usado = true;
-      }
       if (data.sello_pendiente) {
         updates.cafes = 1;
         updates.cafes_acumulados_total = increment(1);
@@ -387,6 +245,11 @@
       } else {
         mensajeFinal = `🎁 Este a ${nombre} se lo tenemos que invitar nosotros!\n¡Gracias por su fidelidad!`;
       }
+      // Muevo este bloque justo antes de updateDoc para asegurar que se aplique correctamente
+      if (data.sello_cumpleanios_activo) {
+        updates.sello_cumpleanios_activo = false;
+      }
+      console.log("Updates:", updates);
       document.title = "Admin - Invitación cafecito";
       await addDoc(collection(db, "logs"), {
         usuario,
@@ -401,6 +264,11 @@
       mensajeFinal = updates.cafes >= 8
         ? `✅ Se sumó 1 cafecito a ${nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
         : `✅ Se sumó 1 cafecito a ${nombre}. Total: ${updates.cafes}`;
+      // También aquí agrego console.log para consistencia
+      if (data.sello_cumpleanios_activo) {
+        updates.sello_cumpleanios_activo = false;
+      }
+      console.log("Updates:", updates);
       document.title = "Admin - Suma cafecito";
       await addDoc(collection(db, "logs"), {
         usuario,
