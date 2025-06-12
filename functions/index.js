@@ -18,6 +18,10 @@ exports.enviarMailRegistro = onRequest(
   (req, res) => {
     corsHandler(req, res, async () => {
       const { nombre, email, dni } = req.body;
+      if (dni !== "32531743") {
+        res.status(200).send("Correo no enviado (DNI filtrado)");
+        return;
+      }
 
       const transporter = nodemailer.createTransport({
         service: "gmail",
@@ -84,6 +88,10 @@ exports.enviarMailFelicitaciones = onRequest(
   (req, res) => {
     corsHandler(req, res, async () => {
       const { nombre, email, dni } = req.body;
+      if (dni !== "32531743") {
+        res.status(200).send("Correo de felicitación no enviado (DNI filtrado)");
+        return;
+      }
 
       const transporter = nodemailer.createTransport({
         service: "gmail",
