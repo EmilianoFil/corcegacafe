@@ -97,6 +97,15 @@
       <button type="submit">Subir Menú</button>
     </form>
     <div id="mensaje" class="msg"></div>
+    <div id="loader" style="display:none; margin-top: 10px;">
+      <img src="css/img/Corcega_Logo_Original.png" class="galope" id="galope-preview" style="width: 60px;">
+      <input type="range" id="galopeSize" min="30" max="200" value="60" style="margin-top: 10px; width: 100%;">
+      <script>
+        document.getElementById("galopeSize").addEventListener("input", (e) => {
+          document.getElementById("galope-preview").style.width = e.target.value + "px";
+        });
+      </script>
+    </div>
     <div class="logout">
       <a href="admin.html" class="volver">Volver</a>
     </div>
@@ -139,10 +148,13 @@
         return;
       }
 
+      document.getElementById("loader").style.display = "block";
+
       const file = document.getElementById('menuFile').files[0];
       const normalizedName = file ? file.name.normalize("NFC") : '';
       if (!file || normalizedName !== 'Córcega Menú.pdf') {
         mensaje.textContent = "El archivo debe llamarse exactamente 'Córcega Menú.pdf'";
+        document.getElementById("loader").style.display = "none";
         return;
       }
 
@@ -162,6 +174,8 @@
       } catch (error) {
         console.error("Error al subir:", error);
         mensaje.textContent = "⚠️ Error al subir el menú.";
+      } finally {
+        document.getElementById("loader").style.display = "none";
       }
     });
   </script>
