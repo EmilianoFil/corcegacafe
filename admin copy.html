@@ -510,7 +510,7 @@ document.getElementById("adminForm").addEventListener("submit", async function(e
 
     div.className = "mensaje ok";
     div.innerText = mensajeFinal;
-    document.getElementById("mensaje-container").style.display = "block";
+    document.querySelector(".message-container").style.display = "block";
     loader.style.display = "none";
     input.disabled = false;
     button.disabled = false;
