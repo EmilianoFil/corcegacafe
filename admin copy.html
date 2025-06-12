@@ -353,12 +353,12 @@ document.getElementById("adminForm").addEventListener("submit", async function(e
     e.preventDefault();
     const input = document.getElementById("dni");
     const button = document.getElementById("submitBtn");
-    const div = document.getElementById("respuesta");
+    const div = document.getElementById("mensaje");
     const loader = document.getElementById("loader");
     let btnInsta = document.getElementById("btnInstagram");
     const usuario = auth.currentUser?.email || "admin";
 
-    div.innerHTML = "";
+    div.innerText = "";
     loader.style.display = "block";
     input.disabled = true;
     button.disabled = true;
@@ -378,7 +378,7 @@ document.getElementById("adminForm").addEventListener("submit", async function(e
     if (!snap.exists()) {
       document.title = "Admin - Resultado consulta cliente";
       div.className = "mensaje error";
-      div.innerHTML = `❌ El DNI ${dni} no está registrado.<br><a href="registro-admin.html?dni=${dni}">Registrar</a>`;
+      div.innerText = `❌ El DNI ${dni} no está registrado.\nRegistralo en: registro-admin.html?dni=${dni}`;
       loader.style.display = "none";
       input.disabled = false;
       button.disabled = false;
@@ -478,10 +478,10 @@ document.getElementById("adminForm").addEventListener("submit", async function(e
             detalles: `DNI: ${dni} - ${nombre}`,
             timestamp: new Date()
           });
-          div.innerText += `\n📸 Marcado como seguidor en Instagram.`;
+      div.innerText += `\n📸 Marcado como seguidor en Instagram.`;
         } catch (e) {
           console.error("Error marcando Instagram:", e);
-          div.innerText += `\n❌ Error al marcar Instagram.`;
+      div.innerText += `\n❌ Error al marcar Instagram.`;
         }
       };
     }
