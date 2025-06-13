@@ -49,7 +49,7 @@
       <div style="padding: 30px 20px; background: #01323f; border-radius: 12px; font-size: 18px; color: white; text-align: center;">
         <p id="mensaje-no-registrado" style="white-space: pre-line; margin: 20px 0; color: #008ba4;"></p>
         <div style="display: flex; justify-content: center;">
-          <a href="" id="boton-registrar" class="btn-primary" style="min-width: 220px; text-decoration: none;">Registrate</a>
+          <a href="" id="boton-registrar" class="btn-primary" style="min-width: 220px; text-decoration: none;">Registrarlo</a>
         </div>
       </div>
     </div>
@@ -69,7 +69,7 @@
 
     const params = new URLSearchParams(window.location.search);
     const dni = params.get("dni");
-    document.getElementById("boton-registrar").href = `registro.html?dni=${dni}`;
+    document.getElementById("boton-registrar").href = `registro-admin.html?dni=${dni}`;
 
     async function consultarCliente(dni) {
       const ref = doc(db, "clientes", dni);
