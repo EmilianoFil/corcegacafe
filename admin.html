@@ -350,7 +350,7 @@
       const cumpleDia = String(data.cumple_dia).padStart(2, '0');
       const cumpleMes = String(data.cumple_mes).padStart(2, '0');
       if (cumpleDia === diaHoy && cumpleMes === mesHoy) {
-        alert(`🎉 ¡Hoy es el cumpleaños de ${data.nombre || dni}! No te olvides de saludarlo 🎂`);
+        alert(`🎉 ¡Hoy es el cumpleaños de ${data.nombre || dni}! \nNo te olvides de saludarlo 🎂`);
       }
     }
     preview.classList.add("active");
@@ -404,7 +404,7 @@
     const cumpleDia = String(data.cumple_dia).padStart(2, '0');
     const cumpleMes = String(data.cumple_mes).padStart(2, '0');
     if (cumpleDia === diaHoy && cumpleMes === mesHoy) {
-      alert(`🎉 ¡Hoy es el cumpleaños de ${data.nombre || dni}! No te olvides de saludarlo 🎂`);
+      alert(`🎉 ¡Hoy es el cumpleaños de ${data.nombre || dni}! \nNo te olvides de saludarlo 🎂`);
     }
     const estadoAnterior = {
       ...data,
