@@ -345,9 +345,11 @@
     if (snap.exists()) {
       const data = snap.data();
       const hoy = new Date();
-      const diaHoy = hoy.getDate().toString();
-      const mesHoy = (hoy.getMonth() + 1).toString();
-      if (data.cumple_dia === diaHoy && data.cumple_mes === mesHoy) {
+      const diaHoy = String(hoy.getDate()).padStart(2, '0');
+      const mesHoy = String(hoy.getMonth() + 1).padStart(2, '0');
+      const cumpleDia = String(data.cumple_dia).padStart(2, '0');
+      const cumpleMes = String(data.cumple_mes).padStart(2, '0');
+      if (cumpleDia === diaHoy && cumpleMes === mesHoy) {
         alert(`🎉 ¡Hoy es el cumpleaños de ${data.nombre || dni}! No te olvides de saludarlo 🎂`);
       }
     }
@@ -397,9 +399,11 @@
     const data = snap.data();
     // Cumpleaños check aquí
     const hoy = new Date();
-    const diaHoy = hoy.getDate().toString();
-    const mesHoy = (hoy.getMonth() + 1).toString();
-    if (data.cumple_dia === diaHoy && data.cumple_mes === mesHoy) {
+    const diaHoy = String(hoy.getDate()).padStart(2, '0');
+    const mesHoy = String(hoy.getMonth() + 1).padStart(2, '0');
+    const cumpleDia = String(data.cumple_dia).padStart(2, '0');
+    const cumpleMes = String(data.cumple_mes).padStart(2, '0');
+    if (cumpleDia === diaHoy && cumpleMes === mesHoy) {
       alert(`🎉 ¡Hoy es el cumpleaños de ${data.nombre || dni}! No te olvides de saludarlo 🎂`);
     }
     const estadoAnterior = {
@@ -446,7 +450,7 @@
       if (updates.cafes >= 8) updates.cafe_disponible = true;
       mensajeFinal = updates.cafes >= 8
         ? `✅ Se sumó 1 cafecito a ${nombre}.\nEl próximo se lo invitamos nosotros ☕🎉`
-        : `✅ Se sumó 1 cafecito a ${nombre}. Total: ${updates.cafes}`;
+        : `✅ Se sumó 1 cafecito a ${nombre}.\nTotal: ${updates.cafes}`;
       document.title = "Admin - Suma cafecito";
       await addDoc(collection(db, "logs"), {
         usuario,
