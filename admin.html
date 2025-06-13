@@ -339,6 +339,18 @@
     if (!dni) return;
     const iframe = document.getElementById("iframeEstado");
     iframe.src = `admin_estado_cliente.html?dni=${dni}`;
+    // Cumpleaños check aquí
+    const ref = doc(db, "clientes", dni);
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      const data = snap.data();
+      const hoy = new Date();
+      const diaHoy = hoy.getDate().toString();
+      const mesHoy = (hoy.getMonth() + 1).toString();
+      if (data.cumple_dia === diaHoy && data.cumple_mes === mesHoy) {
+        alert(`🎉 ¡Hoy es el cumpleaños de ${data.nombre || dni}! No te olvides de saludarlo 🎂`);
+      }
+    }
     preview.classList.add("active");
   });
 
@@ -383,6 +395,13 @@
     }
 
     const data = snap.data();
+    // Cumpleaños check aquí
+    const hoy = new Date();
+    const diaHoy = hoy.getDate().toString();
+    const mesHoy = (hoy.getMonth() + 1).toString();
+    if (data.cumple_dia === diaHoy && data.cumple_mes === mesHoy) {
+      alert(`🎉 ¡Hoy es el cumpleaños de ${data.nombre || dni}! No te olvides de saludarlo 🎂`);
+    }
     const estadoAnterior = {
       ...data,
       ultimo_cafe: data.ultimo_cafe?.toDate?.() || null
