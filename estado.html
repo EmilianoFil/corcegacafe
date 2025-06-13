@@ -29,7 +29,7 @@
   </script>
 </head>
 <body>
-  <div id="loader">
+  <div id="loader" aria-label="Cargando contenido de la tarjeta de cliente">
     <img src="css/img/Corcega_Logo_Original.png" alt="Cargando..." class="galope">
   </div>
 
@@ -151,6 +151,11 @@
         ? `Te faltan ${8 - cafes} para alcanzarlo`
         : "¡El próximo lo invitamos nosotros! 🐎🎉";
 
+      document.getElementById("estado-accesible").textContent =
+        cafes < 8
+          ? `Tenés ${cafes} sello${cafes === 1 ? '' : 's'}. Te faltan ${8 - cafes} para tu café gratis.`
+          : "¡Ya juntaste 8 sellos! El próximo café es gratis.";
+
       const grid = document.getElementById("grid");
 
       const selloCumpleActivo = data.sello_cumpleanios_activo === true;
@@ -192,5 +197,6 @@
 
     consultarCliente(dni);
   </script>
+  <div id="estado-accesible" style="position:absolute; left:-9999px;" aria-live="polite" aria-atomic="true"></div>
 </body>
 </html>
