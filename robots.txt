@@ -1,4 +1,11 @@
 User-agent: *
 Allow: /
 
+Disallow: /admin.html
+Disallow: /login.html
+Disallow: /registro-admin.html
+Disallow: /panel.html
+Disallow: /admin_estado_cliente.html
+Disallow: /emilianofil_admin.html
+
 Sitemap: https://corcegacafe.com.ar/sitemap.txt
