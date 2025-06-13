@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="refresh" content="2; url=https://corcegacafe.com.ar/">
   <title>Abriéndo sitio...</title>
   <meta name="robots" content="noindex">
   <style>
@@ -23,22 +24,12 @@
   <h1>Te estamos llevando a nuestro sitio... 🐎</h1>
   <p>Si no pasa nada, <a href="https://corcegacafe.com.ar/" style="color: white; text-decoration: underline;">hacé clic acá</a>.</p>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { db } from './js/firebase-config.js';
     import {
-      getFirestore,
       collection,
       addDoc,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
-      authDomain: "corcega-loyalty-club.firebaseapp.com",
-      projectId: "corcega-loyalty-club"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
 
     addDoc(collection(db, "logs"), {
       usuario: "Cliente",
@@ -48,7 +39,7 @@
     }).finally(() => {
       setTimeout(() => {
         window.location.href = "https://corcegacafe.com.ar/";
-      }, 800); // suficiente para grabar antes de redirigir
+      }, 800);
     });
   </script>
 </body>
