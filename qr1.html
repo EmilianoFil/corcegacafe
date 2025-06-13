@@ -2,7 +2,6 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="2; url=https://corcegacafe.com.ar/">
   <title>Abriéndo sitio...</title>
   <meta name="robots" content="noindex">
   <style>
@@ -46,6 +45,10 @@
       accion: "EscaneoQR",
       detalles: "Cliente escaneó QR redireccionador",
       timestamp: serverTimestamp()
+    }).finally(() => {
+      setTimeout(() => {
+        window.location.href = "https://corcegacafe.com.ar/";
+      }, 800); // suficiente para grabar antes de redirigir
     });
   </script>
 </body>
