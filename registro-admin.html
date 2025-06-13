@@ -154,7 +154,16 @@
 
       loader.style.display = "none";
       document.title = "Admin - Cliente registrado";
-      mensaje.innerText = `¡Registro exitoso!\nEl cliente ${dni} fue registrado correctamente.` + (sumarCafecito ? "\nY ya se sumó un cafecito ☕" : "");
+      mensaje.innerHTML = `
+        <div style="padding: 20px; background: #01323f; border-radius: 12px; font-size: 17px; color: #00c2cb;">
+          ✅ ¡Registro exitoso!<br>
+          Cliente <strong>${nombre}</strong> (${dni}) registrado correctamente.<br>
+          ${sumarCafecito ? "☕ Y ya se sumó un cafecito." : ""}
+        </div>
+        <div style="margin-top: 16px;">
+          <a href="admin.html" style="background: white; color: #d86634; font-weight: bold; padding: 10px 20px; border-radius: 8px; text-decoration: none;">Volver al panel</a>
+        </div>
+      `;
       form.reset();
     } catch (error) {
       console.error("Error al registrar:", error);
