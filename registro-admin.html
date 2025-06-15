@@ -73,7 +73,7 @@
 <script type="module">
   import { app, db } from './js/firebase-config.js';
   import {
-    doc, setDoc, updateDoc, serverTimestamp
+    doc, setDoc, updateDoc, getDoc, serverTimestamp
   } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
   const params = new URLSearchParams(window.location.search);
@@ -110,6 +110,12 @@
 
     try {
       const clienteRef = doc(db, "clientes", dni);
+      const existing = await getDoc(clienteRef);
+      if (existing.exists()) {
+        mensaje.innerText = "⚠️ Este cliente ya está registrado.";
+        loader.style.display = "none";
+        return;
+      }
       await setDoc(clienteRef, {
       dni,
       nombre,
