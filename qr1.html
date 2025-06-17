@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="2; url=https://corcegacafe.com.ar/">
+  <!-- <meta http-equiv="refresh" content="2; url=https://corcegacafe.com.ar/"> -->
   <meta name="robots" content="noindex, nofollow">
   <title>Abriéndo sitio...</title>
   <style>
@@ -51,7 +51,7 @@
       timestamp: serverTimestamp()
     }).finally(() => {
       setTimeout(() => {
-        window.location.href = "https://corcegacafe.com.ar/";
+        window.location.href = "https://corcegacafe.com.ar/?t=" + Date.now();
       }, 800);
     });
   </script>
