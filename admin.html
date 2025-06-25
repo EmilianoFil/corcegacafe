@@ -427,6 +427,10 @@
       if (data.sigue_instagram && !data.sello_instagram_usado && !data.sello_pendiente) { 
         updates.sello_instagram_usado = true;
       }
+      // reseteo el sello de cumpleaños
+      if (data.sello_cumpleanios_activo) { 
+        updates.sello_cumpleanios_activo = false;
+      }
       if (data.sello_pendiente) {
         updates.cafes = 1;
         updates.cafes_acumulados_total = increment(1);
