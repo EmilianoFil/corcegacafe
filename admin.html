@@ -529,16 +529,16 @@
     btnDeshacer.onclick = async () => {
       const { dni, prevData, usuario } = window.ultimaOperacion;
       const ref = doc(db, "clientes", dni);
-      await updateDoc(ref, {
-        cafes: prevData.cafes,
-        cafes_acumulados_total: prevData.cafes_acumulados_total,
-        cafe_disponible: prevData.cafe_disponible,
-        cafecitos_invitados: prevData.cafecitos_invitados,
-        sigue_instagram: prevData.sigue_instagram ?? false,
-        sello_instagram_usado: prevData.sello_instagram_usado ?? false,
-        sello_pendiente: prevData.sello_pendiente ?? false,
-        ultimo_cafe: prevData.ultimo_cafe ? new Date(prevData.ultimo_cafe) : null
-      });
+    
+      // Restaurar todos los datos usando prevData completo
+      const updates = {};
+      for (const key in prevData) {
+        const value = prevData[key];
+        if (value !== undefined && typeof value !== 'function') {
+          updates[key] = value;
+        }
+      }
+      await updateDoc(ref, updates);
 
       await addDoc(collection(db, "logs"), {
         usuario,
