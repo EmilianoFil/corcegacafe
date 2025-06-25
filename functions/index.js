@@ -19,10 +19,6 @@ exports.enviarMailRegistro = onRequest(
     corsHandler(req, res, async () => {
       const { nombre, mail, dni } = req.body;
       const email = mail;
-      if (dni !== "32531743") {
-        res.status(200).send("Correo no enviado (DNI filtrado)");
-        return;
-      }
 
       const transporter = nodemailer.createTransport({
         service: "gmail",
@@ -90,10 +86,6 @@ exports.enviarMailFelicitaciones = onRequest(
     corsHandler(req, res, async () => {
       const { nombre, mail, dni } = req.body;
       const email = mail;
-      if (dni !== "32531743") {
-        res.status(200).send("Correo de felicitación no enviado (DNI filtrado)");
-        return;
-      }
 
       const transporter = nodemailer.createTransport({
         service: "gmail",
@@ -168,9 +160,6 @@ exports.selloCumpleaniosDiario = onSchedule(
     for (const doc of snapshot.docs) {
       const data = doc.data();
       const { nombre, email, dni, cumple_dia, cumple_mes, sello_cumpleanios_activo } = data;
-
-      // Solo ejecutar para este DNI de prueba
-      if (dni !== "32531743") continue;
 
       if (
         cumple_dia === dia &&
