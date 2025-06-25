@@ -426,6 +426,12 @@
       // if (data.sigue_instagram && !data.sello_instagram_usado) { 
       if (data.sigue_instagram && !data.sello_instagram_usado && !data.sello_pendiente) { 
         updates.sello_instagram_usado = true;
+        await addDoc(collection(db, "logs"), {
+          usuario: dni,
+          accion: "usar_sello_instagram",
+          detalles: `Se marca sello de Instagram como usado para ${dni}`,
+          timestamp: new Date()
+        });
       }
       // reseteo el sello de cumpleaños
       if (data.sello_cumpleanios_activo) { 

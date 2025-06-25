@@ -122,7 +122,7 @@
 
       const data = snap.data();
 
-      if (data.sigue_instagram === true && data.sello_instagram_usado === false && (data.cafes || 0) >= 8) {
+      /*if (data.sigue_instagram === true && data.sello_instagram_usado === false && (data.cafes || 0) >= 8) {
         await updateDoc(ref, { sello_instagram_usado: true });
         await addDoc(collection(db, "logs"), {
           usuario: dni,
@@ -130,7 +130,7 @@
           detalles: `Se marca sello de Instagram como usado para ${dni}`,
           timestamp: new Date()
         });
-      }
+      }*/
 
       await addDoc(collection(db, "logs"), {
         usuario: data.dni,
