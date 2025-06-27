@@ -186,14 +186,69 @@ const altaTexto = alta ? `${formatFecha(alta)} (${dias} días)` : "—";
           <p><strong>DNI:</strong> ${encontrado.dni}</p>
           <p><strong>Nombre:</strong> ${encontrado.nombre}</p>
           <p><strong>Email:</strong> ${encontrado.email}</p>
+          <p><strong>Día de cumpleaños:</strong> <span id="cumple-dia">${encontrado.cumple_dia ?? "—"}</span></p>
+          <p><strong>Mes de cumpleaños:</strong> <span id="cumple-mes">${encontrado.cumple_mes ?? "—"}</span></p>
           <p><strong>Fecha de alta:</strong> ${altaTexto}</p>
           <p><strong>Cafecitos acumulados:</strong> ${encontrado.cafes}</p>
           <p><strong>Total histórico:</strong> ${encontrado.cafes_acumulados_total}</p>
           <p><strong>¿Tiene café gratis?</strong> ${encontrado.cafe_disponible ? "Sí ☕" : "No"}</p>
           <p><strong>Último café:</strong> ${ultimoTexto}</p>
         </div>
+        <div style="margin-top: 20px; text-align: right;">
+          <button id="editarBtn">Editar</button>
+        </div>
       `;
     });
+
+    // --- Lógica de edición ---
+    let enModoEdicion = false;
+
+    function activarEdicion() {
+      if (enModoEdicion) return;
+      enModoEdicion = true;
+
+      const resultado = document.getElementById("resultado");
+
+      resultado.querySelector("p:nth-child(1)").innerHTML = '<strong>DNI:</strong> <input id="edit-dni" value="' + encontrado.dni + '">';
+      resultado.querySelector("p:nth-child(3)").innerHTML = '<strong>Email:</strong> <input id="edit-email" value="' + encontrado.email + '">';
+      resultado.querySelector("p:nth-child(8)").innerHTML = '<strong>Día de cumpleaños:</strong> <input id="edit-cumple-dia" type="number" min="1" max="31" value="' + (encontrado.cumple_dia ?? '') + '">';
+      resultado.querySelector("p:nth-child(9)").innerHTML = '<strong>Mes de cumpleaños:</strong> <input id="edit-cumple-mes" type="number" min="1" max="12" value="' + (encontrado.cumple_mes ?? '') + '">';
+
+      const acciones = document.createElement("div");
+      acciones.style.marginTop = "20px";
+      acciones.innerHTML = `
+        <button id="guardarBtn">Guardar</button>
+        <button id="cancelarBtn" style="margin-left: 10px;">Cancelar</button>
+      `;
+      resultado.appendChild(acciones);
+
+      document.getElementById("guardarBtn").addEventListener("click", async () => {
+        const nuevoDNI = document.getElementById("edit-dni").value.trim();
+        const nuevoEmail = document.getElementById("edit-email").value.trim();
+        const nuevoNombre = document.getElementById("edit-nombre").value.trim();
+        const nuevoDia = parseInt(document.getElementById("edit-cumple-dia").value);
+        const nuevoMes = parseInt(document.getElementById("edit-cumple-mes").value);
+
+        const docRef = doc(db, "clientes", nuevoDNI);
+        await setDoc(docRef, {
+          ...encontrado,
+          dni: nuevoDNI,
+          email: nuevoEmail,
+          nombre: nuevoNombre,
+          cumple_dia: nuevoDia || null,
+          cumple_mes: nuevoMes || null
+        });
+
+        alert("Datos actualizados");
+        window.location.reload();
+      });
+
+      document.getElementById("cancelarBtn").addEventListener("click", () => {
+        window.location.reload();
+      });
+    }
+
+    document.getElementById("editarBtn")?.addEventListener("click", activarEdicion);
   </script>
 </body>
 </html>
