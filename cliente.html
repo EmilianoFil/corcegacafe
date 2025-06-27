@@ -122,7 +122,7 @@
     import { auth, onAuthStateChanged } from './js/firebase-auth.js';
     import { db } from './js/firebase-config.js';
     import {
-      doc, getDoc, collection, getDocs
+      doc, getDoc, collection, getDocs, setDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     onAuthStateChanged(auth, async (user) => {
@@ -176,7 +176,7 @@
         return `${d}/${m}/${y}`;
       };
 
-const altaTexto = alta ? `${formatFecha(alta)} (${dias} días)` : "—";
+      const altaTexto = alta ? `${formatFecha(alta)} (${dias} días)` : "—";
 
       const ultimo = encontrado.ultimo_cafe?.toDate?.();
       const ultimoTexto = ultimo ? ultimo.toLocaleString() : "—";
@@ -198,57 +198,55 @@ const altaTexto = alta ? `${formatFecha(alta)} (${dias} días)` : "—";
           <button id="editarBtn">Editar</button>
         </div>
       `;
-    });
 
-    // --- Lógica de edición ---
-    let enModoEdicion = false;
+      // --- Lógica de edición ---
+      let enModoEdicion = false;
 
-    function activarEdicion() {
-      if (enModoEdicion) return;
-      enModoEdicion = true;
+      function activarEdicion() {
+        if (enModoEdicion) return;
+        enModoEdicion = true;
 
-      const resultado = document.getElementById("resultado");
+        resultado.querySelector("p:nth-child(1)").innerHTML = '<strong>DNI:</strong> <input id="edit-dni" value="' + encontrado.dni + '">';
+        resultado.querySelector("p:nth-child(3)").innerHTML = '<strong>Email:</strong> <input id="edit-email" value="' + encontrado.email + '">';
+        resultado.querySelector("p:nth-child(8)").innerHTML = '<strong>Día de cumpleaños:</strong> <input id="edit-cumple-dia" type="number" min="1" max="31" value="' + (encontrado.cumple_dia ?? '') + '">';
+        resultado.querySelector("p:nth-child(9)").innerHTML = '<strong>Mes de cumpleaños:</strong> <input id="edit-cumple-mes" type="number" min="1" max="12" value="' + (encontrado.cumple_mes ?? '') + '">';
 
-      resultado.querySelector("p:nth-child(1)").innerHTML = '<strong>DNI:</strong> <input id="edit-dni" value="' + encontrado.dni + '">';
-      resultado.querySelector("p:nth-child(3)").innerHTML = '<strong>Email:</strong> <input id="edit-email" value="' + encontrado.email + '">';
-      resultado.querySelector("p:nth-child(8)").innerHTML = '<strong>Día de cumpleaños:</strong> <input id="edit-cumple-dia" type="number" min="1" max="31" value="' + (encontrado.cumple_dia ?? '') + '">';
-      resultado.querySelector("p:nth-child(9)").innerHTML = '<strong>Mes de cumpleaños:</strong> <input id="edit-cumple-mes" type="number" min="1" max="12" value="' + (encontrado.cumple_mes ?? '') + '">';
+        const acciones = document.createElement("div");
+        acciones.style.marginTop = "20px";
+        acciones.innerHTML = `
+          <button id="guardarBtn">Guardar</button>
+          <button id="cancelarBtn" style="margin-left: 10px;">Cancelar</button>
+        `;
+        resultado.appendChild(acciones);
 
-      const acciones = document.createElement("div");
-      acciones.style.marginTop = "20px";
-      acciones.innerHTML = `
-        <button id="guardarBtn">Guardar</button>
-        <button id="cancelarBtn" style="margin-left: 10px;">Cancelar</button>
-      `;
-      resultado.appendChild(acciones);
+        document.getElementById("guardarBtn").addEventListener("click", async () => {
+          const nuevoDNI = document.getElementById("edit-dni").value.trim();
+          const nuevoEmail = document.getElementById("edit-email").value.trim();
+          const nuevoNombre = document.getElementById("edit-nombre")?.value.trim() ?? encontrado.nombre;
+          const nuevoDia = parseInt(document.getElementById("edit-cumple-dia").value);
+          const nuevoMes = parseInt(document.getElementById("edit-cumple-mes").value);
 
-      document.getElementById("guardarBtn").addEventListener("click", async () => {
-        const nuevoDNI = document.getElementById("edit-dni").value.trim();
-        const nuevoEmail = document.getElementById("edit-email").value.trim();
-        const nuevoNombre = document.getElementById("edit-nombre").value.trim();
-        const nuevoDia = parseInt(document.getElementById("edit-cumple-dia").value);
-        const nuevoMes = parseInt(document.getElementById("edit-cumple-mes").value);
+          const docRef = doc(db, "clientes", nuevoDNI);
+          await setDoc(docRef, {
+            ...encontrado,
+            dni: nuevoDNI,
+            email: nuevoEmail,
+            nombre: nuevoNombre,
+            cumple_dia: nuevoDia || null,
+            cumple_mes: nuevoMes || null
+          });
 
-        const docRef = doc(db, "clientes", nuevoDNI);
-        await setDoc(docRef, {
-          ...encontrado,
-          dni: nuevoDNI,
-          email: nuevoEmail,
-          nombre: nuevoNombre,
-          cumple_dia: nuevoDia || null,
-          cumple_mes: nuevoMes || null
+          alert("Datos actualizados");
+          window.location.reload();
         });
 
-        alert("Datos actualizados");
-        window.location.reload();
-      });
+        document.getElementById("cancelarBtn").addEventListener("click", () => {
+          window.location.reload();
+        });
+      }
 
-      document.getElementById("cancelarBtn").addEventListener("click", () => {
-        window.location.reload();
-      });
-    }
-
-    document.getElementById("editarBtn")?.addEventListener("click", activarEdicion);
+      resultado.querySelector("#editarBtn")?.addEventListener("click", activarEdicion);
+    });
   </script>
 </body>
 </html>
