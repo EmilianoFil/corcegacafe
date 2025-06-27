@@ -125,12 +125,13 @@
       doc, getDoc, collection, getDocs, setDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+    let currentUser = null;
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = "login.html";
         return;
       }
-
+      currentUser = user;
       const ref = doc(db, "admin", user.uid);
       const snap = await getDoc(ref);
       if (!snap.exists() || snap.data().rol !== "dueño") {
@@ -235,6 +236,21 @@
           const nuevoMes = parseInt(document.getElementById("edit-cumple-mes").value);
 
           try {
+            // Detectar cambios y loguearlos
+            const cambios = [];
+            if (nuevoDNI !== encontrado.dni) cambios.push(`DNI: ${encontrado.dni} → ${nuevoDNI}`);
+            if (nuevoEmail !== encontrado.email) cambios.push(`Email: ${encontrado.email} → ${nuevoEmail}`);
+            if (nuevoNombre !== encontrado.nombre) cambios.push(`Nombre: ${encontrado.nombre} → ${nuevoNombre}`);
+            if ((nuevoDia || null) !== (encontrado.cumple_dia ?? null)) cambios.push(`Día cumple: ${encontrado.cumple_dia ?? "—"} → ${nuevoDia || "—"}`);
+            if ((nuevoMes || null) !== (encontrado.cumple_mes ?? null)) cambios.push(`Mes cumple: ${encontrado.cumple_mes ?? "—"} → ${nuevoMes || "—"}`);
+
+            if (cambios.length === 0) {
+              alert("No se detectaron cambios.");
+              guardarBtn.disabled = false;
+              guardarBtn.innerText = "Guardar";
+              return;
+            }
+
             const docRef = doc(db, "clientes", nuevoDNI);
             await setDoc(docRef, {
               ...encontrado,
@@ -243,6 +259,16 @@
               nombre: nuevoNombre,
               cumple_dia: nuevoDia || null,
               cumple_mes: nuevoMes || null
+            });
+
+            // Log de cambios
+            const logRef = doc(collection(db, "logs"));
+            await setDoc(logRef, {
+              usuario: currentUser.email,
+              accion: "editar_cliente",
+              dni: nuevoDNI,
+              detalles: cambios.join(" | "),
+              timestamp: new Date()
             });
 
             alert("Datos actualizados");
