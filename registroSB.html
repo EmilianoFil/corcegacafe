@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<script>
+  fetch("head.html")
+    .then(res => res.text())
+    .then(head => document.head.innerHTML += head);
+</script>
+<link rel="stylesheet" href="css/base.css" />
+<link rel="stylesheet" href="css/layout.css" />
+<link rel="stylesheet" href="css/components/branding.css" />
+<link rel="stylesheet" href="css/components/inputs.css" />
+<link rel="stylesheet" href="css/components/buttons.css" />
+<link rel="stylesheet" href="css/components/messages.css" />
+<link rel="stylesheet" href="css/components/loader.css" />
+<link rel="stylesheet" href="css/components/footer.css" />
+<style>
+  .pasaporte-toggle {
+    display: flex;
+    align-items: center;
+  }
+  .pasaporte-toggle label {
+    margin-left: 0.5em;
+    font-family: 'Playfair Display', serif;
+    font-size: 0.9em;
+  }
+</style>
+</head>
+<body>
+  <div class="menu-style">
+  <img src="css/img/logo_color_secundario_2.png" alt="Dársena Café" class="logo" />
+  <form id="registroForm" data-gtm-form-interact-id="0">
+    <div style="display: flex; align-items: center; gap: 0.5em;">
+      <select id="tipoDocumento" name="tipoDocumento" class="input-like">
+        <option value="DNI" selected>DNI</option>
+        <option value="PA">PA</option>
+      </select>
+      <input type="text" name="dni" id="dni" placeholder="DNI" aria-label="Número de documento" required style="flex: 1;" pattern="[0-9]{7,8}" inputmode="numeric" maxlength="8">
+    </div>
+    <input type="text" name="nombre" placeholder="Nombre y apellido" aria-label="Nombre y apellido" required pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$" title="Sólo letras y espacios">
+    <input type="email" name="mail" placeholder="Correo electrónico" aria-label="Correo electrónico" required="" pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$">
+    <p>¿Cuándo es tu cumpleaños?</p>
+    <div>
+  <select name="cumple_dia" required class="input-like" aria-label="Día de cumpleaños">
+    <option value="" disabled selected hidden>Día</option>
+    <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+    <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+    <option>11</option><option>12</option><option>13</option><option>14</option><option>15</option>
+    <option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
+    <option>21</option><option>22</option><option>23</option><option>24</option><option>25</option>
+    <option>26</option><option>27</option><option>28</option><option>29</option><option>30</option>
+    <option>31</option>
+  </select>
+
+  <select name="cumple_mes" required class="input-like" aria-label="Mes de cumpleaños">
+    <option value="" disabled selected hidden>Mes</option>
+    <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+    <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+    <option>11</option><option>12</option>
+  </select>
+</div>
+
+    <button type="submit" class="btn-primary" aria-label="Registrarme en el club">Registrarme</button>
+  </form>
+
+  <div id="loader">
+    <img src="css/img/logo_original_sin_fondo.png" class="galope">
+  </div>
+  <div id="mensaje-container" class="mensaje-container">
+    <div class="mensaje-box">
+      <p id="mensaje" class="mensaje-text"></p>
+      <div class="mensaje-botones">
+        <button id="volverBtn" class="btn-primary">Volver al formulario</button>
+        <button id="verTarjetaBtn" class="btn-primary" style="display: none;">Mirá tu tarjeta</button>
+      </div>
+    </div>
+  </div>
+  <div class="logout">
+    <a href="index.html" class="btn-volver" aria-label="Volver al inicio">Ir a página principal</a>
+  </div>
+  <div id="coupon-birds-embed-div"></div>
+  <div id="footer-container"></div>
+  <script>
+    fetch("footer.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("footer-container").innerHTML = html;
+      });
+  </script>
+</div>
+
+<script type="module">
+  import { registrarClientePublico } from './js/api.js';
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    const dniParam = params.get("dni");
+    if (dniParam) document.querySelector('input[name="dni"]').value = dniParam;
+
+    const dniInput = document.getElementById("dni");
+    const tipoDocumento = document.getElementById("tipoDocumento");
+    tipoDocumento.addEventListener("change", () => {
+      if (tipoDocumento.value === "PA") {
+        dniInput.removeAttribute("pattern");
+        dniInput.removeAttribute("maxlength");
+        dniInput.setAttribute("inputmode", "text");
+        dniInput.setAttribute("placeholder", "Pasaporte");
+        dniInput.style.textTransform = "uppercase";
+      } else {
+        dniInput.setAttribute("pattern", "[0-9]{7,8}");
+        dniInput.setAttribute("maxlength", "8");
+        dniInput.setAttribute("inputmode", "numeric");
+        dniInput.setAttribute("placeholder", "DNI");
+        dniInput.style.textTransform = "none";
+      }
+    });
+
+    document.getElementById("registroForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      const form = e.target;
+      const dni = form.dni.value.trim();
+      const nombre = form.nombre.value.trim();
+      const email = form.mail.value.trim();
+      const cumple_dia = parseInt(form.cumple_dia.value);
+      const cumple_mes = parseInt(form.cumple_mes.value);
+
+      if (tipoDocumento.value === "DNI" && !/^\d{7,8}$/.test(dni)) {
+        document.getElementById("mensaje").innerText = "El DNI debe tener entre 7 y 8 números.";
+        document.getElementById("mensaje-container").style.display = "block";
+        document.getElementById("volverBtn").addEventListener("click", () => {
+          form.reset();
+          form.style.display = "block";
+          document.getElementById("mensaje-container").style.display = "none";
+        }, { once: true });
+        return;
+      }
+
+      if (!cumple_dia || !cumple_mes) {
+        document.getElementById("mensaje").innerText = "⚠️ El día y mes de cumpleaños son obligatorios.";
+        document.getElementById("mensaje-container").style.display = "block";
+        document.getElementById("volverBtn").addEventListener("click", () => {
+          form.reset();
+          form.style.display = "block";
+          document.getElementById("mensaje-container").style.display = "none";
+        }, { once: true });
+        return;
+      }
+
+      try {
+        document.getElementById("loader").style.display = "block";
+        form.style.display = "none";
+
+        const res = await registrarClientePublico({
+          dni,
+          nombre,
+          email,
+          cumple_dia,
+          cumple_mes
+        });
+
+        // Enviar mail de bienvenida usando Firebase Function
+        await fetch("https://us-central1-sandbox-cafe-emilianofil.cloudfunctions.net/enviarMailRegistro", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dni, nombre, mail: email })
+        })
+        .then(() => {
+          console.log("📧 Mail de bienvenida enviado con éxito.");
+        })
+        .catch(error => {
+          console.error("❌ Error al enviar el mail:", error);
+        });
+
+        document.title = "Cliente registrado";
+        document.getElementById("mensaje").innerText = "¡Registro exitoso!\nYa empezás a sumar sellos.\n ☕️\n";
+
+        const verTarjetaBtn = document.getElementById("verTarjetaBtn");
+        verTarjetaBtn.style.display = "inline-block";
+        verTarjetaBtn.onclick = () => {
+          window.location.href = `estado.html?dni=${dni}`;
+        };
+
+        if (typeof gtag === 'function') {
+          gtag('event', 'registro_cliente', {
+            origen: 'registro_publico',
+            dni: dni
+          });
+        }
+      } catch (error) {
+        if (error.message === 'EXISTE') {
+          document.getElementById("mensaje").innerText = "Ya estás registrado en el club.";
+          const volverBtn = document.getElementById("volverBtn");
+          volverBtn.textContent = "Mirá tu tarjeta";
+          volverBtn.style.display = "inline-block";
+          volverBtn.onclick = () => {
+            window.location.href = `estado.html?dni=${dni}`;
+          };
+        } else {
+          console.error("Error en el registro:", error);
+          document.getElementById("mensaje").innerText = "Hubo un error. Probá de nuevo más tarde.";
+        }
+      } finally {
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("mensaje-container").style.display = "block";
+      }
+    });
+  });
+</script>
+</body>
+</html>
