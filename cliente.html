@@ -266,7 +266,6 @@
             await setDoc(logRef, {
               usuario: currentUser.email,
               accion: "editar_cliente",
-              dni: nuevoDNI,
               detalles: cambios.join(" | "),
               timestamp: new Date()
             });
