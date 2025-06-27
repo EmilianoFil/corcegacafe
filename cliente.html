@@ -206,10 +206,14 @@
         if (enModoEdicion) return;
         enModoEdicion = true;
 
-        resultado.querySelector("p:nth-child(1)").innerHTML = '<strong>DNI:</strong> <input id="edit-dni" value="' + encontrado.dni + '">';
-        resultado.querySelector("p:nth-child(3)").innerHTML = '<strong>Email:</strong> <input id="edit-email" value="' + encontrado.email + '">';
-        resultado.querySelector("p:nth-child(8)").innerHTML = '<strong>Día de cumpleaños:</strong> <input id="edit-cumple-dia" type="number" min="1" max="31" value="' + (encontrado.cumple_dia ?? '') + '">';
-        resultado.querySelector("p:nth-child(9)").innerHTML = '<strong>Mes de cumpleaños:</strong> <input id="edit-cumple-mes" type="number" min="1" max="12" value="' + (encontrado.cumple_mes ?? '') + '">';
+        resultado.querySelector("#editarBtn").style.display = "none";
+
+        const inputStyle = 'style="width: 200px; padding: 6px;"';
+
+        resultado.querySelector("p:nth-child(1)").innerHTML = '<strong>DNI:</strong> <input id="edit-dni" ' + inputStyle + ' value="' + encontrado.dni + '">';
+        resultado.querySelector("p:nth-child(3)").innerHTML = '<strong>Email:</strong> <input id="edit-email" ' + inputStyle + ' value="' + encontrado.email + '">';
+        resultado.querySelector("p:nth-child(8)").innerHTML = '<strong>Día de cumpleaños:</strong> <input id="edit-cumple-dia" type="number" min="1" max="31" ' + inputStyle + ' value="' + (encontrado.cumple_dia ?? '') + '">';
+        resultado.querySelector("p:nth-child(9)").innerHTML = '<strong>Mes de cumpleaños:</strong> <input id="edit-cumple-mes" type="number" min="1" max="12" ' + inputStyle + ' value="' + (encontrado.cumple_mes ?? '') + '">';
 
         const acciones = document.createElement("div");
         acciones.style.marginTop = "20px";
@@ -220,24 +224,34 @@
         resultado.appendChild(acciones);
 
         document.getElementById("guardarBtn").addEventListener("click", async () => {
+          const guardarBtn = document.getElementById("guardarBtn");
+          guardarBtn.disabled = true;
+          guardarBtn.innerText = "Guardando...";
+
           const nuevoDNI = document.getElementById("edit-dni").value.trim();
           const nuevoEmail = document.getElementById("edit-email").value.trim();
           const nuevoNombre = document.getElementById("edit-nombre")?.value.trim() ?? encontrado.nombre;
           const nuevoDia = parseInt(document.getElementById("edit-cumple-dia").value);
           const nuevoMes = parseInt(document.getElementById("edit-cumple-mes").value);
 
-          const docRef = doc(db, "clientes", nuevoDNI);
-          await setDoc(docRef, {
-            ...encontrado,
-            dni: nuevoDNI,
-            email: nuevoEmail,
-            nombre: nuevoNombre,
-            cumple_dia: nuevoDia || null,
-            cumple_mes: nuevoMes || null
-          });
+          try {
+            const docRef = doc(db, "clientes", nuevoDNI);
+            await setDoc(docRef, {
+              ...encontrado,
+              dni: nuevoDNI,
+              email: nuevoEmail,
+              nombre: nuevoNombre,
+              cumple_dia: nuevoDia || null,
+              cumple_mes: nuevoMes || null
+            });
 
-          alert("Datos actualizados");
-          window.location.reload();
+            alert("Datos actualizados");
+            window.location.reload();
+          } catch (error) {
+            guardarBtn.disabled = false;
+            guardarBtn.innerText = "Guardar";
+            alert("Error al guardar los datos: " + error.message);
+          }
         });
 
         document.getElementById("cancelarBtn").addEventListener("click", () => {
