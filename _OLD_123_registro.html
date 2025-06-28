@@ -28,33 +28,17 @@
     gtag('js', new Date());
     gtag('config', 'G-NXMC00DZ81');
   </script>
-<style>
-  .pasaporte-toggle {
-    display: flex;
-    align-items: center;
-  }
-  .pasaporte-toggle label {
-    margin-left: 0.5em;
-    font-family: 'Playfair Display', serif;
-    font-size: 0.9em;
-  }
-</style>
+
 </head>
 <body>
   <div class="menu-style">
   <img src="css/img/Corcega_Logo_Letras_Blanco.png" alt="Córcega Café" class="logo" />
   <form id="registroForm" data-gtm-form-interact-id="0">
-    <div style="display: flex; align-items: center; gap: 0.5em;">
-      <select id="tipoDocumento" name="tipoDocumento" class="input-like">
-        <option value="DNI" selected>DNI</option>
-        <option value="PA">PA</option>
-      </select>
-      <input type="text" name="dni" id="dni" placeholder="DNI" aria-label="Número de documento" required style="flex: 1;" pattern="[0-9]{7,8}" inputmode="numeric" maxlength="8">
-    </div>
+    <input type="tel" name="dni" id="dni" placeholder="DNI" aria-label="Número de DNI" inputmode="numeric" pattern="[0-9]{7,8}" maxlength="8" required title="Debe tener entre 7 y 8 números">
     <input type="text" name="nombre" placeholder="Nombre y apellido" aria-label="Nombre y apellido" required pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$" title="Sólo letras y espacios">
     <input type="email" name="mail" placeholder="Correo electrónico" aria-label="Correo electrónico" required="" pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$">
-    <p>¿Cuándo es tu cumpleaños?</p>
-    <div>
+    <p style="margin-top: 16px; margin-bottom: 4px; font-weight: bold; font-size: 15px;">¿Cuándo es tu cumpleaños?</p>
+    <div style="display: flex; gap: 4%; justify-content: center; flex-wrap: wrap;">
   <select name="cumple_dia" required class="input-like" aria-label="Día de cumpleaños">
     <option value="" disabled selected hidden>Día</option>
     <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
@@ -117,24 +101,6 @@
     const dniParam = params.get("dni");
     if (dniParam) document.querySelector('input[name="dni"]').value = dniParam;
 
-    const dniInput = document.getElementById("dni");
-    const tipoDocumento = document.getElementById("tipoDocumento");
-    tipoDocumento.addEventListener("change", () => {
-      if (tipoDocumento.value === "PA") {
-        dniInput.removeAttribute("pattern");
-        dniInput.removeAttribute("maxlength");
-        dniInput.setAttribute("inputmode", "text");
-        dniInput.setAttribute("placeholder", "Pasaporte");
-        dniInput.style.textTransform = "uppercase";
-      } else {
-        dniInput.setAttribute("pattern", "[0-9]{7,8}");
-        dniInput.setAttribute("maxlength", "8");
-        dniInput.setAttribute("inputmode", "numeric");
-        dniInput.setAttribute("placeholder", "DNI");
-        dniInput.style.textTransform = "none";
-      }
-    });
-
     document.getElementById("registroForm").addEventListener("submit", async function(e) {
       e.preventDefault();
 
@@ -145,7 +111,7 @@
       const cumple_dia = parseInt(form.cumple_dia.value);
       const cumple_mes = parseInt(form.cumple_mes.value);
 
-      if (tipoDocumento.value === "DNI" && !/^\d{7,8}$/.test(dni)) {
+      if (!/^\d{7,8}$/.test(dni)) {
         document.getElementById("mensaje").innerText = "El DNI debe tener entre 7 y 8 números.";
         document.getElementById("mensaje-container").style.display = "block";
         document.getElementById("volverBtn").addEventListener("click", () => {
