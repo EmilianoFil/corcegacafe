@@ -167,7 +167,13 @@
       contenedor.style.display = "block";
 
       const clientesSnap = await getDocs(collection(db, "clientes"));
-      const logsSnap = await getDocs(query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(5)));
+      // Optimizado: solo escaneos de QR de la semana actual
+      const logsQuery = query(
+        collection(db, "logs"),
+        where("accion", "==", "EscaneoQR"),
+        where("timestamp", ">=", semanaActualInicio)
+      );
+      const logsSnap = await getDocs(logsQuery);
 
       let totalClientes = 0;
       let totalCafes = 0;
@@ -226,19 +232,9 @@
         })
         .join("");
 
-      // Contar escaneos de QR en la última semana
-      let escaneosQR = 0;
-      logsSnap.forEach(doc => {
-        const d = doc.data();
-        const t = d.timestamp?.toDate?.();
-        if (d.accion === "EscaneoQR" && t && t >= semanaActualInicio) {
-          escaneosQR++;
-        }
-      });
-
       document.getElementById("resumen").innerHTML = `
         <p><strong>Clientes registrados:</strong> ${totalClientes} ${variacionHtml}</p>
-        <p><strong>Escaneos de QR esta semana:</strong> ${escaneosQR}</p>
+        <p><strong>Escaneos de QR esta semana:</strong> ${logsSnap.size}</p>
         <p><strong>Total de cafecitos servidos:</strong> ${totalCafes}</p>
         <p><strong>Cafecitos a invitar:</strong> ${cafesGratis}</p>
         ${cafesGratis > 0 ? `<ul>${listaGratis}</ul>` : ""}
