@@ -36,7 +36,7 @@
       <input type="email" name="mail" placeholder="Correo electrónico" pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" />
       <p style="margin-top: 16px; margin-bottom: 4px; font-weight: bold; font-size: 15px;">¿Cuándo es su cumpleaños?</p>
       <div style="display: flex; gap: 4%; justify-content: center; flex-wrap: wrap;">
-        <select name="cumple_dia" required class="input-like">
+        <select name="cumple_dia" class="input-like">
           <option value="" disabled selected hidden>Día</option>
           <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
           <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
@@ -46,7 +46,7 @@
           <option>26</option><option>27</option><option>28</option><option>29</option><option>30</option>
           <option>31</option>
         </select>
-        <select name="cumple_mes" required class="input-like">
+        <select name="cumple_mes" class="input-like">
           <option value="" disabled selected hidden>Mes</option>
           <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
           <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
@@ -102,11 +102,12 @@
       return;
     }
 
+    /* Elimino validación de día y mes de cumpleaños
     if (!cumple_dia || !cumple_mes) {
       mensaje.innerText = "⚠️ El día y mes de cumpleaños son obligatorios.";
       loader.style.display = "none";
       return;
-    }
+    }*/
 
     try {
       const clienteRef = doc(db, "clientes", dni);

@@ -55,7 +55,7 @@
     <input type="email" name="mail" placeholder="Correo electrónico" aria-label="Correo electrónico" required="" pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$">
     <p>¿Cuándo es tu cumpleaños?</p>
     <div>
-  <select name="cumple_dia" required class="input-like" aria-label="Día de cumpleaños">
+  <select name="cumple_dia" class="input-like" aria-label="Día de cumpleaños">
     <option value="" disabled selected hidden>Día</option>
     <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
     <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
@@ -66,7 +66,7 @@
     <option>31</option>
   </select>
 
-  <select name="cumple_mes" required class="input-like" aria-label="Mes de cumpleaños">
+  <select name="cumple_mes" class="input-like" aria-label="Mes de cumpleaños">
     <option value="" disabled selected hidden>Mes</option>
     <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
     <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
@@ -156,6 +156,7 @@
         return;
       }
 
+      /* Elimino obligatoriedad de día y mes de cumpleaños
       if (!cumple_dia || !cumple_mes) {
         document.getElementById("mensaje").innerText = "⚠️ El día y mes de cumpleaños son obligatorios.";
         document.getElementById("mensaje-container").style.display = "block";
@@ -166,7 +167,7 @@
         }, { once: true });
         loader.style.display = "none";
         return;
-      }
+      }*/
 
       const docRef = doc(db, "clientes", dni);
       const existing = await getDoc(docRef);
