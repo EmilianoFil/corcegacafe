@@ -226,8 +226,19 @@
         })
         .join("");
 
+      // Contar escaneos de QR en la última semana
+      let escaneosQR = 0;
+      logsSnap.forEach(doc => {
+        const d = doc.data();
+        const t = d.timestamp?.toDate?.();
+        if (d.accion === "EscaneoQR" && t && t >= semanaActualInicio) {
+          escaneosQR++;
+        }
+      });
+
       document.getElementById("resumen").innerHTML = `
         <p><strong>Clientes registrados:</strong> ${totalClientes} ${variacionHtml}</p>
+        <p><strong>Escaneos de QR esta semana:</strong> ${escaneosQR}</p>
         <p><strong>Total de cafecitos servidos:</strong> ${totalCafes}</p>
         <p><strong>Cafecitos a invitar:</strong> ${cafesGratis}</p>
         ${cafesGratis > 0 ? `<ul>${listaGratis}</ul>` : ""}
