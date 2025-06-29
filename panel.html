@@ -241,7 +241,7 @@
         ${cafesGratis > 0 ? `<ul>${listaGratis}</ul>` : ""}
       `;
 
-      document.getElementById("top").innerHTML = topClientes.slice(0, 5).map(c => `
+      document.getElementById("top").innerHTML = topClientes.slice(0, 10).map(c => `
         <li><strong>${c.nombre}</strong> - ${c.cafes_acumulados_total || 0} cafecitos</li>
       `).join("");
 
@@ -275,7 +275,7 @@
       </section>
 
       <section>
-        <h2>Top 5 clientes</h2>
+        <h2>Top 10 clientes</h2>
         <ul id="top"></ul>
       </section>
 
