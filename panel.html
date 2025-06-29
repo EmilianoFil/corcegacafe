@@ -245,12 +245,6 @@
         <li><strong>${c.nombre}</strong> - ${c.cafes_acumulados_total || 0} cafecitos</li>
       `).join("");
 
-      document.getElementById("logs").innerHTML = logsSnap.docs.map(doc => {
-        const d = doc.data();
-        const t = d.timestamp?.toDate().toLocaleString() || "-";
-        return `<li><strong>${d.usuario}</strong>: ${d.accion} - ${d.detalles} <em>${t}</em></li>`;
-      }).join("");
-
       document.getElementById("loader").style.display = "none";
       document.querySelector(".menu-style").style.display = "block";
     });
@@ -285,10 +279,6 @@
         <ul id="top"></ul>
       </section>
 
-      <section>
-        <h2>Últimas acciones</h2>
-        <ul id="logs"></ul>
-      </section>
     </div>
   </div>
 </body>
