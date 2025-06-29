@@ -167,6 +167,16 @@
       contenedor.style.display = "block";
 
       const clientesSnap = await getDocs(collection(db, "clientes"));
+
+      const ahora = new Date();
+      const semanaActualInicio = new Date(ahora);
+      semanaActualInicio.setDate(ahora.getDate() - 7);
+
+      const semanaPasadaInicio = new Date(ahora);
+      semanaPasadaInicio.setDate(ahora.getDate() - 14);
+      const semanaPasadaFin = new Date(ahora);
+      semanaPasadaFin.setDate(ahora.getDate() - 7);
+
       // Optimizado: solo escaneos de QR de la semana actual
       const logsQuery = query(
         collection(db, "logs"),
@@ -179,15 +189,6 @@
       let totalCafes = 0;
       let cafesGratis = 0;
       const topClientes = [];
-
-      const ahora = new Date();
-      const semanaActualInicio = new Date(ahora);
-      semanaActualInicio.setDate(ahora.getDate() - 7);
-
-      const semanaPasadaInicio = new Date(ahora);
-      semanaPasadaInicio.setDate(ahora.getDate() - 14);
-      const semanaPasadaFin = new Date(ahora);
-      semanaPasadaFin.setDate(ahora.getDate() - 7);
 
       let semanaActual = 0;
       let semanaPasada = 0;
