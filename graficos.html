@@ -112,19 +112,28 @@
         }
       });
 
+      // Nueva lógica sincronizada por índice para fechas, labels y datasets
       const formatter = new Intl.DateTimeFormat("es-AR", { weekday: "short" });
-      const fechas = Object.keys(statsActual);
-      const labels = fechas.map(f => {
+
+      const fechasActual = Object.keys(statsActual);
+      const fechasPrevio = Object.keys(statsPrevio);
+
+      // Asegurar orden cronológico
+      fechasActual.sort();
+      fechasPrevio.sort();
+
+      const labels = fechasActual.map(f => {
         const fecha = new Date(f);
-        return formatter.format(fecha).charAt(0).toUpperCase() + formatter.format(fecha).slice(1);
+        const dia = formatter.format(fecha);
+        return dia.charAt(0).toUpperCase() + dia.slice(1);
       });
 
-      const registrosActual = fechas.map(f => statsActual[f].registro);
-      const registrosPrevio = fechas.map(f => statsPrevio[f]?.registro || 0);
-      const qrsActual = fechas.map(f => statsActual[f].qr);
-      const qrsPrevio = fechas.map(f => statsPrevio[f]?.qr || 0);
-      const cafesActual = fechas.map(f => statsActual[f].cafe);
-      const cafesPrevio = fechas.map(f => statsPrevio[f]?.cafe || 0);
+      const registrosActual = fechasActual.map(f => statsActual[f].registro);
+      const registrosPrevio = fechasPrevio.map(f => statsPrevio[f]?.registro || 0);
+      const qrsActual = fechasActual.map(f => statsActual[f].qr);
+      const qrsPrevio = fechasPrevio.map(f => statsPrevio[f]?.qr || 0);
+      const cafesActual = fechasActual.map(f => statsActual[f].cafe);
+      const cafesPrevio = fechasPrevio.map(f => statsPrevio[f]?.cafe || 0);
 
       // Debug visual: mostrar registros de la semana anterior
       console.log("Semana anterior - registros:", statsPrevio);
