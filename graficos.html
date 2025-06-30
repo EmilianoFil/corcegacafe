@@ -154,19 +154,28 @@
           labels,
           datasets: [
             {
-              label: "Semana actual",
-              data: registrosActual,
-              backgroundColor: "#01323f"
-            },
-            {
               label: "Semana anterior",
               data: registrosPrevio,
               backgroundColor: "#008ba4"
+            },
+            {
+              label: "Semana actual",
+              data: registrosActual,
+              backgroundColor: "#01323f"
             }
           ]
         },
         options: {
           plugins: {
+            title: {
+              display: true,
+              text: "Clientes registrados por día",
+              color: "#e8d8cc",
+              font: {
+                size: 18
+              },
+              padding: 20
+            },
             legend: {
               labels: {
                 color: "#e8d8cc"
@@ -190,19 +199,28 @@
           labels,
           datasets: [
             {
-              label: "Semana actual",
-              data: qrsActual,
-              backgroundColor: "#01323f"
-            },
-            {
               label: "Semana anterior",
               data: qrsPrevio,
               backgroundColor: "#008ba4"
+            },
+            {
+              label: "Semana actual",
+              data: qrsActual,
+              backgroundColor: "#01323f"
             }
           ]
         },
         options: {
           plugins: {
+            title: {
+              display: true,
+              text: "QRs escaneados por día",
+              color: "#e8d8cc",
+              font: {
+                size: 18
+              },
+              padding: 20
+            },
             legend: {
               labels: {
                 color: "#e8d8cc"
@@ -226,19 +244,28 @@
           labels,
           datasets: [
             {
-              label: "Semana actual",
-              data: cafesActual,
-              backgroundColor: "#01323f"
-            },
-            {
               label: "Semana anterior",
               data: cafesPrevio,
               backgroundColor: "#008ba4"
+            },
+            {
+              label: "Semana actual",
+              data: cafesActual,
+              backgroundColor: "#01323f"
             }
           ]
         },
         options: {
           plugins: {
+            title: {
+              display: true,
+              text: "Cafecitos cargados por día",
+              color: "#e8d8cc",
+              font: {
+                size: 18
+              },
+              padding: 20
+            },
             legend: {
               labels: {
                 color: "#e8d8cc"
