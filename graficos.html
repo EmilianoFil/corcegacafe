@@ -1,0 +1,127 @@
+
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Estadísticas semanales</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #d86634;
+      color: white;
+      padding: 20px;
+      margin: 0;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .grafico {
+      margin: 40px auto;
+      max-width: 600px;
+      background: rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📊 Estadísticas semanales</h1>
+  <div class="grafico">
+    <canvas id="graficoClientes"></canvas>
+  </div>
+  <div class="grafico">
+    <canvas id="graficoQRs"></canvas>
+  </div>
+  <div class="grafico">
+    <canvas id="graficoCafecitos"></canvas>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-c_OMJBiPuCfh3bct7cpgSB9LernugRA",
+      authDomain: "corcega-loyalty-club.firebaseapp.com",
+      projectId: "corcega-loyalty-club"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    function formatearFecha(fecha) {
+      return fecha.toISOString().split("T")[0];
+    }
+
+    async function cargarDatos() {
+      const hoy = new Date();
+      const hace7 = new Date();
+      hace7.setDate(hoy.getDate() - 6); // hoy incluido
+      const inicio = Timestamp.fromDate(new Date(hace7.setHours(0, 0, 0, 0)));
+
+      const logsSnap = await getDocs(query(collection(db, "logs"), where("timestamp", ">=", inicio)));
+      const stats = {};
+
+      for (let i = 0; i < 7; i++) {
+        const f = new Date(hace7);
+        f.setDate(f.getDate() + i);
+        const fechaStr = formatearFecha(f);
+        stats[fechaStr] = { registro: 0, qr: 0, cafe: 0 };
+      }
+
+      logsSnap.forEach(doc => {
+        const data = doc.data();
+        const fecha = data.timestamp?.toDate();
+        if (!fecha) return;
+        const fechaStr = formatearFecha(fecha);
+        if (!stats[fechaStr]) return;
+
+        if (data.accion === "registro_manual" || data.accion === "registro_web" || data.accion?.includes("registro")) {
+          stats[fechaStr].registro++;
+        }
+        if (data.accion === "EscaneoQR") {
+          stats[fechaStr].qr++;
+        }
+        if (data.accion?.includes("cafecito")) {
+          stats[fechaStr].cafe++;
+        }
+      });
+
+      const labels = Object.keys(stats);
+      const registros = labels.map(f => stats[f].registro);
+      const qrs = labels.map(f => stats[f].qr);
+      const cafes = labels.map(f => stats[f].cafe);
+
+      new Chart(document.getElementById("graficoClientes"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{ label: "Clientes registrados", data: registros }]
+        }
+      });
+
+      new Chart(document.getElementById("graficoQRs"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{ label: "QRs escaneados", data: qrs }]
+        }
+      });
+
+      new Chart(document.getElementById("graficoCafecitos"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{ label: "Cafecitos cargados", data: cafes }]
+        }
+      });
+    }
+
+    cargarDatos();
+  </script>
+</body>
+</html>
