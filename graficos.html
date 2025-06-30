@@ -113,16 +113,18 @@
       });
 
       const formatter = new Intl.DateTimeFormat("es-AR", { weekday: "short" });
-      const labels = Object.keys(statsActual).map(f => {
+      const fechas = Object.keys(statsActual);
+      const labels = fechas.map(f => {
         const fecha = new Date(f);
         return formatter.format(fecha).charAt(0).toUpperCase() + formatter.format(fecha).slice(1);
       });
-      const registrosActual = labels.map(f => statsActual[f].registro);
-      const registrosPrevio = labels.map(f => statsPrevio[f]?.registro || 0);
-      const qrsActual = labels.map(f => statsActual[f].qr);
-      const qrsPrevio = labels.map(f => statsPrevio[f]?.qr || 0);
-      const cafesActual = labels.map(f => statsActual[f].cafe);
-      const cafesPrevio = labels.map(f => statsPrevio[f]?.cafe || 0);
+
+      const registrosActual = fechas.map(f => statsActual[f].registro);
+      const registrosPrevio = fechas.map(f => statsPrevio[f]?.registro || 0);
+      const qrsActual = fechas.map(f => statsActual[f].qr);
+      const qrsPrevio = fechas.map(f => statsPrevio[f]?.qr || 0);
+      const cafesActual = fechas.map(f => statsActual[f].cafe);
+      const cafesPrevio = fechas.map(f => statsPrevio[f]?.cafe || 0);
 
       // Debug visual: mostrar registros de la semana anterior
       console.log("Semana anterior - registros:", statsPrevio);
