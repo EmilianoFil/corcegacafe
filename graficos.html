@@ -120,6 +120,19 @@
       const cafesActual = labels.map(f => statsActual[f].cafe);
       const cafesPrevio = labels.map(f => statsPrevio[f]?.cafe || 0);
 
+      // Debug visual: mostrar registros de la semana anterior
+      console.log("Semana anterior - registros:", statsPrevio);
+
+      // Aviso visible si todos los valores de statsPrevio están en cero
+      const hayDatosPrevios = Object.values(statsPrevio).some(d => d.registro || d.qr || d.cafe);
+      if (!hayDatosPrevios) {
+        const aviso = document.createElement("p");
+        aviso.style.color = "#e8d8cc";
+        aviso.style.textAlign = "center";
+        aviso.textContent = "ℹ️ No hubo actividad registrada en la semana anterior.";
+        document.body.insertBefore(aviso, document.body.children[3]);
+      }
+
       new Chart(document.getElementById("graficoClientes"), {
         type: "bar",
         data: {
