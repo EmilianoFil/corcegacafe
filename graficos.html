@@ -101,7 +101,24 @@
         type: "bar",
         data: {
           labels,
-          datasets: [{ label: "Clientes registrados", data: registros, backgroundColor: "white" }]
+          datasets: [{ label: "Clientes registrados", data: registros, backgroundColor: "#01323f" }]
+        },
+        options: {
+          plugins: {
+            legend: {
+              labels: {
+                color: "#e8d8cc"
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#e8d8cc" }
+            },
+            y: {
+              ticks: { color: "#e8d8cc" }
+            }
+          }
         }
       });
 
@@ -109,7 +126,24 @@
         type: "bar",
         data: {
           labels,
-          datasets: [{ label: "QRs escaneados", data: qrs, backgroundColor: "white" }]
+          datasets: [{ label: "QRs escaneados", data: qrs, backgroundColor: "#01323f" }]
+        },
+        options: {
+          plugins: {
+            legend: {
+              labels: {
+                color: "#e8d8cc"
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#e8d8cc" }
+            },
+            y: {
+              ticks: { color: "#e8d8cc" }
+            }
+          }
         }
       });
 
@@ -117,7 +151,24 @@
         type: "bar",
         data: {
           labels,
-          datasets: [{ label: "Cafecitos cargados", data: cafes, backgroundColor: "white" }]
+          datasets: [{ label: "Cafecitos cargados", data: cafes, backgroundColor: "#01323f" }]
+        },
+        options: {
+          plugins: {
+            legend: {
+              labels: {
+                color: "#e8d8cc"
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#e8d8cc" }
+            },
+            y: {
+              ticks: { color: "#e8d8cc" }
+            }
+          }
         }
       });
     }
