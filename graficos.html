@@ -112,7 +112,11 @@
         }
       });
 
-      const labels = Object.keys(statsActual);
+      const formatter = new Intl.DateTimeFormat("es-AR", { weekday: "short" });
+      const labels = Object.keys(statsActual).map(f => {
+        const fecha = new Date(f);
+        return formatter.format(fecha).charAt(0).toUpperCase() + formatter.format(fecha).slice(1);
+      });
       const registrosActual = labels.map(f => statsActual[f].registro);
       const registrosPrevio = labels.map(f => statsPrevio[f]?.registro || 0);
       const qrsActual = labels.map(f => statsActual[f].qr);
