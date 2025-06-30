@@ -62,16 +62,25 @@
       const hoy = new Date();
       const hace7 = new Date();
       hace7.setDate(hoy.getDate() - 6);
-      const inicio = Timestamp.fromDate(new Date(hace7.setHours(0, 0, 0, 0)));
+      const hace14 = new Date();
+      hace14.setDate(hoy.getDate() - 13);
+      const inicioActual = Timestamp.fromDate(new Date(hace7.setHours(0, 0, 0, 0)));
+      const inicioPrevio = Timestamp.fromDate(new Date(hace14.setHours(0, 0, 0, 0)));
 
-      const logsSnap = await getDocs(query(collection(db, "logs"), where("timestamp", ">=", inicio)));
-      const stats = {};
+      const logsSnap = await getDocs(query(collection(db, "logs"), where("timestamp", ">=", inicioPrevio)));
+      const statsActual = {};
+      const statsPrevio = {};
 
       for (let i = 0; i < 7; i++) {
-        const f = new Date(hace7);
-        f.setDate(f.getDate() + i);
-        const fechaStr = formatearFecha(f);
-        stats[fechaStr] = { registro: 0, qr: 0, cafe: 0 };
+        const fActual = new Date(hace7);
+        fActual.setDate(fActual.getDate() + i);
+        const fechaStrActual = formatearFecha(fActual);
+        statsActual[fechaStrActual] = { registro: 0, qr: 0, cafe: 0 };
+
+        const fPrevio = new Date(hace14);
+        fPrevio.setDate(fPrevio.getDate() + i);
+        const fechaStrPrevio = formatearFecha(fPrevio);
+        statsPrevio[fechaStrPrevio] = { registro: 0, qr: 0, cafe: 0 };
       }
 
       logsSnap.forEach(doc => {
@@ -79,29 +88,54 @@
         const fecha = data.timestamp?.toDate();
         if (!fecha) return;
         const fechaStr = formatearFecha(fecha);
-        if (!stats[fechaStr]) return;
 
-        if (data.accion === "registro_manual" || data.accion === "registro_web" || data.accion?.includes("registro")) {
-          stats[fechaStr].registro++;
-        }
-        if (data.accion === "EscaneoQR") {
-          stats[fechaStr].qr++;
-        }
-        if (data.accion?.includes("cafecito")) {
-          stats[fechaStr].cafe++;
+        if (statsActual[fechaStr]) {
+          if (data.accion === "registro_manual" || data.accion === "registro_web" || data.accion?.includes("registro")) {
+            statsActual[fechaStr].registro++;
+          }
+          if (data.accion === "EscaneoQR") {
+            statsActual[fechaStr].qr++;
+          }
+          if (data.accion?.includes("cafecito")) {
+            statsActual[fechaStr].cafe++;
+          }
+        } else if (statsPrevio[fechaStr]) {
+          if (data.accion === "registro_manual" || data.accion === "registro_web" || data.accion?.includes("registro")) {
+            statsPrevio[fechaStr].registro++;
+          }
+          if (data.accion === "EscaneoQR") {
+            statsPrevio[fechaStr].qr++;
+          }
+          if (data.accion?.includes("cafecito")) {
+            statsPrevio[fechaStr].cafe++;
+          }
         }
       });
 
-      const labels = Object.keys(stats);
-      const registros = labels.map(f => stats[f].registro);
-      const qrs = labels.map(f => stats[f].qr);
-      const cafes = labels.map(f => stats[f].cafe);
+      const labels = Object.keys(statsActual);
+      const registrosActual = labels.map(f => statsActual[f].registro);
+      const registrosPrevio = labels.map(f => statsPrevio[f]?.registro || 0);
+      const qrsActual = labels.map(f => statsActual[f].qr);
+      const qrsPrevio = labels.map(f => statsPrevio[f]?.qr || 0);
+      const cafesActual = labels.map(f => statsActual[f].cafe);
+      const cafesPrevio = labels.map(f => statsPrevio[f]?.cafe || 0);
 
       new Chart(document.getElementById("graficoClientes"), {
         type: "bar",
         data: {
           labels,
-          datasets: [{ label: "Clientes registrados", data: registros, backgroundColor: "#01323f" }]
+          datasets: [
+            {
+              label: "Semana actual",
+              data: registrosActual,
+              backgroundColor: "#01323f"
+            },
+            {
+              label: "Semana anterior",
+              data: registrosPrevio,
+              backgroundColor: "#008ba4"
+            }
+          ]
         },
         options: {
           plugins: {
@@ -126,7 +160,18 @@
         type: "bar",
         data: {
           labels,
-          datasets: [{ label: "QRs escaneados", data: qrs, backgroundColor: "#01323f" }]
+          datasets: [
+            {
+              label: "Semana actual",
+              data: qrsActual,
+              backgroundColor: "#01323f"
+            },
+            {
+              label: "Semana anterior",
+              data: qrsPrevio,
+              backgroundColor: "#008ba4"
+            }
+          ]
         },
         options: {
           plugins: {
@@ -151,7 +196,18 @@
         type: "bar",
         data: {
           labels,
-          datasets: [{ label: "Cafecitos cargados", data: cafes, backgroundColor: "#01323f" }]
+          datasets: [
+            {
+              label: "Semana actual",
+              data: cafesActual,
+              backgroundColor: "#01323f"
+            },
+            {
+              label: "Semana anterior",
+              data: cafesPrevio,
+              backgroundColor: "#008ba4"
+            }
+          ]
         },
         options: {
           plugins: {
