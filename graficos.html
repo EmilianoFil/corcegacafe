@@ -38,11 +38,11 @@
   </style>
 </head>
 <body>
-  <div style="text-align:left; margin-bottom: 10px;">
+  <div style="text-align: center; margin-bottom: 10px;">
+    <div style="font-size: 14px; margin-bottom: 5px;">
+      Usuario logueado: <strong id="usuarioLogueado">-</strong>
+    </div>
     <a href="panel.html" class="btn-estadisticas">← Volver al panel</a>
-  </div>
-  <div style="text-align:center; font-size:14px; margin-bottom:10px;">
-    Usuario logueado: <strong id="usuarioLogueado">-</strong>
   </div>
   <script>
     document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
