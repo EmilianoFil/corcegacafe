@@ -49,6 +49,10 @@
     <span id="semanaLabel">Semana actual</span>
     <button class="btn-estadisticas" id="btnSiguiente">Semana siguiente ▶</button>
   </div>
+  <div style="text-align: center; margin-bottom: 30px;">
+    <h2 style="font-size: 18px; margin-bottom: 10px;">🏆 Podio semanal</h2>
+    <ol id="podioCafecitos" style="list-style: none; padding: 0; margin: 0; font-size: 16px;"></ol>
+  </div>
   <h1>📊 Estadísticas semanales</h1>
   <div class="grafico">
     <canvas id="graficoClientes"></canvas>
@@ -117,6 +121,7 @@
       const logsSnap = await getDocs(query(collection(db, "logs"), where("timestamp", ">=", inicioPrevio)));
       const statsActual = {};
       const statsPrevio = {};
+      const topClientes = {};
 
       diasActual.forEach(d => statsActual[d] = { registro: 0, qr: 0, cafe: 0 });
       diasPrevio.forEach(d => statsPrevio[d] = { registro: 0, qr: 0, cafe: 0 });
@@ -136,6 +141,10 @@
           }
           if (data.accion?.includes("cafecito")) {
             statsActual[fechaStr].cafe++;
+          }
+          // Podio semanal: contar cafecitos por cliente en semana actual
+          if (data.accion?.includes("cafecito") && data.nombre) {
+            topClientes[data.nombre] = (topClientes[data.nombre] || 0) + 1;
           }
         } else if (statsPrevio[fechaStr]) {
           if (data.accion === "registro_manual" || data.accion === "registro_web" || data.accion?.includes("registro")) {
@@ -323,6 +332,23 @@
           }
         }
       });
+      // Podio semanal de cafecitos
+      const podio = Object.entries(topClientes)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+      const podioEl = document.getElementById("podioCafecitos");
+      podioEl.innerHTML = "";
+
+      if (podio.length === 0) {
+        podioEl.innerHTML = "<li>Sin cafecitos esta semana.</li>";
+      } else {
+        podio.forEach(([nombre, cantidad], i) => {
+          const li = document.createElement("li");
+          li.textContent = `${i + 1}. ${nombre} - ${cantidad} cafecito${cantidad > 1 ? "s" : ""}`;
+          podioEl.appendChild(li);
+        });
+      }
     }
 
     onAuthStateChanged(auth, async (user) => {
