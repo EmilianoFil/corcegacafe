@@ -33,6 +33,11 @@
   <script>
     document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
   </script>
+  <div style="text-align: center; margin-bottom: 20px;">
+    <button onclick="cambiarSemana(-1)">◀ Semana anterior</button>
+    <span id="semanaLabel">Semana actual</span>
+    <button onclick="cambiarSemana(1)">Semana siguiente ▶</button>
+  </div>
   <h1>📊 Estadísticas semanales</h1>
   <div class="grafico">
     <canvas id="graficoClientes"></canvas>
@@ -50,6 +55,30 @@
     import { getFirestore, collection, getDocs, Timestamp, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { firebaseConfig } from "./js/firebase-config.js";
 
+    let offsetSemanas = 0;
+
+    function getLunes(date) {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = (day === 0 ? -6 : 1) - day;
+      d.setDate(d.getDate() + diff);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+
+    function getSemanaCompleta(lunes) {
+      return Array.from({ length: 7 }, (_, i) => {
+        const f = new Date(lunes);
+        f.setDate(f.getDate() + i);
+        return formatearFecha(f);
+      });
+    }
+
+    function cambiarSemana(delta) {
+      offsetSemanas += delta;
+      cargarDatos(); // volver a generar gráficos con la nueva semana
+    }
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth();
     const db = getFirestore();
@@ -59,29 +88,23 @@
     }
 
     async function cargarDatos() {
-      const hoy = new Date();
-      const hace7 = new Date();
-      hace7.setDate(hoy.getDate() - 6);
-      const hace14 = new Date();
-      hace14.setDate(hoy.getDate() - 13);
-      const inicioActual = Timestamp.fromDate(new Date(hace7.setHours(0, 0, 0, 0)));
-      const inicioPrevio = Timestamp.fromDate(new Date(hace14.setHours(0, 0, 0, 0)));
+      const lunesActual = getLunes(new Date());
+      lunesActual.setDate(lunesActual.getDate() + offsetSemanas * 7);
+      const lunesPrevio = new Date(lunesActual);
+      lunesPrevio.setDate(lunesActual.getDate() - 7);
+
+      const inicioActual = Timestamp.fromDate(lunesActual);
+      const inicioPrevio = Timestamp.fromDate(lunesPrevio);
+
+      const diasActual = getSemanaCompleta(lunesActual);
+      const diasPrevio = getSemanaCompleta(lunesPrevio);
 
       const logsSnap = await getDocs(query(collection(db, "logs"), where("timestamp", ">=", inicioPrevio)));
       const statsActual = {};
       const statsPrevio = {};
 
-      for (let i = 0; i < 7; i++) {
-        const fActual = new Date(hace7);
-        fActual.setDate(fActual.getDate() + i);
-        const fechaStrActual = formatearFecha(fActual);
-        statsActual[fechaStrActual] = { registro: 0, qr: 0, cafe: 0 };
-
-        const fPrevio = new Date(hace14);
-        fPrevio.setDate(fPrevio.getDate() + i);
-        const fechaStrPrevio = formatearFecha(fPrevio);
-        statsPrevio[fechaStrPrevio] = { registro: 0, qr: 0, cafe: 0 };
-      }
+      diasActual.forEach(d => statsActual[d] = { registro: 0, qr: 0, cafe: 0 });
+      diasPrevio.forEach(d => statsPrevio[d] = { registro: 0, qr: 0, cafe: 0 });
 
       logsSnap.forEach(doc => {
         const data = doc.data();
@@ -115,12 +138,8 @@
       // Nueva lógica sincronizada por índice para fechas, labels y datasets
       const formatter = new Intl.DateTimeFormat("es-AR", { weekday: "short" });
 
-      const fechasActual = Object.keys(statsActual);
-      const fechasPrevio = Object.keys(statsPrevio);
-
-      // Asegurar orden cronológico
-      fechasActual.sort();
-      fechasPrevio.sort();
+      const fechasActual = diasActual;
+      const fechasPrevio = diasPrevio;
 
       const labels = fechasActual.map(f => {
         const fecha = new Date(f);
@@ -147,6 +166,11 @@
         aviso.textContent = "ℹ️ No hubo actividad registrada en la semana anterior.";
         document.body.insertBefore(aviso, document.body.children[3]);
       }
+
+      const semanaLabel = document.getElementById("semanaLabel");
+      const f0 = new Date(fechasActual[0]);
+      const f1 = new Date(fechasActual[6]);
+      semanaLabel.textContent = `Semana del ${f0.toLocaleDateString('es-AR')} al ${f1.toLocaleDateString('es-AR')}`;
 
       new Chart(document.getElementById("graficoClientes"), {
         type: "bar",
