@@ -155,7 +155,7 @@
           if (data.accion === "EscaneoQR") {
             statsActual[fechaStr].qr++;
           }
-          if (data.accion?.includes("cafecito")) {
+          if (data.accion === "sumar_cafecito") {
             statsActual[fechaStr].cafe++;
           }
           // Podio semanal: contar cafecitos por cliente en semana actual
