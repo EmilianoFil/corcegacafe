@@ -136,15 +136,14 @@
       });
 
       // Nueva lógica sincronizada por índice para fechas, labels y datasets
-      const formatter = new Intl.DateTimeFormat("es-AR", { weekday: "short" });
-
       const fechasActual = diasActual;
       const fechasPrevio = diasPrevio;
 
+      const dias = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
       const labels = fechasActual.map(f => {
-        const fecha = new Date(f);
-        const dia = formatter.format(fecha);
-        return dia.charAt(0).toUpperCase() + dia.slice(1);
+        const fecha = new Date(f + "T00:00:00"); // Forzar hora local
+        return dias[fecha.getDay()];
       });
 
       const registrosActual = fechasActual.map(f => statsActual[f].registro);
