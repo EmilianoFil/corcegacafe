@@ -99,6 +99,8 @@
       return fecha.toISOString().split("T")[0];
     }
 
+    let chartClientes, chartQRs, chartCafecitos;
+
     async function cargarDatos() {
       const lunesActual = getLunes(new Date());
       lunesActual.setDate(lunesActual.getDate() + offsetSemanas * 7);
@@ -183,7 +185,8 @@
       const f1 = new Date(fechasActual[6]);
       semanaLabel.textContent = `Semana del ${f0.toLocaleDateString('es-AR')} al ${f1.toLocaleDateString('es-AR')}`;
 
-      new Chart(document.getElementById("graficoClientes"), {
+      if (chartClientes) chartClientes.destroy();
+      chartClientes = new Chart(document.getElementById("graficoClientes"), {
         type: "bar",
         data: {
           labels,
@@ -228,7 +231,8 @@
         }
       });
 
-      new Chart(document.getElementById("graficoQRs"), {
+      if (chartQRs) chartQRs.destroy();
+      chartQRs = new Chart(document.getElementById("graficoQRs"), {
         type: "bar",
         data: {
           labels,
@@ -273,7 +277,8 @@
         }
       });
 
-      new Chart(document.getElementById("graficoCafecitos"), {
+      if (chartCafecitos) chartCafecitos.destroy();
+      chartCafecitos = new Chart(document.getElementById("graficoCafecitos"), {
         type: "bar",
         data: {
           labels,
