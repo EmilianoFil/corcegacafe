@@ -24,6 +24,16 @@
       padding: 20px;
       border-radius: 16px;
     }
+    .btn-estadisticas {
+      padding: 8px 12px;
+      font-weight: bold;
+      background: white;
+      color: #d86634;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 0 8px;
+    }
   </style>
 </head>
 <body>
@@ -34,9 +44,9 @@
     document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
   </script>
   <div style="text-align: center; margin-bottom: 20px;">
-    <button onclick="cambiarSemana(-1)">◀ Semana anterior</button>
+    <button class="btn-estadisticas" id="btnAnterior">◀ Semana anterior</button>
     <span id="semanaLabel">Semana actual</span>
-    <button onclick="cambiarSemana(1)">Semana siguiente ▶</button>
+    <button class="btn-estadisticas" id="btnSiguiente">Semana siguiente ▶</button>
   </div>
   <h1>📊 Estadísticas semanales</h1>
   <div class="grafico">
@@ -56,6 +66,7 @@
     import { firebaseConfig } from "./js/firebase-config.js";
 
     let offsetSemanas = 0;
+    offsetSemanas = parseInt(localStorage.getItem("offsetSemanas")) || 0;
 
     function getLunes(date) {
       const d = new Date(date);
@@ -77,6 +88,7 @@
     function cambiarSemana(delta) {
       offsetSemanas += delta;
       cargarDatos(); // volver a generar gráficos con la nueva semana
+      localStorage.setItem("offsetSemanas", offsetSemanas);
     }
 
     const app = initializeApp(firebaseConfig);
@@ -322,6 +334,9 @@
       }
 
       document.getElementById("usuarioLogueado").innerText = user.email || "-";
+      // Asignar listeners a los botones de semana
+      document.getElementById("btnAnterior").onclick = () => cambiarSemana(-1);
+      document.getElementById("btnSiguiente").onclick = () => cambiarSemana(1);
       cargarDatos();
     });
   </script>
