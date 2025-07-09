@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Córcega Café</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Syncopate&display=swap" rel="stylesheet"> <!-- Tipografías personalizadas --> <!--//Agrego para uso de letra -->
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Syncopate', serif;
+      background-color: #fdfcf7;
+      color: #1d1d1d;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      text-align: center;
+    }
+
+/* Card principal */
+.menu-style {
+  width: 90%;
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 20px 20px;
+  background: #01323f;
+  border-radius: 16px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* Instagram */
+footer a[href*="instagram.com"]::before {
+  content: "";
+  display: inline-block;
+  background-image: url("https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png");
+  background-size: 16px 16px;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+ /* Agrego para fondo */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('css/img/wallpaper.png');
+  background-repeat: repeat;
+  background-size: 600px;
+  background-position: center;
+  opacity: 0.75;
+  z-index: -1;
+  pointer-events: none;
+}
+
+    .logo {
+      width: 200px;
+      margin-bottom: 0px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #01323f;
+    }
+
+    .boton {
+      display: block;
+      font-family: 'Syncopate', serif;
+      width: 100%;
+      margin: 12.5px auto;
+      padding: 12px 24px;
+      background-color: #ed7053;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: background-color 0.3s;
+      max-width: 300px;
+      box-sizing: border-box;
+      white-space: nowrap; 
+    }
+
+    .boton:hover {
+      background-color: #b7542c;
+    }
+
+  #copyright-container {
+    margin-top: auto;
+    width: 100%;
+  }
+  </style>
+  <script>
+    window.onpageshow = function(event) {
+      if (event.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
+        window.location.reload();
+      }
+    };
+  </script>
+</head>
+<body>
+<div class="menu-style">
+  <img src="css/img/Corcega_Logo_Letras_Blanco.png" alt="Córcega Café" class="logo" />
+    <div>
+      <a href="corcega-menu.html" class="boton" aria-label="Ia al menú de Córcega Café">Ver Menú</a>
+    </div>
+    <div>
+      <a href="registro.html" class="boton" aria-label="Registrate en el Club de Recompensas de Córcega">Registrate y sumá cafecitos</a>
+    </div>
+    <div>
+      <a href="consulta-cliente.html" class="boton" aria-label="Consultar tu tarjeta de fidelidad">Tu tarjeta Corceguera</a>
+    </div>
+      <footer style="margin-top: 30px;">
+      <p style="color: white; font-family: 'Playfair Display', serif; text-transform: uppercase; font-size: 17px; display: block; margin-top: 6px;">
+      Seguinos en Instagram<br>
+      <a href="https://www.instagram.com/corcegacafe" target="_blank" style="color: white; text-transform: lowercase; text-decoration: none;" aria-label="Instagram de Córcega Café">@corcegacafe</a>
+    </p>
+  </footer>
+  </div>
+<div id="copyright-container"></div>
+<script>
+    fetch("footer-copyright.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("copyright-container").innerHTML = html;
+        const year = new Date().getFullYear();
+        const yearSpan = document.getElementById("year");
+        if (yearSpan) yearSpan.innerText = year;
+      });
+  </script>
+</body>
+</html>
