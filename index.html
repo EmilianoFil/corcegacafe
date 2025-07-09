@@ -124,5 +124,15 @@ body::before {
   </footer>
   </div>
 </div>
+<script>
+  fetch("footer-copyright.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("copyright-container").innerHTML = html;
+      const year = new Date().getFullYear();
+      const yearSpan = document.getElementById("year");
+      if (yearSpan) yearSpan.innerText = year;
+    });
+</script>
 </body>
 </html>
