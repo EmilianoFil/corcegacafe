@@ -95,6 +95,20 @@ body::before {
     .boton:hover {
       background-color: #b7542c;
     }
+
+  .contenido {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    width: 100%;
+  }
+
+  #copyright-container {
+    margin-top: auto;
+    width: 100%;
+  }
   </style>
   <script>
     window.onpageshow = function(event) {
@@ -105,24 +119,38 @@ body::before {
   </script>
 </head>
 <body>
-<div class="menu-style">
-  <img src="css/img/Corcega_Logo_Letras_Blanco.png" alt="Córcega Café" class="logo" />
-    <div>
-      <a href="corcega-menu.html" class="boton" aria-label="Ia al menú de Córcega Café">Ver Menú</a>
+  <div class="contenido">
+    <div class="menu-style">
+      <img src="css/img/Corcega_Logo_Letras_Blanco.png" alt="Córcega Café" class="logo" />
+      <div>
+        <a href="corcega-menu.html" class="boton" aria-label="Ir al menú de Córcega Café">Ver Menú</a>
+      </div>
+      <div>
+        <a href="registro.html" class="boton" aria-label="Registrate en el Club de Recompensas de Córcega">Registrate y sumá cafecitos</a>
+      </div>
+      <div>
+        <a href="consulta-cliente.html" class="boton" aria-label="Consultar tu tarjeta de fidelidad">Tu tarjeta Corceguera</a>
+      </div>
     </div>
-    <div>
-      <a href="registro.html" class="boton" aria-label="Registrate en el Club de Recompensas de Córcega">Registrate y sumá cafecitos</a>
-    </div>
-    <div>
-      <a href="consulta-cliente.html" class="boton" aria-label="Consultar tu tarjeta de fidelidad">Tu tarjeta Corceguera</a>
-    </div>
-      <footer style="margin-top: 30px;">
+
+    <footer style="margin-top: 30px;">
       <p style="color: white; font-family: 'Playfair Display', serif; text-transform: uppercase; font-size: 17px; display: block; margin-top: 6px;">
-      Seguinos en Instagram<br>
-      <a href="https://www.instagram.com/corcegacafe" target="_blank" style="color: white; text-transform: lowercase; text-decoration: none;" aria-label="Instagram de Córcega Café">@corcegacafe</a>
-    </p>
-  </footer>
+        Seguinos en Instagram<br>
+        <a href="https://www.instagram.com/corcegacafe" target="_blank" style="color: white; text-transform: lowercase; text-decoration: none;" aria-label="Instagram de Córcega Café">@corcegacafe</a>
+      </p>
+    </footer>
   </div>
-</div>
+
+  <div id="copyright-container"></div>
+  <script>
+    fetch("footer-copyright.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("copyright-container").innerHTML = html;
+        const year = new Date().getFullYear();
+        const yearSpan = document.getElementById("year");
+        if (yearSpan) yearSpan.innerText = year;
+      });
+  </script>
 </body>
 </html>
