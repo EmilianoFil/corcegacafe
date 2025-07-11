@@ -38,68 +38,84 @@
     font-family: 'Playfair Display', serif;
     font-size: 0.9em;
   }
+  .contenido {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    width: 100%;
+  }
+
+  #copyright-container {
+    margin-top: auto;
+    width: 100%;
+  }
 </style>
 </head>
 <body>
-  <div class="menu-style">
-  <img src="css/img/Corcega_Logo_Letras_Blanco.png" alt="Córcega Café" class="logo" />
-  <form id="registroForm" data-gtm-form-interact-id="0">
-    <div style="display: flex; align-items: center; gap: 0.5em;">
-      <select id="tipoDocumento" name="tipoDocumento" class="input-like">
-        <option value="DNI" selected>DNI</option>
-        <option value="PA">PA</option>
+  <div class="contenido">
+    <div class="menu-style">
+      <img src="css/img/Corcega_Logo_Letras_Blanco.png" alt="Córcega Café" class="logo" />
+      <form id="registroForm" data-gtm-form-interact-id="0">
+        <div style="display: flex; align-items: center; gap: 0.5em;">
+          <select id="tipoDocumento" name="tipoDocumento" class="input-like">
+            <option value="DNI" selected>DNI</option>
+            <option value="PA">PA</option>
+          </select>
+          <input type="text" name="dni" id="dni" placeholder="DNI" aria-label="Número de documento" required style="flex: 1;" pattern="[0-9]{7,8}" inputmode="numeric" maxlength="8">
+        </div>
+        <input type="text" name="nombre" placeholder="Nombre y apellido" aria-label="Nombre y apellido" required pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$" title="Sólo letras y espacios">
+        <input type="email" name="mail" placeholder="Correo electrónico" aria-label="Correo electrónico" required="" pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$">
+        <p>¿Cuándo es tu cumpleaños?</p>
+        <div>
+      <select name="cumple_dia" class="input-like" aria-label="Día de cumpleaños">
+        <option value="" disabled selected hidden>Día</option>
+        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+        <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+        <option>11</option><option>12</option><option>13</option><option>14</option><option>15</option>
+        <option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
+        <option>21</option><option>22</option><option>23</option><option>24</option><option>25</option>
+        <option>26</option><option>27</option><option>28</option><option>29</option><option>30</option>
+        <option>31</option>
       </select>
-      <input type="text" name="dni" id="dni" placeholder="DNI" aria-label="Número de documento" required style="flex: 1;" pattern="[0-9]{7,8}" inputmode="numeric" maxlength="8">
+
+      <select name="cumple_mes" class="input-like" aria-label="Mes de cumpleaños">
+        <option value="" disabled selected hidden>Mes</option>
+        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+        <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+        <option>11</option><option>12</option>
+      </select>
     </div>
-    <input type="text" name="nombre" placeholder="Nombre y apellido" aria-label="Nombre y apellido" required pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$" title="Sólo letras y espacios">
-    <input type="email" name="mail" placeholder="Correo electrónico" aria-label="Correo electrónico" required="" pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$">
-    <p>¿Cuándo es tu cumpleaños?</p>
-    <div>
-  <select name="cumple_dia" class="input-like" aria-label="Día de cumpleaños">
-    <option value="" disabled selected hidden>Día</option>
-    <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-    <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
-    <option>11</option><option>12</option><option>13</option><option>14</option><option>15</option>
-    <option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
-    <option>21</option><option>22</option><option>23</option><option>24</option><option>25</option>
-    <option>26</option><option>27</option><option>28</option><option>29</option><option>30</option>
-    <option>31</option>
-  </select>
 
-  <select name="cumple_mes" class="input-like" aria-label="Mes de cumpleaños">
-    <option value="" disabled selected hidden>Mes</option>
-    <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-    <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
-    <option>11</option><option>12</option>
-  </select>
-</div>
+        <button type="submit" class="btn-primary" aria-label="Registrarme en el club">Registrarme</button>
+      </form>
 
-    <button type="submit" class="btn-primary" aria-label="Registrarme en el club">Registrarme</button>
-  </form>
-
-  <div id="loader" style="display: none; margin-top: 20px; text-align: center; width: 100%;">
-    <img src="css/img/Corcega_Logo_Naranja.png" class="galope" style="width: 95px; display: inline-block;">
-  </div>
-  <div id="mensaje-container" style="display: none; text-align: center;">
-    <div style="padding: 30px 20px; background: #01323f; border-radius: 12px; font-size: 18px; color: #008ba4;">
-      <p id="mensaje" style="white-space: pre-line; margin-bottom: 20px;"></p>
-      <div style="display: flex; flex-direction: column; align-items: center;">
-        <button id="volverBtn" class="btn-primary" style="min-width: 220px;" aria-label="Volver al formulario de registro">Volver al formulario</button>
-        <button id="verTarjetaBtn" class="btn-primary" style="display: none; min-width: 220px;" aria-label="Ir a tarjeta de fidelización">Mirá tu tarjeta</button>
+      <div id="loader" style="display: none; margin-top: 20px; text-align: center; width: 100%;">
+        <img src="css/img/Corcega_Logo_Naranja.png" class="galope" style="width: 95px; display: inline-block;">
       </div>
+      <div id="mensaje-container" style="display: none; text-align: center;">
+        <div style="padding: 30px 20px; background: #01323f; border-radius: 12px; font-size: 18px; color: #008ba4;">
+          <p id="mensaje" style="white-space: pre-line; margin-bottom: 20px;"></p>
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <button id="volverBtn" class="btn-primary" style="min-width: 220px;" aria-label="Volver al formulario de registro">Volver al formulario</button>
+            <button id="verTarjetaBtn" class="btn-primary" style="display: none; min-width: 220px;" aria-label="Ir a tarjeta de fidelización">Mirá tu tarjeta</button>
+          </div>
+        </div>
+      </div>
+      <div class="logout">
+        <a href="index.html" class="volver" aria-label="Volver al inicio">Volver</a>
+      </div>
+      <div id="coupon-birds-embed-div"></div>
+      <footer style="margin-top: 30px;">
+          <p style="color: white; font-family: 'Playfair Display', serif; text-transform: uppercase; font-size: 17px; display: block; margin-top: 6px;">
+          Seguinos en Instagram<br>
+          <a href="https://www.instagram.com/corcegacafe" target="_blank" style="color: white; text-transform: lowercase; text-decoration: none;">@corcegacafe</a>
+        </p>
+      </footer>
     </div>
+    <div id="copyright-container"></div>
   </div>
-  <div class="logout">
-    <a href="index.html" class="volver" aria-label="Volver al inicio">Volver</a>
-  </div>
-  <div id="coupon-birds-embed-div"></div>
-  <footer style="margin-top: 30px;">
-      <p style="color: white; font-family: 'Playfair Display', serif; text-transform: uppercase; font-size: 17px; display: block; margin-top: 6px;">
-      Seguinos en Instagram<br>
-      <a href="https://www.instagram.com/corcegacafe" target="_blank" style="color: white; text-transform: lowercase; text-decoration: none;">@corcegacafe</a>
-    </p>
-  </footer>
-</div>
 
 <script type="module">
   import { db } from './js/firebase-config.js';
@@ -254,6 +270,16 @@
       }
     });
   });
+</script>
+<script>
+  fetch("footer-copyright.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("copyright-container").innerHTML = html;
+      const year = new Date().getFullYear();
+      const yearSpan = document.getElementById("year");
+      if (yearSpan) yearSpan.innerText = year;
+    });
 </script>
 </body>
 </html>
