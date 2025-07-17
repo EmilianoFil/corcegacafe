@@ -235,7 +235,7 @@
           };
 
           // Enviar mail de bienvenida usando Firebase Function
-          fetch("https://us-central1-corcega-loyalty-club.cloudfunctions.net/enviarMailRegistro", {
+          fetch("https://us-central1-corcega-loyalty-club.cloudfunctions.net/enviarMailRegistroIG", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ dni, nombre, mail: email })
