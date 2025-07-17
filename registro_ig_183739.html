@@ -240,7 +240,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ dni, nombre, mail: email })
           }).then(() => {
-            console.log("📧 Mail de bienvenida enviado con éxito.");
+            console.log("📧 Mail de bienvenida IG enviado con éxito.");
           }).catch(error => {
             console.error("❌ Error al enviar el mail:", error);
           });
