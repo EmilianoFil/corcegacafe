@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Estadísticas semanales</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #d86634;
+      color: white;
+      padding: 20px;
+      margin: 0;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .grafico {
+      margin: 40px auto;
+      max-width: 600px;
+      background: rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 16px;
+    }
+    .btn-estadisticas {
+      padding: 8px 12px;
+      font-weight: bold;
+      font-size: 10px;
+      background: white;
+      color: #d86634;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 0 8px;
+    }
+
+    .btn-volver {
+      padding: 8px 12px;
+      font-weight: bold;
+      font-size: 10px;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 0 8px;
+    }
+  </style>
+</head>
+<body>
+  <div style="text-align: center; margin-top: 10px; margin-bottom: 30px;">
+    <div style="font-size: 14px; margin-bottom: 8px;">
+      Usuario logueado: <strong id="usuarioLogueado">-</strong>
+    </div>
+    <div style="margin-bottom: 10px;">
+      <a href="panel.html" class="btn-volver">Volver al panel</a>
+    </div>
+    <h1>📊 Estadísticas semanales</h1>
+  </div>
+  <script>
+    document.getElementById("usuarioLogueado").innerText = localStorage.getItem("usuario") || "-";
+  </script>
+  <div style="text-align: center; margin-bottom: 20px;">
+    <button class="btn-estadisticas" id="btnAnterior">◀ Semana anterior</button>
+    <span id="semanaLabel">Semana actual</span>
+    <button class="btn-estadisticas" id="btnSiguiente">Semana siguiente ▶</button>
+  </div>
+  <div style="text-align: center; margin-bottom: 30px;">
+    <h2 style="font-size: 18px; margin-bottom: 10px;">🏆 Podio semanal</h2>
+    <ol id="podioCafecitos" style="list-style: none; padding: 0; margin: 0; font-size: 16px;"></ol>
+  </div>
+  <div class="grafico">
+    <canvas id="graficoClientes"></canvas>
+  </div>
+  <div class="grafico">
+    <canvas id="graficoQRs"></canvas>
+  </div>
+  <div class="grafico">
+    <canvas id="graficoCafecitos"></canvas>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, Timestamp, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { firebaseConfig } from "./js/firebase-config.js";
+
+    let offsetSemanas = 0;
+    offsetSemanas = parseInt(localStorage.getItem("offsetSemanas")) || 0;
+
+    function getLunes(date) {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = (day === 0 ? -6 : 1) - day;
+      d.setDate(d.getDate() + diff);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+
+    function getSemanaCompleta(lunes) {
+      return Array.from({ length: 7 }, (_, i) => {
+        const f = new Date(lunes);
+        f.setDate(f.getDate() + i);
+        return formatearFecha(f);
+      });
+    }
+
+    function cambiarSemana(delta) {
+      offsetSemanas += delta;
+      cargarDatos(); // volver a generar gráficos con la nueva semana
+      localStorage.setItem("offsetSemanas", offsetSemanas);
+    }
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore();
+
+    function formatearFecha(fecha) {
+      return fecha.toISOString().split("T")[0];
+    }
+
+    let chartClientes, chartQRs, chartCafecitos;
+
+    async function cargarDatos() {
+      const lunesActual = getLunes(new Date());
+      lunesActual.setDate(lunesActual.getDate() + offsetSemanas * 7);
+
+      const fechas = getSemanaCompleta(lunesActual);
+      const inicio = Timestamp.fromDate(lunesActual);
+
+      const logsSnap = await getDocs(query(collection(db, "logs"), where("timestamp", ">=", inicio)));
+
+      const stats = {};
+      fechas.forEach(f => {
+        stats[f] = {
+          antes: { registro: 0, qr: 0, cafe: 0 },
+          despues: { registro: 0, qr: 0, cafe: 0 }
+        };
+      });
+
+      const topClientes = {};
+      logsSnap.forEach(doc => {
+        const data = doc.data();
+        const fecha = data.timestamp?.toDate();
+        if (!fecha) return;
+        const fechaStr = formatearFecha(fecha);
+        if (!stats[fechaStr]) return;
+
+        const hora = fecha.getHours();
+        const turno = hora < 15 ? "antes" : "despues";
+
+        if (data.accion?.includes("registro")) stats[fechaStr][turno].registro++;
+        if (data.accion === "EscaneoQR") stats[fechaStr][turno].qr++;
+        if (data.accion === "sumar_cafecito") {
+          stats[fechaStr][turno].cafe++;
+
+          if (typeof data.detalles === "string" && data.detalles.includes(" - ")) {
+            const nombre = data.detalles.split(" - ")[1]?.trim();
+            if (nombre) topClientes[nombre] = (topClientes[nombre] || 0) + 1;
+          }
+        }
+      });
+
+      const dias = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+      const labels = fechas.map(f => {
+        const fecha = new Date(f + "T00:00:00");
+        return dias[fecha.getDay()];
+      });
+
+      const registrosAntes = fechas.map(f => stats[f].antes.registro);
+      const registrosDespues = fechas.map(f => stats[f].despues.registro);
+      const qrsAntes = fechas.map(f => stats[f].antes.qr);
+      const qrsDespues = fechas.map(f => stats[f].despues.qr);
+      const cafesAntes = fechas.map(f => stats[f].antes.cafe);
+      const cafesDespues = fechas.map(f => stats[f].despues.cafe);
+
+      const semanaLabel = document.getElementById("semanaLabel");
+      const f0 = new Date(fechas[0]);
+      const f1 = new Date(fechas[6]);
+      semanaLabel.textContent = `Semana del ${f0.toLocaleDateString('es-AR')} al ${f1.toLocaleDateString('es-AR')}`;
+
+      if (chartClientes) chartClientes.destroy();
+      chartClientes = new Chart(document.getElementById("graficoClientes"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            { label: "Antes de las 15", data: registrosAntes, backgroundColor: "#008ba4" },
+            { label: "Después de las 15", data: registrosDespues, backgroundColor: "#01323f" }
+          ]
+        },
+        options: {
+          plugins: {
+            title: {
+              display: true,
+              text: "Clientes registrados por día",
+              color: "#e8d8cc",
+              font: {
+                size: 18
+              },
+              padding: 20
+            },
+            legend: {
+              labels: {
+                color: "#e8d8cc"
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#e8d8cc" }
+            },
+            y: {
+              ticks: { color: "#e8d8cc" }
+            }
+          }
+        }
+      });
+
+      if (chartQRs) chartQRs.destroy();
+      chartQRs = new Chart(document.getElementById("graficoQRs"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            { label: "Antes de las 15", data: qrsAntes, backgroundColor: "#008ba4" },
+            { label: "Después de las 15", data: qrsDespues, backgroundColor: "#01323f" }
+          ]
+        },
+        options: {
+          plugins: {
+            title: {
+              display: true,
+              text: "QRs escaneados por día",
+              color: "#e8d8cc",
+              font: {
+                size: 18
+              },
+              padding: 20
+            },
+            legend: {
+              labels: {
+                color: "#e8d8cc"
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#e8d8cc" }
+            },
+            y: {
+              ticks: { color: "#e8d8cc" }
+            }
+          }
+        }
+      });
+
+      if (chartCafecitos) chartCafecitos.destroy();
+      chartCafecitos = new Chart(document.getElementById("graficoCafecitos"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            { label: "Antes de las 15", data: cafesAntes, backgroundColor: "#008ba4" },
+            { label: "Después de las 15", data: cafesDespues, backgroundColor: "#01323f" }
+          ]
+        },
+        options: {
+          plugins: {
+            title: {
+              display: true,
+              text: "Cafecitos cargados por día",
+              color: "#e8d8cc",
+              font: {
+                size: 18
+              },
+              padding: 20
+            },
+            legend: {
+              labels: {
+                color: "#e8d8cc"
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#e8d8cc" }
+            },
+            y: {
+              ticks: { color: "#e8d8cc" }
+            }
+          }
+        }
+      });
+      // Podio semanal de cafecitos
+      const podio = Object.entries(topClientes)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+      const podioEl = document.getElementById("podioCafecitos");
+      podioEl.innerHTML = "";
+
+      if (podio.length === 0) {
+        podioEl.innerHTML = "<li>Sin cafecitos esta semana.</li>";
+      } else {
+        podio.forEach(([nombre, cantidad], i) => {
+          const li = document.createElement("li");
+          li.textContent = `${i + 1}. ${nombre} - ${cantidad} cafecito${cantidad > 1 ? "s" : ""}`;
+          podioEl.appendChild(li);
+        });
+      }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const ref = doc(db, "admin", user.uid);
+      const snap = await getDoc(ref);
+
+      if (!snap.exists() || snap.data().rol !== "dueño") {
+        document.body.innerHTML = "<p style='text-align:center; margin-top:40px; font-weight:bold;'>No tenés permisos para ver esto.</p>";
+        return;
+      }
+
+      document.getElementById("usuarioLogueado").innerText = user.email || "-";
+      // Asignar listeners a los botones de semana
+      document.getElementById("btnAnterior").onclick = () => cambiarSemana(-1);
+      document.getElementById("btnSiguiente").onclick = () => cambiarSemana(1);
+      cargarDatos();
+    });
+  </script>
+</body>
+</html>
