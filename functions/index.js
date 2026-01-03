@@ -405,34 +405,125 @@ exports.enviarMailAnioNuevo = onRequest(
             from: `Córcega Café <${emailUser.value()}>`,
             to: target.email,
             subject: "¡Feliz Año Nuevo! 🥂✨ - Córcega Café",
-            html: `
-              <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; background-color:#fdfcf7; padding:40px; border-radius:20px; border:1px solid #e0d9c5;">
-                <div style="margin-bottom: 30px;">
-                  <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="display: block; margin: 0 auto; max-width: 150px;">
-                </div>
-                
-                <h1 style="color:#d86634; font-size:28px; margin-bottom:20px;">¡Felicidades, ${target.nombre}! 🥂</h1>
-                
-                <p style="font-size:18px; line-height:1.6;">Queremos agradecerte por acompañarnos este año en cada cafecito y cada charla.</p>
-                
-                <div style="margin: 30px 0; padding: 20px; background-color: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                  <p style="font-size:20px; color:#0d2b37; margin-bottom:10px;">🏝️ Que el 2026 venga lleno de buenos momentos y mucho café.</p>
-                  <p style="font-size:16px;">Te esperamos en la isla para seguir compartiendo lo que nos gusta.</p>
-                </div>
+            html: `<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <title>Córcega — Gracias 2025</title>
+  </head>
 
-                <a href="https://emilianofil.github.io/corcegacafe" style="display:inline-block; padding:15px 30px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:10px; font-size:18px; margin-top:10px;">
-                  Visitar nuestra web
-                </a>
+  <body style="margin:0; padding:0; background-color:#eb6f53;">
+    <div style="display:none; font-size:1px; line-height:1px; max-height:0; max-width:0; opacity:0; overflow:hidden; mso-hide:all;">
+      Gracias por acompañarnos en 2025. En 2026, más encuentros como en casa.
+    </div>
 
-                <hr style="margin:40px auto; max-width:80%; border:none; border-top:1px solid #e0d9c5;" />
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#eb6f53;">
+      <tr>
+        <td align="center" style="padding:26px 12px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px; width:100%; border-collapse:collapse;">
+            <!-- Logo on orange -->
+            <tr>
+              <td align="center" style="background-color:#eb6f53; padding:18px 18px 14px 18px;">
+                <img
+                  src="https://corcegacafe.com.ar/css/img/Corcega_Logo_Letras_Blanco.png"
+                  width="220"
+                  alt="Córcega"
+                  style="display:block; width:220px; max-width:80%; height:auto; border:0; outline:none; text-decoration:none;"
+                />
+              </td>
+            </tr>
+
+            <!-- Card -->
+            <tr>
+              <td style="background-color:#ffffff; border-radius:18px; overflow:hidden; border:1px solid rgba(1,50,63,0.10);">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr>
+                    <td style="padding:22px 22px 16px 22px;">
+                      <div style="font-family:Arial, sans-serif; font-size:13px; letter-spacing:0.10em; text-transform:uppercase; color:rgba(1,50,63,0.75);">
+                        Gracias por este 2025
+                      </div>
+
+                      <div style="font-family:Arial, sans-serif; font-size:30px; line-height:1.18; color:#01323f; font-weight:800; margin-top:8px;">
+                        Por cada cafecito compartido, gracias 🧡
+                      </div>
+
+                      <div style="font-family:Arial, sans-serif; font-size:16px; line-height:1.7; color:#01323f; margin-top:10px;">
+                        ${target.nombre}, en Córcega lo que más nos gusta no es “sólo servir café rico” (aunque sí 😉),
+                        sino <strong>hacerte sentir que estás tomando un café en casa</strong>,
+                        con amigos, charla y ese ratito que te acomoda el día.
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Orange highlight -->
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr>
+                    <td style="padding:0 22px 18px 22px;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                        <tr>
+                          <td style="background-color:#eb6f53; border-radius:16px; padding:16px 16px;">
+                            <div style="font-family:Arial, sans-serif; font-size:15px; line-height:1.65; color:#ffffff;">
+                              <strong>En 2026 vamos por más de eso:</strong><br/>
+                              más encuentros, más “vení, sentate”, más cafecitos que se sienten como hogar.
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Body -->
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr>
+                    <td style="padding:0 22px 22px 22px;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                        <tr>
+                          <td style="padding:14px 14px; background-color:#e8d8cc; border-radius:14px; border:1px solid rgba(1,50,63,0.10);">
+                            <div style="font-family:Arial, sans-serif; font-size:14px; color:#01323f; line-height:1.55;">
+                              <span style="color:#008ba4; font-weight:800;">•</span> Más momentos tranquilos (aunque el día venga a mil).<br/>
+                              <span style="color:#008ba4; font-weight:800;">•</span> Más cositas ricas para acompañar.<br/>
+                              <span style="color:#008ba4; font-weight:800;">•</span> Y el mismo espíritu de siempre: <strong>rebeldía cafetera</strong>.
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:18px;">
+                      </table>
+
+                      <div style="font-family:Arial, sans-serif; font-size:16px; line-height:1.7; color:#01323f; margin-top:18px;">
+                        Hola 2026! Nos vemos en la isla 🏝️.<br />
+                        <strong>Equipo Córcega 🐎</strong> <span style="color:#eb6f53; font-weight:800;">☕</span>
+                      </div>
+
+                      <div style="height:1px; background-color:rgba(1,50,63,0.10); margin:18px 0;"></div>
+
+                      <div style="font-family:Arial, sans-serif; font-size:12px; line-height:1.6; color:rgba(1,50,63,0.70);">
                 
-                <p style="margin: 0; color:#888;">Seguinos para ver las novedades del 2026</p>
-                <a href="https://www.instagram.com/corcegacafe" target="_blank" style="display:inline-flex; align-items:center; color:#d86634; font-weight:bold; text-decoration:none; margin-top:10px;">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" width="24" height="24" style="margin-right:8px;">
-                  @corcegacafe
-                </a>
-              </div>
-            `,
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td align="center" style="padding:14px 0 0 0;">
+                <span style="font-family:Arial, sans-serif; font-size:12px; color:rgba(255,255,255,0.90);">
+                  Córcega · #eb6f53
+                </span>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`,
           };
 
           try {
