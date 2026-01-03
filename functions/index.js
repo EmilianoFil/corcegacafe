@@ -359,8 +359,9 @@ exports.selloCumpleaniosDiario = onSchedule(
     }
   }
 );
+
 exports.enviarMailAnioNuevo = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass], timeoutSeconds: 300 },
+  { region: "us-central1", secrets: [emailUser, emailPass], timeoutSeconds: 540, memory: "512MiB" },
   (req, res) => {
     corsHandler(req, res, async () => {
       const { destinatarios, esMasivo, dniPrueba } = req.body;
@@ -368,6 +369,9 @@ exports.enviarMailAnioNuevo = onRequest(
 
       const transporter = nodemailer.createTransport({
         service: "gmail",
+        pool: true, // Usamos pool para reutilizar conexiones y ser más rápidos
+        maxConnections: 5,
+        maxMessages: 100,
         auth: {
           user: emailUser.value(),
           pass: emailPass.value(),
@@ -376,29 +380,41 @@ exports.enviarMailAnioNuevo = onRequest(
 
       let listaEnvio = [];
 
+      const normalizar = (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase();
+      const obtenerNombreAmigable = (nombreCompleto) => {
+        if (!nombreCompleto || nombreCompleto.toLowerCase() === "cliente") return "Cliente";
+        const palabras = nombreCompleto.trim().split(/\s+/);
+        const nombresCompuestos = ["juan", "maria", "jose", "ana", "luis"];
+        if (palabras.length > 1 && nombresCompuestos.includes(palabras[0].toLowerCase())) {
+          return normalizar(palabras[0]) + " " + normalizar(palabras[1]);
+        }
+        return normalizar(palabras[0]);
+      };
+
       try {
         if (dniPrueba) {
-          // Caso Prueba Real con DNI
           const docRef = db.collection("clientes").doc(dniPrueba.toString());
           const snap = await docRef.get();
           if (snap.exists) {
             const data = snap.data();
             listaEnvio.push({
               email: (data.email || data.mail || "").trim(),
-              nombre: data.nombre || "Cliente"
+              nombre: obtenerNombreAmigable(data.nombre || "Cliente")
             });
           } else {
             return res.status(404).send({ error: "DNI no encontrado." });
           }
         } else if (esMasivo) {
           const snapshot = await db.collection("clientes").get();
+          const emialUnicos = new Set();
           snapshot.forEach(doc => {
             const data = doc.data();
-            const email = data.email || data.mail;
-            if (email && email.includes("@")) {
+            const email = (data.email || data.mail || "").trim().toLowerCase();
+            if (email && email.includes("@") && !emialUnicos.has(email)) {
+              emialUnicos.add(email);
               listaEnvio.push({
-                email: email.trim(),
-                nombre: data.nombre || "Cliente"
+                email: email,
+                nombre: obtenerNombreAmigable(data.nombre || "Cliente")
               });
             }
           });
@@ -412,12 +428,25 @@ exports.enviarMailAnioNuevo = onRequest(
 
         const resultados = { exitosos: 0, fallidos: 0, errores: [] };
 
-        for (const target of listaEnvio) {
-          const mailOptions = {
-            from: `Córcega Café <${emailUser.value()}>`,
-            to: target.email,
-            subject: "¡Feliz Año Nuevo! 🥂✨ - Córcega Café",
-            html: `<!doctype html>
+        // Log inicial
+        await db.collection("logs").add({
+          accion: "inicio_campana_anio_nuevo",
+          detalles: `Iniciando envío a ${listaEnvio.length} destinatarios.`,
+          usuario: adminUser,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Enviamos en lotes (chunks) para no saturar pero ser rápidos
+        const chunkSize = 15;
+        for (let i = 0; i < listaEnvio.length; i += chunkSize) {
+          const chunk = listaEnvio.slice(i, i + chunkSize);
+
+          await Promise.all(chunk.map(async (target) => {
+            const mailOptions = {
+              from: `Córcega Café <${emailUser.value()}>`,
+              to: target.email,
+              subject: "¡Feliz Año Nuevo! 🥂✨ - Córcega Café",
+              html: `<!doctype html>
 <html lang="es" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
   <head>
     <meta charset="utf-8" />
@@ -492,9 +521,7 @@ exports.enviarMailAnioNuevo = onRequest(
                       </div>
 
                       <div class="force-dark-text" style="font-family:Arial, sans-serif; font-size:16px; line-height:1.7; color:#01323f !important; margin-top:10px;">
-                        ${target.nombre}, en Córcega lo que más nos gusta no es “sólo servir café rico” (aunque sí 😉),
-                        sino <strong>hacerte sentir que estás tomando un café en casa</strong>,
-                        con amigos, charla y ese ratito que te acomoda el día.
+                        ${target.nombre}, en Córcega lo que más nos gusta no es “sólo servir café rico”, sino <strong>hacerte sentir que estás tomando un café en casa</strong>.
                       </div>
                     </td>
                   </tr>
@@ -508,8 +535,7 @@ exports.enviarMailAnioNuevo = onRequest(
                         <tr>
                           <td class="festive-box" style="background-color:#eb6f53; border-radius:16px; padding:16px 16px;">
                             <div class="force-white-text" style="font-family:Arial, sans-serif; font-size:15px; line-height:1.65; color:#ffffff !important;">
-                              <strong>En 2026 vamos por más de eso:</strong><br/>
-                              más encuentros, más “vení, sentate”, más cafecitos que se sienten como hogar.
+                              <strong>En 2026 vamos por más:</strong> encuentros, cafecitos y momentos únicos.
                             </div>
                           </td>
                         </tr>
@@ -534,8 +560,8 @@ exports.enviarMailAnioNuevo = onRequest(
                         </tr>
                       </table>
 
-                      <div class="force-dark-text" style="font-family:Arial, sans-serif; font-size:16px; line-height:1.7; color:#01323f !important; margin-top:18px;">
-                        Hola 2026! Nos vemos en la isla 🏝️.<br />
+                      <div class="force-dark-text" style="font-family:Arial, sans-serif; font-size:16px; line-height:1.7; color:#01323f !important; margin-top:10px;">
+                        ¡Hola 2026! Nos vemos en la isla 🏝️.<br />
                         <strong>Equipo Córcega 🐎</strong> <span style="color:#eb6f53; font-weight:800;">☕</span>
                       </div>
 
@@ -560,27 +586,40 @@ exports.enviarMailAnioNuevo = onRequest(
     </table>
   </body>
 </html>`,
-          };
+            };
 
-          try {
-            await transporter.sendMail(mailOptions);
-            resultados.exitosos++;
-          } catch (err) {
-            resultados.fallidos++;
-            resultados.errores.push({ email: target.email, error: err.message });
-          }
+            try {
+              await transporter.sendMail(mailOptions);
+              resultados.exitosos++;
+            } catch (err) {
+              resultados.fallidos++;
+              resultados.errores.push({ email: target.email, error: err.message });
+            }
+          }));
+
+          // Log parcial cada lote para no perder rastro
+          logger.info(`Progreso: ${i + chunk.length}/${listaEnvio.length}`);
+        }
+
+        if (resultados.fallidos > 0) {
+          await db.collection("logs").add({
+            accion: "mail_anio_nuevo_fallidos",
+            detalles: `Emails fallidos (${resultados.fallidos}): ` + resultados.errores.map(e => `${e.email} (${e.error})`).join(", ").substring(0, 1500),
+            usuario: adminUser,
+            timestamp: admin.firestore.FieldValue.serverTimestamp()
+          });
         }
 
         await db.collection("logs").add({
-          accion: esMasivo ? "mail_anio_nuevo_masivo" : "mail_anio_nuevo_prueba",
-          detalles: `Exitosos: ${resultados.exitosos}, Fallidos: ${resultados.fallidos}. Destinatarios solicitados: ${listaEnvio.length}`,
+          accion: esMasivo ? "mail_anio_nuevo_masivo_finalizado" : "mail_anio_nuevo_prueba",
+          detalles: `FIN CAMPANA. Exitosos: ${resultados.exitosos}, Fallidos: ${resultados.fallidos}. Total: ${listaEnvio.length}`,
           usuario: adminUser,
           timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
 
         res.status(200).send(resultados);
       } catch (error) {
-        logger.error("Error en proceso de mail:", error);
+        logger.error("Error en proceso masivo:", error);
         res.status(500).send({ error: error.message });
       }
     });
