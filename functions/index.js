@@ -80,6 +80,73 @@ exports.enviarMailRegistro = onRequest(
   }
 );
 
+exports.enviarMailRegistroTA = onRequest(
+  { region: "us-central1", secrets: [emailUser, emailPass] },
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      const { nombre, mail, dni } = req.body;
+      const email = mail;
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: emailUser.value(),
+          pass: emailPass.value(),
+        },
+      });
+
+      const mailOptions = {
+        from: `Córcega Café <${emailUser.value()}>`,
+        to: email,
+        subject: "¡Bienvenido/a al Club de Recompensas!",
+        html: `
+          <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b;">
+            <h2>¡Bienvenido/a al Club de Cafecitos de Córcega! ☕</h2>
+            <p>Hola <strong>${nombre}</strong>, ya estás registrado con el DNI <strong>${dni}</strong>.</p>
+            <p>Esta es tu tarjeta, hay que empezar a llenarla:</p>
+            <img src="https://emilianofil.github.io/corcegacafe/css/img/tarjeta-vacia-TA.png" alt="Tarjeta de cafecitos" style="max-width:100%; margin:20px 0; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+
+            <div style="margin-bottom: 30px;">
+              <div style="margin-bottom: 12px;">
+                <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="display: block; margin: 0 auto; max-width: 120px;">
+              </div>
+              <div>
+                <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
+                  Ver mi tarjeta
+                </a>
+              </div>
+            </div>
+
+            <p style="margin-top:30px;">Nos vemos pronto en la isla 🏝️.</p>
+            <hr style="margin:30px auto; max-width:80%; border:none; border-top:1px solid #ccc;" />
+            <p style="margin: 0;">Seguinos en Instagram</p>
+            <a href="https://www.instagram.com/corcegacafe" target="_blank" style="display:inline-flex; align-items:center; color:#d86634; font-weight:bold; text-decoration:none; margin-top:5px;">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" width="20" height="20" style="margin-right:8px;">
+              @corcegacafe
+            </a>
+          </div>
+        `,
+      };
+
+      try {
+        await transporter.sendMail(mailOptions);
+        const logRef = await db.collection("logs").add({
+          accion: "enviar_mail_bienvenida_ig",
+          detalles: `DNI: ${dni} - ${nombre} - ${email}`,
+          usuario: "Correo_Bienvenida_ig",
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+        logger.info("Log creado con ID: " + logRef.id);
+        logger.info("Correo enviado a " + email);
+        res.status(200).send("Correo enviado");
+      } catch (error) {
+        logger.error("Error al enviar correo:", error);
+        res.status(500).send("Error al enviar correo");
+      }
+    });
+  }
+);
+
 exports.enviarMailRegistroIG = onRequest(
   { region: "us-central1", secrets: [emailUser, emailPass] },
   (req, res) => {
@@ -292,4 +359,105 @@ exports.selloCumpleaniosDiario = onSchedule(
     }
   }
 );
+exports.enviarMailAnioNuevo = onRequest(
+  { region: "us-central1", secrets: [emailUser, emailPass], timeoutSeconds: 300 },
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      const { destinatarios, esMasivo } = req.body;
+      const adminUser = "Admin_Panel";
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: emailUser.value(),
+          pass: emailPass.value(),
+        },
+      });
+
+      let listaEnvio = [];
+
+      try {
+        if (esMasivo) {
+          const snapshot = await db.collection("clientes").get();
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const email = data.email || data.mail;
+            if (email && email.includes("@")) {
+              listaEnvio.push({
+                email: email.trim(),
+                nombre: data.nombre || "Cliente"
+              });
+            }
+          });
+        } else if (destinatarios && Array.isArray(destinatarios)) {
+          listaEnvio = destinatarios.map(e => ({ email: e.trim(), nombre: "Prueba" }));
+        }
+
+        if (listaEnvio.length === 0) {
+          return res.status(400).send({ error: "No hay destinatarios válidos." });
+        }
+
+        const resultados = { exitosos: 0, fallidos: 0, errores: [] };
+
+        // Procesamos por lotes o secuencialmente para no saturar
+        for (const target of listaEnvio) {
+          const mailOptions = {
+            from: `Córcega Café <${emailUser.value()}>`,
+            to: target.email,
+            subject: "¡Feliz Año Nuevo! 🥂✨ - Córcega Café",
+            html: `
+              <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; background-color:#fdfcf7; padding:40px; border-radius:20px; border:1px solid #e0d9c5;">
+                <div style="margin-bottom: 30px;">
+                  <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="display: block; margin: 0 auto; max-width: 150px;">
+                </div>
+                
+                <h1 style="color:#d86634; font-size:28px; margin-bottom:20px;">¡Felicidades, ${target.nombre}! 🥂</h1>
+                
+                <p style="font-size:18px; line-height:1.6;">Queremos agradecerte por acompañarnos este año en cada cafecito y cada charla.</p>
+                
+                <div style="margin: 30px 0; padding: 20px; background-color: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                  <p style="font-size:20px; color:#0d2b37; margin-bottom:10px;">🏝️ Que el 2026 venga lleno de buenos momentos y mucho café.</p>
+                  <p style="font-size:16px;">Te esperamos en la isla para seguir compartiendo lo que nos gusta.</p>
+                </div>
+
+                <a href="https://emilianofil.github.io/corcegacafe" style="display:inline-block; padding:15px 30px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:10px; font-size:18px; margin-top:10px;">
+                  Visitar nuestra web
+                </a>
+
+                <hr style="margin:40px auto; max-width:80%; border:none; border-top:1px solid #e0d9c5;" />
+                
+                <p style="margin: 0; color:#888;">Seguinos para ver las novedades del 2026</p>
+                <a href="https://www.instagram.com/corcegacafe" target="_blank" style="display:inline-flex; align-items:center; color:#d86634; font-weight:bold; text-decoration:none; margin-top:10px;">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" width="24" height="24" style="margin-right:8px;">
+                  @corcegacafe
+                </a>
+              </div>
+            `,
+          };
+
+          try {
+            await transporter.sendMail(mailOptions);
+            resultados.exitosos++;
+          } catch (err) {
+            resultados.fallidos++;
+            resultados.errores.push({ email: target.email, error: err.message });
+          }
+        }
+
+        await db.collection("logs").add({
+          accion: esMasivo ? "mail_anio_nuevo_masivo" : "mail_anio_nuevo_prueba",
+          detalles: `Exitosos: ${resultados.exitosos}, Fallidos: ${resultados.fallidos}. Destinatarios solicitados: ${listaEnvio.length}`,
+          usuario: adminUser,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        res.status(200).send(resultados);
+      } catch (error) {
+        logger.error("Error en proceso de mail:", error);
+        res.status(500).send({ error: error.message });
+      }
+    });
+  }
+);
+
 exports.uploadMenuToGitHub = require('./upload').uploadMenuToGitHub;
