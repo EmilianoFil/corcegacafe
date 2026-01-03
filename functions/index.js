@@ -381,7 +381,7 @@ exports.enviarMailAnioNuevo = onRequest(
           // Caso Prueba Real con DNI
           const docRef = db.collection("clientes").doc(dniPrueba.toString());
           const snap = await docRef.get();
-          if (snap.exists()) {
+          if (snap.exists) {
             const data = snap.data();
             listaEnvio.push({
               email: (data.email || data.mail || "").trim(),
@@ -437,24 +437,31 @@ exports.enviarMailAnioNuevo = onRequest(
     <style>
       :root { color-scheme: light only; supported-color-schemes: light only; }
       html, body { background-color: #eb6f53 !important; }
-      /* Hack para forzar el color de fondo en Gmail dark mode */
+      
+      /* Hack definitivo para forzar texto oscuro en Dark Mode */
       @media (prefers-color-scheme: dark) {
-        body, .body-bg { background-color: #eb6f53 !important; background-image: linear-gradient(#eb6f53, #eb6f53) !important; }
-        .card-container { background-color: #ffffff !important; background-image: linear-gradient(#ffffff, #ffffff) !important; }
-        .festive-box { background-color: #eb6f53 !important; background-image: linear-gradient(#eb6f53, #eb6f53) !important; }
-        .beige-box { background-color: #e8d8cc !important; background-image: linear-gradient(#e8d8cc, #e8d8cc) !important; }
-        .text-dark { color: #01323f !important; }
-        .text-white { color: #ffffff !important; }
+        .body-bg { background-color: #eb6f53 !important; }
+        .card-container { background-color: #ffffff !important; }
+        .festive-box { background-color: #eb6f53 !important; }
+        .beige-box { background-color: #e8d8cc !important; }
+        
+        .force-dark-text { color: #01323f !important; }
+        .force-white-text { color: #ffffff !important; }
+        .force-light-blue { color: rgba(1,50,63,0.75) !important; }
       }
+
+      /* Fix específico para Gmail App */
+      u + .body .card-container { background-color: #ffffff !important; }
+      u + .body .force-dark-text { color: #01323f !important; }
     </style>
   </head>
 
-  <body style="margin:0; padding:0; background-color:#eb6f53; background-image: linear-gradient(#eb6f53, #eb6f53);">
+  <body style="margin:0; padding:0; background-color:#eb6f53;">
     <div style="display:none; font-size:1px; line-height:1px; max-height:0; max-width:0; opacity:0; overflow:hidden; mso-hide:all;">
       Gracias por acompañarnos en 2025. En 2026, más encuentros como en casa.
     </div>
 
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="body-bg" style="background-color:#eb6f53; background-image: linear-gradient(#eb6f53, #eb6f53);">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="body-bg" style="background-color:#eb6f53;">
       <tr>
         <td align="center" style="padding:26px 12px;">
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px; width:100%; border-collapse:collapse;">
@@ -472,19 +479,19 @@ exports.enviarMailAnioNuevo = onRequest(
 
             <!-- Card -->
             <tr>
-              <td class="card-container" style="background-color:#ffffff; background-image: linear-gradient(#ffffff, #ffffff); border-radius:18px; overflow:hidden; border:1px solid rgba(1,50,63,0.10);">
+              <td class="card-container" style="background-color:#ffffff; border-radius:18px; overflow:hidden; border:1px solid rgba(1,50,63,0.10);">
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                   <tr>
                     <td style="padding:22px 22px 16px 22px;">
-                      <div class="text-dark" style="font-family:Arial, sans-serif; font-size:13px; letter-spacing:0.10em; text-transform:uppercase; color:rgba(1,50,63,0.75);">
+                      <div class="force-light-blue" style="font-family:Arial, sans-serif; font-size:13px; letter-spacing:0.10em; text-transform:uppercase; color:rgba(1,50,63,0.75) !important;">
                         Gracias por este 2025
                       </div>
 
-                      <div class="text-dark" style="font-family:Arial, sans-serif; font-size:30px; line-height:1.18; color:#01323f; font-weight:800; margin-top:8px;">
+                      <div class="force-dark-text" style="font-family:Arial, sans-serif; font-size:30px; line-height:1.18; color:#01323f !important; font-weight:800; margin-top:8px;">
                         Por cada cafecito compartido, gracias 🧡
                       </div>
 
-                      <div class="text-dark" style="font-family:Arial, sans-serif; font-size:16px; line-height:1.7; color:#01323f; margin-top:10px;">
+                      <div class="force-dark-text" style="font-family:Arial, sans-serif; font-size:16px; line-height:1.7; color:#01323f !important; margin-top:10px;">
                         ${target.nombre}, en Córcega lo que más nos gusta no es “sólo servir café rico” (aunque sí 😉),
                         sino <strong>hacerte sentir que estás tomando un café en casa</strong>,
                         con amigos, charla y ese ratito que te acomoda el día.
@@ -499,8 +506,8 @@ exports.enviarMailAnioNuevo = onRequest(
                     <td style="padding:0 22px 18px 22px;">
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                         <tr>
-                          <td class="festive-box" style="background-color:#eb6f53; background-image: linear-gradient(#eb6f53, #eb6f53); border-radius:16px; padding:16px 16px;">
-                            <div class="text-white" style="font-family:Arial, sans-serif; font-size:15px; line-height:1.65; color:#ffffff;">
+                          <td class="festive-box" style="background-color:#eb6f53; border-radius:16px; padding:16px 16px;">
+                            <div class="force-white-text" style="font-family:Arial, sans-serif; font-size:15px; line-height:1.65; color:#ffffff !important;">
                               <strong>En 2026 vamos por más de eso:</strong><br/>
                               más encuentros, más “vení, sentate”, más cafecitos que se sienten como hogar.
                             </div>
@@ -517,8 +524,8 @@ exports.enviarMailAnioNuevo = onRequest(
                     <td style="padding:0 22px 22px 22px;">
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                         <tr>
-                          <td class="beige-box" style="padding:14px 14px; background-color:#e8d8cc; background-image: linear-gradient(#e8d8cc, #e8d8cc); border-radius:14px; border:1px solid rgba(1,50,63,0.10);">
-                            <div class="text-dark" style="font-family:Arial, sans-serif; font-size:14px; color:#01323f; line-height:1.55;">
+                          <td class="beige-box" style="padding:14px 14px; background-color:#e8d8cc; border-radius:14px; border:1px solid rgba(1,50,63,0.10);">
+                            <div class="force-dark-text" style="font-family:Arial, sans-serif; font-size:14px; color:#01323f !important; line-height:1.55;">
                               <span style="color:#008ba4; font-weight:800;">•</span> Más momentos tranquilos (aunque el día venga a mil).<br/>
                               <span style="color:#008ba4; font-weight:800;">•</span> Más cositas ricas para acompañar.<br/>
                               <span style="color:#008ba4; font-weight:800;">•</span> Y el mismo espíritu de siempre: <strong>rebeldía cafetera</strong>.
@@ -527,7 +534,7 @@ exports.enviarMailAnioNuevo = onRequest(
                         </tr>
                       </table>
 
-                      <div class="text-dark" style="font-family:Arial, sans-serif; font-size:16px; line-height:1.7; color:#01323f; margin-top:18px;">
+                      <div class="force-dark-text" style="font-family:Arial, sans-serif; font-size:16px; line-height:1.7; color:#01323f !important; margin-top:18px;">
                         Hola 2026! Nos vemos en la isla 🏝️.<br />
                         <strong>Equipo Córcega 🐎</strong> <span style="color:#eb6f53; font-weight:800;">☕</span>
                       </div>
@@ -542,7 +549,7 @@ exports.enviarMailAnioNuevo = onRequest(
             <!-- Footer -->
             <tr>
               <td align="center" style="padding:14px 0 0 0;">
-                <span style="font-family:Arial, sans-serif; font-size:12px; color:rgba(255,255,255,0.90);">
+                <span class="force-white-text" style="font-family:Arial, sans-serif; font-size:12px; color:rgba(255,255,255,0.90) !important;">
                   Córcega · #eb6f53
                 </span>
               </td>
