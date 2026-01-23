@@ -652,7 +652,7 @@ exports.enviarMailAniversario = onRequest(
           for (const dni of dnisPrueba) {
             const docRef = db.collection("clientes").doc(dni.toString().trim());
             const snap = await docRef.get();
-            if (snap.exists()) {
+            if (snap.exists) {
               const data = snap.data();
               const email = (data.email || data.mail || "").trim();
               if (email && email.includes("@")) {
