@@ -255,6 +255,7 @@
       document.getElementById("loader").style.display = "none";
       document.querySelector(".menu-style").style.display = "block";
 
+      /*
       // Lógica Campaña Aniversario
       const btnPrueba = document.getElementById("btnPruebaAniversario");
       const btnMasivo = document.getElementById("btnMasivoAniversario");
@@ -346,6 +347,7 @@
           lista.innerHTML = snapshot.docs.slice(-5).map(d => `<li>✅ DNI: ${d.id} - ${d.data().nombre || 'Cliente'}</li>`).join("");
         });
       };
+      */
     });
   </script>
 </head>
@@ -380,6 +382,7 @@
         <ul id="top"></ul>
       </section>
 
+      <!-- 
       <section id="seccion-campanas">
         <h2>Campaña Aniversario (24/01) 🐎🏝️</h2>
         <div style="background: #fdfcf7; padding: 20px; border: 1px solid #d86634; border-radius: 8px;">
@@ -415,18 +418,19 @@
               <ul id="listaUltimosMarcados"
                 style="margin: 5px 0 0 0; padding: 0; list-style: none; font-family: monospace;">
                 <!-- Se llena dinámicamente -->
-              </ul>
-            </div>
-          </div>
-
-          <div id="resultadoAniversario"
-            style="margin-top: 15px; padding: 10px; border-radius: 4px; display: none; font-size: 14px;"></div>
-        </div>
-      </section>
+      </ul>
     </div>
-    <script type="module">
+  </div>
 
-    </script>
+  <div id="resultadoAniversario"
+    style="margin-top: 15px; padding: 10px; border-radius: 4px; display: none; font-size: 14px;"></div>
+  </div>
+  </section>
+  -->
+  </div>
+  <script type="module">
+
+  </script>
 
 </body>
 
