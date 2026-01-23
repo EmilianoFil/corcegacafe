@@ -18,9 +18,10 @@ El sistema está dividido en dos partes principales:
 *   `index.html`: Punto de entrada principal.
 *   `registro.html`: Formulario de alta para nuevos clientes.
 *   `estado.html`: Vista donde el cliente consulta cuántos cafecitos tiene acumulados.
-*   `panel.html`: Panel de administración interno para ver estadísticas y lanzar campañas.
-*   `admin.html`: Gestión de carga de sellos (uso interno por el personal).
-*   `js/firebase-config.js`: Configuración del SDK de Firebase y exportación de la instancia `db`.
+*   `admin-new.html`: **(Nuevo)** Dash de administración moderno (SPA) con gráficos y gestión centralizada.
+*   `panel.html`: Estadísticas clásicas y lanzador de campañas.
+*   `admin.html`: Operación rápida de carga de sellos (versión clásica).
+*   `js/firebase-config.js`: Configuración central de Firebase (SDK v10).
 *   `css/`: Estilos del sitio e imágenes (incluyendo los flyers de campañas).
 
 ### Backend (`/functions`)
@@ -28,6 +29,21 @@ El sistema está dividido en dos partes principales:
 *   `enviarMailRegistro`: Mail de bienvenida.
 *   `selloCumpleaniosDiario`: Proceso diario (8:00 AM) que regala un sello a los cumpleañeros.
 *   `enviarMailAniversario`: **(Nuevo)** Sistema de envío masivo optimizado.
+
+---
+
+## 🖥️ Nuevo Admin Dash (admin-new.html)
+
+Se ha creado una nueva interfaz de administración tipo **SPA (Single Page Application)** con una estética "blanca", limpia y premium.
+
+- **Tecnologías**: HTML5, Vanilla JS, CSS Variables, Chart.js y DataTables.
+- **Dashboard Dinámico**: Gráfico de actividad semanal conectado a Firestore que muestra los cafecitos servidos día por día.
+- **Secciones Integradas**:
+    - **Dashboard**: Vista general de métricas clave.
+    - **Sumar Cafecito**: Operación de carga rápida con validación de cumpleaños y sistema de "Deshacer".
+    - **Clientes**: Tabla interactiva con búsqueda.
+    - **Auditoría**: Historial de logs reciente.
+    - **Herramientas**: Enlaces rápidos a utilidades del sistema.
 
 ---
 
