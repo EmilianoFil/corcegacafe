@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Córcega Café - Admin Dash</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap"
+        rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+    <style>
+        :root {
+            --bg-color: #fdfcf7;
+            /* Beige muy clarito Córcega */
+            --white: #ffffff;
+            --primary: #d86634;
+            /* Naranja Córcega */
+            --primary-dark: #b8542a;
+            --secondary: #0d2b37;
+            /* Azul oscuro Córcega */
+            --text-main: #1d1d1d;
+            --text-muted: #666666;
+            --border: #e8e4db;
+            --success: #2d6a4f;
+            --error: #ae2012;
+            --sidebar-width: 260px;
+        }
+
+        * {
+            box-sizing: border-box;
+            transition: all 0.2s ease-in-out;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styles */
+        aside {
+            width: var(--sidebar-width);
+            background: var(--white);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 0 24px 30px;
+            text-align: center;
+        }
+
+        .sidebar-header img {
+            width: 80px;
+            margin-bottom: 10px;
+        }
+
+        .sidebar-header h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.4rem;
+            margin: 0;
+            color: var(--secondary);
+        }
+
+        nav {
+            flex: 1;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        nav li {
+            padding: 4px 16px;
+        }
+
+        nav a {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: 500;
+            border-radius: 10px;
+            gap: 12px;
+        }
+
+        nav a:hover,
+        nav a.active {
+            background-color: #fff1eb;
+            color: var(--primary);
+        }
+
+        nav a i {
+            font-size: 1.2rem;
+        }
+
+        .sidebar-footer {
+            padding: 20px 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
+        .btn-logout {
+            width: 100%;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--error);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-logout:hover {
+            background: #fff1f0;
+        }
+
+        /* Main Content area */
+        main {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .section-content {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .section-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            margin: 0 0 24px;
+            color: var(--secondary);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--white);
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+        }
+
+        .stat-card .label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--secondary);
+            display: block;
+        }
+
+        .stat-card .trend {
+            font-size: 0.8rem;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .trend.up {
+            color: var(--success);
+        }
+
+        .trend.down {
+            color: var(--error);
+        }
+
+        /* Dashboard Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        /* Forms */
+        .form-container {
+            max-width: 500px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+        }
+
+        /* Table */
+        .dataTables_wrapper {
+            background: var(--white);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        /* Loader */
+        #loader-global {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .galope {
+            width: 100px;
+            animation: bounce 1s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from {
+                transform: translateY(0);
+            }
+
+            to {
+                transform: translateY(-15px);
+            }
+        }
+
+        /* Custom Styles for SPA sections */
+        #resultado-puntos {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            display: none;
+        }
+
+        #resultado-puntos.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        #resultado-puntos.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Responsive */
+        @media (max-width: 850px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                overflow: auto;
+            }
+
+            aside {
+                width: 100%;
+                height: auto;
+                padding: 10px 0;
+                position: sticky;
+                top: 0;
+            }
+
+            .sidebar-header {
+                display: none;
+            }
+
+            nav ul {
+                display: flex;
+                overflow-x: auto;
+                padding: 0 10px;
+            }
+
+            nav li {
+                padding: 0 5px;
+            }
+
+            nav a {
+                white-space: nowrap;
+                flex-direction: column;
+                gap: 4px;
+                font-size: 0.8rem;
+            }
+
+            main {
+                padding: 20px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loader-global">
+        <img src="css/img/Corcega_Logo_Original.png" class="galope">
+        <p style="font-family: 'Playfair Display'; margin-top: 20px;">Cargando Admin Dash...</p>
+    </div>
+
+    <!-- Sidebar -->
+    <aside>
+        <div class="sidebar-header">
+            <img src="css/img/Corcega_Logo_Original.png" alt="Logo">
+            <h2>Admin Dash</h2>
+        </div>
+        <nav>
+            <ul id="main-nav">
+                <li><a href="#dashboard" class="active"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="#puntos"><span class="icon">☕</span> Sumar Cafecito</a></li>
+                <li><a href="#clientes"><span class="icon">👥</span> Clientes</a></li>
+                <li><a href="#logs"><span class="icon">📜</span> Auditoría</a></li>
+                <li><a href="#tools"><span class="icon">🛠️</span> Herramientas</a></li>
+            </ul>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <span class="icon">👤</span> <span id="nombre-usuario">Cargando...</span>
+            </div>
+            <button class="btn-logout" onclick="window.cerrarSesion()">Cerrar sesión</button>
+        </div>
+    </aside>
+
+    <!-- Content Area -->
+    <main>
+
+        <!-- DASHBOARD SECTION -->
+        <section id="dashboard" class="section-content active">
+            <h3>Vista General</h3>
+
+            <div class="stats-grid">
+                <div class="card stat-card">
+                    <span class="label">Clientes Totales</span>
+                    <span class="value" id="stat-clientes">-</span>
+                    <div id="trend-clientes" class="trend"></div>
+                </div>
+                <div class="card stat-card">
+                    <span class="label">Cafecitos Servidos</span>
+                    <span class="value" id="stat-cafes">-</span>
+                </div>
+                <div class="card stat-card">
+                    <span class="label">Invitaciones Pendientes</span>
+                    <span class="value" id="stat-pendientes">-</span>
+                </div>
+                <div class="card stat-card">
+                    <span class="label">Escaneos (Semana)</span>
+                    <span class="value" id="stat-logs">-</span>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h4 style="margin-top:0">Actividad Semanal</h4>
+                    <canvas id="growthChart" height="200"></canvas>
+                </div>
+                <div class="card">
+                    <h4 style="margin-top:0">Top Clientes</h4>
+                    <ul id="top-clientes-list" style="list-style:none; padding:0; margin:0">
+                        <li style="color:var(--text-muted)">Cargando...</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- SUMAR PUNTOS SECTION -->
+        <section id="puntos" class="section-content">
+            <h3>Cargar Cafecito</h3>
+            <div class="card form-container">
+                <p style="color: var(--text-muted); margin-top:0">Ingresá el DNI para sumar un sello automáticamente.
+                </p>
+                <form id="puntos-form">
+                    <div class="input-group">
+                        <label>Documento / Pasaporte</label>
+                        <input type="tel" id="dni-input" placeholder="DNI del cliente" inputmode="numeric" required
+                            autofocus>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" id="btn-sumar" class="btn-primary">Sumar Sello ☕</button>
+                        <button type="button" id="btn-consultar" style="background:var(--secondary)"
+                            class="btn-primary">Consultar 🔍</button>
+                    </div>
+                </form>
+                <div id="resultado-puntos"></div>
+                <div id="insta-box" style="margin-top:20px; display:none">
+                    <button id="btn-insta-add" style="background:#833ab4;" class="btn-primary">➕ Sigue en
+                        Instagram</button>
+                </div>
+                <div id="deshacer-box" style="margin-top:10px; display:none">
+                    <button id="btn-deshacer-new" style="background:#666" class="btn-primary">↩️ Deshacer
+                        Última</button>
+                </div>
+            </div>
+
+            <div id="quick-view" class="card" style="margin-top:20px; display:none">
+                <h4 style="margin-top:0">Estado del Cliente</h4>
+                <div id="quick-view-content"></div>
+            </div>
+        </section>
+
+        <!-- CLIENTES SECTION -->
+        <section id="clientes" class="section-content">
+            <h3>Gestión de Clientes</h3>
+            <div id="table-clientes-wrapper">
+                <table id="tablaClientesDash" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>DNI</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Cafés</th>
+                            <th>Total</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- LOGS SECTION -->
+        <section id="logs" class="section-content">
+            <h3>Auditoría de Actividad</h3>
+            <div class="stats-grid"
+                style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 20px;">
+                <div class="input-group">
+                    <label>Desde</label>
+                    <input type="date" id="log-desde">
+                </div>
+                <div class="input-group">
+                    <label>Hasta</label>
+                    <input type="date" id="log-hasta">
+                </div>
+                <div class="input-group">
+                    <label>Acción</label>
+                    <select id="log-accion">
+                        <option value="">Todas</option>
+                        <option value="sumar_cafecito">Suma Café</option>
+                        <option value="invitar_cafecito">Invitación</option>
+                        <option value="registro_cliente">Registros</option>
+                    </select>
+                </div>
+                <div class="input-group" style="display: flex; align-items: flex-end;">
+                    <button id="btn-filter-logs" class="btn-primary" style="padding: 11px;">Filtrar</button>
+                </div>
+            </div>
+            <table id="tablaLogsDash" class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Admin</th>
+                        <th>Acción</th>
+                        <th>Detalle</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <!-- TOOLS SECTION -->
+        <section id="tools" class="section-content">
+            <h3>Configuración y Herramientas</h3>
+            <div class="stats-grid">
+                <div class="card">
+                    <h4>Gestión de Menú</h4>
+                    <p>Actualizá el PDF o el texto del menú digital.</p>
+                    <a href="menu-upload.html" class="btn-primary"
+                        style="text-decoration:none; display:block; text-align:center">Ir a Menú</a>
+                </div>
+                <div class="card">
+                    <h4>Seguridad</h4>
+                    <p>Registrar un nuevo administrador.</p>
+                    <a href="registro-admin.html" class="btn-primary"
+                        style="text-decoration:none; display:block; text-align:center">Nuevo Admin</a>
+                </div>
+                <div class="card">
+                    <h4>Auditoría Completa</h4>
+                    <p>Ver historial detallado antiguo.</p>
+                    <a href="filtros.html" class="btn-primary"
+                        style="text-decoration:none; display:block; text-align:center">Ver Historial</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Firebase Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+    <script type="module">
+        import { auth, onAuthStateChanged, signOut } from './js/firebase-auth.js';
+        import { db } from './js/firebase-config.js';
+        import {
+            doc, getDoc, getDocs, collection, query, where, orderBy, limit,
+            updateDoc, increment, serverTimestamp, addDoc, onSnapshot
+        } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+        let adminData = null;
+        let chartInstance = null;
+        let clientesData = [];
+        let logsData = [];
+
+        // --- AUTH & INITIALIZATION ---
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            try {
+                const ref = doc(db, "admin", user.uid);
+                const snap = await getDoc(ref);
+
+                if (!snap.exists()) {
+                    alert("No tienes cuenta de admin.");
+                    signOut(auth);
+                    return;
+                }
+
+                adminData = snap.data();
+                document.getElementById("nombre-usuario").innerText = adminData.nombre || user.email;
+
+                // Load initial data
+                await loadDashboardStats();
+                await loadClientesTable();
+
+                // Remove loader
+                document.getElementById("loader-global").style.fadeOut = "0.5s";
+                setTimeout(() => document.getElementById("loader-global").style.display = "none", 500);
+
+            } catch (error) {
+                console.error("Error init:", error);
+            }
+        });
+
+        window.cerrarSesion = async () => {
+            await addDoc(collection(db, "logs"), {
+                usuario: auth.currentUser?.email,
+                accion: "cerrar_sesion",
+                detalles: "Logout desde AdminDash",
+                timestamp: new Date()
+            });
+            await signOut(auth);
+            window.location.href = "login.html";
+        };
+
+        // --- SPA NAVIGATION ---
+        document.querySelectorAll('#main-nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = link.getAttribute('href').substring(1);
+
+                // UI Toggle
+                document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+                document.getElementById(target).classList.add('active');
+
+                document.querySelectorAll('#main-nav a').forEach(a => a.classList.remove('active'));
+                link.classList.add('active');
+
+                // Section specific initializers
+                if (target === 'logs' && logsData.length === 0) loadLogsTable();
+            });
+        });
+
+        // --- DASHBOARD LOGIC ---
+        async function loadDashboardStats() {
+            const clientesSnap = await getDocs(collection(db, "clientes"));
+            const totalC = clientesSnap.size;
+            let totalCafes = 0;
+            let pendientes = 0;
+            const topC = [];
+
+            clientesSnap.forEach(d => {
+                const data = d.data();
+                totalCafes += (data.cafes_acumulados_total || 0);
+                if (data.cafe_disponible) pendientes++;
+                topC.push(data);
+            });
+
+            document.getElementById("stat-clientes").innerText = totalC;
+            document.getElementById("stat-cafes").innerText = totalCafes;
+            document.getElementById("stat-pendientes").innerText = pendientes;
+
+            // Top 5 List
+            topC.sort((a, b) => (b.cafes_acumulados_total || 0) - (a.cafes_acumulados_total || 0));
+            const topHtml = topC.slice(0, 5).map((c, i) => `
+                <li style="padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <span style="font-weight:700; color:var(--primary); margin-right:8px">#${i + 1}</span>
+                        <span style="font-weight:500">${c.nombre || c.dni}</span>
+                    </div>
+                    <span style="font-size:0.9rem; font-weight:700">${c.cafes_acumulados_total || 0} ☕</span>
+                </li>
+            `).join('');
+            document.getElementById("top-clientes-list").innerHTML = topHtml;
+
+            // Chart data (simulation or real)
+            initChart();
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                    datasets: [{
+                        label: 'Cafecitos',
+                        data: [12, 19, 15, 25, 32, 45, 38],
+                        borderColor: '#d86634',
+                        backgroundColor: 'rgba(216, 102, 52, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        // --- PUNTOS LOGIC ---
+        const puntosForm = document.getElementById("puntos-form");
+        const resBox = document.getElementById("resultado-puntos");
+        const lastOp = { dni: null, data: null };
+
+        puntosForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const dni = document.getElementById("dni-input").value.trim();
+            const btn = document.getElementById("btn-sumar");
+
+            btn.disabled = true;
+            resBox.style.display = "block";
+            resBox.className = "loading";
+            resBox.innerText = "Procesando...";
+
+            try {
+                const ref = doc(db, "clientes", dni);
+                const snap = await getDoc(ref);
+
+                if (!snap.exists()) {
+                    resBox.className = "error";
+                    resBox.innerHTML = `❌ No registrado. <a href="registro-admin.html?dni=${dni}" style="color:inherit; font-weight:700">Registrar ahora</a>`;
+                    return;
+                }
+
+                const data = snap.data();
+                const cafesActuales = data.cafes || 0;
+                const nombre = data.nombre || dni;
+
+                // Save for undo
+                lastOp.dni = dni;
+                lastOp.data = { ...data };
+
+                const updates = {
+                    ultimo_cafe: serverTimestamp(),
+                    cafes_acumulados_total: increment(1)
+                };
+
+                let msg = "";
+                if (cafesActuales >= 8) {
+                    updates.cafes = 0;
+                    updates.cafe_disponible = false;
+                    updates.cafecitos_invitados = increment(1);
+                    msg = `🎁 ¡INVITACIÓN! ${nombre} ya completó los 8 sello. Este café corre por la casa.`;
+                } else {
+                    updates.cafes = cafesActuales + 1;
+                    if (updates.cafes >= 8) updates.cafe_disponible = true;
+                    msg = `✅ ¡Listo! Sello sumado para ${nombre}. Total: ${updates.cafes}`;
+                }
+
+                await updateDoc(ref, updates);
+                await addDoc(collection(db, "logs"), {
+                    usuario: auth.currentUser?.email,
+                    accion: cafesActuales >= 8 ? "invitar_cafecito" : "sumar_cafecito",
+                    detalles: `DNI: ${dni}`,
+                    timestamp: new Date()
+                });
+
+                resBox.className = "success";
+                resBox.innerText = msg;
+                document.getElementById("deshacer-box").style.display = "block";
+
+                // Instagram check
+                if (!data.sigue_instagram && !data.sello_instagram_usado) {
+                    document.getElementById("insta-box").style.display = "block";
+                } else {
+                    document.getElementById("insta-box").style.display = "none";
+                }
+
+                // If birthday
+                const hoy = new Date();
+                if (data.cumple_dia == hoy.getDate() && data.cumple_mes == (hoy.getMonth() + 1)) {
+                    alert("🎂 ¡CUMPLEAÑOS! Hoy cumple " + nombre);
+                }
+
+            } catch (err) {
+                console.error(err);
+                resBox.className = "error";
+                resBox.innerText = "Error procesando el pedido.";
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        document.getElementById("btn-consultar").onclick = async () => {
+            const dni = document.getElementById("dni-input").value.trim();
+            if (!dni) return;
+            const qView = document.getElementById("quick-view");
+            const qContent = document.getElementById("quick-view-content");
+
+            qView.style.display = "block";
+            qContent.innerText = "Buscando...";
+
+            const snap = await getDoc(doc(db, "clientes", dni));
+            if (snap.exists()) {
+                const d = snap.data();
+                qContent.innerHTML = `
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:0.9rem">
+                        <div><strong>Nombre:</strong> ${d.nombre || '—'}</div>
+                        <div><strong>Email:</strong> ${d.email || '—'}</div>
+                        <div><strong>Sellos:</strong> ${d.cafes} / 8</div>
+                        <div><strong>Total:</strong> ${d.cafes_acumulados_total}</div>
+                        <div><strong>Cumple:</strong> ${d.cumple_dia || '—'}/${d.cumple_mes || '—'}</div>
+                        <div><strong>Instagram:</strong> ${d.sigue_instagram ? '✅' : '❌'}</div>
+                    </div>
+                 `;
+            } else {
+                qContent.innerText = "Cliente no encontrado.";
+            }
+        };
+
+        document.getElementById("btn-deshacer-new").onclick = async () => {
+            if (!lastOp.dni) return;
+            const ref = doc(db, "clientes", lastOp.dni);
+            await updateDoc(ref, lastOp.data);
+            alert("Operación revertida.");
+            lastOp.dni = null;
+            document.getElementById("deshacer-box").style.display = "none";
+            document.getElementById("resultado-puntos").style.display = "none";
+        };
+
+        // --- CLIENTES TABLE LOGIC ---
+        async function loadClientesTable() {
+            const snap = await getDocs(collection(db, "clientes"));
+            const data = snap.docs.map(doc => doc.data());
+
+            $('#tablaClientesDash').DataTable({
+                data: data,
+                destroy: true,
+                columns: [
+                    { data: 'dni' },
+                    { data: 'nombre', defaultContent: '—' },
+                    { data: 'email', defaultContent: '—' },
+                    { data: 'cafes' },
+                    { data: 'cafes_acumulados_total' },
+                    {
+                        data: null,
+                        render: function (data) {
+                            return `<button onclick="window.location.href='cliente.html?dni=${data.dni}'" style="padding:4px 8px; font-size:12px; border-radius:4px; border:none; background:#eee; cursor:pointer">Ver/Editar</button>`;
+                        }
+                    }
+                ],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                }
+            });
+        }
+
+        // --- LOGS TABLE LOGIC ---
+        async function loadLogsTable() {
+            const q = query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(100));
+            const snap = await getDocs(q);
+            const data = snap.docs.map(doc => doc.data());
+
+            $('#tablaLogsDash').DataTable({
+                data: data,
+                destroy: true,
+                columns: [
+                    {
+                        data: 'timestamp',
+                        render: (t) => t ? new Date(t.seconds * 1000).toLocaleString() : '—'
+                    },
+                    { data: 'usuario', defaultContent: 'system' },
+                    { data: 'accion' },
+                    { data: 'detalles', defaultContent: '—' }
+                ],
+                order: [[0, 'desc']],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                }
+            });
+        }
+
+    </script>
+</body>
+
+</html>
