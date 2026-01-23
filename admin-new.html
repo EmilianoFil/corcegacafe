@@ -683,31 +683,88 @@
             `).join('');
             document.getElementById("top-clientes-list").innerHTML = topHtml;
 
-            // Chart data (simulation or real)
-            initChart();
+            // Chart data con DATOS REALES
+            await initChart();
         }
 
-        function initChart() {
+        async function initChart() {
             const ctx = document.getElementById('growthChart').getContext('2d');
+
+            // Calculamos rango de los últimos 7 días
+            const hoy = new Date();
+            const haceUnaSemana = new Date();
+            haceUnaSemana.setDate(hoy.getDate() - 6);
+            haceUnaSemana.setHours(0, 0, 0, 0);
+
+            // Query a logs
+            const q = query(
+                collection(db, "logs"),
+                where("timestamp", ">=", haceUnaSemana),
+                orderBy("timestamp", "asc")
+            );
+
+            const logsSnap = await getDocs(q);
+            document.getElementById("stat-logs").innerText = logsSnap.size;
+
+            const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            const labels = [];
+            const dataCounts = [0, 0, 0, 0, 0, 0, 0];
+
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(haceUnaSemana);
+                d.setDate(haceUnaSemana.getDate() + i);
+                labels.push(diasSemana[d.getDay()]);
+            }
+
+            logsSnap.forEach(l => {
+                const log = l.data();
+                if (log.accion === 'sumar_cafecito' || log.accion === 'invitar_cafecito') {
+                    const fechaLog = log.timestamp?.toDate ? log.timestamp.toDate() : new Date();
+                    const diffTime = Math.abs(fechaLog - haceUnaSemana);
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    if (diffDays >= 0 && diffDays < 7) {
+                        dataCounts[diffDays]++;
+                    }
+                }
+            });
+
             if (chartInstance) chartInstance.destroy();
 
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                    labels: labels,
                     datasets: [{
                         label: 'Cafecitos',
-                        data: [12, 19, 15, 25, 32, 45, 38],
+                        data: dataCounts,
                         borderColor: '#d86634',
                         backgroundColor: 'rgba(216, 102, 52, 0.1)',
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#d86634'
                     }]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0d2b37',
+                            padding: 10,
+                            displayColors: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1, precision: 0 }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
                 }
             });
         }
