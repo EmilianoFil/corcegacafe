@@ -254,6 +254,59 @@
 
       document.getElementById("loader").style.display = "none";
       document.querySelector(".menu-style").style.display = "block";
+
+      // Lógica Campaña Aniversario
+      const btnPrueba = document.getElementById("btnPruebaAniversario");
+      const btnMasivo = document.getElementById("btnMasivoAniversario");
+      const inputDnis = document.getElementById("dnisPrueba");
+      const areaResultado = document.getElementById("resultadoAniversario");
+
+      const enviarMails = async (params) => {
+        areaResultado.style.display = "block";
+        areaResultado.style.background = "#eee";
+        areaResultado.style.color = "#333";
+        areaResultado.innerText = "Enviando... por favor esperá. Esto puede tardar unos minutos.";
+        btnPrueba.disabled = true;
+        btnMasivo.disabled = true;
+
+        try {
+          const response = await fetch("https://us-central1-corcega-loyalty-club.cloudfunctions.net/enviarMailAniversario", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(params)
+          });
+          const data = await response.json();
+          if (response.ok) {
+            areaResultado.style.background = "#d4edda";
+            areaResultado.style.color = "#155724";
+            areaResultado.innerText = `✅ Finalizado: ${data.exitosos} enviados con éxito. ${data.yaEnviados} ya lo habían recibido. ${data.fallidos} fallaron.`;
+          } else {
+            areaResultado.style.background = "#f8d7da";
+            areaResultado.style.color = "#721c24";
+            areaResultado.innerText = `❌ Error: ${data.error || "Hubo un problema al procesar el envío."}`;
+          }
+        } catch (error) {
+          areaResultado.style.background = "#f8d7da";
+          areaResultado.style.color = "#721c24";
+          areaResultado.innerText = `❌ Error de red: No se pudo contactar con el servidor.`;
+          console.error(error);
+        } finally {
+          btnPrueba.disabled = false;
+          btnMasivo.disabled = false;
+        }
+      };
+
+      btnPrueba.onclick = () => {
+        const dnis = inputDnis.value.split(",").map(d => d.trim()).filter(d => d);
+        if (dnis.length === 0) return alert("Ingresá al menos un DNI para la prueba.");
+        enviarMails({ dnisPrueba: dnis });
+      };
+
+      btnMasivo.onclick = () => {
+        if (confirm("⚠️ ¿Estás seguro de enviar el mail a TODOS los clientes que aún no lo recibieron?\n\nEsta acción consultará a todos los clientes en la base de datos y les enviará el mail de aniversario si no tienen la marca de enviado.")) {
+          enviarMails({ esMasivo: true });
+        }
+      };
     });
   </script>
 </head>
@@ -288,7 +341,26 @@
         <ul id="top"></ul>
       </section>
 
-      <section id="seccion-campanas" </div>
+      <section id="seccion-campanas">
+        <h2>Campaña Aniversario (24/01) 🐎🏝️</h2>
+        <div style="background: #fdfcf7; padding: 20px; border: 1px solid #d86634; border-radius: 8px;">
+          <p style="font-size: 14px; margin-top: 0;">Ingresá los DNIs para probar (separados por coma):</p>
+          <input type="text" id="dnisPrueba" placeholder="Ej: 12345678, 87654321"
+            style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button id="btnPruebaAniversario"
+              style="background: #0d2b37; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">Enviar
+              Prueba</button>
+            <button id="btnMasivoAniversario"
+              style="background: #d86634; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">⚠️
+              ENVIAR MASIVO (Total)</button>
+          </div>
+
+          <div id="resultadoAniversario"
+            style="margin-top: 15px; padding: 10px; border-radius: 4px; display: none; font-size: 14px;"></div>
+        </div>
+      </section>
     </div>
     <script type="module">
 

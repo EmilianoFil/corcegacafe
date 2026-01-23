@@ -626,4 +626,184 @@ exports.enviarMailAnioNuevo = onRequest(
   }
 );
 
+exports.enviarMailAniversario = onRequest(
+  { region: "us-central1", secrets: [emailUser, emailPass], timeoutSeconds: 540, memory: "512MiB" },
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      const { dnisPrueba, esMasivo } = req.body;
+      const adminUser = "Admin_Panel";
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        pool: true,
+        maxConnections: 5,
+        maxMessages: 100,
+        auth: {
+          user: emailUser.value(),
+          pass: emailPass.value(),
+        },
+      });
+
+      let listaEnvio = [];
+
+      try {
+        if (dnisPrueba && Array.isArray(dnisPrueba) && dnisPrueba.length > 0) {
+          // Modo prueba: enviar solo a DNIs específicos
+          for (const dni of dnisPrueba) {
+            const docRef = db.collection("clientes").doc(dni.toString().trim());
+            const snap = await docRef.get();
+            if (snap.exists()) {
+              const data = snap.data();
+              const email = (data.email || data.mail || "").trim();
+              if (email && email.includes("@")) {
+                listaEnvio.push({
+                  dni: dni.toString().trim(),
+                  email: email,
+                  nombre: data.nombre || "Cliente",
+                  yaEnviado: data.mailaniversario === true
+                });
+              }
+            }
+          }
+        } else if (esMasivo) {
+          // Modo masivo: todos los clientes que NO tienen mailaniversario = true
+          const snapshot = await db.collection("clientes").get();
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const email = (data.email || data.mail || "").trim().toLowerCase();
+            // Solo agregar si tiene email válido Y no se le envió antes
+            if (email && email.includes("@") && data.mailaniversario !== true) {
+              listaEnvio.push({
+                dni: doc.id,
+                email: email,
+                nombre: data.nombre || "Cliente",
+                yaEnviado: false
+              });
+            }
+          });
+        }
+
+        if (listaEnvio.length === 0) {
+          return res.status(400).send({ error: "No hay destinatarios válidos o todos ya recibieron el mail." });
+        }
+
+        const resultados = { exitosos: 0, fallidos: 0, yaEnviados: 0, errores: [] };
+
+        // Log inicial
+        await db.collection("logs").add({
+          accion: "inicio_campana_aniversario",
+          detalles: `Iniciando envío a ${listaEnvio.length} destinatarios.`,
+          usuario: adminUser,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Enviamos en lotes (chunks) para no saturar
+        const chunkSize = 15;
+        for (let i = 0; i < listaEnvio.length; i += chunkSize) {
+          const chunk = listaEnvio.slice(i, i + chunkSize);
+
+          await Promise.all(chunk.map(async (target) => {
+            // Si ya fue enviado (solo aplica en modo prueba), saltear
+            if (target.yaEnviado) {
+              resultados.yaEnviados++;
+              logger.info(`⚠️ ${target.email} ya recibió el mail anteriormente (DNI: ${target.dni})`);
+              return;
+            }
+
+            const mailOptions = {
+              from: `Córcega Café <${emailUser.value()}>`,
+              to: target.email,
+              subject: "Aniversario Córcega 24/01 🐎🏝️",
+              html: `<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light only" />
+    <title>Aniversario Córcega</title>
+    <style>
+      :root { color-scheme: light only; }
+      html, body { background-color: #fdfcf7 !important; margin: 0; padding: 0; }
+      
+      @media (prefers-color-scheme: dark) {
+        .body-bg { background-color: #fdfcf7 !important; }
+      }
+    </style>
+  </head>
+  <body style="margin:0; padding:0; background-color:#fdfcf7;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#fdfcf7;">
+      <tr>
+        <td align="center" style="padding:20px 12px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px; width:100%;">
+            <tr>
+              <td align="center" style="padding:0;">
+                <img
+                  src="https://emilianofil.github.io/corcegacafe/css/img/FlyerAniversario.jpg"
+                  alt="Aniversario Córcega"
+                  style="display:block; width:100%; max-width:600px; height:auto; border:0;"
+                />
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:20px 0;">
+                <p style="font-family:Arial, sans-serif; font-size:14px; color:#2b2b2b; margin:0;">
+                  Nos vemos en la isla 🏝️<br/>
+                  <strong>Equipo Córcega 🐎</strong>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`,
+            };
+
+            try {
+              await transporter.sendMail(mailOptions);
+
+              // Marcar el usuario como que ya recibió el mail
+              await db.collection("clientes").doc(target.dni).update({
+                mailaniversario: true
+              });
+
+              resultados.exitosos++;
+              logger.info(`✅ Mail enviado y marcado: ${target.email} (DNI: ${target.dni})`);
+            } catch (err) {
+              resultados.fallidos++;
+              resultados.errores.push({ dni: target.dni, email: target.email, error: err.message });
+              logger.error(`❌ Error enviando a ${target.email}:`, err);
+            }
+          }));
+
+          // Log parcial cada lote
+          logger.info(`Progreso: ${Math.min(i + chunk.length, listaEnvio.length)}/${listaEnvio.length}`);
+        }
+
+        if (resultados.fallidos > 0) {
+          await db.collection("logs").add({
+            accion: "mail_aniversario_fallidos",
+            detalles: `Emails fallidos (${resultados.fallidos}): ` + resultados.errores.map(e => `${e.dni} - ${e.email} (${e.error})`).join(", ").substring(0, 1500),
+            usuario: adminUser,
+            timestamp: admin.firestore.FieldValue.serverTimestamp()
+          });
+        }
+
+        await db.collection("logs").add({
+          accion: esMasivo ? "mail_aniversario_masivo_finalizado" : "mail_aniversario_prueba",
+          detalles: `FIN CAMPAÑA ANIVERSARIO. Exitosos: ${resultados.exitosos}, Ya enviados: ${resultados.yaEnviados}, Fallidos: ${resultados.fallidos}. Total procesados: ${listaEnvio.length}`,
+          usuario: adminUser,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        res.status(200).send(resultados);
+      } catch (error) {
+        logger.error("Error en proceso masivo de aniversario:", error);
+        res.status(500).send({ error: error.message });
+      }
+    });
+  }
+);
+
 exports.uploadMenuToGitHub = require('./upload').uploadMenuToGitHub;
