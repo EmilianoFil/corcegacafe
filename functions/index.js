@@ -713,7 +713,7 @@ exports.enviarMailAniversario = onRequest(
             const mailOptions = {
               from: `Córcega Café <${emailUser.value()}>`,
               to: target.email,
-              subject: "Aniversario Córcega 24/01 🐎🏝️",
+              subject: "¡Aniversario Córcega 24/01!",
               html: `<!doctype html>
 <html lang="es">
   <head>
