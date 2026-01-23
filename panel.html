@@ -143,7 +143,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { firebaseConfig } from "./js/firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
@@ -304,8 +304,47 @@
 
       btnMasivo.onclick = () => {
         if (confirm("⚠️ ¿Estás seguro de enviar el mail a TODOS los clientes que aún no lo recibieron?\n\nEsta acción consultará a todos los clientes en la base de datos y les enviará el mail de aniversario si no tienen la marca de enviado.")) {
+          activarMonitorRealTime();
           enviarMails({ esMasivo: true });
         }
+      };
+
+      // Nuevo: Monitor Real-time usando Firestore listeners
+      let unsuscribeMonitor = null;
+      const activarMonitorRealTime = async () => {
+        const monitorDiv = document.getElementById("monitorAniversario");
+        const barra = document.getElementById("barraProgreso");
+        const textoContador = document.getElementById("contadorProgreso");
+        const lista = document.getElementById("listaUltimosMarcados");
+
+        monitorDiv.style.display = "block";
+
+        // 1. Obtener total de clientes aproximado para la barra
+        const snapTotal = await getDocs(collection(db, "clientes"));
+        const total = snapTotal.size;
+
+        if (unsuscribeMonitor) unsuscribeMonitor();
+
+        // 2. Escuchar cambios en clientes marcados con mailaniversario
+        const q = query(
+          collection(db, "clientes"),
+          where("mailaniversario", "==", true)
+        );
+
+        unsuscribeMonitor = onSnapshot(q, (snapshot) => {
+          const enviados = snapshot.size;
+          const porc = (enviados / total) * 100;
+
+          barra.style.width = `${porc}%`;
+          textoContador.innerText = `${enviados} / ${total}`;
+
+          // Mostrar los últimos 5 DNIs marcados
+          const docs = snapshot.docs
+            .map(d => ({ dni: d.id, ...d.data() }))
+            .sort((a, b) => (b.timestamp_envio || 0) - (a.timestamp_envio || 0)); // Nota: No agregamos timestamp_envio todavía, pero lo dejamos listo
+
+          lista.innerHTML = snapshot.docs.slice(-5).map(d => `<li>✅ DNI: ${d.id} - ${d.data().nombre || 'Cliente'}</li>`).join("");
+        });
       };
     });
   </script>
@@ -355,6 +394,29 @@
             <button id="btnMasivoAniversario"
               style="background: #d86634; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">⚠️
               ENVIAR MASIVO (Total)</button>
+          </div>
+
+          <div id="monitorAniversario"
+            style="margin-top: 25px; padding: 15px; background: white; border-radius: 12px; border: 1px solid #eee; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span style="font-weight: bold; color: #0d2b37;">Progreso de Envío</span>
+              <span id="contadorProgreso" style="font-size: 14px; font-weight: bold; color: #d86634;">0 / 0</span>
+            </div>
+
+            <div
+              style="width: 100%; background: #eee; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 15px;">
+              <div id="barraProgreso"
+                style="width: 0%; height: 100%; background: linear-gradient(90deg, #d86634, #eb6f53); transition: width 0.5s ease;">
+              </div>
+            </div>
+
+            <div style="font-size: 13px; color: #666;">
+              <strong>Últimos marcados:</strong>
+              <ul id="listaUltimosMarcados"
+                style="margin: 5px 0 0 0; padding: 0; list-style: none; font-family: monospace;">
+                <!-- Se llena dinámicamente -->
+              </ul>
+            </div>
           </div>
 
           <div id="resultadoAniversario"
