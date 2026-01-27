@@ -633,15 +633,10 @@
                     <span class="value" id="stat-avg">-</span>
                     <div id="trend-avg" class="trend"></div>
                 </div>
-                <div class="card stat-card">
-                    <span class="label">Escaneos QR (Semana)</span>
-                    <span class="value" id="stat-qr-semana">-</span>
-                    <div id="trend-qr-semana" class="trend"></div>
-                </div>
+            </div>
             </div>
 
-
-            <div class="dashboard-grid">
+            <div class="dashboard-grid" style="margin-bottom: 24px;">
                 <div class="card">
                     <h4 style="margin-top:0">Actividad Semanal</h4>
                     <div style="position: relative; height: 300px; width: 100%;">
@@ -656,14 +651,51 @@
                             <button id="btn-rank-year" class="btn-rank-toggle">Este Año</button>
                             <button id="btn-rank-all" class="btn-rank-toggle">Total</button>
                         </div>
-
                     </div>
                     <ul id="top-clientes-list" class="rank-list">
                         <li style="color:var(--text-muted)">Cargando...</li>
                     </ul>
                 </div>
             </div>
+
+            <div class="dashboard-grid"
+                style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 24px;">
+                <div class="card">
+                    <h4 style="margin-top:0">🎂 Próximos Cumpleaños</h4>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">Clientes que cumplen
+                        en los próximos 7 días.</p>
+                    <ul id="birthday-list" class="rank-list">
+                        <li style="color:var(--text-muted)">Calculando...</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4 style="margin-top:0">⚠️ Clientes en Riesgo</h4>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">Habituales que no
+                        visitan hace +30 días.</p>
+                    <ul id="churn-list" class="rank-list">
+                        <li style="color:var(--text-muted)">Analizando...</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4 style="margin-top:0">📊 Estado de Fidelización</h4>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">Distribución de
+                        clientes según sus sellos.</p>
+                    <div style="position: relative; height: 200px;">
+                        <canvas id="funnelChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 40px;">
+                <h4 style="margin-top:0">🕒 Mapa de Calor: Movimiento por Hora</h4>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">Frecuencia de visitas
+                    según la hora del día (últimos 30 días).</p>
+                <div style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+            </div>
         </section>
+
 
 
         <!-- SUMAR PUNTOS SECTION -->
@@ -801,7 +833,10 @@
 
         let adminData = null;
         let chartInstance = null;
+        let funnelChartInstance = null;
+        let hourlyChartInstance = null;
         let clientesData = [];
+
         let logsData = [];
 
         // Dashboard Cache
@@ -960,10 +995,171 @@
 
             renderRankings(cachedLogs, cachedStartWeek, startYear);
 
+            // --- INSIGHTS ---
+            renderBirthdays();
+            renderChurn();
+            renderFunnel();
+            renderHourlyHeatmap(logsRecientes);
 
             // --- CHART ---
             await initChart(logsRecientes);
         }
+
+        function renderBirthdays() {
+            const listEl = document.getElementById('birthday-list');
+            const hoy = new Date();
+            const prox7 = [];
+
+            clientesData.forEach(c => {
+                if (!c.cumple_dia || !c.cumple_mes) return;
+
+                // Crear fecha de cumple este año
+                let cumple = new Date(hoy.getFullYear(), c.cumple_mes - 1, c.cumple_dia);
+
+                const diffTime = cumple - hoy;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays >= 0 && diffDays <= 7) {
+                    prox7.push({ ...c, diffDays });
+                }
+            });
+
+            if (prox7.length === 0) {
+                listEl.innerHTML = `<li style="color:var(--text-muted); padding:10px; font-size:0.9rem">No hay cumples cerca ☕</li>`;
+                return;
+            }
+
+            prox7.sort((a, b) => a.diffDays - b.diffDays);
+            listEl.innerHTML = prox7.map(c => `
+                <li style="padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display:flex; align-items:center; gap:10px">
+                        <span style="font-size:1.2rem">🎂</span>
+                        <div>
+                            <span style="font-weight:600; display:block">${c.nombre || c.dni}</span>
+                            <small style="color:var(--text-muted)">${c.cumple_dia}/${c.cumple_mes}</small>
+                        </div>
+                    </div>
+                    <span style="font-size:0.75rem; font-weight:700; color:var(--success)">${c.diffDays === 0 ? '¡HOY!' : 'en ' + c.diffDays + 'd'}</span>
+                </li>
+            `).join('');
+        }
+
+        function renderChurn() {
+            const listEl = document.getElementById('churn-list');
+            const hoy = new Date();
+            const enRiesgo = [];
+
+            clientesData.forEach(c => {
+                if (!c.ultimo_cafe) return;
+                const ultimo = c.ultimo_cafe.toDate ? c.ultimo_cafe.toDate() : new Date(c.ultimo_cafe);
+                const diffDays = Math.floor((hoy - ultimo) / (1000 * 60 * 60 * 24));
+
+                // Clientes que tienen al menos 3 cafés acumulados totales pero no vienen hace +30 días
+                if (diffDays >= 30 && (c.cafes_acumulados_total || 0) >= 3) {
+                    enRiesgo.push({ ...c, diffDays });
+                }
+            });
+
+            if (enRiesgo.length === 0) {
+                listEl.innerHTML = `<li style="color:var(--text-muted); padding:10px; font-size:0.9rem">Todos los activos están al día ✨</li>`;
+                return;
+            }
+
+            enRiesgo.sort((a, b) => b.diffDays - a.diffDays);
+            listEl.innerHTML = enRiesgo.slice(0, 5).map(c => `
+                <li style="padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display:flex; align-items:center; gap:10px">
+                        <span style="font-size:1.2rem">🏃‍♂️</span>
+                        <div>
+                            <span style="font-weight:600; display:block">${c.nombre || c.dni}</span>
+                            <small style="color:var(--text-muted)">${c.cafes_acumulados_total} cafés históricos</small>
+                        </div>
+                    </div>
+                    <span style="font-size:0.75rem; font-weight:700; color:var(--error)">hace ${c.diffDays}d</span>
+                </li>
+            `).join('');
+        }
+
+        function renderFunnel() {
+            const ctx = document.getElementById('funnelChart').getContext('2d');
+            const counts = [0, 0, 0]; // 0-3, 4-6, 7-8
+
+            clientesData.forEach(c => {
+                const s = c.cafes || 0;
+                if (s <= 3) counts[0]++;
+                else if (s <= 6) counts[1]++;
+                else counts[2]++;
+            });
+
+            if (funnelChartInstance) funnelChartInstance.destroy();
+            funnelChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Inicial (0-3)', 'Intermedio (4-6)', 'Fidelizado (7-8)'],
+                    datasets: [{
+                        data: counts,
+                        backgroundColor: ['#e8e4db', '#d86634', '#0d2b37'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        function renderHourlyHeatmap(logs) {
+            const ctx = document.getElementById('hourlyChart').getContext('2d');
+            const hours = Array(24).fill(0);
+
+            // Analizar solo logs de consumo
+            logs.filter(l => l.accion === 'sumar_cafecito' || l.accion === 'invitar_cafecito').forEach(l => {
+                if (l.ts) hours[l.ts.getHours()]++;
+            });
+
+            // Filtrar solo horas de apertura comunes (7am a 22pm)
+            const labels = [];
+            const data = [];
+            for (let i = 7; i <= 21; i++) {
+                labels.push(i + ':00');
+                data.push(hours[i]);
+            }
+
+            if (hourlyChartInstance) hourlyChartInstance.destroy();
+            hourlyChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Visitas',
+                        data: data,
+                        backgroundColor: (context) => {
+                            const val = context.raw;
+                            const max = Math.max(...data);
+                            const alpha = val / (max || 1);
+                            return `rgba(216, 102, 52, ${Math.max(0.2, alpha)})`;
+                        },
+                        borderRadius: 6,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { stepSize: 1 } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
 
 
         function updateStat(id, actual, anterior) {
