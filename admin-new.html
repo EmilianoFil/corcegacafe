@@ -653,8 +653,10 @@
                         <h4 style="margin:0">Rankings</h4>
                         <div class="rank-toggles">
                             <button id="btn-rank-week" class="btn-rank-toggle active">Semanal</button>
+                            <button id="btn-rank-year" class="btn-rank-toggle">Este Año</button>
                             <button id="btn-rank-all" class="btn-rank-toggle">Total</button>
                         </div>
+
                     </div>
                     <ul id="top-clientes-list" class="rank-list">
                         <li style="color:var(--text-muted)">Cargando...</li>
@@ -894,6 +896,7 @@
 
             // Lógica Mes y Año
             const startEsteMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            const startEsteAño = new Date(hoy.getFullYear(), 0, 1);
             const startMesPasado = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
             const startMesPasadoLastYear = new Date(hoy.getFullYear() - 1, hoy.getMonth(), 1);
             const endMesPasadoLastYear = new Date(hoy.getFullYear() - 1, hoy.getMonth(), hoy.getDate(), 23, 59, 59);
@@ -901,10 +904,10 @@
             // Queries masivas para comparativas
             const logsRef = collection(db, "logs");
 
-            // Necesitamos logs de: esta semana, semana pasada, este mes, y mismo periodo año pasado.
-            // Para optimizar, pediremos logs de los últimos 40 días y un query separado para el año pasado.
-            const queryReciente = query(logsRef, where("timestamp", ">=", startMesPasado), orderBy("timestamp", "desc"));
+            // Necesitamos logs de: este año (para el ranking), mes pasado (para comparativas reciente)
+            const queryReciente = query(logsRef, where("timestamp", ">=", startEsteAño), orderBy("timestamp", "desc"));
             const queryAñoPasado = query(logsRef, where("timestamp", ">=", startMesPasadoLastYear), where("timestamp", "<=", endMesPasadoLastYear));
+
 
             const [recentSnap, lastYearSnap, clientesSnap] = await Promise.all([
                 getDocs(queryReciente),
@@ -950,12 +953,13 @@
             updateStat('qr-semana', qrEstaSemana, qrSemanaPasada);
 
             // --- RANKINGS ---
-
             clientesData = clientesSnap.docs.map(d => d.data());
             cachedLogs = logsRecientes;
             cachedStartWeek = startEstaSemana;
+            const startYear = startEsteAño;
 
-            renderRankings(cachedLogs, cachedStartWeek);
+            renderRankings(cachedLogs, cachedStartWeek, startYear);
+
 
             // --- CHART ---
             await initChart(logsRecientes);
@@ -984,17 +988,21 @@
             `;
         }
 
-        function renderRankings(logs, startWeek) {
+        function renderRankings(logs, startWeek, startYear) {
             const listEl = document.getElementById('top-clientes-list');
 
-            if (currentRankingType === 'week') {
-                const weeklyCounts = {};
-                logs.filter(l => l.ts >= startWeek && (l.accion === 'sumar_cafecito' || l.accion === 'invitar_cafecito')).forEach(l => {
+            if (currentRankingType === 'week' || currentRankingType === 'year') {
+                const rankingDate = currentRankingType === 'week' ? startWeek : startYear;
+                const badgeColor = currentRankingType === 'week' ? 'var(--primary)' : 'var(--primary-dark)';
+                const badgeBg = currentRankingType === 'week' ? 'var(--primary-light)' : 'rgba(184, 84, 42, 0.1)';
+
+                const counts = {};
+                logs.filter(l => l.ts >= rankingDate && (l.accion === 'sumar_cafecito' || l.accion === 'invitar_cafecito')).forEach(l => {
                     const dni = l.detalles.match(/\d+/)?.[0];
-                    if (dni) weeklyCounts[dni] = (weeklyCounts[dni] || 0) + 1;
+                    if (dni) counts[dni] = (counts[dni] || 0) + 1;
                 });
 
-                const topWeek = Object.entries(weeklyCounts)
+                const top = Object.entries(counts)
                     .map(([dni, count]) => {
                         const c = clientesData.find(cl => cl.dni == dni);
                         return { nombre: c?.nombre || dni, count };
@@ -1002,21 +1010,22 @@
                     .sort((a, b) => b.count - a.count)
                     .slice(0, 10);
 
-                if (topWeek.length === 0) {
-                    listEl.innerHTML = `<li style="color:var(--text-muted); padding:20px; text-align:center">Sin actividad esta semana</li>`;
+                if (top.length === 0) {
+                    listEl.innerHTML = `<li style="color:var(--text-muted); padding:20px; text-align:center">Sin actividad en este periodo</li>`;
                     return;
                 }
 
-                listEl.innerHTML = topWeek.map((c, i) => `
+                listEl.innerHTML = top.map((c, i) => `
                     <li style="padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
                         <div>
-                            <span style="font-weight:700; color:var(--primary); margin-right:8px">#${i + 1}</span>
+                            <span style="font-weight:700; color:${badgeColor}; margin-right:8px">#${i + 1}</span>
                             <span style="font-weight:500">${c.nombre}</span>
                         </div>
-                        <span style="font-size:0.9rem; font-weight:700; background:var(--primary-light); padding:2px 8px; border-radius:12px; color:var(--primary)">${c.count} ☕</span>
+                        <span style="font-size:0.9rem; font-weight:700; background:${badgeBg}; padding:2px 8px; border-radius:12px; color:${badgeColor}">${c.count} ☕</span>
                     </li>
                 `).join('');
             } else {
+
                 // Ranking Histórico
                 const topAll = [...clientesData]
                     .sort((a, b) => (b.cafes_acumulados_total || 0) - (a.cafes_acumulados_total || 0))
@@ -1040,7 +1049,17 @@
             document.querySelectorAll('.btn-rank-toggle').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             currentRankingType = 'week';
-            renderRankings(cachedLogs, cachedStartWeek);
+            const startYear = new Date(new Date().getFullYear(), 0, 1);
+            renderRankings(cachedLogs, cachedStartWeek, startYear);
+        };
+
+        document.getElementById('btn-rank-year').onclick = (e) => {
+            if (currentRankingType === 'year') return;
+            document.querySelectorAll('.btn-rank-toggle').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            currentRankingType = 'year';
+            const startYear = new Date(new Date().getFullYear(), 0, 1);
+            renderRankings(cachedLogs, cachedStartWeek, startYear);
         };
 
         document.getElementById('btn-rank-all').onclick = (e) => {
@@ -1048,8 +1067,10 @@
             document.querySelectorAll('.btn-rank-toggle').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             currentRankingType = 'all';
-            renderRankings(cachedLogs, cachedStartWeek);
+            const startYear = new Date(new Date().getFullYear(), 0, 1);
+            renderRankings(cachedLogs, cachedStartWeek, startYear);
         };
+
 
 
         async function initChart(logsRecientes) {
