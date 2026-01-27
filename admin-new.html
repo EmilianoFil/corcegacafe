@@ -633,7 +633,13 @@
                     <span class="value" id="stat-avg">-</span>
                     <div id="trend-avg" class="trend"></div>
                 </div>
+                <div class="card stat-card">
+                    <span class="label">Escaneos QR (Semana)</span>
+                    <span class="value" id="stat-qr-semana">-</span>
+                    <div id="trend-qr-semana" class="trend"></div>
+                </div>
             </div>
+
 
             <div class="dashboard-grid">
                 <div class="card">
@@ -937,7 +943,14 @@
             document.getElementById('stat-avg').innerText = avg;
             document.getElementById('trend-avg').innerHTML = `<span style="color:var(--text-muted)">cafés / día</span>`;
 
+            // 5. Escaneos QR (Esta Semana vs Semana Pasada)
+            const qrEstaSemana = logsRecientes.filter(l => l.ts >= startEstaSemana && l.accion === 'consulta_cliente').length;
+            const qrSemanaPasada = logsRecientes.filter(l => l.ts >= startSemanaPasada && l.ts <= endSemanaPasada && l.accion === 'consulta_cliente').length;
+
+            updateStat('qr-semana', qrEstaSemana, qrSemanaPasada);
+
             // --- RANKINGS ---
+
             clientesData = clientesSnap.docs.map(d => d.data());
             cachedLogs = logsRecientes;
             cachedStartWeek = startEstaSemana;
@@ -1015,10 +1028,11 @@
                             <span style="font-weight:700; color:var(--secondary); margin-right:8px">#${i + 1}</span>
                             <span style="font-weight:500">${c.nombre || c.dni}</span>
                         </div>
-                        <span style="font-size:0.9rem; font-weight:700">${c.cafes_acumulados_total || 0} ☕</span>
+                        <span style="font-size:0.9rem; font-weight:700; background:rgba(13, 43, 55, 0.08); padding:2px 8px; border-radius:12px; color:var(--secondary)">${c.cafes_acumulados_total || 0} ☕</span>
                     </li>
                 `).join('');
             }
+
         }
 
         document.getElementById('btn-rank-week').onclick = (e) => {
