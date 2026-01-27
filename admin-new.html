@@ -796,6 +796,11 @@
         let clientesData = [];
         let logsData = [];
 
+        // Dashboard Cache
+        let cachedLogs = [];
+        let cachedStartWeek = null;
+
+
         // --- AUTH & INITIALIZATION ---
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
@@ -934,11 +939,15 @@
 
             // --- RANKINGS ---
             clientesData = clientesSnap.docs.map(d => d.data());
-            renderRankings(logsRecientes, startEstaSemana);
+            cachedLogs = logsRecientes;
+            cachedStartWeek = startEstaSemana;
+
+            renderRankings(cachedLogs, cachedStartWeek);
 
             // --- CHART ---
             await initChart(logsRecientes);
         }
+
 
         function updateStat(id, actual, anterior) {
             const valEl = document.getElementById(`stat-${id}`);
@@ -1013,18 +1022,21 @@
         }
 
         document.getElementById('btn-rank-week').onclick = (e) => {
+            if (currentRankingType === 'week') return;
             document.querySelectorAll('.btn-rank-toggle').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             currentRankingType = 'week';
-            loadDashboardStats(); // Recalculate
+            renderRankings(cachedLogs, cachedStartWeek);
         };
 
         document.getElementById('btn-rank-all').onclick = (e) => {
+            if (currentRankingType === 'all') return;
             document.querySelectorAll('.btn-rank-toggle').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             currentRankingType = 'all';
-            loadDashboardStats(); // Recalculate
+            renderRankings(cachedLogs, cachedStartWeek);
         };
+
 
         async function initChart(logsRecientes) {
             const ctx = document.getElementById('growthChart').getContext('2d');
