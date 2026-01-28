@@ -593,6 +593,7 @@
                 <li><a href="#dashboard" class="active"><span class="icon">📊</span> Dashboard</a></li>
                 <li><a href="#puntos"><span class="icon">☕</span> Sumar Cafecito</a></li>
                 <li><a href="#clientes"><span class="icon">👥</span> Clientes</a></li>
+                <li><a href="admin-badges.html"><span class="icon">🎖️</span> Insignias</a></li>
                 <li><a href="#logs"><span class="icon">📜</span> Auditoría</a></li>
                 <li><a href="#tools"><span class="icon">🛠️</span> Herramientas</a></li>
             </ul>
@@ -856,6 +857,7 @@
             doc, getDoc, getDocs, collection, query, where, orderBy, limit,
             updateDoc, increment, serverTimestamp, addDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
 
         let adminData = null;
         let chartInstance = null;
@@ -1536,6 +1538,9 @@
                 // Refresh stats and table if in background
                 loadDashboardStats();
 
+                // Badges Auto-Assignment
+                checkAndAssignBadges(dni);
+
             } catch (err) {
                 console.error(err);
                 resBox.className = "error";
@@ -1579,6 +1584,7 @@
                 resBox.innerHTML += "<br>📸 ¡Promo Instagram aplicada (+1 sello)!";
 
                 loadDashboardStats();
+                checkAndAssignBadges(lastOp.dni);
             } catch (e) {
                 console.error(e);
                 alert("Error aplicando promo Instagram");
@@ -1715,6 +1721,29 @@
             };
             renderLogsDataTable(filters);
         };
+
+        async function checkAndAssignBadges(dni) {
+            try {
+                const clientSnap = await getDoc(doc(db, "clientes", dni));
+                if (!clientSnap.exists()) return;
+
+                const clienteData = clientSnap.data();
+                const activeBadges = await fetchActiveBadges(db);
+                const eligible = computeAutoBadgesForClient({ clienteData, badges: activeBadges });
+
+                for (const badge of eligible) {
+                    await assignBadgeToClient({
+                        db,
+                        dni,
+                        badgeDoc: badge,
+                        origen: 'auto',
+                        asignadoPor: 'system'
+                    });
+                }
+            } catch (err) {
+                console.error("Error auto-assigning badges:", err);
+            }
+        }
 
         function calculateLivePace(logs) {
             const hoy = new Date();

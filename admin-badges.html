@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Córcega Café - Gestión de Badges</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+    <style>
+        :root {
+            --bg-color: #fdfcf7;
+            --white: #ffffff;
+            --primary: #d86634;
+            --primary-dark: #b8542a;
+            --primary-light: #fff1eb;
+            --secondary: #0d2b37;
+            --text-main: #1d1d1d;
+            --text-muted: #666666;
+            --border: #e8e4db;
+            --success: #2d6a4f;
+            --error: #ae2012;
+            --sidebar-width: 280px;
+            --radius: 16px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        aside {
+            width: var(--sidebar-width);
+            background: var(--white);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 30px 0;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 0 24px 40px;
+            text-align: center;
+        }
+
+        .sidebar-header h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            margin: 0;
+            color: var(--secondary);
+        }
+
+        nav {
+            flex: 1;
+            padding: 0 16px;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        nav li {
+            margin-bottom: 8px;
+        }
+
+        nav a {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: 500;
+            border-radius: var(--radius);
+            gap: 12px;
+        }
+
+        nav a:hover {
+            background-color: var(--bg-color);
+            color: var(--primary);
+        }
+
+        nav a.active {
+            background-color: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        main {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            background: radial-gradient(circle at 50% 50%, #ffffff 0%, #fdfcf7 100%);
+        }
+
+        h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            margin: 0 0 32px;
+            color: var(--secondary);
+            position: relative;
+        }
+
+        h3::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 40px;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .card {
+            background: var(--white);
+            padding: 30px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-color);
+            color: var(--secondary);
+            border: 1px solid var(--border);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--secondary);
+        }
+
+        input[type="text"],
+        input[type="tel"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            background: var(--bg-color);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--white);
+        }
+
+        .badge-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .badge-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .badge-icon {
+            font-size: 1.5rem;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-color);
+            border-radius: 12px;
+        }
+
+        .badge-name {
+            font-weight: 600;
+            color: var(--secondary);
+            display: block;
+        }
+
+        .badge-slug {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        .badge-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--success);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 10px 20px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 8px;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        #client-result {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .badge-pill {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--primary-light);
+            color: var(--primary);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 4px;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <aside>
+        <div class="sidebar-header">
+            <h2>Córcega Admin</h2>
+        </div>
+        <nav id="main-nav">
+            <ul>
+                <li><a href="admin-new.html"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="#" class="active"><span class="icon">🎖️</span> Badges</a></li>
+                <li><a href="clientes-lista.html"><span class="icon">👥</span> Clientes</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main>
+        <h3>Insignias (Badges)</h3>
+
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="showTab('manage', this)">Gestión</button>
+            <button class="tab-btn" onclick="showTab('assign', this)">Asignar a Cliente</button>
+        </div>
+
+        <!-- TAB: MANAGE BADGES -->
+        <div id="tab-manage" class="tab-content active">
+            <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="card">
+                    <h4 style="margin-top:0">Configurar Nuevo Badge</h4>
+                    <form id="form-badge">
+                        <input type="hidden" id="badge-id">
+                        <div class="input-group">
+                            <label>Nombre del Badge</label>
+                            <input type="text" id="badge-nombre" placeholder="Ej: Primer Sorbo" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Slug (ID Único)</label>
+                            <input type="text" id="badge-slug" placeholder="ej: primer_sorbo" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Descripción</label>
+                            <textarea id="badge-descripcion" rows="2" placeholder="Corta descripción..."></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Icono (Emoji)</label>
+                            <input type="text" id="badge-icono" placeholder="☕" value="☕">
+                        </div>
+                        <div class="input-group">
+                            <label>Tipo de Asignación</label>
+                            <select id="badge-tipo-asig">
+                                <option value="manual">Manual</option>
+                                <option value="auto">Automático</option>
+                                <option value="mixto">Mixto</option>
+                            </select>
+                        </div>
+                        <div id="regla-container"
+                            style="display:none; background:var(--bg-color); padding:15px; border-radius:12px; border:1px solid var(--border)">
+                            <label style="font-weight:600; font-size:0.85rem; display:block; margin-bottom:10px">REGLA
+                                AUTOMÁTICA</label>
+                            <div class="input-group">
+                                <label>Tipo de Regla</label>
+                                <select id="badge-regla-tipo">
+                                    <option value="primer_cafe">Primer Café (Total > 0)</option>
+                                    <option value="cafes_totales_minimo">Total Acumulado Mínimo</option>
+                                    <option value="cafes_actuales_minimo">Sellos en Tarjeta Mínimo</option>
+                                </select>
+                            </div>
+                            <div class="input-group" style="margin-bottom:0">
+                                <label>Valor Umbral</label>
+                                <input type="number" id="badge-regla-valor" value="1">
+                            </div>
+                        </div>
+                        <div style="margin-top:20px; display:flex; gap:10px">
+                            <button type="submit" class="btn-primary" id="btn-save-badge">Guardar Badge</button>
+                            <button type="button" class="btn-secondary" id="btn-cancel-edit" style="display:none"
+                                onclick="resetForm()">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h4 style="margin-top:0">Listado de Badges</h4>
+                    <div id="badges-list-container">
+                        <!-- Badges list will be rendered here -->
+                        <p style="color:var(--text-muted)">Cargando insignias...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: ASSIGN BADGES -->
+        <div id="tab-assign" class="tab-content">
+            <div class="card">
+                <h4 style="margin-top:0">Asignación Manual</h4>
+                <div style="display:flex; gap:10px; align-items:flex-end">
+                    <div class="input-group" style="margin-bottom:0; flex:1">
+                        <label>DNI del Cliente</label>
+                        <input type="tel" id="dni-search" placeholder="Ingrese DNI">
+                    </div>
+                    <button class="btn-primary" onclick="searchClient()">Buscar</button>
+                </div>
+
+                <div id="client-result" style="display:none">
+                    <div style="display:flex; justify-content:space-between; align-items:start">
+                        <div>
+                            <h2 id="res-nombre"
+                                style="margin:0; font-family:'Playfair Display', serif; color:var(--secondary)">Juan
+                                Perez</h2>
+                            <p id="res-dni" style="color:var(--text-muted); margin:5px 0">DNI: 12345678</p>
+                        </div>
+                        <div style="text-align:right">
+                            <span id="res-stats" style="font-weight:700; color:var(--primary); font-size:1.1rem">8 / 45
+                                Cafés</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:20px">
+                        <label
+                            style="font-weight:600; font-size:0.9rem; color:var(--secondary); display:block; margin-bottom:10px">INSIGNIAS
+                            ACTUALES</label>
+                        <div id="current-badges">
+                            <!-- Existing badges will be pills here -->
+                        </div>
+                    </div>
+
+                    <div style="margin-top:30px">
+                        <label
+                            style="font-weight:600; font-size:0.9rem; color:var(--secondary); display:block; margin-bottom:10px">ASIGNAR
+                            NUEVA INSIGNIA</label>
+                        <div id="assignable-badges">
+                            <!-- List of badges to assign -->
+                        </div>
+                    </div>
+                </div>
+                <div id="search-msg" style="margin-top:20px; color:var(--error); font-weight:600; display:none"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Firebase Config & Scripts -->
+    <script type="module">
+        import { auth, onAuthStateChanged } from './js/firebase-auth.js';
+        import { db } from './js/firebase-config.js';
+        import {
+            collection, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc,
+            addDoc, serverTimestamp, query, where, orderBy
+        } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        import { fetchActiveBadges, assignBadgeToClient } from './js/badges-engine.js';
+
+        let adminUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "login.html";
+            } else {
+                adminUser = user;
+                loadBadgesList();
+            }
+        });
+
+        // Tabs Logic
+        window.showTab = (tab, btnEl) => {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            if (btnEl) btnEl.classList.add('active');
+            else {
+                // Fallback for direct calls
+                const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(`'${tab}'`));
+                if (targetBtn) targetBtn.classList.add('active');
+            }
+
+            document.getElementById(`tab-${tab}`).classList.add('active');
+
+            if (tab === 'manage') loadBadgesList();
+            if (tab === 'assign') {
+                document.getElementById('client-result').style.display = 'none';
+                document.getElementById('dni-search').value = '';
+            }
+        };
+
+        // Regla toggle logic
+        document.getElementById('badge-tipo-asig').addEventListener('change', (e) => {
+            document.getElementById('regla-container').style.display = (e.target.value !== 'manual') ? 'block' : 'none';
+        });
+
+        // Form Logic (Create / Update)
+        document.getElementById('form-badge').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-badge');
+            btn.disabled = true;
+
+            const badgeId = document.getElementById('badge-id').value;
+            const data = {
+                nombre: document.getElementById('badge-nombre').value,
+                slug: document.getElementById('badge-slug').value,
+                descripcion: document.getElementById('badge-descripcion').value,
+                icono: document.getElementById('badge-icono').value,
+                tipoAsignacion: document.getElementById('badge-tipo-asig').value,
+                activo: true, // New badges are active by default
+                actualizadoEn: serverTimestamp()
+            };
+
+            if (data.tipoAsignacion !== 'manual') {
+                data.regla = {
+                    tipo: document.getElementById('badge-regla-tipo').value,
+                    valor: parseInt(document.getElementById('badge-regla-valor').value)
+                };
+            } else {
+                data.regla = null;
+            }
+
+            try {
+                if (badgeId) {
+                    await updateDoc(doc(db, "badges", badgeId), data);
+                } else {
+                    data.creadoEn = serverTimestamp();
+                    await addDoc(collection(db, "badges"), data);
+                }
+                resetForm();
+                loadBadgesList();
+                alert("Badge guardado correctamente.");
+            } catch (err) {
+                console.error(err);
+                alert("Error al guardar el badge.");
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        window.resetForm = () => {
+            document.getElementById('form-badge').reset();
+            document.getElementById('badge-id').value = '';
+            document.getElementById('regla-container').style.display = 'none';
+            document.getElementById('btn-save-badge').innerText = 'Guardar Badge';
+            document.getElementById('btn-cancel-edit').style.display = 'none';
+        };
+
+        async function loadBadgesList() {
+            const listContainer = document.getElementById('badges-list-container');
+            const q = query(collection(db, "badges"), orderBy("actualizadoEn", "desc"));
+            const snap = await getDocs(q);
+
+            if (snap.empty) {
+                listContainer.innerHTML = "<p style='color:var(--text-muted)'>No hay insignias creadas aún.</p>";
+                return;
+            }
+
+            listContainer.innerHTML = '';
+            snap.forEach(docSnap => {
+                const b = docSnap.data();
+                const id = docSnap.id;
+
+                const el = document.createElement('div');
+                el.className = 'badge-list-item';
+                el.innerHTML = `
+                    <div class="badge-info">
+                        <div class="badge-icon">${b.icono || '☕'}</div>
+                        <div>
+                            <span class="badge-name">${b.nombre}</span>
+                            <span class="badge-slug">${b.slug} · ${b.tipoAsignacion}</span>
+                        </div>
+                    </div>
+                    <div class="badge-toggle">
+                        <button onclick="editBadge('${id}')" style="background:none; border:none; color:var(--primary); cursor:pointer; font-size:0.8rem">Editar</button>
+                        <label class="switch">
+                            <input type="checkbox" ${b.activo ? 'checked' : ''} onchange="toggleBadge('${id}', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                `;
+                listContainer.appendChild(el);
+            });
+        }
+
+        window.toggleBadge = async (id, active) => {
+            await updateDoc(doc(db, "badges", id), { activo: active, actualizadoEn: serverTimestamp() });
+        };
+
+        window.editBadge = async (id) => {
+            const snap = await getDoc(doc(db, "badges", id));
+            const b = snap.data();
+
+            document.getElementById('badge-id').value = id;
+            document.getElementById('badge-nombre').value = b.nombre;
+            document.getElementById('badge-slug').value = b.slug;
+            document.getElementById('badge-descripcion').value = b.descripcion || '';
+            document.getElementById('badge-icono').value = b.icono || '☕';
+            document.getElementById('badge-tipo-asig').value = b.tipoAsignacion;
+
+            if (b.regla) {
+                document.getElementById('regla-container').style.display = 'block';
+                document.getElementById('badge-regla-tipo').value = b.regla.tipo;
+                document.getElementById('badge-regla-valor').value = b.regla.valor;
+            } else {
+                document.getElementById('regla-container').style.display = 'none';
+            }
+
+            document.getElementById('btn-save-badge').innerText = 'Actualizar Badge';
+            document.getElementById('btn-cancel-edit').style.display = 'inline-block';
+            document.body.scrollTop = 0;
+            document.documentElement.scrollTop = 0;
+        };
+
+        // Assignment logic
+        let currentClientDni = null;
+
+        window.searchClient = async () => {
+            const dni = document.getElementById('dni-search').value.trim();
+            const resBox = document.getElementById('client-result');
+            const msgBox = document.getElementById('search-msg');
+
+            if (!dni) return;
+
+            msgBox.style.display = 'none';
+            resBox.style.display = 'none';
+
+            try {
+                const snap = await getDoc(doc(db, "clientes", dni));
+                if (!snap.exists()) {
+                    msgBox.innerText = "Cliente no encontrado.";
+                    msgBox.style.display = 'block';
+                    return;
+                }
+
+                currentClientDni = dni;
+                const c = snap.data();
+                document.getElementById('res-nombre').innerText = c.nombre || "Sin Nombre";
+                document.getElementById('res-dni').innerText = `DNI: ${dni}`;
+                document.getElementById('res-stats').innerText = `${c.cafes || 0} / ${c.cafes_acumulados_total || 0} Cafés`;
+
+                resBox.style.display = 'block';
+                loadCurrentBadges(dni);
+                loadAssignableBadges(dni);
+            } catch (err) {
+                console.error(err);
+                alert("Error al buscar cliente.");
+            }
+        };
+
+        async function loadCurrentBadges(dni) {
+            const container = document.getElementById('current-badges');
+            container.innerHTML = "Cargando...";
+
+            const snap = await getDocs(collection(db, "clientes", dni, "badges"));
+            if (snap.empty) {
+                container.innerHTML = "<p style='color:var(--text-muted); font-size:0.9rem'>No tiene insignias aún.</p>";
+                return;
+            }
+
+            container.innerHTML = '';
+            snap.forEach(d => {
+                const b = d.data();
+                container.innerHTML += `<span class="badge-pill">${b.nombre}</span>`;
+            });
+        }
+
+        async function loadAssignableBadges(dni) {
+            const container = document.getElementById('assignable-badges');
+            container.innerHTML = "Cargando disponibles...";
+
+            // Get all manual/mixed active badges
+            const activeBadges = await fetchActiveBadges(db);
+            const assignable = activeBadges.filter(b => b.tipoAsignacion !== 'auto');
+
+            // Get already owned badges slugs
+            const ownedSnap = await getDocs(collection(db, "clientes", dni, "badges"));
+            const ownedSlugs = ownedSnap.docs.map(d => d.data().slug);
+
+            container.innerHTML = '';
+
+            const filtered = assignable.filter(b => !ownedSlugs.includes(b.slug));
+
+            if (filtered.length === 0) {
+                container.innerHTML = "<p style='color:var(--text-muted); font-size:0.9rem'>No hay insignias manuales disponibles para este cliente.</p>";
+                return;
+            }
+
+            filtered.forEach(b => {
+                const row = document.createElement('div');
+                row.className = 'badge-list-item';
+                row.innerHTML = `
+                    <div class="badge-info">
+                        <div class="badge-icon">${b.icono || '☕'}</div>
+                        <div>
+                            <span class="badge-name">${b.nombre}</span>
+                            <span class="badge-slug">${b.descripcion || 'Sin descripción'}</span>
+                        </div>
+                    </div>
+                    <button class="btn-primary" onclick="assignBadge('${b.slug}', '${b.nombre}', '${b.id}')" style="padding:8px 16px; font-size:0.85rem">Asignar</button>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        window.assignBadge = async (slug, nombre, id) => {
+            if (!currentClientDni) return;
+
+            const badgeDoc = { id, slug, nombre };
+            try {
+                await assignBadgeToClient({
+                    db,
+                    dni: currentClientDni,
+                    badgeDoc,
+                    origen: 'manual',
+                    asignadoPor: adminUser.email
+                });
+                alert("Insignia asignada!");
+                loadCurrentBadges(currentClientDni);
+                loadAssignableBadges(currentClientDni);
+            } catch (err) {
+                console.error(err);
+                alert("Error al asignar insignia.");
+            }
+        };
+
+    </script>
+</body>
+
+</html>
