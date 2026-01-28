@@ -610,7 +610,10 @@
 
         <!-- DASHBOARD SECTION -->
         <section id="dashboard" class="section-content active">
-            <h3>Vista General</h3>
+            <h3>Vista General <span id="last-update"
+                    style="font-size: 0.8rem; color: var(--text-muted); font-family: 'Inter', sans-serif; font-weight: 400; margin-left: 15px; vertical-align: middle;"></span>
+            </h3>
+
 
             <div class="stats-grid">
                 <div class="card stat-card">
@@ -884,6 +887,14 @@
                 await loadDashboardStats();
                 await loadClientesTable();
 
+                // Auto-refresh logic (10 minutes)
+                setInterval(async () => {
+                    if (document.visibilityState === 'visible' && document.getElementById('dashboard').classList.contains('active')) {
+                        await loadDashboardStats();
+                        console.log("Dashboard auto-refrescado satisfactoriamente.");
+                    }
+                }, 10 * 60 * 1000);
+
                 // Remove loader elegantly
                 const loader = document.getElementById("loader-global");
                 loader.style.opacity = "0";
@@ -1030,7 +1041,12 @@
 
             // --- CHART ---
             await initChart(logsRecientes);
+
+            // Update timestamp
+            const ahora = new Date();
+            document.getElementById('last-update').innerText = `Actualizado: ${ahora.getHours()}:${ahora.getMinutes().toString().padStart(2, '0')}`;
         }
+
 
         function renderBirthdays() {
             const listEl = document.getElementById('birthday-list');
