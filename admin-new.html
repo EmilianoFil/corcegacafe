@@ -1301,7 +1301,8 @@
 
                 listEl.innerHTML = top.map((c, i) => {
                     const fullClient = clientesData.find(cl => cl.dni == c.dni || cl.nombre == c.nombre);
-                    const badge = getBadgeInfo(fullClient);
+                    const clientLogs = logs.filter(l => l.detalles.includes(c.dni));
+                    const badge = getBadgeInfo(fullClient, clientLogs);
 
                     return `
                         <li style="padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
@@ -1325,7 +1326,8 @@
                     .slice(0, 10);
 
                 listEl.innerHTML = topAll.map((c, i) => {
-                    const badge = getBadgeInfo(c);
+                    const clientLogs = cachedLogs.filter(l => l.detalles.includes(c.dni));
+                    const badge = getBadgeInfo(c, clientLogs);
                     return `
                         <li style="padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
                             <div style="display:flex; align-items:center; gap:8px">
@@ -1740,7 +1742,7 @@
                 statsHistoricas[dateKey] = (statsHistoricas[dateKey] || 0) + 1;
             });
 
-            const counts = Object.values(statsHistoricas);
+            const counts = Object.values(statsHistoricas).filter(c => c >= 1);
             const promedioHistorico = counts.length > 0
                 ? counts.reduce((a, b) => a + b, 0) / counts.length
                 : 0;
@@ -1767,11 +1769,23 @@
             `;
         }
 
-        function getBadgeInfo(client) {
+        function getBadgeInfo(client, clientLogs = []) {
             if (!client) return null;
             const total = client.cafes_acumulados_total || 0;
             const actual = client.cafes || 0;
 
+            // 1. Behavioral (needs some history)
+            if (clientLogs.length >= 3) {
+                const hours = clientLogs.filter(l => l.ts).map(l => l.ts.getHours());
+                const avgHour = hours.reduce((a, b) => a + b, 0) / hours.length;
+                if (avgHour < 10) return { text: '🌅 Madrugador', color: '#B8542A', bg: 'rgba(184, 84, 42, 0.1)' };
+
+                const days = clientLogs.filter(l => l.ts).map(l => l.ts.getDay());
+                const weekendVisits = days.filter(d => d === 0 || d === 6).length;
+                if (weekendVisits / days.length > 0.6) return { text: '🎉 Finde Warrior', color: '#0d2b37', bg: 'rgba(13, 43, 55, 0.1)' };
+            }
+
+            // 2. Loyalty / Status
             if (total >= 100) return { text: '👑 Coffee King', color: '#B8542A', bg: 'rgba(184, 84, 42, 0.1)' };
             if (total >= 50) return { text: '🏅 Master', color: '#0d2b37', bg: 'rgba(13, 43, 55, 0.1)' };
             if (actual >= 7) return { text: '🔥 On Fire', color: '#ff4d4d', bg: 'rgba(255, 77, 77, 0.1)' };
