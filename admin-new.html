@@ -651,7 +651,14 @@
                     <span class="value" id="stat-premios-mes">-</span>
                     <div id="trend-premios-mes" class="trend"></div>
                 </div>
+                <div class="card stat-card"
+                    style="background: var(--bg-color); border: 1px solid var(--primary-light);">
+                    <span class="label" style="color: var(--primary)">🚀 Ritmo de Hoy</span>
+                    <span class="value" id="stat-pace-val">-</span>
+                    <div id="trend-pace" class="trend"></div>
+                </div>
             </div>
+
 
 
 
@@ -1023,8 +1030,11 @@
             document.getElementById('stat-premios-mes').innerText = premiosCanjeados;
             document.getElementById('trend-premios-mes').innerHTML = `<span style="color:var(--text-muted)">${premiosPendientes} pendientes</span>`;
 
+            // 8. Ritmo de Venta (Pace Control)
+            calculateLivePace(logsRecientes);
 
             // --- RANKINGS ---
+
 
             clientesData = clientesSnap.docs.map(d => d.data());
             cachedLogs = logsRecientes;
@@ -1289,32 +1299,48 @@
                     return;
                 }
 
-                listEl.innerHTML = top.map((c, i) => `
-                    <li style="padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
-                        <div>
-                            <span style="font-weight:700; color:${badgeColor}; margin-right:8px">#${i + 1}</span>
-                            <span style="font-weight:500">${c.nombre}</span>
-                        </div>
-                        <span style="font-size:0.9rem; font-weight:700; background:${badgeBg}; padding:2px 8px; border-radius:12px; color:${badgeColor}">${c.count} ☕</span>
-                    </li>
-                `).join('');
+                listEl.innerHTML = top.map((c, i) => {
+                    const fullClient = clientesData.find(cl => cl.dni == c.dni || cl.nombre == c.nombre);
+                    const badge = getBadgeInfo(fullClient);
+
+                    return `
+                        <li style="padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display:flex; align-items:center; gap:8px">
+                                <span style="font-weight:700; color:${badgeColor}; width:24px">#${i + 1}</span>
+                                <div>
+                                    <span style="font-weight:500; display:block">${c.nombre}</span>
+                                    ${badge ? `<small style="background:${badge.bg}; color:${badge.color}; padding:1px 6px; border-radius:4px; font-weight:700; font-size:0.65rem; text-transform:uppercase; margin-top:2px; display:inline-block">${badge.text}</small>` : ''}
+                                </div>
+                            </div>
+                            <span style="font-size:0.9rem; font-weight:700; background:${badgeBg}; padding:2px 8px; border-radius:12px; color:${badgeColor}">${c.count} ☕</span>
+                        </li>
+                    `;
+                }).join('');
             } else {
+
 
                 // Ranking Histórico
                 const topAll = [...clientesData]
                     .sort((a, b) => (b.cafes_acumulados_total || 0) - (a.cafes_acumulados_total || 0))
                     .slice(0, 10);
 
-                listEl.innerHTML = topAll.map((c, i) => `
-                    <li style="padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
-                        <div>
-                            <span style="font-weight:700; color:var(--secondary); margin-right:8px">#${i + 1}</span>
-                            <span style="font-weight:500">${c.nombre || c.dni}</span>
-                        </div>
-                        <span style="font-size:0.9rem; font-weight:700; background:rgba(13, 43, 55, 0.08); padding:2px 8px; border-radius:12px; color:var(--secondary)">${c.cafes_acumulados_total || 0} ☕</span>
-                    </li>
-                `).join('');
+                listEl.innerHTML = topAll.map((c, i) => {
+                    const badge = getBadgeInfo(c);
+                    return `
+                        <li style="padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display:flex; align-items:center; gap:8px">
+                                <span style="font-weight:700; color:var(--secondary); width:24px">#${i + 1}</span>
+                                <div>
+                                    <span style="font-weight:500; display:block">${c.nombre || c.dni}</span>
+                                    ${badge ? `<small style="background:${badge.bg}; color:${badge.color}; padding:1px 6px; border-radius:4px; font-weight:700; font-size:0.65rem; text-transform:uppercase; margin-top:2px; display:inline-block">${badge.text}</small>` : ''}
+                                </div>
+                            </div>
+                            <span style="font-size:0.9rem; font-weight:700; background:rgba(13, 43, 55, 0.08); padding:2px 8px; border-radius:12px; color:var(--secondary)">${c.cafes_acumulados_total || 0} ☕</span>
+                        </li>
+                    `;
+                }).join('');
             }
+
 
         }
 
@@ -1687,6 +1713,74 @@
             };
             renderLogsDataTable(filters);
         };
+
+        function calculateLivePace(logs) {
+            const hoy = new Date();
+            const diaSemana = hoy.getDay();
+            const horaActual = hoy.getHours();
+            const hoyStr = hoy.toDateString();
+
+            // 1. Cafés de HOY hasta ahora
+            const cafesHoy = logs.filter(l => {
+                const isConsumo = l.accion === 'sumar_cafecito' || l.accion === 'invitar_cafecito';
+                const esHoy = l.ts && l.ts.toDateString() === hoyStr;
+                return isConsumo && esHoy;
+            }).length;
+
+            // 2. Histórico: Mismo día de la semana, excluyendo hoy, hasta la misma hora
+            const statsHistoricas = {};
+            logs.filter(l => {
+                const isConsumo = l.accion === 'sumar_cafecito' || l.accion === 'invitar_cafecito';
+                const mismoDiaSemana = l.ts && l.ts.getDay() === diaSemana;
+                const noEsHoy = l.ts && l.ts.toDateString() !== hoyStr;
+                const hastaMismaHora = l.ts && l.ts.getHours() <= horaActual;
+                return isConsumo && mismoDiaSemana && noEsHoy && hastaMismaHora;
+            }).forEach(l => {
+                const dateKey = l.ts.toDateString();
+                statsHistoricas[dateKey] = (statsHistoricas[dateKey] || 0) + 1;
+            });
+
+            const counts = Object.values(statsHistoricas);
+            const promedioHistorico = counts.length > 0
+                ? counts.reduce((a, b) => a + b, 0) / counts.length
+                : 0;
+
+            const valEl = document.getElementById('stat-pace-val');
+            const trendEl = document.getElementById('trend-pace');
+
+            if (!valEl) return;
+            valEl.innerText = cafesHoy;
+
+            if (promedioHistorico === 0) {
+                trendEl.innerHTML = `<span style="color:var(--text-muted)">Primer ${['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'][diaSemana]} activo</span>`;
+                return;
+            }
+
+            const pct = (((cafesHoy - promedioHistorico) / promedioHistorico) * 100).toFixed(0);
+            const isUp = pct >= 0;
+
+            trendEl.innerHTML = `
+                <span class="${isUp ? 'up' : 'down'}">
+                    ${isUp ? '🚀 +' : '📉 '}${Math.abs(pct)}% 
+                    <small style="color:var(--text-muted); font-weight:400">vs prom.</small>
+                </span>
+            `;
+        }
+
+        function getBadgeInfo(client) {
+            if (!client) return null;
+            const total = client.cafes_acumulados_total || 0;
+            const actual = client.cafes || 0;
+
+            if (total >= 100) return { text: '👑 Coffee King', color: '#B8542A', bg: 'rgba(184, 84, 42, 0.1)' };
+            if (total >= 50) return { text: '🏅 Master', color: '#0d2b37', bg: 'rgba(13, 43, 55, 0.1)' };
+            if (actual >= 7) return { text: '🔥 On Fire', color: '#ff4d4d', bg: 'rgba(255, 77, 77, 0.1)' };
+            if (client.sigue_instagram) return { text: '📸 Social', color: '#833ab4', bg: 'rgba(131, 58, 180, 0.1)' };
+            if (total >= 10) return { text: '☕ Habitue', color: '#7a5a3a', bg: 'rgba(122, 90, 58, 0.1)' };
+
+            return null;
+        }
+
 
 
     </script>
