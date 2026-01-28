@@ -929,18 +929,24 @@
         // --- SPA NAVIGATION ---
         document.querySelectorAll('#main-nav a').forEach(link => {
             link.addEventListener('click', (e) => {
+                const href = link.getAttribute('href');
+                if (!href.startsWith('#')) return; // Let real links navigate
+
                 e.preventDefault();
-                const target = link.getAttribute('href').substring(1);
+                const target = href.substring(1);
 
                 // UI Toggle
-                document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
-                document.getElementById(target).classList.add('active');
+                const section = document.getElementById(target);
+                if (section) {
+                    document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+                    section.classList.add('active');
+                }
 
                 document.querySelectorAll('#main-nav a').forEach(a => a.classList.remove('active'));
                 link.classList.add('active');
 
                 // Section specific initializers
-                if (target === 'logs' && logsData.length === 0) loadLogsTable();
+                if (target === 'logs' && (typeof logsData !== 'undefined' && logsData.length === 0)) loadLogsTable();
             });
         });
 
