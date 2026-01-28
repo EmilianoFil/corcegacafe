@@ -638,8 +638,18 @@
                     <span class="value" id="stat-qr-semana">-</span>
                     <div id="trend-qr-semana" class="trend"></div>
                 </div>
-
+                <div class="card stat-card">
+                    <span class="label">Recurrencia (Días)</span>
+                    <span class="value" id="stat-recurrencia">-</span>
+                    <div id="trend-recurrencia" class="trend"></div>
+                </div>
+                <div class="card stat-card">
+                    <span class="label">Premios (Este Mes)</span>
+                    <span class="value" id="stat-premios-mes">-</span>
+                    <div id="trend-premios-mes" class="trend"></div>
+                </div>
             </div>
+
 
 
             <div class="dashboard-grid" style="margin-bottom: 24px;">
@@ -993,7 +1003,18 @@
 
             updateStat('qr-semana', qrEstaSemana, qrSemanaPasada);
 
+            // 6. Recurrencia (Promedio de días entre vísitas de clientes recurrentes)
+            calculateRecurrence(logsRecientes);
+
+            // 7. Premios (Canjeados este mes vs disponibles)
+            const premiosCanjeados = logsRecientes.filter(l => l.ts >= startEsteMes && l.accion === 'invitar_cafecito').length;
+            const premiosPendientes = clientesData.filter(c => c.cafes >= 8 || c.cafe_disponible).length;
+            document.getElementById('stat-premios-mes').innerText = premiosCanjeados;
+            document.getElementById('trend-premios-mes').innerHTML = `<span style="color:var(--text-muted)">${premiosPendientes} pendientes</span>`;
+
+
             // --- RANKINGS ---
+
             clientesData = clientesSnap.docs.map(d => d.data());
             cachedLogs = logsRecientes;
             cachedStartWeek = startEstaSemana;
@@ -1165,6 +1186,41 @@
                 }
             });
         }
+
+        function calculateRecurrence(logs) {
+            const userVisits = {};
+            // Agrupar visitas por DNI
+            logs.filter(l => l.accion === 'sumar_cafecito' || l.accion === 'invitar_cafecito').forEach(l => {
+                const dni = l.detalles.match(/\d+/)?.[0];
+                if (!dni) return;
+                if (!userVisits[dni]) userVisits[dni] = [];
+                userVisits[dni].push(l.ts.getTime());
+            });
+
+            let totalDiffs = 0;
+            let countDiffs = 0;
+
+            Object.values(userVisits).forEach(visits => {
+                if (visits.length < 2) return;
+                // Ordenar por tiempo desc
+                visits.sort((a, b) => b - a);
+                for (let i = 0; i < visits.length - 1; i++) {
+                    const diff = (visits[i] - visits[i + 1]) / (1000 * 60 * 60 * 24);
+                    // Solo contar si es > 0.5 días (evitar dobles cargos el mismo día)
+                    if (diff > 0.5 && diff < 30) {
+                        totalDiffs += diff;
+                        countDiffs++;
+                    }
+                }
+            });
+
+            const avg = countDiffs > 0 ? (totalDiffs / countDiffs).toFixed(1) : "—";
+            document.getElementById('stat-recurrencia').innerText = avg;
+            document.getElementById('trend-recurrencia').innerHTML = avg !== "—"
+                ? `<span style="color:var(--text-muted)">vuelven cada ${Math.round(avg)}d</span>`
+                : `<span style="color:var(--text-muted)">Sin recurrencia</span>`;
+        }
+
 
 
 
