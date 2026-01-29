@@ -572,6 +572,89 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Campaign History Styles */
+        .mails-container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .campaign-history {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            max-height: 800px;
+            overflow-y: auto;
+        }
+
+        .campaign-item {
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 12px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .campaign-item:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .campaign-item.active {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
+
+        .campaign-item .meta {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .campaign-item .title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .campaign-status {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .status-draft {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .status-sent {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-new-campaign {
+            width: 100%;
+            margin-bottom: 20px;
+            background: var(--secondary);
+            color: white;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: none;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -826,75 +909,82 @@
                 <h3 style="margin:0">Envío de Campañas 📧</h3>
             </div>
 
-            <div class="card" style="max-width: 900px; margin: 0 auto;">
-                <div class="input-group">
-                    <label>Asunto del Correo</label>
-                    <input type="text" id="mail-asunto" placeholder="Ej: ¡Novedades en Córcega! 🏝️"
-                        style="background: var(--white); border: 1px solid var(--border); padding: 15px;">
-                </div>
-
-                <div class="input-group">
-                    <label>Cuerpo del Mensaje (Texto arriba de la imagen)</label>
-                    <textarea id="mail-cuerpo" rows="6" placeholder="Escribe el mensaje aquí..."
-                        style="resize: vertical; background: var(--white); border: 1px solid var(--border); padding: 15px; border-radius: 12px; width: 100%; font-family: 'Inter', sans-serif; font-size: 1rem;"></textarea>
-                </div>
-
-                <div class="input-group">
-                    <label>Imagen del Flyer (Subir desde PC)</label>
-                    <div
-                        style="display: flex; gap: 15px; align-items: center; background: var(--primary-light); padding: 20px; border-radius: 16px; border: 2px dashed var(--primary); position: relative;">
-                        <div style="flex: 1;">
-                            <input type="file" id="mail-file-input" accept="image/*" style="display: none;"
-                                onchange="handleFlyerUpload(this)">
-                            <button type="button" class="btn-primary"
-                                onclick="document.getElementById('mail-file-input').click()" id="btn-select-flyer"
-                                style="background: var(--secondary); margin-bottom: 0;">
-                                📁 Seleccionar Flyer
-                            </button>
-                            <p id="upload-status"
-                                style="font-size: 0.85rem; color: var(--secondary); margin-top: 10px; font-weight: 500;">
-                                No se eligió archivo</p>
-                        </div>
-                        <div id="flyer-preview-container" style="display: none;">
-                            <img id="flyer-preview" src=""
-                                style="height: 80px; width: 80px; object-fit: cover; border-radius: 12px; border: 2px solid var(--white); box-shadow: var(--shadow);">
-                        </div>
+            <div class="mails-container">
+                <!-- Sidebar: History -->
+                <aside class="campaign-history"
+                    style="width: auto; box-shadow: none; border-right: 1px solid var(--border);">
+                    <button class="btn-new-campaign" onclick="nuevaCampana()">+ Nueva Campaña</button>
+                    <div id="campaign-list-container">
+                        <p style="text-align: center; color: var(--text-muted); font-size: 0.8rem;">Cargando
+                            historial...</p>
                     </div>
-                    <input type="hidden" id="mail-imagen">
-                </div>
+                </aside>
 
-                <div style="margin-top: 40px; padding-top: 30px; border-top: 2px solid var(--bg-color);">
-                    <h4
-                        style="color: var(--secondary); margin-bottom: 20px; font-family: 'Playfair Display'; font-size: 1.3rem;">
-                        Opciones de Envío</h4>
+                <!-- Editor -->
+                <div class="card" style="margin: 0;">
+                    <input type="hidden" id="mail-id">
+                    <div class="input-group">
+                        <label>Asunto del Correo</label>
+                        <input type="text" id="mail-asunto" placeholder="Ej: ¡Novedades en Córcega! 🏝️"
+                            style="background: var(--white); border: 1px solid var(--border); padding: 15px;">
+                    </div>
 
-                    <div
-                        style="background: var(--bg-color); padding: 25px; border-radius: 16px; border: 1px solid var(--border);">
-                        <div style="display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: end;">
-                            <div class="input-group" style="margin-bottom: 0;">
+                    <div class="input-group">
+                        <label>Cuerpo del Mensaje (Texto arriba de la imagen)</label>
+                        <textarea id="mail-cuerpo" rows="6" placeholder="Escribe el mensaje aquí..."
+                            style="resize: vertical; background: var(--white); border: 1px solid var(--border); padding: 15px; border-radius: 12px; width: 100%; font-family: 'Inter', sans-serif; font-size: 1rem;"></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Imagen del Flyer (Subir desde PC)</label>
+                        <div
+                            style="display: flex; gap: 15px; align-items: center; background: var(--primary-light); padding: 20px; border-radius: 16px; border: 2px dashed var(--primary); position: relative;">
+                            <div style="flex: 1;">
+                                <input type="file" id="mail-file-input" accept="image/*" style="display: none;"
+                                    onchange="handleFlyerUpload(this)">
+                                <button type="button" class="btn-primary"
+                                    onclick="document.getElementById('mail-file-input').click()" id="btn-select-flyer"
+                                    style="background: var(--secondary); margin-bottom: 0;">
+                                    📁 Seleccionar Flyer
+                                </button>
+                                <p id="upload-status"
+                                    style="font-size: 0.85rem; color: var(--secondary); margin-top: 10px; font-weight: 500;">
+                                    No se eligió archivo</p>
+                            </div>
+                            <div id="flyer-preview-container" style="display: none;">
+                                <img id="flyer-preview" src=""
+                                    style="height: 80px; width: 80px; object-fit: cover; border-radius: 12px; border: 2px solid var(--white); box-shadow: var(--shadow);">
+                            </div>
+                        </div>
+                        <input type="hidden" id="mail-imagen">
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn-secondary" onclick="guardarCampana()" id="btn-save-draft"
+                            style="flex: 1; padding: 12px;">💾 Guardar Borrador</button>
+                        <button class="btn-primary" onclick="enviarPruebaMail()" id="btn-mail-test"
+                            style="background: var(--secondary); margin: 0; padding: 12px 25px;">Enviar Prueba</button>
+                    </div>
+
+                    <div style="margin-top: 40px; padding-top: 30px; border-top: 2px solid var(--bg-color);">
+                        <h4
+                            style="color: var(--secondary); margin-bottom: 20px; font-family: 'Playfair Display'; font-size: 1.3rem;">
+                            Despliegue</h4>
+
+                        <div
+                            style="background: var(--bg-color); padding: 25px; border-radius: 16px; border: 1px solid var(--border);">
+                            <div class="input-group">
                                 <label>Probar con DNI de Cliente</label>
                                 <input type="tel" id="mail-test-dni" placeholder="Ingresa DNI para prueba"
                                     style="background: var(--white);">
                             </div>
-                            <button class="btn-primary" onclick="enviarPruebaMail()" id="btn-mail-test"
-                                style="background: var(--secondary); margin: 0; padding: 14px 25px;">
-                                Enviar Prueba
+
+                            <button class="btn-primary" id="btn-mail-masivo"
+                                style="width: 100%; height: 60px; font-size: 1.1rem; background: var(--primary); margin: 0; box-shadow: 0 4px 15px rgba(216, 102, 52, 0.3);"
+                                onclick="confirmarEnvioMasivo()">
+                                🚀 LANZAR CAMPAÑA A TODO EL CLUB
                             </button>
                         </div>
-
-                        <div style="height: 1px; background: var(--border); margin: 30px 0;"></div>
-
-                        <button class="btn-primary" id="btn-mail-masivo"
-                            style="width: 100%; height: 60px; font-size: 1.1rem; background: var(--primary); margin: 0; box-shadow: 0 4px 15px rgba(216, 102, 52, 0.3);"
-                            onclick="confirmarEnvioMasivo()">
-                            🚀 LANZAR CAMPAÑA A TODO EL CLUB
-                        </button>
-                        <p
-                            style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px; text-align: center; line-height: 1.4;">
-                            <strong>Aviso importante:</strong> El envío masivo procesa a toda la base de datos de
-                            clientes y puede demorar unos minutos. Por favor, no cierres esta ventana hasta ver la
-                            confirmación.
-                        </p>
                     </div>
                 </div>
             </div>
@@ -936,7 +1026,7 @@
         import { db, storage } from './js/firebase-config.js';
         import {
             doc, getDoc, getDocs, collection, query, where, orderBy, limit,
-            updateDoc, increment, serverTimestamp, addDoc, onSnapshot
+            updateDoc, increment, serverTimestamp, addDoc, onSnapshot, deleteDoc
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
         import {
             ref, uploadBytes, getDownloadURL
@@ -1031,6 +1121,7 @@
                 link.classList.add('active');
 
                 if (target === 'logs' && (typeof logsData !== 'undefined' && logsData.length === 0)) loadLogsTable();
+                if (target === 'mails') loadCampanasHistory();
             });
         });
 
@@ -1073,6 +1164,115 @@
                 status.style.color = "var(--error)";
             } finally {
                 btn.disabled = false;
+            }
+        };
+
+        window.loadCampanasHistory = async () => {
+            const container = document.getElementById('campaign-list-container');
+            container.innerHTML = '<p style="text-align: center; color: var(--text-muted); font-size: 0.8rem;">Actualizando...</p>';
+
+            try {
+                const q = query(collection(db, "campanas"), orderBy("creadoEn", "desc"));
+                const snap = await getDocs(q);
+
+                if (snap.empty) {
+                    container.innerHTML = '<p style="text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top:20px;">No hay campañas guardadas.</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    const fecha = data.creadoEn ? data.creadoEn.toDate().toLocaleDateString() : '-';
+                    const statusClass = data.status === 'sent' ? 'status-sent' : 'status-draft';
+                    const statusLabel = data.status === 'sent' ? 'ENVIADA' : 'BORRADOR';
+
+                    const item = document.createElement('div');
+                    item.className = 'campaign-item';
+                    item.onclick = () => seleccionarCampana(doc.id, data);
+                    item.innerHTML = `
+                        <div class="meta">
+                            <span>${fecha}</span>
+                            <span class="campaign-status ${statusClass}">${statusLabel}</span>
+                        </div>
+                        <div class="title">${data.asunto || '(Sin Asunto)'}</div>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = '<p style="color: var(--error); text-align: center;">Error al cargar historial.</p>';
+            }
+        };
+
+        window.nuevaCampana = () => {
+            document.getElementById('mail-id').value = '';
+            document.getElementById('mail-asunto').value = '';
+            document.getElementById('mail-cuerpo').value = '';
+            document.getElementById('mail-imagen').value = '';
+            document.getElementById('flyer-preview-container').style.display = 'none';
+            document.getElementById('upload-status').innerText = 'No se eligió archivo';
+            document.getElementById('upload-status').style.color = 'var(--text-muted)';
+
+            document.querySelectorAll('.campaign-item').forEach(i => i.classList.remove('active'));
+        };
+
+        window.seleccionarCampana = (id, data) => {
+            document.getElementById('mail-id').value = id;
+            document.getElementById('mail-asunto').value = data.asunto || '';
+            document.getElementById('mail-cuerpo').value = data.cuerpo || '';
+            document.getElementById('mail-imagen').value = data.imagenUrl || '';
+
+            if (data.imagenUrl) {
+                document.getElementById('flyer-preview').src = data.imagenUrl;
+                document.getElementById('flyer-preview-container').style.display = 'block';
+                document.getElementById('upload-status').innerText = 'Imagen cargada ✅';
+                document.getElementById('upload-status').style.color = 'var(--success)';
+            } else {
+                document.getElementById('flyer-preview-container').style.display = 'none';
+                document.getElementById('upload-status').innerText = 'No se eligió archivo';
+            }
+
+            // Highlight selected
+            document.querySelectorAll('.campaign-item').forEach(i => i.classList.remove('active'));
+            // (Note: identifying elements in the loop by id would be better, but index is fine for now)
+        };
+
+        window.guardarCampana = async () => {
+            const id = document.getElementById('mail-id').value;
+            const asunto = document.getElementById('mail-asunto').value;
+            const cuerpo = document.getElementById('mail-cuerpo').value;
+            const imagenUrl = document.getElementById('mail-imagen').value;
+            const btn = document.getElementById('btn-save-draft');
+
+            if (!asunto) return alert("Por lo menos poné un asunto.");
+
+            btn.disabled = true;
+            btn.innerHTML = "💾 Guardando...";
+
+            try {
+                const data = {
+                    asunto, cuerpo, imagenUrl,
+                    creadoEn: serverTimestamp(),
+                    status: 'draft',
+                    creadoPor: auth.currentUser.email
+                };
+
+                if (id) {
+                    await updateDoc(doc(db, "campanas", id), data);
+                } else {
+                    const newDoc = await addDoc(collection(db, "campanas"), data);
+                    document.getElementById('mail-id').value = newDoc.id;
+                }
+
+                alert("✅ ¡Campaña guardada como borrador!");
+                loadCampanasHistory();
+            } catch (err) {
+                console.error(err);
+                alert("❌ Error al guardar.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = "💾 Guardar Borrador";
             }
         };
 
@@ -1128,6 +1328,17 @@
 
                 if (res.ok) {
                     const data = await res.json();
+
+                    // Actualizar status en DB si existía el documento
+                    const campaignId = document.getElementById('mail-id').value;
+                    if (campaignId) {
+                        await updateDoc(doc(db, "campanas", campaignId), {
+                            status: 'sent',
+                            enviadoEn: serverTimestamp()
+                        });
+                        loadCampanasHistory();
+                    }
+
                     alert(`✅ ¡Campaña finalizada con éxito!\n\nEnviados: ${data.exitosos}\nFallidos: ${data.fallidos}`);
                 } else {
                     alert("❌ Hubo un problema al procesar la campaña masiva.");
