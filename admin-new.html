@@ -870,6 +870,7 @@
         // Dashboard Cache
         let cachedLogs = [];
         let cachedStartWeek = null;
+        let cachedActiveBadges = [];
 
 
         // --- AUTH & INITIALIZATION ---
@@ -986,11 +987,14 @@
             const queryAñoPasado = query(logsRef, where("timestamp", ">=", startMesPasadoLastYear), where("timestamp", "<=", endMesPasadoLastYear));
 
 
-            const [recentSnap, lastYearSnap, clientesSnap] = await Promise.all([
+            const [recentSnap, lastYearSnap, clientesSnap, activeBadges] = await Promise.all([
                 getDocs(queryReciente),
                 getDocs(queryAñoPasado),
-                getDocs(collection(db, "clientes"))
+                getDocs(collection(db, "clientes")),
+                fetchActiveBadges(db)
             ]);
+
+            cachedActiveBadges = activeBadges;
 
             const logsRecientes = recentSnap.docs.map(d => ({ ...d.data(), ts: d.data().timestamp?.toDate() }));
             const logsLastYear = lastYearSnap.docs.map(d => ({ ...d.data(), ts: d.data().timestamp?.toDate() }));
@@ -1735,7 +1739,24 @@
 
                 const clienteData = clientSnap.data();
                 const activeBadges = await fetchActiveBadges(db);
-                const eligible = computeAutoBadgesForClient({ clienteData, badges: activeBadges });
+
+                // Fetch recent logs for frequency rules (e.g. last 30 days)
+                const logsQ = query(
+                    collection(db, "logs"),
+                    where("dni", "==", dni),
+                    orderBy("timestamp", "desc"),
+                    limit(50)
+                );
+                const logsSnap = await getDocs(logsQ);
+                const recentLogs = logsSnap.docs.map(d => d.data());
+
+                const eligible = computeAutoBadgesForClient({
+                    clienteData,
+                    badges: activeBadges,
+                    rulesLibrary: {}, // Not using separate library for now
+                    recentLogs: recentLogs,
+                    now: new Date()
+                });
 
                 for (const badge of eligible) {
                     await assignBadgeToClient({
@@ -1805,27 +1826,26 @@
         }
 
         function getBadgeInfo(client, clientLogs = []) {
-            if (!client) return null;
-            const total = client.cafes_acumulados_total || 0;
-            const actual = client.cafes || 0;
+            if (!client || !cachedActiveBadges) return null;
 
-            // 1. Behavioral (needs some history)
-            if (clientLogs.length >= 3) {
-                const hours = clientLogs.filter(l => l.ts).map(l => l.ts.getHours());
-                const avgHour = hours.reduce((a, b) => a + b, 0) / hours.length;
-                if (avgHour < 10) return { text: '🌅 Madrugador', color: '#B8542A', bg: 'rgba(184, 84, 42, 0.1)' };
+            // Usamos el motor de badges para evaluar qué badges le corresponden "en vivo"
+            const eligible = computeAutoBadgesForClient({
+                clienteData: client,
+                badges: cachedActiveBadges,
+                rulesLibrary: {},
+                recentLogs: clientLogs,
+                now: new Date()
+            });
 
-                const days = clientLogs.filter(l => l.ts).map(l => l.ts.getDay());
-                const weekendVisits = days.filter(d => d === 0 || d === 6).length;
-                if (weekendVisits / days.length > 0.6) return { text: '🎉 Finde Warrior', color: '#0d2b37', bg: 'rgba(13, 43, 55, 0.1)' };
+            if (eligible.length > 0) {
+                // Devolvemos el primero para mostrar en el ranking (estética)
+                const b = eligible[eligible.length - 1]; // El más reciente añadido suele ser el más específico
+                return {
+                    text: `${b.icono || '☕'} ${b.nombre}`,
+                    color: '#B8542A',
+                    bg: 'rgba(184, 84, 42, 0.1)'
+                };
             }
-
-            // 2. Loyalty / Status
-            if (total >= 100) return { text: '👑 Coffee King', color: '#B8542A', bg: 'rgba(184, 84, 42, 0.1)' };
-            if (total >= 50) return { text: '🏅 Master', color: '#0d2b37', bg: 'rgba(13, 43, 55, 0.1)' };
-            if (actual >= 7) return { text: '🔥 On Fire', color: '#ff4d4d', bg: 'rgba(255, 77, 77, 0.1)' };
-            if (client.sigue_instagram) return { text: '📸 Social', color: '#833ab4', bg: 'rgba(131, 58, 180, 0.1)' };
-            if (total >= 10) return { text: '☕ Habitue', color: '#7a5a3a', bg: 'rgba(122, 90, 58, 0.1)' };
 
             return null;
         }

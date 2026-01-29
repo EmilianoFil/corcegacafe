@@ -413,33 +413,70 @@
                             style="display:none; background:var(--bg-color); padding:15px; border-radius:12px; border:1px solid var(--border)">
                             <label style="font-weight:600; font-size:0.85rem; display:block; margin-bottom:10px">REGLA
                                 AUTOMÁTICA</label>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+
+                            <div class="input-group">
+                                <label>Categoría de Regla</label>
+                                <select id="badge-regla-cat" onchange="updateReglaInputs()">
+                                    <option value="dato">Dato del Cliente</option>
+                                    <option value="horario">Horario / Día</option>
+                                    <option value="frecuencia">Frecuencia de Visitas</option>
+                                </select>
+                            </div>
+
+                            <div id="regla-config-dato" class="regla-subconfig"
+                                style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
                                 <div class="input-group">
                                     <label>Campo</label>
                                     <select id="badge-regla-campo" style="padding:10px; font-size:0.9rem">
                                         <option value="cafes_acumulados_total">Cafés Históricos</option>
                                         <option value="cafes">Sellos Actuales</option>
                                         <option value="cafecitos_invitados">Premios Cobrados</option>
-                                        <option value="sigue_instagram">Sigue Instagram (true/false)</option>
-                                        <option value="cumple_mes">Mes de Cumpleaños</option>
-                                        <option value="cumple_dia">Día de Cumpleaños</option>
+                                        <option value="sigue_instagram">Sigue Instagram</option>
                                     </select>
                                 </div>
                                 <div class="input-group">
                                     <label>Operador</label>
                                     <select id="badge-regla-oper" style="padding:10px; font-size:0.9rem">
-                                        <option value=">">Mayor que</option>
-                                        <option value=">=">Mayor o igual</option>
-                                        <option value="==">Igual a</option>
-                                        <option value="<=">Menor o igual</option>
-                                        <option value="<">Menor que</option>
-                                        <option value="!=">Distinto de</option>
+                                        <option value=">">></option>
+                                        <option value=">=">≥</option>
+                                        <option value="==">==</option>
+                                        <option value="<=">≤</option>
+                                        <option value="<">
+                                            << /option>
+                                        <option value="!=">!=</option>
                                     </select>
                                 </div>
                                 <div class="input-group">
                                     <label>Valor</label>
-                                    <input type="text" id="badge-regla-valor" placeholder="Ej: 10"
-                                        style="padding:10px; font-size:0.9rem">
+                                    <input type="text" id="badge-regla-valor" placeholder="Ej: 10">
+                                </div>
+                            </div>
+
+                            <div id="regla-config-horario" class="regla-subconfig"
+                                style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="input-group">
+                                    <label>Hora Inicio (0-23)</label>
+                                    <input type="number" id="regla-h-inicio" min="0" max="23" placeholder="9">
+                                </div>
+                                <div class="input-group">
+                                    <label>Hora Fin (0-23)</label>
+                                    <input type="number" id="regla-h-fin" min="0" max="23" placeholder="12">
+                                </div>
+                                <div class="input-group" style="grid-column: span 2;">
+                                    <label>Días (Separados por coma: 0=Dom, 1=Lun...)</label>
+                                    <input type="text" id="regla-dias" placeholder="1,2,3,4,5">
+                                </div>
+                            </div>
+
+                            <div id="regla-config-frecuencia" class="regla-subconfig"
+                                style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="input-group">
+                                    <label>Cantidad de Visitas</label>
+                                    <input type="number" id="regla-visitas" placeholder="3">
+                                </div>
+                                <div class="input-group">
+                                    <label>En los últimos (días)</label>
+                                    <input type="number" id="regla-rango-dias" placeholder="7">
                                 </div>
                             </div>
                         </div>
@@ -557,6 +594,12 @@
             document.getElementById('regla-container').style.display = (e.target.value !== 'manual') ? 'block' : 'none';
         });
 
+        window.updateReglaInputs = () => {
+            const cat = document.getElementById('badge-regla-cat').value;
+            document.querySelectorAll('.regla-subconfig').forEach(el => el.style.display = 'none');
+            document.getElementById(`regla-config-${cat}`).style.display = (cat === 'dato') ? 'grid' : 'grid'; // Grid looks better
+        };
+
         // Form Logic (Create / Update)
         document.getElementById('form-badge').onsubmit = async (e) => {
             e.preventDefault();
@@ -575,17 +618,37 @@
             };
 
             if (data.tipoAsignacion !== 'manual') {
-                const rawVal = document.getElementById('badge-regla-valor').value;
-                // Intentamos convertir a booleano o número si parece serlo
-                let finalVal = rawVal;
-                if (rawVal === 'true') finalVal = true;
-                else if (rawVal === 'false') finalVal = false;
-                else if (!isNaN(rawVal)) finalVal = parseFloat(rawVal);
+                const cat = document.getElementById('badge-regla-cat').value;
+                let config = {};
+
+                if (cat === 'dato') {
+                    const rawVal = document.getElementById('badge-regla-valor').value;
+                    let finalVal = rawVal;
+                    if (rawVal === 'true') finalVal = true;
+                    else if (rawVal === 'false') finalVal = false;
+                    else if (!isNaN(rawVal)) finalVal = parseFloat(rawVal);
+                    
+                    config = {
+                        campo: document.getElementById('badge-regla-campo').value,
+                        operador: document.getElementById('badge-regla-oper').value,
+                        valor: finalVal
+                    };
+                } else if (cat === 'horario') {
+                    config = {
+                        horaInicio: parseInt(document.getElementById('regla-h-inicio').value) || 0,
+                        horaFin: parseInt(document.getElementById('regla-h-fin').value) || 24,
+                        dias: document.getElementById('regla-dias').value.split(',').map(d => parseInt(d.trim())).filter(d => !isNaN(d))
+                    };
+                } else if (cat === 'frecuencia') {
+                    config = {
+                        cantidadVisitas: parseInt(document.getElementById('regla-visitas').value) || 1,
+                        diasRango: parseInt(document.getElementById('regla-rango-dias').value) || 1
+                    };
+                }
 
                 data.regla = {
-                    campo: document.getElementById('badge-regla-campo').value,
-                    operador: document.getElementById('badge-regla-oper').value,
-                    valor: finalVal
+                    categoria: cat,
+                    config: config
                 };
             } else {
                 data.regla = null;
@@ -671,9 +734,23 @@
 
             if (b.regla) {
                 document.getElementById('regla-container').style.display = 'block';
-                document.getElementById('badge-regla-campo').value = b.regla.campo;
-                document.getElementById('badge-regla-oper').value = b.regla.operador;
-                document.getElementById('badge-regla-valor').value = b.regla.valor;
+                const cat = b.regla.categoria || 'dato';
+                document.getElementById('badge-regla-cat').value = cat;
+                updateReglaInputs();
+
+                if (cat === 'dato') {
+                    const conf = b.regla.config || b.regla; // handles legacy format
+                    document.getElementById('badge-regla-campo').value = conf.campo || '';
+                    document.getElementById('badge-regla-oper').value = conf.operador || '>';
+                    document.getElementById('badge-regla-valor').value = conf.valor || '';
+                } else if (cat === 'horario') {
+                    document.getElementById('regla-h-inicio').value = b.regla.config.horaInicio;
+                    document.getElementById('regla-h-fin').value = b.regla.config.horaFin;
+                    document.getElementById('regla-dias').value = (b.regla.config.dias || []).join(',');
+                } else if (cat === 'frecuencia') {
+                    document.getElementById('regla-visitas').value = b.regla.config.cantidadVisitas;
+                    document.getElementById('regla-rango-dias').value = b.regla.config.diasRango;
+                }
             } else {
                 document.getElementById('regla-container').style.display = 'none';
             }

@@ -6,13 +6,13 @@ import {
     getDoc,
     doc,
     setDoc,
-    serverTimestamp
+    serverTimestamp,
+    orderBy,
+    limit
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 /**
- * Fetches all badges marked as active in the database.
- * @param {Firestore} db - Firebase Firestore instance.
- * @returns {Promise<Array>} List of active badge documents.
+ * Fetches all badges marked as active.
  */
 export async function fetchActiveBadges(db) {
     const q = query(collection(db, "badges"), where("activo", "==", true));
@@ -21,56 +21,109 @@ export async function fetchActiveBadges(db) {
 }
 
 /**
- * Evaluates which badges a client is eligible for based on their current data.
- * @param {Object} params
- * @param {Object} params.clienteData - Current client data from Firestore.
- * @param {Array} params.badges - List of active badges to evaluate.
- * @returns {Array} List of badge objects the client qualifies for.
+ * Fetches all named rules from the rules library.
  */
-export function computeAutoBadgesForClient({ clienteData, badges }) {
+export async function fetchRulesLibrary(db) {
+    const snap = await getDocs(collection(db, "reglas_badges"));
+    const library = {};
+    snap.forEach(d => {
+        library[d.id] = d.data();
+    });
+    return library;
+}
+
+/**
+ * Evaluates which badges a client is eligible for.
+ * @param {Object} params
+ * @param {Object} params.clienteData - Firestore data of the client.
+ * @param {Array} params.badges - Active badges.
+ * @param {Object} params.rulesLibrary - Pre-fetched rules dictionary.
+ * @param {Array} params.recentLogs - Last logs of the client (for frequency checks).
+ * @param {Date} params.now - Current time context.
+ */
+export function computeAutoBadgesForClient({ clienteData, badges, rulesLibrary, recentLogs = [], now = new Date() }) {
     if (!clienteData) return [];
 
     return badges.filter(badge => {
         if (badge.tipoAsignacion === 'manual') return false;
-        if (!badge.regla) return false;
 
-        const { campo, operador, valor } = badge.regla;
-        const valorCliente = clienteData[campo];
+        // El badge puede tener la regla fija (legacy) o un ID de regla de la librería
+        const regla = badge.reglaId ? rulesLibrary[badge.reglaId] : badge.regla;
+        if (!regla) return false;
 
-        // Se el cliente no tiene el campo, no califica (a menos que el operador sea !=)
-        if (valorCliente === undefined && operador !== '!=') return false;
+        const { categoria, config } = regla;
 
-        switch (operador) {
-            case '>': return valorCliente > valor;
-            case '>=': return valorCliente >= valor;
-            case '<': return valorCliente < valor;
-            case '<=': return valorCliente <= valor;
-            case '==': return valorCliente == valor;
-            case '!=': return valorCliente != valor;
-            default: return false;
+        // Si la regla no tiene categoría, asumimos que es el formato viejo de "campo/operacdo/valor"
+        if (!categoria) {
+            return evaluateFieldRule(clienteData, regla);
+        }
+
+        switch (categoria) {
+            case 'dato':
+                return evaluateFieldRule(clienteData, config);
+            case 'horario':
+                return evaluateTimeRule(now, config);
+            case 'frecuencia':
+                return evaluateFrequencyRule(recentLogs, config, now);
+            default:
+                return false;
         }
     });
 }
 
+function evaluateFieldRule(data, config) {
+    const { campo, operador, valor } = config;
+    const valorCliente = data[campo];
+    if (valorCliente === undefined && operador !== '!=') return false;
+
+    switch (operador) {
+        case '>': return valorCliente > valor;
+        case '>=': return valorCliente >= valor;
+        case '<': return valorCliente < valor;
+        case '<=': return valorCliente <= valor;
+        case '==': return valorCliente == valor;
+        case '!=': return valorCliente != valor;
+        default: return false;
+    }
+}
+
+function evaluateTimeRule(now, config) {
+    const { horaInicio, horaFin, dias } = config; // dias: [1,2,3,4,5,6,0]
+    const horaActual = now.getHours();
+    const diaActual = now.getDay();
+
+    if (dias && Array.isArray(dias) && !dias.includes(diaActual)) return false;
+
+    // Si no hay horas definidas, solo chequea días
+    if (horaInicio === undefined || horaFin === undefined) return true;
+
+    return horaActual >= horaInicio && horaActual < horaFin;
+}
+
+function evaluateFrequencyRule(logs, config, now) {
+    const { cantidadVisitas, diasRango } = config;
+    if (!logs || logs.length === 0) return false;
+
+    const msLimite = diasRango * 24 * 60 * 60 * 1000;
+    const timestampLimite = now.getTime() - msLimite;
+
+    const visitasRecientes = logs.filter(l => {
+        const ts = l.timestamp?.toDate ? l.timestamp.toDate().getTime() : new Date(l.timestamp).getTime();
+        return ts >= timestampLimite && (l.accion === 'sumar_cafecito' || l.accion === 'invitar_cafecito');
+    });
+
+    return visitasRecientes.length >= cantidadVisitas;
+}
+
 /**
- * Assigns a badge to a client if they don't already have it.
- * @param {Object} params
- * @param {Firestore} params.db - Firestore instance.
- * @param {string} params.dni - Client DNI.
- * @param {Object} params.badgeDoc - Badge info (id, slug, nombre).
- * @param {string} params.origen - 'manual' or 'auto'.
- * @param {string} params.asignadoPor - Admin email or 'system'.
+ * Assigns a badge to a client.
  */
 export async function assignBadgeToClient({ db, dni, badgeDoc, origen, asignadoPor }) {
     const badgeSlug = badgeDoc.slug;
     const badgeSubcollRef = doc(db, "clientes", dni, "badges", badgeSlug);
 
-    // Check if client already has this badge (using slug as ID for easier check)
     const existingSnap = await getDoc(badgeSubcollRef);
-    if (existingSnap.exists()) {
-        console.log(`Cliente ${dni} ya tiene el badge ${badgeSlug}.`);
-        return;
-    }
+    if (existingSnap.exists()) return;
 
     await setDoc(badgeSubcollRef, {
         badgeId: badgeDoc.id,
@@ -80,27 +133,4 @@ export async function assignBadgeToClient({ db, dni, badgeDoc, origen, asignadoP
         asignadoPor: asignadoPor,
         obtenidoEn: serverTimestamp()
     });
-
-    console.log(`Badge ${badgeSlug} asignado a ${dni}.`);
-}
-
-/**
- * Utility for debugging: simulates which auto badges a client should have.
- * @param {Firestore} db
- * @param {string} dni
- */
-export async function simulateAutoBadgesForDni(db, dni) {
-    const clientSnap = await getDoc(doc(db, "clientes", dni));
-    if (!clientSnap.exists()) {
-        console.error("Cliente no encontrado.");
-        return;
-    }
-
-    const clienteData = clientSnap.data();
-    const activeBadges = await fetchActiveBadges(db);
-    const eligible = computeAutoBadgesForClient({ clienteData, badges: activeBadges });
-
-    console.log(`--- Simulación de Badges para ${dni} ---`);
-    console.log(`Datos: ${clienteData.nombre}, Totales: ${clienteData.cafes_acumulados_total}`);
-    console.log(`Badges elegibles:`, eligible.map(b => b.nombre));
 }
