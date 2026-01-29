@@ -595,6 +595,7 @@
                 <li><a href="#clientes"><span class="icon">👥</span> Clientes</a></li>
                 <li><a href="admin-badges.html"><span class="icon">🎖️</span> Insignias</a></li>
                 <li><a href="#logs"><span class="icon">📜</span> Auditoría</a></li>
+                <li><a href="#mails"><span class="icon">📧</span> Mails</a></li>
                 <li><a href="#tools"><span class="icon">🛠️</span> Herramientas</a></li>
             </ul>
         </nav>
@@ -819,6 +820,44 @@
             </table>
         </section>
 
+        <!-- MAILS SECTION -->
+        <section id="mails" class="section-content">
+            <h3>Envío de Campañas 📧</h3>
+            <div class="card" style="max-width: 800px;">
+                <div class="input-group">
+                    <label>Asunto del Correo</label>
+                    <input type="text" id="mail-asunto" placeholder="Ej: ¡Novedades en Córcega! 🏝️">
+                </div>
+                <div class="input-group">
+                    <label>Cuerpo del Mensaje (Texto arriba de la imagen)</label>
+                    <textarea id="mail-cuerpo" rows="6" placeholder="Escribe el mensaje aquí..."
+                        style="resize: vertical;"></textarea>
+                </div>
+                <div class="input-group">
+                    <label>URL de la Imagen (Flyer)</label>
+                    <input type="text" id="mail-imagen" placeholder="https://...">
+                </div>
+
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border);">
+                    <label
+                        style="font-weight: 700; display: block; margin-bottom: 15px; color: var(--secondary);">OPCIONES
+                        DE ENVÍO</label>
+                    <div style="display: flex; gap: 10px; align-items: flex-end;">
+                        <div class="input-group" style="flex: 1; margin-bottom: 0;">
+                            <label>Probar con DNI</label>
+                            <input type="tel" id="mail-test-dni" placeholder="Ingresa un DNI para probar">
+                        </div>
+                        <button class="btn-secondary" onclick="enviarPruebaMail()">Enviar Prueba</button>
+                    </div>
+
+                    <button class="btn-primary" style="width: 100%; margin-top: 20px; background: var(--error);"
+                        onclick="confirmarEnvioMasivo()">🚀 LANZAR CAMPAÑA MASIVA</button>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; text-align: center;">Nota:
+                        El envío masivo puede demorar unos minutos dependiendo de la cantidad de clientes.</p>
+                </div>
+            </div>
+        </section>
+
         <!-- TOOLS SECTION -->
         <section id="tools" class="section-content">
             <h3>Configuración y Herramientas</h3>
@@ -946,10 +985,54 @@
                 document.querySelectorAll('#main-nav a').forEach(a => a.classList.remove('active'));
                 link.classList.add('active');
 
-                // Section specific initializers
                 if (target === 'logs' && (typeof logsData !== 'undefined' && logsData.length === 0)) loadLogsTable();
             });
         });
+
+        window.enviarPruebaMail = async () => {
+            const asunto = document.getElementById('mail-asunto').value;
+            const cuerpo = document.getElementById('mail-cuerpo').value;
+            const imagenUrl = document.getElementById('mail-imagen').value;
+            const dni = document.getElementById('mail-test-dni').value;
+
+            if (!asunto || !imagenUrl || !dni) return alert("Completa asunto, imagen y DNI de prueba.");
+
+            try {
+                const res = await fetch('https://enviarmailcampana-ioo4dzpz2a-uc.a.run.app', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ asunto, cuerpo, imagenUrl, dnisPrueba: [dni] })
+                });
+                if (res.ok) alert("Mail de prueba enviado!");
+                else alert("Error al enviar prueba.");
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión.");
+            }
+        };
+
+        window.confirmarEnvioMasivo = async () => {
+            const asunto = document.getElementById('mail-asunto').value;
+            const cuerpo = document.getElementById('mail-cuerpo').value;
+            const imagenUrl = document.getElementById('mail-imagen').value;
+
+            if (!asunto || !imagenUrl) return alert("Completa asunto e imagen.");
+
+            if (!confirm(`¿ESTÁS SEGURO?\n\nSe enviará el mail con asunto: "${asunto}" a TODOS los clientes de la base de datos.`)) return;
+
+            try {
+                const res = await fetch('https://enviarmailcampana-ioo4dzpz2a-uc.a.run.app', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ asunto, cuerpo, imagenUrl, esMasivo: true })
+                });
+                if (res.ok) alert("Campaña masiva iniciada!");
+                else alert("Error al iniciar campaña.");
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión.");
+            }
+        };
 
         // --- DASHBOARD LOGIC ---
         let currentRankingType = 'week';

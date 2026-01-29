@@ -807,3 +807,141 @@ exports.enviarMailAniversario = onRequest(
 );
 
 exports.uploadMenuToGitHub = require('./upload').uploadMenuToGitHub;
+
+exports.enviarMailCampana = onRequest(
+  { region: "us-central1", secrets: [emailUser, emailPass], timeoutSeconds: 540, memory: "512MiB" },
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      const { asunto, cuerpo, imagenUrl, dnisPrueba, esMasivo } = req.body;
+      const adminUser = "Admin_Panel";
+
+      if (!asunto || !imagenUrl) {
+        return res.status(400).send({ error: "Asunto e imagen son requeridos." });
+      }
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        pool: true,
+        maxConnections: 5,
+        maxMessages: 100,
+        auth: {
+          user: emailUser.value(),
+          pass: emailPass.value(),
+        },
+      });
+
+      let listaEnvio = [];
+
+      try {
+        if (dnisPrueba && Array.isArray(dnisPrueba) && dnisPrueba.length > 0) {
+          for (const dni of dnisPrueba) {
+            const snap = await db.collection("clientes").doc(dni.toString().trim()).get();
+            if (snap.exists) {
+              const data = snap.data();
+              const email = (data.email || data.mail || "").trim();
+              if (email && email.includes("@")) {
+                listaEnvio.push({ dni: snap.id, email, nombre: data.nombre || "Cliente" });
+              }
+            }
+          }
+        } else if (esMasivo) {
+          const snapshot = await db.collection("clientes").get();
+          const emailsUnicos = new Set();
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const email = (data.email || data.mail || "").trim().toLowerCase();
+            if (email && email.includes("@") && !emailsUnicos.has(email)) {
+              emailsUnicos.add(email);
+              listaEnvio.push({ dni: doc.id, email, nombre: data.nombre || "Cliente" });
+            }
+          });
+        }
+
+        if (listaEnvio.length === 0) {
+          return res.status(400).send({ error: "No hay destinatarios válidos." });
+        }
+
+        const resultados = { exitosos: 0, fallidos: 0, errores: [] };
+
+        await db.collection("logs").add({
+          accion: "inicio_campana_personalizada",
+          detalles: `Campana: ${asunto}. Destinatarios: ${listaEnvio.length}`,
+          usuario: adminUser,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        const chunkSize = 15;
+        for (let i = 0; i < listaEnvio.length; i += chunkSize) {
+          const chunk = listaEnvio.slice(i, i + chunkSize);
+
+          await Promise.all(chunk.map(async (target) => {
+            const mailOptions = {
+              from: `Córcega Café <${emailUser.value()}>`,
+              to: target.email,
+              subject: asunto,
+              html: `<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light only" />
+    <title>${asunto}</title>
+    <style>
+      :root { color-scheme: light only; }
+      html, body { background-color: #fdfcf7 !important; margin: 0; padding: 0; }
+      @media (prefers-color-scheme: dark) { .body-bg { background-color: #fdfcf7 !important; } }
+    </style>
+  </head>
+  <body style="margin:0; padding:0; background-color:#fdfcf7; font-family: Arial, sans-serif;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#fdfcf7;">
+      <tr>
+        <td align="center" style="padding:20px 12px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e0e0e0;">
+            <tr>
+              <td align="center" style="padding:30px 20px;">
+                 <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega" width="120" style="margin-bottom:20px;">
+                 ${cuerpo ? `<div style="font-size:16px; line-height:1.6; color:#2b2b2b; text-align:left; margin-bottom:25px;">${cuerpo.replace(/\n/g, '<br>')}</div>` : ''}
+                 <img src="${imagenUrl}" alt="Flyer" style="display:block; width:100%; border-radius:8px;">
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:20px; background-color:#f9f9f9;">
+                <p style="font-size:14px; color:#666; margin:0;">
+                  Gracias por ser parte del Club Córcega 🏝️<br/>
+                  <strong>Equipo Córcega 🐎</strong>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`,
+            };
+
+            try {
+              await transporter.sendMail(mailOptions);
+              resultados.exitosos++;
+            } catch (err) {
+              resultados.fallidos++;
+              resultados.errores.push({ email: target.email, error: err.message });
+            }
+          }));
+        }
+
+        await db.collection("logs").add({
+          accion: "fin_campana_personalizada",
+          detalles: `Resultados - Exitosos: ${resultados.exitosos}, Fallidos: ${resultados.fallidos}`,
+          usuario: adminUser,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        res.status(200).send(resultados);
+      } catch (error) {
+        logger.error("Error en mail personalizado:", error);
+        res.status(500).send({ error: error.message });
+      }
+    });
+  }
+);
