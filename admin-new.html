@@ -993,35 +993,49 @@
                         <input type="hidden" id="mail-imagen">
                     </div>
 
-                    <div style="display: flex; gap: 15px; margin-top: 30px;">
+                    <div
+                        style="display: flex; gap: 15px; margin-top: 30px; border-top: 1px solid var(--bg-color); padding-top: 20px;">
                         <button class="btn-secondary" onclick="guardarCampana()" id="btn-save-draft" style="flex: 1;">
                             <span>💾</span> Guardar Borrador
                         </button>
-                        <button class="btn-primary" onclick="enviarPruebaMail()" id="btn-mail-test"
-                            style="background: var(--secondary); margin: 0; padding: 16px 30px; flex: 1;">
-                            <span>🔔</span> Enviar Prueba
-                        </button>
                     </div>
 
-                    <div style="margin-top: 40px; padding-top: 30px; border-top: 2px solid var(--bg-color);">
+                    <!-- TEST SECTION -->
+                    <div
+                        style="margin-top: 40px; border: 1px solid var(--border); border-radius: 16px; padding: 25px; background: #fafafa;">
                         <h4
-                            style="color: var(--secondary); margin-bottom: 20px; font-family: 'Playfair Display'; font-size: 1.3rem;">
-                            Despliegue</h4>
+                            style="color: var(--secondary); margin: 0 0 10px; font-family: 'Playfair Display'; font-size: 1.2rem;">
+                            1. Previsualización y Prueba 🧪</h4>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">Envía un mail a tu
+                            propio DNI antes de lanzar el masivo.</p>
 
-                        <div
-                            style="background: var(--bg-color); padding: 25px; border-radius: 16px; border: 1px solid var(--border);">
-                            <div class="input-group">
-                                <label>Probar con DNI de Cliente</label>
-                                <input type="tel" id="mail-test-dni" placeholder="Ingresa DNI para prueba"
-                                    style="background: var(--white);">
+                        <div style="display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: end;">
+                            <div class="input-group" style="margin-bottom: 0;">
+                                <label>DNI para recibir prueba</label>
+                                <input type="tel" id="mail-test-dni" placeholder="Ingresa tu DNI"
+                                    style="background: var(--white); border: 1px solid var(--border);">
                             </div>
-
-                            <button class="btn-primary" id="btn-mail-masivo"
-                                style="width: 100%; height: 60px; font-size: 1.1rem; background: var(--primary); margin: 0; box-shadow: 0 4px 15px rgba(216, 102, 52, 0.3);"
-                                onclick="confirmarEnvioMasivo()">
-                                🚀 LANZAR CAMPAÑA A TODO EL CLUB
+                            <button class="btn-primary" onclick="enviarPruebaMail()" id="btn-mail-test"
+                                style="background: var(--secondary); margin: 0; padding: 16px 25px;">
+                                <span>🔔</span> Enviar Prueba
                             </button>
                         </div>
+                    </div>
+
+                    <!-- DEPLOY SECTION -->
+                    <div
+                        style="margin-top: 30px; background: var(--primary-light); border: 2px solid var(--primary); border-radius: 16px; padding: 25px;">
+                        <h4
+                            style="color: var(--primary-dark); margin: 0 0 10px; font-family: 'Playfair Display'; font-size: 1.2rem;">
+                            2. Despliegue Masivo 🚀</h4>
+                        <p style="font-size: 0.85rem; color: var(--primary-dark); margin-bottom: 20px; opacity: 0.8;">
+                            Una vez que la prueba sea correcta, lanza la campaña a todo el club.</p>
+
+                        <button class="btn-primary" id="btn-mail-masivo"
+                            style="width: 100%; height: 60px; font-size: 1.1rem; background: var(--primary); margin: 0; box-shadow: 0 4px 15px rgba(216, 102, 52, 0.3);"
+                            onclick="confirmarEnvioMasivo()">
+                            LANZAR CAMPAÑA A TODO EL CLUB
+                        </button>
                     </div>
                 </div>
             </div>
