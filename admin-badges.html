@@ -353,6 +353,54 @@
                 transform: rotate(360deg);
             }
         }
+
+        .rule-group {
+            background: var(--white);
+            border: 1px dashed var(--primary);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .rule-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .rule-item {
+            background: var(--bg-color);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .remove-btn {
+            background: none;
+            border: none;
+            color: var(--error);
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .add-rule-btn {
+            background: none;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -411,74 +459,16 @@
                         </div>
                         <div id="regla-container"
                             style="display:none; background:var(--bg-color); padding:15px; border-radius:12px; border:1px solid var(--border)">
-                            <label style="font-weight:600; font-size:0.85rem; display:block; margin-bottom:10px">REGLA
-                                AUTOMÁTICA</label>
+                            <label style="font-weight:600; font-size:0.85rem; display:block; margin-bottom:15px">REGLAS
+                                DE ASIGNACIÓN (Cualquier grupo otorga el badge)</label>
 
-                            <div class="input-group">
-                                <label>Categoría de Regla</label>
-                                <select id="badge-regla-cat" onchange="updateReglaInputs()">
-                                    <option value="dato">Dato del Cliente</option>
-                                    <option value="horario">Horario / Día</option>
-                                    <option value="frecuencia">Frecuencia de Visitas</option>
-                                </select>
+                            <div id="rule-groups-list">
+                                <!-- Groups will be added here -->
                             </div>
 
-                            <div id="regla-config-dato" class="regla-subconfig"
-                                style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                                <div class="input-group">
-                                    <label>Campo</label>
-                                    <select id="badge-regla-campo" style="padding:10px; font-size:0.9rem">
-                                        <option value="cafes_acumulados_total">Cafés Históricos</option>
-                                        <option value="cafes">Sellos Actuales</option>
-                                        <option value="cafecitos_invitados">Premios Cobrados</option>
-                                        <option value="sigue_instagram">Sigue Instagram</option>
-                                    </select>
-                                </div>
-                                <div class="input-group">
-                                    <label>Operador</label>
-                                    <select id="badge-regla-oper" style="padding:10px; font-size:0.9rem">
-                                        <option value=">">></option>
-                                        <option value=">=">≥</option>
-                                        <option value="==">==</option>
-                                        <option value="<=">≤</option>
-                                        <option value="<">
-                                            << /option>
-                                        <option value="!=">!=</option>
-                                    </select>
-                                </div>
-                                <div class="input-group">
-                                    <label>Valor</label>
-                                    <input type="text" id="badge-regla-valor" placeholder="Ej: 10">
-                                </div>
-                            </div>
-
-                            <div id="regla-config-horario" class="regla-subconfig"
-                                style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                <div class="input-group">
-                                    <label>Hora Inicio (0-23)</label>
-                                    <input type="number" id="regla-h-inicio" min="0" max="23" placeholder="9">
-                                </div>
-                                <div class="input-group">
-                                    <label>Hora Fin (0-23)</label>
-                                    <input type="number" id="regla-h-fin" min="0" max="23" placeholder="12">
-                                </div>
-                                <div class="input-group" style="grid-column: span 2;">
-                                    <label>Días (Separados por coma: 0=Dom, 1=Lun...)</label>
-                                    <input type="text" id="regla-dias" placeholder="1,2,3,4,5">
-                                </div>
-                            </div>
-
-                            <div id="regla-config-frecuencia" class="regla-subconfig"
-                                style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                <div class="input-group">
-                                    <label>Cantidad de Visitas</label>
-                                    <input type="number" id="regla-visitas" placeholder="3">
-                                </div>
-                                <div class="input-group">
-                                    <label>En los últimos (días)</label>
-                                    <input type="number" id="regla-rango-dias" placeholder="7">
-                                </div>
-                            </div>
+                            <button type="button" class="btn-secondary"
+                                style="width:100%; border-style:dashed; margin-top:10px" onclick="addRuleGroup()">+
+                                Agregar Grupo de Requisitos</button>
                         </div>
                         <div style="margin-top:20px; display:flex; gap:10px">
                             <button type="submit" class="btn-primary" id="btn-save-badge">Guardar Badge</button>
@@ -589,6 +579,98 @@
             }
         };
 
+        // Regla Builder Logic
+        window.addRuleGroup = () => {
+            const container = document.getElementById('rule-groups-list');
+            const groupEl = document.createElement('div');
+            groupEl.className = 'rule-group';
+            groupEl.innerHTML = `
+                <div class="rule-group-header">
+                    <span>GRUPO DE REQUISITOS (AND)</span>
+                    <button type="button" class="remove-btn" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+                <div class="rules-list"></div>
+                <button type="button" class="add-rule-btn" onclick="addRuleToGroup(this.parentElement)">+ REGLA</button>
+            `;
+            container.appendChild(groupEl);
+            return groupEl;
+        };
+
+        window.addRuleToGroup = (groupEl, data = null) => {
+            const list = groupEl.querySelector('.rules-list');
+            const ruleItem = document.createElement('div');
+            ruleItem.className = 'rule-item';
+            ruleItem.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px">
+                    <select class="rule-cat" style="width:auto; padding:5px; height:auto; font-size:0.8rem" onchange="updateRuleTypeUI(this)">
+                        <option value="dato">Dato</option>
+                        <option value="horario">Horario</option>
+                        <option value="frecuencia">Frecuencia</option>
+                    </select>
+                    <button type="button" class="remove-btn" onclick="this.parentElement.parentElement.remove()" style="font-size:1rem">×</button>
+                </div>
+                <div class="rule-inputs"></div>
+            `;
+            list.appendChild(ruleItem);
+
+            const catSelect = ruleItem.querySelector('.rule-cat');
+            if (data) catSelect.value = data.categoria;
+            updateRuleTypeUI(catSelect, data ? data.config : null);
+        };
+
+        window.updateRuleTypeUI = (selectEl, config = null) => {
+            const cat = selectEl.value;
+            const inputContainer = selectEl.parentElement.nextElementSibling;
+
+            if (cat === 'dato') {
+                inputContainer.innerHTML = `
+                    <div style="display:grid; grid-template-columns:1fr 0.6fr 1fr; gap:5px">
+                        <select class="r-campo" style="padding:5px; font-size:0.8rem">
+                            <option value="cafes_acumulados_total">Totales</option>
+                            <option value="cafes">Actuales</option>
+                            <option value="sigue_instagram">Instagram</option>
+                        </select>
+                        <select class="r-oper" style="padding:5px; font-size:0.8rem">
+                            <option value=">">></option>
+                            <option value=">=">≥</option>
+                            <option value="==">==</option>
+                            <option value="!=">!=</option>
+                        </select>
+                        <input type="text" class="r-val" placeholder="Valor" style="padding:5px; font-size:0.8rem">
+                    </div>
+                `;
+                if (config) {
+                    inputContainer.querySelector('.r-campo').value = config.campo;
+                    inputContainer.querySelector('.r-oper').value = config.operador;
+                    inputContainer.querySelector('.r-val').value = config.valor;
+                }
+            } else if (cat === 'horario') {
+                inputContainer.innerHTML = `
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px">
+                        <input type="number" class="r-h-ini" placeholder="0-24" style="padding:5px; font-size:0.8rem">
+                        <input type="number" class="r-h-fin" placeholder="0-24" style="padding:5px; font-size:0.8rem">
+                        <input type="text" class="r-dias" placeholder="0,1,2,3,4,5,6" style="padding:5px; font-size:0.8rem; grid-column: span 2">
+                    </div>
+                `;
+                if (config) {
+                    inputContainer.querySelector('.r-h-ini').value = config.horaInicio;
+                    inputContainer.querySelector('.r-h-fin').value = config.horaFin;
+                    inputContainer.querySelector('.r-dias').value = (config.dias || []).join(',');
+                }
+            } else if (cat === 'frecuencia') {
+                inputContainer.innerHTML = `
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px">
+                        <input type="number" class="r-vis" placeholder="Visitas" style="padding:5px; font-size:0.8rem">
+                        <input type="number" class="r-rng" placeholder="Días" style="padding:5px; font-size:0.8rem">
+                    </div>
+                `;
+                if (config) {
+                    inputContainer.querySelector('.r-vis').value = config.cantidadVisitas;
+                    inputContainer.querySelector('.r-rng').value = config.diasRango;
+                }
+            }
+        };
+
         // Regla toggle logic
         document.getElementById('badge-tipo-asig').addEventListener('change', (e) => {
             document.getElementById('regla-container').style.display = (e.target.value !== 'manual') ? 'block' : 'none';
@@ -618,37 +700,51 @@
             };
 
             if (data.tipoAsignacion !== 'manual') {
-                const cat = document.getElementById('badge-regla-cat').value;
-                let config = {};
+                const groups = [];
+                document.querySelectorAll('.rule-group').forEach(groupEl => {
+                    const conditions = [];
+                    groupEl.querySelectorAll('.rule-item').forEach(ruleEl => {
+                        const cat = ruleEl.querySelector('.rule-cat').value;
+                        let conf = {};
 
-                if (cat === 'dato') {
-                    const rawVal = document.getElementById('badge-regla-valor').value;
-                    let finalVal = rawVal;
-                    if (rawVal === 'true') finalVal = true;
-                    else if (rawVal === 'false') finalVal = false;
-                    else if (!isNaN(rawVal)) finalVal = parseFloat(rawVal);
-                    
-                    config = {
-                        campo: document.getElementById('badge-regla-campo').value,
-                        operador: document.getElementById('badge-regla-oper').value,
-                        valor: finalVal
-                    };
-                } else if (cat === 'horario') {
-                    config = {
-                        horaInicio: parseInt(document.getElementById('regla-h-inicio').value) || 0,
-                        horaFin: parseInt(document.getElementById('regla-h-fin').value) || 24,
-                        dias: document.getElementById('regla-dias').value.split(',').map(d => parseInt(d.trim())).filter(d => !isNaN(d))
-                    };
-                } else if (cat === 'frecuencia') {
-                    config = {
-                        cantidadVisitas: parseInt(document.getElementById('regla-visitas').value) || 1,
-                        diasRango: parseInt(document.getElementById('regla-rango-dias').value) || 1
-                    };
-                }
+                        if (cat === 'dato') {
+                            const rawVal = ruleEl.querySelector('.r-val').value;
+                            let finalVal = rawVal;
+                            if (rawVal === 'true') finalVal = true;
+                            else if (rawVal === 'false') finalVal = false;
+                            else if (!isNaN(rawVal)) finalVal = parseFloat(rawVal);
+                            conf = {
+                                campo: ruleEl.querySelector('.r-campo').value,
+                                operador: ruleEl.querySelector('.r-oper').value,
+                                valor: finalVal
+                            };
+                        } else if (cat === 'horario') {
+                            conf = {
+                                horaInicio: parseInt(ruleEl.querySelector('.r-h-ini').value),
+                                horaFin: parseInt(ruleEl.querySelector('.r-h-fin').value),
+                                dias: ruleEl.querySelector('.r-dias').value.split(',').map(d => parseInt(d.trim())).filter(d => !isNaN(d))
+                            };
+                        } else if (cat === 'frecuencia') {
+                            conf = {
+                                cantidadVisitas: parseInt(ruleEl.querySelector('.r-vis').value),
+                                diasRango: parseInt(ruleEl.querySelector('.r-rng').value)
+                            };
+                        }
+
+                        conditions.push({ categoria: cat, config: conf });
+                    });
+
+                    if (conditions.length > 0) {
+                        groups.push({
+                            operador: 'AND',
+                            condiciones: conditions
+                        });
+                    }
+                });
 
                 data.regla = {
-                    categoria: cat,
-                    config: config
+                    operador: 'OR',
+                    condiciones: groups
                 };
             } else {
                 data.regla = null;
@@ -734,23 +830,22 @@
 
             if (b.regla) {
                 document.getElementById('regla-container').style.display = 'block';
-                const cat = b.regla.categoria || 'dato';
-                document.getElementById('badge-regla-cat').value = cat;
-                updateReglaInputs();
+                document.getElementById('rule-groups-list').innerHTML = '';
 
-                if (cat === 'dato') {
-                    const conf = b.regla.config || b.regla; // handles legacy format
-                    document.getElementById('badge-regla-campo').value = conf.campo || '';
-                    document.getElementById('badge-regla-oper').value = conf.operador || '>';
-                    document.getElementById('badge-regla-valor').value = conf.valor || '';
-                } else if (cat === 'horario') {
-                    document.getElementById('regla-h-inicio').value = b.regla.config.horaInicio;
-                    document.getElementById('regla-h-fin').value = b.regla.config.horaFin;
-                    document.getElementById('regla-dias').value = (b.regla.config.dias || []).join(',');
-                } else if (cat === 'frecuencia') {
-                    document.getElementById('regla-visitas').value = b.regla.config.cantidadVisitas;
-                    document.getElementById('regla-rango-dias').value = b.regla.config.diasRango;
+                // Normalizamos el formato (soporte legado simple)
+                let topNode = b.regla;
+                if (topNode.categoria) {
+                    // Legacy: convertir a OR [ AND [ self ] ]
+                    topNode = { operador: 'OR', condiciones: [{ operador: 'AND', condiciones: [b.regla] }] };
                 }
+
+                (topNode.condiciones || []).forEach(group => {
+                    const groupEl = addRuleGroup();
+                    (group.condiciones || []).forEach(rule => {
+                        addRuleToGroup(groupEl, rule);
+                    });
+                });
+
             } else {
                 document.getElementById('regla-container').style.display = 'none';
             }

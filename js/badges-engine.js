@@ -6,14 +6,9 @@ import {
     getDoc,
     doc,
     setDoc,
-    serverTimestamp,
-    orderBy,
-    limit
+    serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-/**
- * Fetches all badges marked as active.
- */
 export async function fetchActiveBadges(db) {
     const q = query(collection(db, "badges"), where("activo", "==", true));
     const snap = await getDocs(q);
@@ -21,59 +16,47 @@ export async function fetchActiveBadges(db) {
 }
 
 /**
- * Fetches all named rules from the rules library.
+ * Evaluates a rule or a group of rules recursively.
  */
-export async function fetchRulesLibrary(db) {
-    const snap = await getDocs(collection(db, "reglas_badges"));
-    const library = {};
-    snap.forEach(d => {
-        library[d.id] = d.data();
-    });
-    return library;
-}
+function evaluateRuleNode(node, context) {
+    if (!node) return false;
 
-/**
- * Evaluates which badges a client is eligible for.
- * @param {Object} params
- * @param {Object} params.clienteData - Firestore data of the client.
- * @param {Array} params.badges - Active badges.
- * @param {Object} params.rulesLibrary - Pre-fetched rules dictionary.
- * @param {Array} params.recentLogs - Last logs of the client (for frequency checks).
- * @param {Date} params.now - Current time context.
- */
-export function computeAutoBadgesForClient({ clienteData, badges, rulesLibrary, recentLogs = [], now = new Date() }) {
-    if (!clienteData) return [];
+    // Is it a logical group? (AND / OR)
+    if (node.operador === 'AND' || node.operador === 'OR') {
+        if (!node.condiciones || node.condiciones.length === 0) return true; // Empty AND is true? Let's say false for safety if OR, true if AND.
 
-    return badges.filter(badge => {
-        if (badge.tipoAsignacion === 'manual') return false;
-
-        // El badge puede tener la regla fija (legacy) o un ID de regla de la librería
-        const regla = badge.reglaId ? rulesLibrary[badge.reglaId] : badge.regla;
-        if (!regla) return false;
-
-        const { categoria, config } = regla;
-
-        // Si la regla no tiene categoría, asumimos que es el formato viejo de "campo/operacdo/valor"
-        if (!categoria) {
-            return evaluateFieldRule(clienteData, regla);
+        if (node.operador === 'AND') {
+            return node.condiciones.every(c => evaluateRuleNode(c, context));
+        } else {
+            return node.condiciones.some(c => evaluateRuleNode(c, context));
         }
+    }
 
-        switch (categoria) {
-            case 'dato':
-                return evaluateFieldRule(clienteData, config);
-            case 'horario':
-                return evaluateTimeRule(now, config);
-            case 'frecuencia':
-                return evaluateFrequencyRule(recentLogs, config, now);
-            default:
-                return false;
-        }
-    });
+    // Is it a simple rule?
+    const { categoria, config } = node;
+    const { clienteData, now, recentLogs } = context;
+
+    switch (categoria) {
+        case 'dato':
+            return evaluateFieldRule(clienteData, config);
+        case 'horario':
+            return evaluateTimeRule(now, config);
+        case 'frecuencia':
+            return evaluateFrequencyRule(recentLogs, config, now);
+        default:
+            // Support legacy format where 'regla' was directly the config
+            if (node.campo && node.operador) {
+                return evaluateFieldRule(clienteData, node);
+            }
+            return false;
+    }
 }
 
 function evaluateFieldRule(data, config) {
+    if (!config) return false;
     const { campo, operador, valor } = config;
     const valorCliente = data[campo];
+
     if (valorCliente === undefined && operador !== '!=') return false;
 
     switch (operador) {
@@ -88,19 +71,20 @@ function evaluateFieldRule(data, config) {
 }
 
 function evaluateTimeRule(now, config) {
-    const { horaInicio, horaFin, dias } = config; // dias: [1,2,3,4,5,6,0]
+    if (!config) return false;
+    const { horaInicio, horaFin, dias } = config;
     const horaActual = now.getHours();
     const diaActual = now.getDay();
 
-    if (dias && Array.isArray(dias) && !dias.includes(diaActual)) return false;
+    if (dias && Array.isArray(dias) && dias.length > 0 && !dias.includes(diaActual)) return false;
 
-    // Si no hay horas definidas, solo chequea días
     if (horaInicio === undefined || horaFin === undefined) return true;
 
     return horaActual >= horaInicio && horaActual < horaFin;
 }
 
 function evaluateFrequencyRule(logs, config, now) {
+    if (!config) return false;
     const { cantidadVisitas, diasRango } = config;
     if (!logs || logs.length === 0) return false;
 
@@ -116,8 +100,21 @@ function evaluateFrequencyRule(logs, config, now) {
 }
 
 /**
- * Assigns a badge to a client.
+ * Main function to compute eligibility.
  */
+export function computeAutoBadgesForClient({ clienteData, badges, recentLogs = [], now = new Date() }) {
+    if (!clienteData) return [];
+
+    const context = { clienteData, now, recentLogs };
+
+    return badges.filter(badge => {
+        if (badge.tipoAsignacion === 'manual') return false;
+        if (!badge.regla) return false;
+
+        return evaluateRuleNode(badge.regla, context);
+    });
+}
+
 export async function assignBadgeToClient({ db, dni, badgeDoc, origen, asignadoPor }) {
     const badgeSlug = badgeDoc.slug;
     const badgeSubcollRef = doc(db, "clientes", dni, "badges", badgeSlug);
