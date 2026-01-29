@@ -30,24 +30,24 @@ export async function fetchActiveBadges(db) {
 export function computeAutoBadgesForClient({ clienteData, badges }) {
     if (!clienteData) return [];
 
-    const cafesTotales = clienteData.cafes_acumulados_total || 0;
-    const cafesActuales = clienteData.cafes || 0;
-
     return badges.filter(badge => {
         if (badge.tipoAsignacion === 'manual') return false;
         if (!badge.regla) return false;
 
-        const { tipo, valor } = badge.regla;
+        const { campo, operador, valor } = badge.regla;
+        const valorCliente = clienteData[campo];
 
-        switch (tipo) {
-            case 'primer_cafe':
-                return cafesTotales >= 1;
-            case 'cafes_totales_minimo':
-                return cafesTotales >= valor;
-            case 'cafes_actuales_minimo':
-                return cafesActuales >= valor;
-            default:
-                return false;
+        // Se el cliente no tiene el campo, no califica (a menos que el operador sea !=)
+        if (valorCliente === undefined && operador !== '!=') return false;
+
+        switch (operador) {
+            case '>': return valorCliente > valor;
+            case '>=': return valorCliente >= valor;
+            case '<': return valorCliente < valor;
+            case '<=': return valorCliente <= valor;
+            case '==': return valorCliente == valor;
+            case '!=': return valorCliente != valor;
+            default: return false;
         }
     });
 }

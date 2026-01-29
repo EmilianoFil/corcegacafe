@@ -413,17 +413,34 @@
                             style="display:none; background:var(--bg-color); padding:15px; border-radius:12px; border:1px solid var(--border)">
                             <label style="font-weight:600; font-size:0.85rem; display:block; margin-bottom:10px">REGLA
                                 AUTOMÁTICA</label>
-                            <div class="input-group">
-                                <label>Tipo de Regla</label>
-                                <select id="badge-regla-tipo">
-                                    <option value="primer_cafe">Primer Café (Total > 0)</option>
-                                    <option value="cafes_totales_minimo">Total Acumulado Mínimo</option>
-                                    <option value="cafes_actuales_minimo">Sellos en Tarjeta Mínimo</option>
-                                </select>
-                            </div>
-                            <div class="input-group" style="margin-bottom:0">
-                                <label>Valor Umbral</label>
-                                <input type="number" id="badge-regla-valor" value="1">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                                <div class="input-group">
+                                    <label>Campo</label>
+                                    <select id="badge-regla-campo" style="padding:10px; font-size:0.9rem">
+                                        <option value="cafes_acumulados_total">Cafés Históricos</option>
+                                        <option value="cafes">Sellos Actuales</option>
+                                        <option value="cafecitos_invitados">Premios Cobrados</option>
+                                        <option value="sigue_instagram">Sigue Instagram (true/false)</option>
+                                        <option value="cumple_mes">Mes de Cumpleaños</option>
+                                        <option value="cumple_dia">Día de Cumpleaños</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label>Operador</label>
+                                    <select id="badge-regla-oper" style="padding:10px; font-size:0.9rem">
+                                        <option value=">">Mayor que</option>
+                                        <option value=">=">Mayor o igual</option>
+                                        <option value="==">Igual a</option>
+                                        <option value="<=">Menor o igual</option>
+                                        <option value="<">Menor que</option>
+                                        <option value="!=">Distinto de</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label>Valor</label>
+                                    <input type="text" id="badge-regla-valor" placeholder="Ej: 10"
+                                        style="padding:10px; font-size:0.9rem">
+                                </div>
                             </div>
                         </div>
                         <div style="margin-top:20px; display:flex; gap:10px">
@@ -558,9 +575,17 @@
             };
 
             if (data.tipoAsignacion !== 'manual') {
+                const rawVal = document.getElementById('badge-regla-valor').value;
+                // Intentamos convertir a booleano o número si parece serlo
+                let finalVal = rawVal;
+                if (rawVal === 'true') finalVal = true;
+                else if (rawVal === 'false') finalVal = false;
+                else if (!isNaN(rawVal)) finalVal = parseFloat(rawVal);
+
                 data.regla = {
-                    tipo: document.getElementById('badge-regla-tipo').value,
-                    valor: parseInt(document.getElementById('badge-regla-valor').value)
+                    campo: document.getElementById('badge-regla-campo').value,
+                    operador: document.getElementById('badge-regla-oper').value,
+                    valor: finalVal
                 };
             } else {
                 data.regla = null;
@@ -646,7 +671,8 @@
 
             if (b.regla) {
                 document.getElementById('regla-container').style.display = 'block';
-                document.getElementById('badge-regla-tipo').value = b.regla.tipo;
+                document.getElementById('badge-regla-campo').value = b.regla.campo;
+                document.getElementById('badge-regla-oper').value = b.regla.operador;
                 document.getElementById('badge-regla-valor').value = b.regla.valor;
             } else {
                 document.getElementById('regla-container').style.display = 'none';
