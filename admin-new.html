@@ -689,6 +689,25 @@
             border: none;
             font-weight: 600;
         }
+
+        .btn-delete-item {
+            position: absolute;
+            right: 15px;
+            bottom: 12px;
+            background: transparent;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 5px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-delete-item:hover {
+            color: var(--error);
+            background: #fff1f0;
+        }
     </style>
 </head>
 
@@ -998,6 +1017,10 @@
                         <button class="btn-secondary" onclick="guardarCampana()" id="btn-save-draft" style="flex: 1;">
                             <span>💾</span> Guardar Borrador
                         </button>
+                        <button class="btn-secondary" onclick="confirmarEliminarActual()" id="btn-delete-campaign"
+                            style="flex: 0 0 60px; color: var(--error); border-color: #ffccc7; display: none; padding: 0;">
+                            <span>🗑️</span>
+                        </button>
                     </div>
 
                     <!-- TEST SECTION -->
@@ -1246,7 +1269,10 @@
                             <span>${fecha}</span>
                             <span class="campaign-status ${statusClass}">${statusLabel}</span>
                         </div>
-                        <div class="title">${data.asunto || '(Sin Asunto)'}</div>
+                        <div class="title" style="padding-right: 25px;">${data.asunto || '(Sin Asunto)'}</div>
+                        <button class="btn-delete-item" onclick="event.stopPropagation(); eliminarCampana('${doc.id}', '${data.asunto || ''}')" title="Borrar campaña">
+                            🗑️
+                        </button>
                     `;
                     container.appendChild(item);
                 });
@@ -1266,6 +1292,26 @@
             document.getElementById('upload-status').style.color = 'var(--text-muted)';
 
             document.querySelectorAll('.campaign-item').forEach(i => i.classList.remove('active'));
+            document.getElementById('btn-delete-campaign').style.display = 'none';
+        };
+
+        window.eliminarCampana = async (id, asunto) => {
+            if (!confirm(`¿Estás seguro de que deseas eliminar la campaña "${asunto}"?\nEsta acción no se puede deshacer.`)) return;
+
+            try {
+                await deleteDoc(doc(db, "campanas", id));
+                if (document.getElementById('mail-id').value === id) nuevaCampana();
+                loadCampanasHistory();
+            } catch (err) {
+                console.error(err);
+                alert("Error al eliminar la campaña.");
+            }
+        };
+
+        window.confirmarEliminarActual = () => {
+            const id = document.getElementById('mail-id').value;
+            const asunto = document.getElementById('mail-asunto').value;
+            if (id) eliminarCampana(id, asunto);
         };
 
         window.seleccionarCampana = (id, data) => {
@@ -1286,7 +1332,8 @@
 
             // Highlight selected
             document.querySelectorAll('.campaign-item').forEach(i => i.classList.remove('active'));
-            // (Note: identifying elements in the loop by id would be better, but index is fine for now)
+
+            document.getElementById('btn-delete-campaign').style.display = 'flex';
         };
 
         window.guardarCampana = async () => {
