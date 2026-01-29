@@ -347,6 +347,40 @@
             cursor: not-allowed;
         }
 
+        .btn-secondary {
+            background: var(--white);
+            color: var(--secondary);
+            border: 1px solid var(--border);
+            padding: 16px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(216, 102, 52, 0.1);
+        }
+
+        .btn-secondary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         /* Table Style */
         .dataTables_wrapper {
             background: var(--white);
@@ -959,11 +993,14 @@
                         <input type="hidden" id="mail-imagen">
                     </div>
 
-                    <div style="display: flex; gap: 10px; margin-top: 20px;">
-                        <button class="btn-secondary" onclick="guardarCampana()" id="btn-save-draft"
-                            style="flex: 1; padding: 12px;">💾 Guardar Borrador</button>
+                    <div style="display: flex; gap: 15px; margin-top: 30px;">
+                        <button class="btn-secondary" onclick="guardarCampana()" id="btn-save-draft" style="flex: 1;">
+                            <span>💾</span> Guardar Borrador
+                        </button>
                         <button class="btn-primary" onclick="enviarPruebaMail()" id="btn-mail-test"
-                            style="background: var(--secondary); margin: 0; padding: 12px 25px;">Enviar Prueba</button>
+                            style="background: var(--secondary); margin: 0; padding: 16px 30px; flex: 1;">
+                            <span>🔔</span> Enviar Prueba
+                        </button>
                     </div>
 
                     <div style="margin-top: 40px; padding-top: 30px; border-top: 2px solid var(--bg-color);">
@@ -1272,7 +1309,7 @@
                 alert("❌ Error al guardar.");
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = "💾 Guardar Borrador";
+                btn.innerHTML = "<span>💾</span> Guardar Borrador";
             }
         };
 
@@ -1285,8 +1322,10 @@
 
             if (!asunto || !imagenUrl || !dni) return alert("Completa asunto, imagen y DNI de prueba.");
 
+            if (!confirm(`¿Confirmas enviar el mail de prueba al DNI ${dni}?`)) return;
+
             btn.disabled = true;
-            btn.innerHTML = "⏳ Enviando...";
+            btn.innerHTML = "⏳ Enviando prueba...";
 
             try {
                 const res = await fetch('https://enviarmailcampana-ioo4dzpz2a-uc.a.run.app', {
@@ -1301,7 +1340,7 @@
                 alert("❌ Fallo la conexión con el servidor.");
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = "Enviar Prueba";
+                btn.innerHTML = "🔔 Enviar Prueba";
             }
         };
 
