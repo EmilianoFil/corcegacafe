@@ -463,6 +463,27 @@
             visibility: visible;
             opacity: 1;
         }
+
+        .selector-img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 2px;
+            background: white;
+        }
+
+        .selector-img:hover {
+            border-color: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .selector-img.selected {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
     </style>
 </head>
 
@@ -513,8 +534,23 @@
                             <input type="text" id="badge-icono" placeholder="☕" value="☕">
                         </div>
                         <div class="input-group">
-                            <label>URL de Imagen (Opcional - 512x512px recomendado)</label>
-                            <input type="text" id="badge-imagen" placeholder="https://.../img.png">
+                            <label>Imagen de la Insignia (Catálogo)</label>
+                            <div id="image-catalog-selector"
+                                style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; background: var(--bg-color); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+                                <img src="icons/badges/coffee_lover.png" class="selector-img"
+                                    onclick="selectCatalogImg('icons/badges/coffee_lover.png', this)"
+                                    title="Coffee Lover">
+                                <img src="icons/badges/social_star.png" class="selector-img"
+                                    onclick="selectCatalogImg('icons/badges/social_star.png', this)"
+                                    title="Social Star">
+                                <img src="icons/badges/birthday.png" class="selector-img"
+                                    onclick="selectCatalogImg('icons/badges/birthday.png', this)" title="Birthday">
+                                <img src="icons/badges/vip.png" class="selector-img"
+                                    onclick="selectCatalogImg('icons/badges/vip.png', this)" title="VIP">
+                                <img src="icons/badges/early_bird.png" class="selector-img"
+                                    onclick="selectCatalogImg('icons/badges/early_bird.png', this)" title="Early Bird">
+                            </div>
+                            <input type="text" id="badge-imagen" placeholder="O pega una URL externa...">
                         </div>
                         <div class="input-group">
                             <label>Tipo de Asignación</label>
@@ -654,6 +690,12 @@
         };
 
         // Regla Builder Logic
+        window.selectCatalogImg = (path, el) => {
+            document.getElementById('badge-imagen').value = path;
+            document.querySelectorAll('.selector-img').forEach(img => img.classList.remove('selected'));
+            el.classList.add('selected');
+        };
+
         window.addRuleGroup = () => {
             const container = document.getElementById('rule-groups-list');
             const groupEl = document.createElement('div');
