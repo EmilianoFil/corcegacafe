@@ -401,6 +401,68 @@
             font-weight: 600;
             cursor: pointer;
         }
+
+        /* Catalog Styles */
+        .catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .catalog-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            cursor: help;
+        }
+
+        .catalog-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .catalog-img {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+            margin-bottom: 15px;
+        }
+
+        .catalog-emoji {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        /* Tooltip Styles */
+        .catalog-card .tooltip {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--secondary);
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 10px;
+            position: absolute;
+            z-index: 101;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            pointer-events: none;
+        }
+
+        .catalog-card:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
     </style>
 </head>
 
@@ -423,6 +485,7 @@
 
         <div class="tab-nav">
             <button class="tab-btn active" onclick="showTab('manage', this)">Gestión</button>
+            <button class="tab-btn" onclick="showTab('catalog', this)">Catálogo Visual</button>
             <button class="tab-btn" onclick="showTab('assign', this)">Asignar a Cliente</button>
         </div>
 
@@ -448,6 +511,10 @@
                         <div class="input-group">
                             <label>Icono (Emoji)</label>
                             <input type="text" id="badge-icono" placeholder="☕" value="☕">
+                        </div>
+                        <div class="input-group">
+                            <label>URL de Imagen (Opcional - 512x512px recomendado)</label>
+                            <input type="text" id="badge-imagen" placeholder="https://.../img.png">
                         </div>
                         <div class="input-group">
                             <label>Tipo de Asignación</label>
@@ -485,6 +552,13 @@
                         <p style="color:var(--text-muted)">Cargando insignias...</p>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- TAB: CATALOG -->
+        <div id="tab-catalog" class="tab-content">
+            <div class="catalog-grid" id="catalog-container" style="padding-bottom: 50px;">
+                <!-- Cards appear here -->
             </div>
         </div>
 
@@ -572,7 +646,7 @@
 
             document.getElementById(`tab-${tab}`).classList.add('active');
 
-            if (tab === 'manage') loadBadgesList();
+            if (tab === 'manage' || tab === 'catalog') loadBadgesList();
             if (tab === 'assign') {
                 document.getElementById('client-result').style.display = 'none';
                 document.getElementById('dni-search').value = '';
@@ -694,6 +768,7 @@
                 slug: document.getElementById('badge-slug').value,
                 descripcion: document.getElementById('badge-descripcion').value,
                 icono: document.getElementById('badge-icono').value,
+                imagenUrl: document.getElementById('badge-imagen').value,
                 tipoAsignacion: document.getElementById('badge-tipo-asig').value,
                 activo: true, // New badges are active by default
                 actualizadoEn: serverTimestamp()
@@ -778,6 +853,7 @@
 
         async function loadBadgesList() {
             const listContainer = document.getElementById('badges-list-container');
+            const catalogContainer = document.getElementById('catalog-container');
             const q = query(collection(db, "badges"), orderBy("actualizadoEn", "desc"));
             const snap = await getDocs(q);
 
@@ -787,15 +863,18 @@
             }
 
             listContainer.innerHTML = '';
+            catalogContainer.innerHTML = '';
+
             snap.forEach(docSnap => {
                 const b = docSnap.data();
                 const id = docSnap.id;
 
+                // Management Item
                 const el = document.createElement('div');
                 el.className = 'badge-list-item';
                 el.innerHTML = `
                     <div class="badge-info">
-                        <div class="badge-icon">${b.icono || '☕'}</div>
+                        ${b.imagenUrl ? `<img src="${b.imagenUrl}" style="width:40px;height:40px;object-fit:contain">` : `<div class="badge-icon">${b.icono || '☕'}</div>`}
                         <div>
                             <span class="badge-name">${b.nombre}</span>
                             <span class="badge-slug">${b.slug} · ${b.tipoAsignacion}</span>
@@ -810,7 +889,38 @@
                     </div>
                 `;
                 listContainer.appendChild(el);
+
+                // Catalog Card
+                const humanRule = b.regla ? humanizeRule(b.regla) : 'Asignación manual';
+                const card = document.createElement('div');
+                card.className = 'catalog-card';
+                card.innerHTML = `
+                    <div class="tooltip">${humanRule}</div>
+                    ${b.imagenUrl ? `<img src="${b.imagenUrl}" class="catalog-img">` : `<span class="catalog-emoji">${b.icono || '☕'}</span>`}
+                    <div class="badge-name">${b.nombre}</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:5px">${b.tipoAsignacion.toUpperCase()}</div>
+                `;
+                catalogContainer.appendChild(card);
             });
+        }
+
+        function humanizeRule(node) {
+            if (!node) return "";
+            if (node.operador === 'AND' || node.operador === 'OR') {
+                const parts = (node.condiciones || []).map(c => humanizeRule(c));
+                return `(${parts.join(` ${node.operador} `)})`;
+            }
+            if (node.categoria === 'dato') {
+                const map = { cafes_acumulados_total: 'Totales', cafes: 'Actuales', sigue_instagram: 'Instagram' };
+                return `${map[node.config.campo] || node.config.campo} ${node.config.operador} ${node.config.valor}`;
+            }
+            if (node.categoria === 'horario') {
+                return `Hora entre ${node.config.horaInicio} y ${node.config.horaFin}`;
+            }
+            if (node.categoria === 'frecuencia') {
+                return `${node.config.cantidadVisitas} visitas en ${node.config.diasRango} días`;
+            }
+            return "Condición personalizada";
         }
 
         window.toggleBadge = async (id, active) => {
@@ -826,6 +936,7 @@
             document.getElementById('badge-slug').value = b.slug;
             document.getElementById('badge-descripcion').value = b.descripcion || '';
             document.getElementById('badge-icono').value = b.icono || '☕';
+            document.getElementById('badge-imagen').value = b.imagenUrl || '';
             document.getElementById('badge-tipo-asig').value = b.tipoAsignacion;
 
             if (b.regla) {
