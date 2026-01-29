@@ -834,8 +834,26 @@
                         style="resize: vertical;"></textarea>
                 </div>
                 <div class="input-group">
-                    <label>URL de la Imagen (Flyer)</label>
-                    <input type="text" id="mail-imagen" placeholder="https://...">
+                    <label>Imagen del Flyer</label>
+                    <div
+                        style="display: flex; gap: 10px; align-items: center; background: var(--bg-color); padding: 15px; border-radius: 12px; border: 1px dashed var(--primary);">
+                        <div style="flex: 1;">
+                            <input type="file" id="mail-file-input" accept="image/*" style="display: none;"
+                                onchange="handleFlyerUpload(this)">
+                            <button type="button" class="btn-secondary"
+                                onclick="document.getElementById('mail-file-input').click()" id="btn-select-flyer">
+                                📁 Seleccionar Imagen desde PC
+                            </button>
+                            <p id="upload-status"
+                                style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">No se eligió
+                                archivo</p>
+                        </div>
+                        <div id="flyer-preview-container" style="display: none;">
+                            <img id="flyer-preview" src=""
+                                style="height: 60px; border-radius: 8px; border: 1px solid var(--border);">
+                        </div>
+                    </div>
+                    <input type="hidden" id="mail-imagen">
                 </div>
 
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border);">
@@ -891,11 +909,14 @@
 
     <script type="module">
         import { auth, onAuthStateChanged, signOut } from './js/firebase-auth.js';
-        import { db } from './js/firebase-config.js';
+        import { db, storage } from './js/firebase-config.js';
         import {
             doc, getDoc, getDocs, collection, query, where, orderBy, limit,
             updateDoc, increment, serverTimestamp, addDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        import {
+            ref, uploadBytes, getDownloadURL
+        } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
         import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
 
         let adminData = null;
@@ -988,6 +1009,48 @@
                 if (target === 'logs' && (typeof logsData !== 'undefined' && logsData.length === 0)) loadLogsTable();
             });
         });
+
+        window.handleFlyerUpload = async (input) => {
+            const file = input.files[0];
+            if (!file) return;
+
+            const btn = document.getElementById('btn-select-flyer');
+            const status = document.getElementById('upload-status');
+            const preview = document.getElementById('flyer-preview');
+            const previewContainer = document.getElementById('flyer-preview-container');
+
+            btn.disabled = true;
+            status.innerText = "Subiendo... ⏳";
+            status.style.color = "var(--primary)";
+
+            try {
+                // Generar un nombre único para el archivo
+                const fileName = `campanas/${Date.now()}_${file.name}`;
+                const storageRef = ref(storage, fileName);
+
+                // Subir archivo
+                await uploadBytes(storageRef, file);
+
+                // Obtener URL de descarga
+                const url = await getDownloadURL(storageRef);
+
+                // Guardar URL en el input hidden
+                document.getElementById('mail-imagen').value = url;
+
+                // UI Updates
+                status.innerText = "¡Imagen lista! ✅";
+                status.style.color = "var(--success)";
+                preview.src = url;
+                previewContainer.style.display = "block";
+
+            } catch (err) {
+                console.error(err);
+                status.innerText = "Error al subir imagen ❌";
+                status.style.color = "var(--error)";
+            } finally {
+                btn.disabled = false;
+            }
+        };
 
         window.enviarPruebaMail = async () => {
             const asunto = document.getElementById('mail-asunto').value;
