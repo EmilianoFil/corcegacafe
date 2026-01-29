@@ -822,56 +822,80 @@
 
         <!-- MAILS SECTION -->
         <section id="mails" class="section-content">
-            <h3>Envío de Campañas 📧</h3>
-            <div class="card" style="max-width: 800px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h3 style="margin:0">Envío de Campañas 📧</h3>
+            </div>
+
+            <div class="card" style="max-width: 900px; margin: 0 auto;">
                 <div class="input-group">
                     <label>Asunto del Correo</label>
-                    <input type="text" id="mail-asunto" placeholder="Ej: ¡Novedades en Córcega! 🏝️">
+                    <input type="text" id="mail-asunto" placeholder="Ej: ¡Novedades en Córcega! 🏝️"
+                        style="background: var(--white); border: 1px solid var(--border); padding: 15px;">
                 </div>
+
                 <div class="input-group">
                     <label>Cuerpo del Mensaje (Texto arriba de la imagen)</label>
                     <textarea id="mail-cuerpo" rows="6" placeholder="Escribe el mensaje aquí..."
-                        style="resize: vertical;"></textarea>
+                        style="resize: vertical; background: var(--white); border: 1px solid var(--border); padding: 15px; border-radius: 12px; width: 100%; font-family: 'Inter', sans-serif; font-size: 1rem;"></textarea>
                 </div>
+
                 <div class="input-group">
-                    <label>Imagen del Flyer</label>
+                    <label>Imagen del Flyer (Subir desde PC)</label>
                     <div
-                        style="display: flex; gap: 10px; align-items: center; background: var(--bg-color); padding: 15px; border-radius: 12px; border: 1px dashed var(--primary);">
+                        style="display: flex; gap: 15px; align-items: center; background: var(--primary-light); padding: 20px; border-radius: 16px; border: 2px dashed var(--primary); position: relative;">
                         <div style="flex: 1;">
                             <input type="file" id="mail-file-input" accept="image/*" style="display: none;"
                                 onchange="handleFlyerUpload(this)">
-                            <button type="button" class="btn-secondary"
-                                onclick="document.getElementById('mail-file-input').click()" id="btn-select-flyer">
-                                📁 Seleccionar Imagen desde PC
+                            <button type="button" class="btn-primary"
+                                onclick="document.getElementById('mail-file-input').click()" id="btn-select-flyer"
+                                style="background: var(--secondary); margin-bottom: 0;">
+                                📁 Seleccionar Flyer
                             </button>
                             <p id="upload-status"
-                                style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">No se eligió
-                                archivo</p>
+                                style="font-size: 0.85rem; color: var(--secondary); margin-top: 10px; font-weight: 500;">
+                                No se eligió archivo</p>
                         </div>
                         <div id="flyer-preview-container" style="display: none;">
                             <img id="flyer-preview" src=""
-                                style="height: 60px; border-radius: 8px; border: 1px solid var(--border);">
+                                style="height: 80px; width: 80px; object-fit: cover; border-radius: 12px; border: 2px solid var(--white); box-shadow: var(--shadow);">
                         </div>
                     </div>
                     <input type="hidden" id="mail-imagen">
                 </div>
 
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border);">
-                    <label
-                        style="font-weight: 700; display: block; margin-bottom: 15px; color: var(--secondary);">OPCIONES
-                        DE ENVÍO</label>
-                    <div style="display: flex; gap: 10px; align-items: flex-end;">
-                        <div class="input-group" style="flex: 1; margin-bottom: 0;">
-                            <label>Probar con DNI</label>
-                            <input type="tel" id="mail-test-dni" placeholder="Ingresa un DNI para probar">
-                        </div>
-                        <button class="btn-secondary" onclick="enviarPruebaMail()">Enviar Prueba</button>
-                    </div>
+                <div style="margin-top: 40px; padding-top: 30px; border-top: 2px solid var(--bg-color);">
+                    <h4
+                        style="color: var(--secondary); margin-bottom: 20px; font-family: 'Playfair Display'; font-size: 1.3rem;">
+                        Opciones de Envío</h4>
 
-                    <button class="btn-primary" style="width: 100%; margin-top: 20px; background: var(--error);"
-                        onclick="confirmarEnvioMasivo()">🚀 LANZAR CAMPAÑA MASIVA</button>
-                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; text-align: center;">Nota:
-                        El envío masivo puede demorar unos minutos dependiendo de la cantidad de clientes.</p>
+                    <div
+                        style="background: var(--bg-color); padding: 25px; border-radius: 16px; border: 1px solid var(--border);">
+                        <div style="display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: end;">
+                            <div class="input-group" style="margin-bottom: 0;">
+                                <label>Probar con DNI de Cliente</label>
+                                <input type="tel" id="mail-test-dni" placeholder="Ingresa DNI para prueba"
+                                    style="background: var(--white);">
+                            </div>
+                            <button class="btn-primary" onclick="enviarPruebaMail()" id="btn-mail-test"
+                                style="background: var(--secondary); margin: 0; padding: 14px 25px;">
+                                Enviar Prueba
+                            </button>
+                        </div>
+
+                        <div style="height: 1px; background: var(--border); margin: 30px 0;"></div>
+
+                        <button class="btn-primary" id="btn-mail-masivo"
+                            style="width: 100%; height: 60px; font-size: 1.1rem; background: var(--primary); margin: 0; box-shadow: 0 4px 15px rgba(216, 102, 52, 0.3);"
+                            onclick="confirmarEnvioMasivo()">
+                            🚀 LANZAR CAMPAÑA A TODO EL CLUB
+                        </button>
+                        <p
+                            style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px; text-align: center; line-height: 1.4;">
+                            <strong>Aviso importante:</strong> El envío masivo procesa a toda la base de datos de
+                            clientes y puede demorar unos minutos. Por favor, no cierres esta ventana hasta ver la
+                            confirmación.
+                        </p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1057,8 +1081,12 @@
             const cuerpo = document.getElementById('mail-cuerpo').value;
             const imagenUrl = document.getElementById('mail-imagen').value;
             const dni = document.getElementById('mail-test-dni').value;
+            const btn = document.getElementById('btn-mail-test');
 
             if (!asunto || !imagenUrl || !dni) return alert("Completa asunto, imagen y DNI de prueba.");
+
+            btn.disabled = true;
+            btn.innerHTML = "⏳ Enviando...";
 
             try {
                 const res = await fetch('https://enviarmailcampana-ioo4dzpz2a-uc.a.run.app', {
@@ -1066,11 +1094,14 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ asunto, cuerpo, imagenUrl, dnisPrueba: [dni] })
                 });
-                if (res.ok) alert("Mail de prueba enviado!");
-                else alert("Error al enviar prueba.");
+                if (res.ok) alert("✅ ¡Mail de prueba enviado correctamente!");
+                else alert("❌ Error al enviar prueba. Verifica los datos.");
             } catch (e) {
                 console.error(e);
-                alert("Error de conexión.");
+                alert("❌ Fallo la conexión con el servidor.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = "Enviar Prueba";
             }
         };
 
@@ -1078,10 +1109,15 @@
             const asunto = document.getElementById('mail-asunto').value;
             const cuerpo = document.getElementById('mail-cuerpo').value;
             const imagenUrl = document.getElementById('mail-imagen').value;
+            const btn = document.getElementById('btn-mail-masivo');
 
-            if (!asunto || !imagenUrl) return alert("Completa asunto e imagen.");
+            if (!asunto || !imagenUrl) return alert("Completa asunto e imagen antes de lanzar la campaña.");
 
-            if (!confirm(`¿ESTÁS SEGURO?\n\nSe enviará el mail con asunto: "${asunto}" a TODOS los clientes de la base de datos.`)) return;
+            if (!confirm(`🚀 ¿ESTÁS SEGURO?\n\nSe enviará el mail con asunto: "${asunto}" a TODOS los clientes.\n\nEste proceso puede tardar varios minutos.`)) return;
+
+            btn.disabled = true;
+            btn.innerHTML = "🛰️ Procesando envío masivo... por favor espera";
+            btn.style.background = "#666";
 
             try {
                 const res = await fetch('https://enviarmailcampana-ioo4dzpz2a-uc.a.run.app', {
@@ -1089,11 +1125,20 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ asunto, cuerpo, imagenUrl, esMasivo: true })
                 });
-                if (res.ok) alert("Campaña masiva iniciada!");
-                else alert("Error al iniciar campaña.");
+
+                if (res.ok) {
+                    const data = await res.json();
+                    alert(`✅ ¡Campaña finalizada con éxito!\n\nEnviados: ${data.exitosos}\nFallidos: ${data.fallidos}`);
+                } else {
+                    alert("❌ Hubo un problema al procesar la campaña masiva.");
+                }
             } catch (e) {
                 console.error(e);
-                alert("Error de conexión.");
+                alert("❌ Fallo la conexión. Es posible que el envío siga en curso en el servidor.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = "🚀 LANZAR CAMPAÑA A TODO EL CLUB";
+                btn.style.background = "var(--primary)";
             }
         };
 
