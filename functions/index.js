@@ -899,7 +899,6 @@ exports.enviarMailCampana = onRequest(
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e0e0e0;">
             <tr>
               <td align="center" style="padding:30px 20px;">
-                 <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega" width="120" style="margin-bottom:20px;">
                  ${cuerpo ? `<div style="font-size:16px; line-height:1.6; color:#2b2b2b; text-align:left; margin-bottom:25px;">${cuerpo.replace(/\n/g, '<br>')}</div>` : ''}
                  <img src="${imagenUrl}" alt="Flyer" style="display:block; width:100%; border-radius:8px;">
               </td>
@@ -910,6 +909,7 @@ exports.enviarMailCampana = onRequest(
                   Gracias por ser parte del Club Córcega 🏝️<br/>
                   <strong>Equipo Córcega 🐎</strong>
                 </p>
+                <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega" width="60" style="margin-top:15px; opacity:0.8;">
               </td>
             </tr>
           </table>
