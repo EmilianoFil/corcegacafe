@@ -812,7 +812,7 @@ exports.enviarMailCampana = onRequest(
   { region: "us-central1", secrets: [emailUser, emailPass], timeoutSeconds: 540, memory: "512MiB" },
   (req, res) => {
     corsHandler(req, res, async () => {
-      const { asunto, cuerpo, imagenUrl, dnisPrueba, esMasivo } = req.body;
+      const { asunto, cuerpo, imagenUrl, dnisPrueba, esMasivo, campanaId } = req.body;
       const adminUser = "Admin_Panel";
 
       if (!asunto || !imagenUrl) {
@@ -839,8 +839,14 @@ exports.enviarMailCampana = onRequest(
             if (snap.exists) {
               const data = snap.data();
               const email = (data.email || data.mail || "").trim();
-              if (email && email.includes("@")) {
-                listaEnvio.push({ dni: snap.id, email, nombre: data.nombre || "Cliente" });
+              const noMailing = data.noMailing === true;
+              if (email && email.includes("@") && !noMailing) {
+                listaEnvio.push({
+                  dni: snap.id,
+                  email,
+                  nombre: data.nombre || "Cliente",
+                  yaEnviado: campanaId && data.campanasRecibidas ? data.campanasRecibidas[campanaId] === true : false
+                });
               }
             }
           }
@@ -850,22 +856,25 @@ exports.enviarMailCampana = onRequest(
           snapshot.forEach(doc => {
             const data = doc.data();
             const email = (data.email || data.mail || "").trim().toLowerCase();
-            if (email && email.includes("@") && !emailsUnicos.has(email)) {
+            const yaEnviado = campanaId && data.campanasRecibidas ? data.campanasRecibidas[campanaId] === true : false;
+            const noMailing = data.noMailing === true;
+
+            if (email && email.includes("@") && !emailsUnicos.has(email) && !yaEnviado && !noMailing) {
               emailsUnicos.add(email);
-              listaEnvio.push({ dni: doc.id, email, nombre: data.nombre || "Cliente" });
+              listaEnvio.push({ dni: doc.id, email, nombre: data.nombre || "Cliente", yaEnviado: false });
             }
           });
         }
 
         if (listaEnvio.length === 0) {
-          return res.status(400).send({ error: "No hay destinatarios válidos." });
+          return res.status(400).send({ error: "No hay destinatarios válidos, ya recibieron esta campaña o tienen deshabilitado el envío." });
         }
 
-        const resultados = { exitosos: 0, fallidos: 0, errores: [] };
+        const resultados = { exitosos: 0, fallidos: 0, yaEnviados: 0, errores: [] };
 
         await db.collection("logs").add({
           accion: "inicio_campana_personalizada",
-          detalles: `Campana: ${asunto}. Destinatarios: ${listaEnvio.length}`,
+          detalles: `Campana: ${asunto}${campanaId ? ' (ID: ' + campanaId + ')' : ''}. Destinatarios: ${listaEnvio.length}`,
           usuario: adminUser,
           timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
@@ -875,6 +884,14 @@ exports.enviarMailCampana = onRequest(
           const chunk = listaEnvio.slice(i, i + chunkSize);
 
           await Promise.all(chunk.map(async (target) => {
+            if (target.yaEnviado) {
+              resultados.yaEnviados++;
+              return;
+            }
+
+            const token = Buffer.from(target.dni).toString("base64");
+            const unsubscribeUrl = `https://emilianofil.github.io/corcegacafe/cancelar.html?id=${token}`;
+
             const mailOptions = {
               from: `Córcega Café <${emailUser.value()}>`,
               to: target.email,
@@ -899,7 +916,7 @@ exports.enviarMailCampana = onRequest(
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e0e0e0;">
             <tr>
               <td align="center" style="padding:30px 20px;">
-                 ${cuerpo ? `<div style="font-size:16px; line-height:1.6; color:#2b2b2b; text-align:left; margin-bottom:25px;">${cuerpo.replace(/\n/g, '<br>')}</div>` : ''}
+                 ${cuerpo ? `<div style="font-size:16px; line-height:1.6; color:#2b2b2b; text-align:left; margin-bottom:25px;">${cuerpo.replace(/\n/g, "<br>")}</div>` : ""}
                  <img src="${imagenUrl}" alt="Flyer" style="display:block; width:100%; border-radius:8px;">
               </td>
             </tr>
@@ -910,6 +927,13 @@ exports.enviarMailCampana = onRequest(
                   <strong>Equipo Córcega 🐎</strong>
                 </p>
                 <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega" width="60" style="margin-top:15px; opacity:0.8;">
+                <div style="margin-top:25px; padding-top:15px; border-top:1px solid #eee;">
+                  <p style="font-size:11px; color:#999; line-height:1.4;">
+                    Recibís este correo por ser cliente de Córcega Café.<br>
+                    Si no deseás recibir más promociones o novedades por este medio, podés 
+                    <a href="${unsubscribeUrl}" style="color:#d86634; text-decoration:underline;">gestionar tus preferencias aquí</a>.
+                  </p>
+                </div>
               </td>
             </tr>
           </table>
@@ -922,6 +946,18 @@ exports.enviarMailCampana = onRequest(
 
             try {
               await transporter.sendMail(mailOptions);
+
+              if (campanaId) {
+                await db.collection("clientes").doc(target.dni).set({
+                  campanasRecibidas: {
+                    [campanaId]: true
+                  },
+                  timestamp_campanas: {
+                    [campanaId]: admin.firestore.FieldValue.serverTimestamp()
+                  }
+                }, { merge: true });
+              }
+
               resultados.exitosos++;
             } catch (err) {
               resultados.fallidos++;
@@ -932,7 +968,7 @@ exports.enviarMailCampana = onRequest(
 
         await db.collection("logs").add({
           accion: "fin_campana_personalizada",
-          detalles: `Resultados - Exitosos: ${resultados.exitosos}, Fallidos: ${resultados.fallidos}`,
+          detalles: `Resultados${campanaId ? ' (ID: ' + campanaId + ')' : ''} - Exitosos: ${resultados.exitosos}, Fallidos: ${resultados.fallidos}`,
           usuario: adminUser,
           timestamp: admin.firestore.FieldValue.serverTimestamp()
         });

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Córcega Café - Gestionar Preferencias</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap"
+        rel="stylesheet">
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
+    <style>
+        :root {
+            --primary: #d86634;
+            --primary-dark: #b8542a;
+            --secondary: #0d2b37;
+            --bg: #fdfcf7;
+            --white: #ffffff;
+            --text: #2b2b2b;
+            --muted: #666;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: var(--white);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(13, 43, 55, 0.05);
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+
+        .logo {
+            width: 80px;
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+
+        p {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--muted);
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(216, 102, 52, 0.2);
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(216, 102, 52, 0.3);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .cancel-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: var(--secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        #message {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .success {
+            background: #e6fffa;
+            color: #234e52;
+            border: 1px solid #b2f5ea;
+        }
+
+        .error {
+            background: #fff5f5;
+            color: #742a2a;
+            border: 1px solid #fed7d7;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container animate">
+        <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega Café"
+            class="logo">
+
+        <div id="setup-view">
+            <h1>Preferencias de Envío</h1>
+            <p>
+                ¿Estás seguro de que deseás dejar de recibir nuestros correos con promociones, novedades y beneficios
+                exclusivos del Club Córcega?
+            </p>
+            <button id="btnConfirmar" class="btn">Sí, dejar de recibir correos</button>
+            <a href="https://emilianofil.github.io/corcegacafe" class="cancel-link">Seguir siendo parte</a>
+        </div>
+
+        <div id="result-view" style="display: none;">
+            <h1 id="result-title">Procesando...</h1>
+            <p id="result-text">Estamos actualizando tus preferencias, por favor no cierres esta ventana.</p>
+            <div id="message"></div>
+            <a href="https://emilianofil.github.io/corcegacafe" class="cancel-link" style="margin-top: 30px;">Volver al
+                inicio</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { firebaseConfig } from "./js/firebase-config.js";
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const encodedId = urlParams.get('id');
+
+        const btnConfirmar = document.getElementById('btnConfirmar');
+        const setupView = document.getElementById('setup-view');
+        const resultView = document.getElementById('result-view');
+        const messageDiv = document.getElementById('message');
+        const resultTitle = document.getElementById('result-title');
+        const resultText = document.getElementById('result-text');
+
+        btnConfirmar.onclick = async () => {
+            if (!encodedId) {
+                alert("No se pudo identificar al cliente. Por favor, usá el link original del correo.");
+                return;
+            }
+
+            try {
+                // Decodificar el ID (estacionado en Base64 por seguridad mínima)
+                const dni = atob(encodedId);
+
+                btnConfirmar.disabled = true;
+                btnConfirmar.innerText = "⏳ Procesando...";
+
+                // Actualizar Firestore
+                const clientRef = doc(db, "clientes", dni);
+                await updateDoc(clientRef, {
+                    noMailing: true,
+                    noMailing_timestamp: new Date()
+                });
+
+                // Mostrar éxito
+                setupView.style.display = 'none';
+                resultView.style.display = 'block';
+                resultTitle.innerText = "¡Listo!";
+                resultText.innerText = "Tus preferencias han sido actualizadas.";
+                messageDiv.innerText = "Has dejado de recibir nuestros correos de promociones y novedades.";
+                messageDiv.className = "message success";
+                messageDiv.style.display = "block";
+
+            } catch (error) {
+                console.error("Error al cancelar:", error);
+                setupView.style.display = 'none';
+                resultView.style.display = 'block';
+                resultTitle.innerText = "Hubo un problema";
+                resultText.innerText = "No pudimos procesar tu solicitud en este momento.";
+                messageDiv.innerText = "Por favor, intentá nuevamente más tarde.";
+                messageDiv.className = "message error";
+                messageDiv.style.display = "block";
+            }
+        };
+    </script>
+</body>
+
+</html>

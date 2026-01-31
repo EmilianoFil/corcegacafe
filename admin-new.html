@@ -1059,10 +1059,34 @@
                             onclick="confirmarEnvioMasivo()">
                             LANZAR CAMPAÑA A TODO EL CLUB
                         </button>
+
+                        <!-- Panel de Progreso Real-time -->
+                        <div id="monitor-campana-masiva"
+                            style="margin-top: 25px; padding: 20px; background: white; border-radius: 12px; border: 1px solid var(--border); display: none;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span style="font-weight: 700; color: var(--secondary); font-size: 0.9rem;">Progreso de
+                                    Envío</span>
+                                <span id="contador-mail-realtime"
+                                    style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">0 / 0</span>
+                            </div>
+                            <div
+                                style="width: 100%; background: var(--bg-color); height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 15px;">
+                                <div id="barra-progreso-mail"
+                                    style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-dark)); transition: width 0.4s ease;">
+                                </div>
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                <strong>Recién enviados:</strong>
+                                <ul id="lista-recientes-mail" style="margin: 8px 0 0 0; padding: 0; list-style: none;">
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
+
 
         <!-- TOOLS SECTION -->
         <section id="tools" class="section-content">
@@ -1379,6 +1403,7 @@
             const cuerpo = document.getElementById('mail-cuerpo').value;
             const imagenUrl = document.getElementById('mail-imagen').value;
             const dni = document.getElementById('mail-test-dni').value;
+            const campanaId = document.getElementById('mail-id').value;
             const btn = document.getElementById('btn-mail-test');
 
             if (!asunto || !imagenUrl || !dni) return alert("Completa asunto, imagen y DNI de prueba.");
@@ -1392,7 +1417,7 @@
                 const res = await fetch('https://enviarmailcampana-ioo4dzpz2a-uc.a.run.app', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ asunto, cuerpo, imagenUrl, dnisPrueba: [dni] })
+                    body: JSON.stringify({ asunto, cuerpo, imagenUrl, dnisPrueba: [dni], campanaId })
                 });
                 if (res.ok) alert("✅ ¡Mail de prueba enviado correctamente!");
                 else alert("❌ Error al enviar prueba. Verifica los datos.");
@@ -1405,53 +1430,93 @@
             }
         };
 
+        let unsuscribeMonitor = null;
+        window.activarMonitorCampana = async (campanaId) => {
+            const monitorDiv = document.getElementById('monitor-campana-masiva');
+            const barra = document.getElementById('barra-progreso-mail');
+            const textoContador = document.getElementById('contador-mail-realtime');
+            const lista = document.getElementById('lista-recientes-mail');
+
+            if (!campanaId) return;
+
+            monitorDiv.style.display = "block";
+            if (unsuscribeMonitor) unsuscribeMonitor();
+
+            // Obtener total de clientes aproximado para la barra
+            const snapTotal = await getDocs(collection(db, "clientes"));
+            const total = snapTotal.size;
+
+            const q = query(
+                collection(db, "clientes"),
+                where(`campanasRecibidas.${campanaId}`, "==", true)
+            );
+
+            unsuscribeMonitor = onSnapshot(q, (snapshot) => {
+                const enviados = snapshot.size;
+                const porc = Math.min((enviados / total) * 100, 100);
+
+                barra.style.width = `${porc}%`;
+                textoContador.innerText = `${enviados} / ${total}`;
+
+                const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                lista.innerHTML = snapshot.docs.slice(-5).reverse().map(d => {
+                    const data = d.data();
+                    return `<li style="font-size: 0.75rem; padding: 4px 0; border-bottom: 1px solid #eee; color: #666;">✅ DNI: ${d.id} - ${data.nombre || 'Cliente'}</li>`;
+                }).join("");
+            });
+        };
+
         window.confirmarEnvioMasivo = async () => {
             const asunto = document.getElementById('mail-asunto').value;
             const cuerpo = document.getElementById('mail-cuerpo').value;
             const imagenUrl = document.getElementById('mail-imagen').value;
+            const campanaId = document.getElementById('mail-id').value;
             const btn = document.getElementById('btn-mail-masivo');
 
             if (!asunto || !imagenUrl) return alert("Completa asunto e imagen antes de lanzar la campaña.");
+            if (!campanaId) return alert("Primero guarda la campaña como borrador para generar un ID.");
 
-            if (!confirm(`🚀 ¿ESTÁS SEGURO?\n\nSe enviará el mail con asunto: "${asunto}" a TODOS los clientes.\n\nEste proceso puede tardar varios minutos.`)) return;
+            if (!confirm(`🚀 ¿ESTÁS SEGURO?\n\nSe enviará el mail con asunto: "${asunto}" a TODOS los clientes.\nYa recibidos serán excluidos automáticamente.\n\nEste proceso puede tardar varios minutos.`)) return;
 
             btn.disabled = true;
-            btn.innerHTML = "🛰️ Procesando envío masivo... por favor espera";
+            btn.innerHTML = "🛰️ Enviando... seguí el progreso abajo";
             btn.style.background = "#666";
+
+            // Activar monitor antes de disparar
+            activarMonitorCampana(campanaId);
 
             try {
                 const res = await fetch('https://enviarmailcampana-ioo4dzpz2a-uc.a.run.app', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ asunto, cuerpo, imagenUrl, esMasivo: true })
+                    body: JSON.stringify({ asunto, cuerpo, imagenUrl, esMasivo: true, campanaId })
                 });
 
                 if (res.ok) {
                     const data = await res.json();
 
-                    // Actualizar status en DB si existía el documento
-                    const campaignId = document.getElementById('mail-id').value;
-                    if (campaignId) {
-                        await updateDoc(doc(db, "campanas", campaignId), {
-                            status: 'sent',
-                            enviadoEn: serverTimestamp()
-                        });
-                        loadCampanasHistory();
-                    }
+                    // Actualizar status en DB
+                    await updateDoc(doc(db, "campanas", campanaId), {
+                        status: 'sent',
+                        enviadoEn: serverTimestamp()
+                    });
+                    loadCampanasHistory();
 
-                    alert(`✅ ¡Campaña finalizada con éxito!\n\nEnviados: ${data.exitosos}\nFallidos: ${data.fallidos}`);
+                    alert(`✅ ¡Campaña finalizada!\n\nExitosos: ${data.exitosos}\nYa la tenían: ${data.yaEnviados || 0}\nFallidos: ${data.fallidos}`);
                 } else {
-                    alert("❌ Hubo un problema al procesar la campaña masiva.");
+                    const errorData = await res.json();
+                    alert(`❌ Error: ${errorData.error || "Hubo un problema con la campaña masiva."}`);
                 }
             } catch (e) {
                 console.error(e);
-                alert("❌ Fallo la conexión. Es posible que el envío siga en curso en el servidor.");
+                alert("❌ Falló la conexión. Es posible que el envío siga en curso en el servidor.");
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = "🚀 LANZAR CAMPAÑA A TODO EL CLUB";
+                btn.innerHTML = "🚀 lanzar campaña a todo el club";
                 btn.style.background = "var(--primary)";
             }
         };
+
 
         // --- DASHBOARD LOGIC ---
         let currentRankingType = 'week';
