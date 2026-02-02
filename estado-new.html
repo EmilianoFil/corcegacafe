@@ -348,7 +348,6 @@
 </head>
 
 <body>
-
     <div id="loader">
         <img src="css/img/Corcega_Logo_Original.png" alt="Córcega Cafe" class="galope">
     </div>
@@ -419,9 +418,7 @@
 
                 const data = snap.data();
                 logAction(dni, "consulta_cliente", `Consulta exitosa de ${data.nombre}`);
-
                 displayData(data);
-
             } catch (error) {
                 console.error("Error al consultar:", error);
                 showError("Ocurrió un error al cargar tus datos. Intentá nuevamente.");
@@ -451,11 +448,9 @@
                 ? `Te faltan ${8 - totalSellos} visitas para tu regalo.`
                 : "¡Felicidades! El próximo café va por nuestra cuenta. ☕️🐎";
 
-            // Progress bar
             const progressPercent = Math.min((totalSellos / 8) * 100, 100);
             progressBar.style.width = `${progressPercent}%`;
 
-            // Build grid
             let currentSellos = totalSellos;
             let usedInsta = false;
             let usedCumple = false;
@@ -464,18 +459,14 @@
             for (let i = 1; i <= 9; i++) {
                 const container = document.createElement('div');
                 container.className = 'stamp-container';
-
                 const stamp = document.createElement('div');
                 stamp.className = 'stamp';
 
                 if (i === 9) {
                     stamp.classList.add('noveno');
-                    if (totalSellos >= 8) {
-                        stamp.classList.add('unlocked');
-                    }
+                    if (totalSellos >= 8) stamp.classList.add('unlocked');
                 } else if (currentSellos > 0) {
                     stamp.classList.add('active');
-
                     if (esCumple && !usedCumple) {
                         stamp.style.backgroundImage = "url('css/img/sello_cumpleanos.png')";
                         stamp.classList.add('glow');
@@ -491,11 +482,9 @@
                 } else {
                     stamp.style.backgroundImage = "url('css/img/Corcega_Logo_Tiza.png')";
                 }
-
                 container.appendChild(stamp);
                 gridElem.appendChild(container);
 
-                // GSAP Intro animation per stamp
                 gsap.from(stamp, {
                     scale: 0,
                     opacity: 0,
@@ -505,7 +494,6 @@
                 });
             }
 
-            // Final transitions
             loader.style.opacity = "0";
             setTimeout(() => {
                 loader.style.display = "none";
@@ -516,10 +504,7 @@
                     duration: 0.8,
                     ease: "power2.out"
                 });
-
-                if (totalSellos >= 8) {
-                    triggerConfetti();
-                }
+                if (totalSellos >= 8) triggerConfetti();
             }, 500);
         }
 
@@ -528,42 +513,25 @@
             const errorView = document.getElementById("error-view");
             document.getElementById("error-message").innerHTML = msg;
             errorView.style.display = "block";
-            gsap.to(errorView, {
-                opacity: 1,
-                y: 0,
-                duration: 0.8
-            });
+            gsap.to(errorView, { opacity: 1, y: 0, duration: 0.8 });
         }
 
         async function logAction(usuario, accion, detalles) {
             try {
                 await addDoc(collection(db, "logs"), {
-                    usuario,
-                    accion,
-                    detalles,
-                    timestamp: new Date()
+                    usuario, accion, detalles, timestamp: new Date()
                 });
-            } catch (e) {
-                console.error("Error logging:", e);
-            }
+            } catch (e) { console.error("Error logging:", e); }
         }
 
         function triggerConfetti() {
             const duration = 3 * 1000;
             const animationEnd = Date.now() + duration;
             const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-            function randomInRange(min, max) {
-                return Math.random() * (max - min) + min;
-            }
-
+            function randomInRange(min, max) { return Math.random() * (max - min) + min; }
             const interval = setInterval(function () {
                 const timeLeft = animationEnd - Date.now();
-
-                if (timeLeft <= 0) {
-                    return clearInterval(interval);
-                }
-
+                if (timeLeft <= 0) return clearInterval(interval);
                 const particleCount = 50 * (timeLeft / duration);
                 confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
                 confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
