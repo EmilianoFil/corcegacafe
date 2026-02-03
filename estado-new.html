@@ -36,8 +36,8 @@
             --bg: #fdfcf7;
             --text: #01323f;
             --glass: rgba(255, 255, 255, 0.15);
-            --card-bg: #01323f;
-            --card-text: #ffffff;
+            --card-bg: #ed7053;
+            --card-text: #01323f;
         }
 
         * {
@@ -142,7 +142,8 @@
             text-transform: uppercase;
             letter-spacing: 3px;
             margin-bottom: 8px;
-            color: var(--accent);
+            color: #01323f;
+            opacity: 0.9;
         }
 
         .card-header h1 {
@@ -198,9 +199,9 @@
         }
 
         .stamp.active {
-            border-color: transparent;
-            background-color: white;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2), 0 0 15px rgba(255, 255, 255, 0.1);
+            border-color: white;
+            background-color: transparent;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             transform: scale(1.1) rotate(-8deg);
         }
 
@@ -325,7 +326,7 @@
 
         .progress-bar {
             height: 100%;
-            background: var(--accent);
+            background: white;
             width: 0%;
             transition: width 1s ease-out;
         }
