@@ -187,9 +187,9 @@
         .stamp {
             width: 100%;
             height: 100%;
-            border: 2px solid rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.4);
             border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: rgba(255, 255, 255, 0.08);
             background-size: 65%;
             background-repeat: no-repeat;
             background-position: center;
@@ -359,6 +359,11 @@
                 <h1>UN CAFECITO</h1>
             </div>
 
+            <div class="progress-details"
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;">
+                <span>Progreso</span>
+                <span id="stamp-counter">0 / 8 sellos</span>
+            </div>
             <div class="progress-container">
                 <div id="progress-bar" class="progress-bar"></div>
             </div>
@@ -439,6 +444,7 @@
             const statusMsgElem = document.getElementById("status-msg");
             const gridElem = document.getElementById("grid");
             const progressBar = document.getElementById("progress-bar");
+            const stampCounter = document.getElementById("stamp-counter");
 
             const nombre = data.nombre || "Amigo";
             const cafes = parseInt(data.cafes) || 0;
@@ -453,6 +459,8 @@
             statusMsgElem.textContent = totalSellos < 8
                 ? `Te faltan ${8 - totalSellos} para alcanzarlo`
                 : "¡El próximo lo invitamos nosotros! 🐎🎉";
+
+            stampCounter.textContent = `${totalSellos} / 8 sellos`;
 
             const progressPercent = Math.min((totalSellos / 8) * 100, 100);
             progressBar.style.width = `${progressPercent}%`;
@@ -492,13 +500,22 @@
                 container.appendChild(stamp);
                 gridElem.appendChild(container);
 
-                gsap.from(stamp, {
-                    scale: 0,
-                    opacity: 0,
-                    duration: 0.5,
-                    delay: 0.3 + (i * 0.08),
-                    ease: "back.out(1.7)"
-                });
+                if (currentSellosCount + 1 > totalSellos) {
+                    // Si es un sello vacío, lo animamos más rápido y sin delay de escala
+                    gsap.from(stamp, {
+                        opacity: 0,
+                        duration: 0.3,
+                        delay: 0.1 + (i * 0.05)
+                    });
+                } else {
+                    gsap.from(stamp, {
+                        scale: 0,
+                        opacity: 0,
+                        duration: 0.5,
+                        delay: 0.3 + (i * 0.08),
+                        ease: "back.out(1.7)"
+                    });
+                }
             }
 
             loader.style.opacity = "0";
