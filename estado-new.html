@@ -355,7 +355,7 @@
     <div id="main-view" class="container">
         <div class="membership-card">
             <div class="card-header">
-                <h2>Club de Café</h2>
+                <h2>Completá las visitas y te invitamos</h2>
                 <h1>UN CAFECITO</h1>
             </div>
 
@@ -393,7 +393,7 @@
     <script type="module">
         import { app, db } from './js/firebase-config.js';
         import {
-            doc, getDoc, addDoc, collection
+            doc, getDoc, addDoc, collection, updateDoc
         } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const params = new URLSearchParams(window.location.search);
@@ -417,6 +417,13 @@
                 }
 
                 const data = snap.data();
+
+                // Logic to automatically use Instagram stamp when reaching 8 cafes
+                if (data.sigue_instagram === true && data.sello_instagram_usado === false && (data.cafes || 0) >= 8) {
+                    await updateDoc(ref, { sello_instagram_usado: true });
+                    await logAction(dni, "usar_sello_instagram", `Se marca sello de Instagram como usado para ${dni}`);
+                }
+
                 logAction(dni, "consulta_cliente", `Consulta exitosa de ${data.nombre}`);
                 displayData(data);
             } catch (error) {
@@ -440,18 +447,17 @@
 
             clientNameElem.textContent = `¡Hola, ${nombre}!`;
 
-            let totalSellos = cafes;
-            if (sigueInsta) totalSellos++;
-            if (esCumple) totalSellos++;
+            // Note: 'cafes' already includes birthday/instagram stamps as they increment the count in the backend
+            const totalSellos = cafes;
 
             statusMsgElem.textContent = totalSellos < 8
-                ? `Te faltan ${8 - totalSellos} visitas para tu regalo.`
-                : "¡Felicidades! El próximo café va por nuestra cuenta. ☕️🐎";
+                ? `Te faltan ${8 - totalSellos} para alcanzarlo`
+                : "¡El próximo lo invitamos nosotros! 🐎🎉";
 
             const progressPercent = Math.min((totalSellos / 8) * 100, 100);
             progressBar.style.width = `${progressPercent}%`;
 
-            let currentSellos = totalSellos;
+            let currentSellosCount = totalSellos;
             let usedInsta = false;
             let usedCumple = false;
 
@@ -464,8 +470,9 @@
 
                 if (i === 9) {
                     stamp.classList.add('noveno');
+                    stamp.style.backgroundImage = "url('css/img/Corcega_Logo_Original.png')";
                     if (totalSellos >= 8) stamp.classList.add('unlocked');
-                } else if (currentSellos > 0) {
+                } else if (currentSellosCount > 0) {
                     stamp.classList.add('active');
                     if (esCumple && !usedCumple) {
                         stamp.style.backgroundImage = "url('css/img/sello_cumpleanos.png')";
@@ -478,7 +485,7 @@
                     } else {
                         stamp.style.backgroundImage = "url('css/img/Corcega_Logo_Blanco.png')";
                     }
-                    currentSellos--;
+                    currentSellosCount--;
                 } else {
                     stamp.style.backgroundImage = "url('css/img/Corcega_Logo_Tiza.png')";
                 }
@@ -489,7 +496,7 @@
                     scale: 0,
                     opacity: 0,
                     duration: 0.5,
-                    delay: 0.5 + (i * 0.1),
+                    delay: 0.3 + (i * 0.08),
                     ease: "back.out(1.7)"
                 });
             }
@@ -525,17 +532,25 @@
         }
 
         function triggerConfetti() {
-            const duration = 3 * 1000;
-            const animationEnd = Date.now() + duration;
-            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-            function randomInRange(min, max) { return Math.random() * (max - min) + min; }
-            const interval = setInterval(function () {
-                const timeLeft = animationEnd - Date.now();
-                if (timeLeft <= 0) return clearInterval(interval);
-                const particleCount = 50 * (timeLeft / duration);
-                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-            }, 250);
+            const canvas = document.createElement('canvas');
+            canvas.style.position = 'fixed';
+            canvas.style.inset = '0';
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.pointerEvents = 'none';
+            canvas.style.zIndex = '9999';
+            document.body.appendChild(canvas);
+
+            const myConfetti = confetti.create(canvas, { resize: true, useWorker: true });
+
+            myConfetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#ed7053', '#01323f', '#ffffff']
+            });
+
+            setTimeout(() => canvas.remove(), 5000);
         }
 
         init();
