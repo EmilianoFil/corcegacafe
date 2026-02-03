@@ -187,10 +187,10 @@
         .stamp {
             width: 100%;
             height: 100%;
-            border: 2px solid rgba(255, 255, 255, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.08);
-            background-size: 65%;
+            background-color: rgba(255, 255, 255, 0.05);
+            background-size: 60%;
             background-repeat: no-repeat;
             background-position: center;
             transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
@@ -465,23 +465,29 @@
             const progressPercent = Math.min((totalSellos / 8) * 100, 100);
             progressBar.style.width = `${progressPercent}%`;
 
-            let currentSellosCount = totalSellos;
+            gridElem.innerHTML = '';
+            let badgesProcessed = 0;
             let usedInsta = false;
             let usedCumple = false;
 
-            gridElem.innerHTML = '';
             for (let i = 1; i <= 9; i++) {
                 const container = document.createElement('div');
                 container.className = 'stamp-container';
                 const stamp = document.createElement('div');
                 stamp.className = 'stamp';
 
+                let isFilled = false;
+
                 if (i === 9) {
                     stamp.classList.add('noveno');
                     stamp.style.backgroundImage = "url('css/img/Corcega_Logo_Original.png')";
-                    if (totalSellos >= 8) stamp.classList.add('unlocked');
-                } else if (currentSellosCount > 0) {
+                    if (totalSellos >= 8) {
+                        stamp.classList.add('unlocked');
+                        isFilled = true;
+                    }
+                } else if (badgesProcessed < totalSellos) {
                     stamp.classList.add('active');
+                    isFilled = true;
                     if (esCumple && !usedCumple) {
                         stamp.style.backgroundImage = "url('css/img/sello_cumpleanos.png')";
                         stamp.classList.add('glow');
@@ -493,27 +499,28 @@
                     } else {
                         stamp.style.backgroundImage = "url('css/img/Corcega_Logo_Blanco.png')";
                     }
-                    currentSellosCount--;
+                    badgesProcessed++;
                 } else {
                     stamp.style.backgroundImage = "url('css/img/Corcega_Logo_Tiza.png')";
+                    stamp.style.opacity = "0.4"; // Aseguramos visibilidad del sello vacío
                 }
+
                 container.appendChild(stamp);
                 gridElem.appendChild(container);
 
-                if (currentSellosCount + 1 > totalSellos) {
-                    // Si es un sello vacío, lo animamos más rápido y sin delay de escala
-                    gsap.from(stamp, {
-                        opacity: 0,
-                        duration: 0.3,
-                        delay: 0.1 + (i * 0.05)
-                    });
-                } else {
+                if (isFilled) {
                     gsap.from(stamp, {
                         scale: 0,
                         opacity: 0,
-                        duration: 0.5,
-                        delay: 0.3 + (i * 0.08),
+                        duration: 0.6,
+                        delay: 0.2 + (i * 0.08),
                         ease: "back.out(1.7)"
+                    });
+                } else {
+                    gsap.from(stamp, {
+                        opacity: 0,
+                        duration: 0.4,
+                        delay: 0.1 + (i * 0.04)
                     });
                 }
             }
