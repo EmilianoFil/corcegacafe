@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Tienda Online Córcega Café - Especialidad y Pastelería">
+    <title>Córcega Café - Tienda</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="css/tienda/tienda.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <img src="css/img/Corcega_Logo_Original.png" alt="Córcega Café Logo" class="logo-tienda">
+        <h1>TIENDA ONLINE</h1>
+    </header>
+
+    <!-- Categories -->
+    <nav class="categories-nav">
+        <div class="cat-chip active" data-cat="todos">Todos</div>
+        <div class="cat-chip" data-cat="cafe">Cafetería</div>
+        <div class="cat-chip" data-cat="pasteleria">Pastelería</div>
+        <div class="cat-chip" data-cat="merchandising">Merch</div>
+        <div class="cat-chip" data-cat="otros">Otros</div>
+    </nav>
+
+    <!-- Product Display -->
+    <main class="products-grid" id="products-container">
+        <!-- Products will be injected here by JS -->
+        <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--texto-muted);">
+            <i class="fas fa-circle-notch fa-spin"></i> Cargando productos...
+        </div>
+    </main>
+
+    <!-- Floating Cart Button -->
+    <button class="cart-floating" id="btn-open-cart">
+        <i class="fas fa-shopping-bag"></i>
+        <div class="cart-count" id="cart-badge">0</div>
+    </button>
+
+    <!-- Cart Drawer -->
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-header">
+            <h2>Mi Carrito</h2>
+            <button class="btn-close-cart" id="btn-close-cart"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <div class="cart-items" id="cart-items-list">
+            <!-- Items injected by JS -->
+            <!-- Empty State Placeholder -->
+            <div class="cart-empty">
+                <i class="fas fa-shopping-basket"></i>
+                <p>Tu carrito está vacío</p>
+                <button class="btn-checkout" style="background: var(--panel-oscuro); margin-top: 10px;" id="btn-start-shopping">Ver productos</button>
+            </div>
+        </div>
+
+        <div class="cart-footer">
+            <div class="total-row">
+                <span class="total-label">Total estimado</span>
+                <span class="total-amount" id="cart-total">$0.00</span>
+            </div>
+            <button class="btn-checkout" id="btn-go-to-checkout">CONTINUAR COMPRA</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/tienda/tienda.js"></script>
+
+</body>
+</html>

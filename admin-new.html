@@ -731,6 +731,8 @@
                 <li><a href="#clientes"><span class="icon">👥</span> Clientes</a></li>
                 <li><a href="admin-badges.html"><span class="icon">🎖️</span> Insignias</a></li>
                 <li><a href="#logs"><span class="icon">📜</span> Auditoría</a></li>
+                <li><a href="#tienda-productos"><span class="icon">📦</span> Tienda: Productos</a></li>
+                <li><a href="#tienda-ordenes"><span class="icon">🛒</span> Tienda: Órdenes</a></li>
                 <li><a href="#mails"><span class="icon">📧</span> Mails</a></li>
                 <li><a href="#tools"><span class="icon">🛠️</span> Herramientas</a></li>
             </ul>
@@ -956,6 +958,116 @@
             </table>
         </section>
 
+        <!-- TIENDA PRODUCTOS SECTION -->
+        <section id="tienda-productos" class="section-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h3 style="margin:0">Gestión de Productos 🛒</h3>
+                <button class="btn-primary" onclick="window.tiendaAdmin.mostrarFormularioProducto()" style="margin:0">+ Nuevo Producto</button>
+            </div>
+            
+            <div id="form-producto-container" class="card form-container" style="display: none; margin-bottom: 20px;">
+                <h4 id="form-producto-title" style="margin-top:0">Nuevo Producto</h4>
+                <form id="form-producto" onsubmit="window.tiendaAdmin.guardarProducto(event)">
+                    <input type="hidden" id="prod-id">
+                    <div class="input-group">
+                        <label>Nombre del Producto</label>
+                        <input type="text" id="prod-nombre" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Descripción</label>
+                        <textarea id="prod-descripcion" rows="3" required></textarea>
+                    </div>
+                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 0;">
+                        <div class="input-group">
+                            <label>Precio ($)</label>
+                            <input type="number" id="prod-precio" required min="0">
+                        </div>
+                        <div class="input-group">
+                            <label>Stock (0 para ilimitado)</label>
+                            <input type="number" id="prod-stock" value="0" min="0">
+                        </div>
+                    </div>
+                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 0;">
+                        <div class="input-group">
+                            <label>Categoría</label>
+                            <select id="prod-categoria">
+                                <option value="cafe">Cafetería</option>
+                                <option value="pasteleria">Pastelería</option>
+                                <option value="merchandising">Merchandising</option>
+                                <option value="otros">Otros</option>
+                            </select>
+                        </div>
+                        <div class="input-group" style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="prod-activo" checked style="width: auto;">
+                            <label for="prod-activo" style="margin-bottom: 0;">Producto Activo (Visible)</label>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Imagen del Producto</label>
+                        <div style="display: flex; gap: 15px; align-items: center; background: var(--primary-light); padding: 20px; border-radius: 16px; border: 2px dashed var(--primary);">
+                            <div style="flex: 1;">
+                                <input type="file" id="prod-imagen-file" accept="image/*" style="display: none;" onchange="window.tiendaAdmin.handleProductImageUpload(this)">
+                                <button type="button" class="btn-primary" onclick="document.getElementById('prod-imagen-file').click()" id="btn-select-prod-img" style="background: var(--secondary); margin-bottom: 0;">
+                                    📁 Seleccionar/Cambiar Imagen
+                                </button>
+                                <p id="prod-upload-status" style="font-size: 0.85rem; color: var(--secondary); margin-top: 10px; font-weight: 500;">No se eligió archivo</p>
+                            </div>
+                            <div id="prod-preview-container" style="display: none;">
+                                <img id="prod-imagen-preview" src="" style="height: 80px; width: 80px; object-fit: cover; border-radius: 12px; border: 2px solid var(--white); box-shadow: var(--shadow);">
+                            </div>
+                        </div>
+                        <input type="hidden" id="prod-imagen-url">
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="submit" id="btn-save-producto" class="btn-primary">Guardar Producto</button>
+                        <button type="button" class="btn-secondary" onclick="window.tiendaAdmin.ocultarFormularioProducto()">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="table-productos-wrapper">
+                <table id="tablaProductosDash" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Imagen</th>
+                            <th>Nombre</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th>Categoría</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TIENDA ORDENES SECTION -->
+        <section id="tienda-ordenes" class="section-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h3 style="margin:0">Órdenes de Tienda 📦</h3>
+            </div>
+            
+            <div id="table-ordenes-wrapper">
+                <table id="tablaOrdenesDash" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>ID Orden</th>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
         <!-- MAILS SECTION -->
         <section id="mails" class="section-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
@@ -1130,6 +1242,8 @@
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
         import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js';
+        window.tiendaAdmin = tiendaAdmin;
 
         let adminData = null;
         let chartInstance = null;
@@ -1220,6 +1334,8 @@
 
                 if (target === 'logs' && (typeof logsData !== 'undefined' && logsData.length === 0)) loadLogsTable();
                 if (target === 'mails') loadCampanasHistory();
+                if (target === 'tienda-productos') window.tiendaAdmin.loadProductosTable();
+                if (target === 'tienda-ordenes') window.tiendaAdmin.loadOrdenesTable();
             });
         });
 
