@@ -133,6 +133,65 @@
             margin: 0 auto;
             padding: 20px;
         }
+        .account-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 5px;
+            overflow-x: auto;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 15px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--texto-muted);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .tab-btn.active {
+            color: var(--panel-oscuro);
+        }
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -7px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--panel-oscuro);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--panel-oscuro);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .address-card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #eee;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        @media (max-width: 600px) {
+            .profile-view {
+                margin-top: 20px !important;
+            }
+        }
 
         .order-card {
             background: white;
@@ -228,7 +287,7 @@
     </div>
 
     <!-- VISTA: PERFIL Y ÓRDENES -->
-    <div id="profile-view" class="profile-view">
+    <div id="profile-view" class="profile-view" style="display:none;">
         <div class="auth-card" style="margin-bottom: 20px; text-align: left;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <div>
@@ -250,9 +309,79 @@
             </div>
         </div>
 
-        <h3 style="font-family: var(--font-accent); font-size: 14px; margin-bottom: 15px;">🛍️ MIS ÚLTIMOS PEDIDOS</h3>
-        <div id="orders-list">
-            <!-- Injected by JS -->
+        <!-- TABS NAVIGATION -->
+        <div class="account-tabs">
+            <button class="tab-btn active" onclick="showTab('pedidos')">🛍️ Pedidos</button>
+            <button class="tab-btn" onclick="showTab('datos')">👤 Mis Datos</button>
+            <button class="tab-btn" onclick="showTab('direcciones')">📍 Direcciones</button>
+        </div>
+
+        <!-- TAB CONTENT: PEDIDOS -->
+        <div id="tab-pedidos" class="tab-content" style="display:block;">
+            <h3 style="font-family: var(--font-accent); font-size: 14px; margin-bottom: 15px;">MIS ÚLTIMOS PEDIDOS</h3>
+            <div id="orders-list">
+                <!-- Injected by JS -->
+            </div>
+        </div>
+
+        <!-- TAB CONTENT: MIS DATOS -->
+        <div id="tab-datos" class="tab-content" style="display:none;">
+            <h3 style="font-family: var(--font-accent); font-size: 14px; margin-bottom: 15px;">MIS DATOS PERSONALES</h3>
+            <div class="auth-card" style="text-align:left;">
+                <div class="form-group">
+                    <label>Teléfono / WhatsApp</label>
+                    <input type="tel" id="user-tel-input" class="form-control" placeholder="Ejem: 1122334455">
+                </div>
+                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                    <div style="flex:1;">
+                        <label>Día Nacimiento</label>
+                        <input type="number" id="user-nac-dia" class="form-control" placeholder="DD" min="1" max="31">
+                    </div>
+                    <div style="flex:1;">
+                        <label>Mes Nacimiento</label>
+                        <select id="user-nac-mes" class="form-control">
+                            <option value="">Mes</option>
+                            <option value="1">Enero</option>
+                            <option value="2">Febrero</option>
+                            <option value="3">Marzo</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Mayo</option>
+                            <option value="6">Junio</option>
+                            <option value="7">Julio</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="btn-save-data" class="btn-auth">GUARDAR DATOS</button>
+            </div>
+        </div>
+
+        <!-- TAB CONTENT: DIRECCIONES -->
+        <div id="tab-direcciones" class="tab-content" style="display:none;">
+            <h3 style="font-family: var(--font-accent); font-size: 14px; margin-bottom: 15px;">MIS DIRECCIONES</h3>
+            <div id="addresses-list" style="margin-bottom: 20px;">
+                <!-- Listado de direcciones guardadas -->
+                <p style="font-size:12px; opacity:0.6; text-align:center;">No tenés direcciones guardadas.</p>
+            </div>
+            <button class="btn-auth" style="background: white; color: var(--panel-oscuro); border: 1px dashed var(--panel-oscuro);" onclick="showAddAddressForm()">
+                + AGREGAR NUEVA DIRECCIÓN
+            </button>
+
+            <!-- Modal/Form para nueva dirección (oculto por defecto) -->
+            <div id="address-form" style="display:none; margin-top: 15px;" class="auth-card">
+                <input type="text" id="addr-alias" class="form-control" placeholder="Alias (Ej: Casa, Trabajo)">
+                <input type="text" id="addr-calle" class="form-control" placeholder="Calle">
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="addr-num" class="form-control" placeholder="Número">
+                    <input type="text" id="addr-piso" class="form-control" placeholder="Piso/Depto">
+                </div>
+                <input type="text" id="addr-nota" class="form-control" placeholder="Referencia (opcional)">
+                <button id="btn-save-address" class="btn-auth">GUARDAR DIRECCIÓN</button>
+            </div>
         </div>
     </div>
 

@@ -110,11 +110,18 @@ async function showProfile(user) {
     // Traer datos extras de Firestore
     const snap = await getDoc(doc(db, "usuarios_tienda", user.uid));
     let dni = "";
+    let whatsapp = "";
+    let diaRec = "";
+    let mesRec = "";
+
     if (snap.exists()) {
         const data = snap.data();
         userName.innerText = `¡Hola, ${data.nombre || user.displayName || user.email.split('@')[0]}!`;
         userDni.innerText = data.dni ? `DNI: ${data.dni}` : "Falta vincular DNI";
         dni = data.dni;
+        whatsapp = data.whatsapp || "";
+        diaRec = data.nacimiento_dia || "";
+        mesRec = data.nacimiento_mes || "";
         
         document.getElementById('dni-link-section').style.display = data.dni ? 'none' : 'block';
         
@@ -128,8 +135,128 @@ async function showProfile(user) {
         document.getElementById('dni-link-section').style.display = 'block';
     }
 
+    // --- AUTOPRELOAD FROM LOYALTY ---
+    if (dni) {
+        const loyaltySnap = await getDoc(doc(db, "clientes", dni));
+        if (loyaltySnap.exists()) {
+            const loyData = loyaltySnap.data();
+            if (!whatsapp) whatsapp = loyData.whatsapp || loyData.telefono || "";
+            if (!diaRec && loyData.nacimiento_dia) diaRec = loyData.nacimiento_dia;
+            if (!mesRec && loyData.nacimiento_mes) mesRec = loyData.nacimiento_mes;
+        }
+    }
+
+    // Populate fields
+    document.getElementById('user-tel-input').value = whatsapp;
+    document.getElementById('user-nac-dia').value = diaRec;
+    document.getElementById('user-nac-mes').value = mesRec;
+
     // El fetch de órdenes ahora es más inteligente
     fetchOrders(dni, user.email);
+    loadAddresses(user.uid);
+}
+
+// --- SAVE DATA ---
+const btnSaveData = document.getElementById('btn-save-data');
+if (btnSaveData) {
+    btnSaveData.onclick = async () => {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const whatsapp = document.getElementById('user-tel-input').value.trim();
+        const dia = document.getElementById('user-nac-dia').value.trim();
+        const mes = document.getElementById('user-nac-mes').value.trim();
+
+        try {
+            await setDoc(doc(db, "usuarios_tienda", user.uid), {
+                whatsapp,
+                nacimiento_dia: dia,
+                nacimiento_mes: mes,
+                actualizado: serverTimestamp()
+            }, { merge: true });
+            alert("¡Datos guardados correctamente!");
+        } catch (err) {
+            console.error(err);
+            alert("Error al guardar datos.");
+        }
+    };
+}
+
+// --- ADDRESSES LOGIC ---
+window.showAddAddressForm = () => {
+    document.getElementById('address-form').style.display = 'block';
+};
+
+const btnSaveAddress = document.getElementById('btn-save-address');
+if (btnSaveAddress) {
+    btnSaveAddress.onclick = async () => {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const alias = document.getElementById('addr-alias').value.trim();
+        const calle = document.getElementById('addr-calle').value.trim();
+        const num = document.getElementById('addr-num').value.trim();
+        const piso = document.getElementById('addr-piso').value.trim();
+        const nota = document.getElementById('addr-nota').value.trim();
+
+        if (!alias || !calle || !num) return alert("Completá alias, calle y número.");
+
+        try {
+            const userRef = doc(db, "usuarios_tienda", user.uid);
+            const userSnap = await getDoc(userRef);
+            let addresses = [];
+            if (userSnap.exists()) {
+                addresses = userSnap.data().direcciones || [];
+            }
+            
+            const newAddr = { id: Date.now(), alias, calle, num, piso, nota };
+            addresses.push(newAddr);
+
+            await setDoc(userRef, { direcciones: addresses }, { merge: true });
+            
+            alert("Dirección guardada.");
+            document.getElementById('address-form').style.display = 'none';
+            loadAddresses(user.uid);
+        } catch (err) {
+            console.error(err);
+            alert("Error al guardar dirección.");
+        }
+    };
+}
+
+async function loadAddresses(uid) {
+    const addressesList = document.getElementById('addresses-list');
+    const snap = await getDoc(doc(db, "usuarios_tienda", uid));
+    if (snap.exists() && snap.data().direcciones && snap.data().direcciones.length > 0) {
+        addressesList.innerHTML = snap.data().direcciones.map(addr => `
+            <div class="address-card">
+                <div>
+                    <strong style="font-size: 13px;">${addr.alias.toUpperCase()}</strong><br>
+                    <span style="font-size: 12px; opacity: 0.8;">${addr.calle} ${addr.num} ${addr.piso ? '('+addr.piso+')' : ''}</span>
+                    ${addr.nota ? `<br><small style="font-style:italic; opacity:0.6;">${addr.nota}</small>` : ''}
+                </div>
+                <button onclick="deleteAddress(${addr.id})" style="background:none; border:none; color:red; cursor:pointer;"><i class="fas fa-trash"></i></button>
+            </div>
+        `).join('');
+    } else {
+        addressesList.innerHTML = '<p style="font-size:12px; opacity:0.6; text-align:center;">No tenés direcciones guardadas.</p>';
+    }
+}
+
+window.deleteAddress = async (id) => {
+    const user = auth.currentUser;
+    if (!user) return;
+    if (!confirm("¿Borrar esta dirección?")) return;
+
+    try {
+        const userRef = doc(db, "usuarios_tienda", user.uid);
+        const snap = await getDoc(userRef);
+        const addresses = (snap.data().direcciones || []).filter(a => a.id !== id);
+        await setDoc(userRef, { direcciones: addresses }, { merge: true });
+        loadAddresses(user.uid);
+    } catch (err) {
+        console.error(err);
+    }
 }
 
 // Botón para vincular DNI después de entrar con Google
@@ -149,6 +276,7 @@ if (btnLinkDni) {
                 nombre: user.displayName || user.email.split('@')[0],
                 dni: dni,
                 whatsapp: "",
+                direcciones: [],
                 actualizado: serverTimestamp()
             }, { merge: true });
             
@@ -234,10 +362,21 @@ function formatStatus(status) {
         'en_preparacion': '☕ Preparando',
         'listo': '📦 Listo',
         'en_camino': '🛵 En camino',
-        'entregado': '✅ Entregado'
+        'entregado': '✅ Entregado',
+        'cancelado': '❌ Cancelado',
+        'rechazado': '🚫 Rechazado'
     };
     return map[status] || '🕒 Pendiente';
 }
+
+// Interfaz de Navegación de Solapas (Tabs)
+window.showTab = (tabName) => {
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    
+    document.getElementById(`tab-${tabName}`).style.display = 'block';
+    document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+};
 
 window.logout = () => {
     signOut(auth);

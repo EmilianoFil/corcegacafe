@@ -1,9 +1,11 @@
-import { db } from '../firebase-config.js';
-import { collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { db, auth } from '../firebase-config.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { collection, addDoc, serverTimestamp, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 // --- STATE ---
 let cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
 let deliveryMethod = 'pickup';
+let userProfile = null;
 
 // --- ELEMENTS ---
 const checkoutItems = document.getElementById('checkout-items');
@@ -23,15 +25,44 @@ function init() {
     }
     renderSummary();
     setupEventListeners();
-    checkExistingSession();
+    
+    // Auth Listener for prefill
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            const snap = await getDoc(doc(db, "usuarios_tienda", user.uid));
+            if (snap.exists()) {
+                userProfile = snap.data();
+                autofillData(userProfile);
+            }
+        }
+    });
 }
 
-function checkExistingSession() {
-    const sessionDni = localStorage.getItem('corcega_tienda_dni');
-    if (sessionDni) {
-        // Podríamos traer los datos de Firestore o usar los guardados en localStorage
-        document.getElementById('client-name').value = localStorage.getItem('corcega_tienda_nombre') || '';
-        // Si quisiéramos email/tel, tendríamos que guardarlos en el login
+function autofillData(profile) {
+    if (profile.nombre) document.getElementById('client-name').value = profile.nombre;
+    if (profile.whatsapp) document.getElementById('client-phone').value = profile.whatsapp;
+    if (profile.dni) document.getElementById('client-dni').value = profile.dni;
+
+    // Si tiene direcciones, agregar un selector opcional
+    if (profile.direcciones && profile.direcciones.length > 0) {
+        let addrContainer = document.getElementById('delivery-address-group');
+        let selectorHTML = `
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label>Tus Direcciones Guardadas</label>
+                <select id="saved-addresses-select" class="form-control" style="background:#f8f9fa;">
+                    <option value="">-- Seleccionar una o escribir abajo --</option>
+                    ${profile.direcciones.map(a => `<option value="${a.calle} ${a.num} ${a.piso || ''} ${a.nota || ''}">${a.alias.toUpperCase()}: ${a.calle} ${a.num}</option>`).join('')}
+                </select>
+            </div>
+        `;
+        addrContainer.insertAdjacentHTML('afterbegin', selectorHTML);
+        
+        const selector = document.getElementById('saved-addresses-select');
+        selector.onchange = (e) => {
+            if (e.target.value) {
+                document.getElementById('client-address').value = e.target.value;
+            }
+        };
     }
 }
 
