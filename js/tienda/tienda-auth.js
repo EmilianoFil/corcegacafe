@@ -203,12 +203,11 @@ async function fetchOrders(dni, email) {
         orders.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
         ordersList.innerHTML = orders.map(order => {
-            const order = doc.data();
             const date = order.timestamp ? order.timestamp.toDate().toLocaleDateString('es-AR') : '-';
             return `
                 <div class="order-card">
                     <div class="order-header">
-                        <span style="font-weight:700; color:var(--panel-oscuro);">Pedido #${doc.id.substring(0,8)}</span>
+                        <span style="font-weight:700; color:var(--panel-oscuro);">Pedido #${order.id.substring(0,8)}</span>
                         <span class="order-status status-${order.estado || 'pendiente_pago'}">${formatStatus(order.estado)}</span>
                     </div>
                     <div style="font-size:13px; margin-bottom:10px; color:var(--texto-muted);">${date}</div>
