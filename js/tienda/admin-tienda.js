@@ -253,5 +253,132 @@ export async function loadProductosTable() {
 
 export async function loadOrdenesTable() {
     console.log("Loading ordenes...");
-    // A implementar luego, una vez esté integrado Mercado Pago / Frontend
+    try {
+        const q = query(collection(db, "ordenes"), orderBy("timestamp", "desc"));
+        const snap = await getDocs(q);
+        const ordenesData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        if ($.fn.DataTable.isDataTable('#tablaOrdenesDash')) {
+            $('#tablaOrdenesDash').DataTable().destroy();
+        }
+
+        $('#tablaOrdenesDash').DataTable({
+            data: ordenesData,
+            columns: [
+                { 
+                    data: 'id',
+                    render: function(data) {
+                        return `<span style="font-family: monospace; font-size: 0.8rem;">#${data.substring(0,6)}...</span>`;
+                    }
+                },
+                { 
+                    data: 'timestamp',
+                    render: function(data) {
+                        if (!data) return '-';
+                        const date = data.toDate();
+                        return date.toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+                    }
+                },
+                { 
+                    data: 'cliente',
+                    render: function(data) {
+                        return `<strong>${data.nombre}</strong><br><span style="font-size:0.8rem; color:var(--texto-muted)">${data.whatsapp}</span>`;
+                    }
+                },
+                { 
+                    data: 'total',
+                    render: function(data) {
+                        return `<strong>$${data.toLocaleString('es-AR')}</strong>`;
+                    }
+                },
+                { 
+                    data: 'estado',
+                    render: function(data) {
+                        const statusMap = {
+                            'pendiente_pago': { label: 'Pendiente', color: '#faad14', bg: '#fffbe6' },
+                            'pagado': { label: 'Pagado', color: '#52c41a', bg: '#f6ffed' },
+                            'cancelado': { label: 'Cancelado', color: '#ff4d4f', bg: '#fff1f0' },
+                            'completado': { label: 'Completado', color: '#1890ff', bg: '#e6f7ff' }
+                        };
+                        const s = statusMap[data] || { label: data, color: '#000', bg: '#eee' };
+                        return `<span style="background:${s.bg}; border:1px solid ${s.color}; color:${s.color}; padding:4px 8px; border-radius:12px; font-size:0.75rem; font-weight:bold;">${s.label}</span>`;
+                    }
+                },
+                {
+                    data: null,
+                    render: function (data) {
+                        return `
+                            <button onclick="window.tiendaAdmin.verDetalleOrden('${data.id}')" style="background:var(--bg-color); border:1px solid var(--border); border-radius:6px; padding:6px 10px; cursor:pointer;" title="Ver Detalle">👁️</button>
+                            <button onclick="window.tiendaAdmin.cambiarEstadoOrden('${data.id}', 'pagado')" style="background:#f6ffed; border:1px solid #b7eb8f; border-radius:6px; padding:6px 10px; cursor:pointer;" title="Marcar Pagado">✅</button>
+                            <button onclick="window.tiendaAdmin.cambiarEstadoOrden('${data.id}', 'cancelado')" style="background:#fff1f0; border:1px solid #ffccc7; border-radius:6px; padding:6px 10px; cursor:pointer;" title="Cancelar">❌</button>
+                        `;
+                    }
+                }
+            ],
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+            }
+        });
+
+    } catch (error) {
+        console.error("Error loading orders:", error);
+    }
+}
+
+export async function cambiarEstadoOrden(id, nuevoEstado) {
+    if (!confirm(`¿Deseas marcar la orden como ${nuevoEstado}?`)) return;
+
+    try {
+        await updateDoc(doc(db, "ordenes", id), {
+            estado: nuevoEstado,
+            actualizadoEn: serverTimestamp()
+        });
+        alert("✅ Estado actualizado.");
+        await loadOrdenesTable();
+    } catch (error) {
+        console.error(error);
+        alert("❌ Error al actualizar estado.");
+    }
+}
+
+export async function verDetalleOrden(id) {
+    // Buscamos la orden localmente o en firestore
+    try {
+        const docSnap = await getDoc(doc(db, "ordenes", id));
+        if (!docSnap.exists()) return;
+        const orden = docSnap.data();
+
+        let itemsHtml = orden.items.map(item => `
+            <div style="display:flex; justify-content:space-between; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px;">
+                <span>${item.qty}x ${item.nombre}</span>
+                <span>$${(item.precio * item.qty).toLocaleString('es-AR')}</span>
+            </div>
+        `).join('');
+
+        const modalHtml = `
+            <div id="modal-detalle-orden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;">
+                <div style="background:white; padding:30px; border-radius:20px; width:90%; max-width:500px; max-height: 80vh; overflow-y: auto;">
+                    <h3 style="margin-top:0">Detalle de Orden #${id.substring(0,8)}</h3>
+                    <p><strong>Cliente:</strong> ${orden.cliente.nombre}</p>
+                    <p><strong>WhatsApp:</strong> ${orden.cliente.whatsapp}</p>
+                    <p><strong>Entrega:</strong> ${orden.metodoEntrega === 'pickup' ? 'Retiro en Local' : 'Envio a Domicilio'}</p>
+                    <p><strong>Horario:</strong> ${orden.horario}</p>
+                    <p><strong>Notas:</strong> ${orden.notas || '-'}</p>
+                    <hr>
+                    <div style="margin:20px 0;">
+                        ${itemsHtml}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.2rem;">
+                        <span>TOTAL</span>
+                        <span>$${orden.total.toLocaleString('es-AR')}</span>
+                    </div>
+                    <button onclick="document.getElementById('modal-detalle-orden').remove()" class="btn-primary" style="width:100%; margin-top:20px;">Cerrar</button>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    } catch (error) {
+        console.error(error);
+    }
 }
