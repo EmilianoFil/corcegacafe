@@ -252,7 +252,7 @@ export async function loadProductosTable() {
 // ============================================
 
 export async function loadOrdenesTable() {
-    console.log("Loading ordenes...");
+    console.log("Cargando órdenes desde Firestore... v2 🚀");
     try {
         const q = query(collection(db, "ordenes"), orderBy("timestamp", "desc"));
         const snap = await getDocs(q);
