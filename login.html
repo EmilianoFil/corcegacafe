@@ -28,18 +28,68 @@
         <input type="password" id="clave" placeholder="Contraseña" required />
       </div>
       <button type="submit" class="btn-primary">Ingresar</button>
+      <div style="margin-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 15px;">
+        <button type="button" id="btnGoogle" class="btn-primary" style="background: white; color: #444; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; gap: 10px;">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18">
+          Entrar con Google
+        </button>
+      </div>
     </form>
   <div id="loader" style="display: none; margin-top: 20px; text-align: center; width: 100%;">
     <img src="css/img/Corcega_Logo_Naranja.png" class="galope" style="width: 95px; display: inline-block;">
   </div>
     <div class="mensaje error" id="errorMsg" style="display:none;">Usuario o clave incorrecta</div>
+    <div class="mensaje error" id="noAdminMsg" style="display:none;">No tienes permisos de administrador</div>
   </div>
 
   <script type="module">
     import { app, db } from './js/firebase-config.js';
     import { auth, signInWithEmailAndPassword } from './js/firebase-auth.js';
-    import { setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-    import { addDoc, collection } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { addDoc, collection, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    const googleProvider = new GoogleAuthProvider();
+
+    // EMAILS AUTORIZADOS (Master)
+    const adminsAutorizados = ['emilianofilgueira@gmail.com'];
+
+    // Manejo Google Login
+    document.getElementById("btnGoogle").onclick = async () => {
+        document.getElementById("loader").style.display = "block";
+        document.getElementById("errorMsg").style.display = "none";
+        document.getElementById("noAdminMsg").style.display = "none";
+
+        try {
+            await setPersistence(auth, browserLocalPersistence);
+            const res = await signInWithPopup(auth, googleProvider);
+            const user = res.user;
+
+            // Verificamos si es admin en Firestore (fallback) o si está en la lista master
+            const adminSnap = await getDoc(doc(db, "admins", user.uid));
+            
+            if (adminsAutorizados.includes(user.email) || adminSnap.exists()) {
+                loginExitoso(user.email);
+            } else {
+                auth.signOut();
+                throw new Error("unauthorized");
+            }
+        } catch (error) {
+            console.error(error);
+            document.getElementById("loader").style.display = "none";
+            if(error.message === "unauthorized") {
+                document.getElementById("noAdminMsg").style.display = "block";
+            } else {
+                document.getElementById("errorMsg").style.display = "block";
+            }
+        }
+    };
+
+    function loginExitoso(usuario) {
+        localStorage.setItem("admin", "true");
+        localStorage.setItem("usuario", usuario);
+        sessionStorage.setItem("logueado", "true");
+        window.location.href = "admin.html";
+    }
 
     document.getElementById("loginForm").addEventListener("submit", async function(e) {
       e.preventDefault();
@@ -70,7 +120,7 @@
         }
         //AGREGO PARA GA - FIN
 
-        window.location.href = "admin.html";
+        loginExitoso(usuario);
       } catch (error) {
         console.error("Error en login:", error);
         document.getElementById("loader").style.display = "none";
