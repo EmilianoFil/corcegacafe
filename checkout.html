@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Córcega Café - Finalizar Compra</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link rel="stylesheet" href="css/tienda/tienda.css">
+    <style>
+        .checkout-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .checkout-section {
+            background: white;
+            border-radius: var(--radio);
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .checkout-section h3 {
+            font-family: var(--font-display);
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--panel-oscuro);
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--texto-muted);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid #e8e4db;
+            background: #fdfcf7;
+            font-family: var(--font-base);
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--naranja-accent);
+        }
+
+        .order-summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .order-item-qty {
+            font-weight: 700;
+            color: var(--naranja-oscuro);
+            margin-right: 8px;
+        }
+
+        .method-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .method-card {
+            border: 2px solid #e8e4db;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .method-card i {
+            font-size: 24px;
+            margin-bottom: 8px;
+            display: block;
+            color: var(--texto-muted);
+        }
+
+        .method-card.active {
+            border-color: var(--naranja-accent);
+            background: rgba(237, 112, 83, 0.05);
+        }
+
+        .method-card.active i {
+            color: var(--naranja-accent);
+        }
+
+        .method-card span {
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--panel-oscuro);
+        }
+
+        .summary-total {
+            border-top: 2px dashed #eee;
+            padding-top: 15px;
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .summary-total span:last-child {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--panel-oscuro);
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--texto-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="logo-tienda" style="width: 80px;">
+        <h1 style="font-size: 12px;">FINALIZAR PEDIDO</h1>
+    </header>
+
+    <div class="checkout-container">
+        <button class="back-btn" onclick="window.location.href='tienda.html'">
+            <i class="fas fa-arrow-left"></i> Volver a la tienda
+        </button>
+
+        <!-- Resumen -->
+        <div class="checkout-section">
+            <h3><i class="fas fa-shopping-cart"></i> Resumen de Pedido</h3>
+            <div id="checkout-items">
+                <!-- Injected by JS -->
+            </div>
+            <div class="summary-total">
+                <span>Total a pagar</span>
+                <span id="checkout-total">$0.00</span>
+            </div>
+        </div>
+
+        <!-- Datos del Cliente -->
+        <div class="checkout-section">
+            <h3><i class="fas fa-user-edit"></i> Tus Datos</h3>
+            <div class="form-group">
+                <label for="client-name">Nombre Completo</label>
+                <input type="text" id="client-name" class="form-control" placeholder="Ej: Emiliano López" required>
+            </div>
+            <div class="form-group">
+                <label for="client-phone">WhatsApp</label>
+                <input type="tel" id="client-phone" class="form-control" placeholder="Ej: 1122334455" required>
+            </div>
+            <div class="form-group">
+                <label for="client-note">Notas adicionales (opcional)</label>
+                <textarea id="client-note" class="form-control" rows="2" placeholder="Ej: Sin azúcar, retirar por la ventana..."></textarea>
+            </div>
+        </div>
+
+        <!-- Método de Entrega -->
+        <div class="checkout-section">
+            <h3><i class="fas fa-truck"></i> Entrega / Retiro</h3>
+            <div class="method-selector">
+                <div class="method-card active" data-method="pickup">
+                    <i class="fas fa-store"></i>
+                    <span>Retiro en Local</span>
+                </div>
+                <div class="method-card" data-method="delivery">
+                    <i class="fas fa-bicycle"></i>
+                    <span>Envío a domicilio</span>
+                </div>
+            </div>
+            
+            <div id="delivery-address-group" style="display: none;">
+                <div class="form-group">
+                    <label>Dirección de Envío</label>
+                    <input type="text" id="client-address" class="form-control" placeholder="Ej: Av. Santa Fe 1234, 4to B">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>¿Para cuándo lo querés?</label>
+                <select id="order-schedule" class="form-control">
+                    <option value="ahora">Lo antes posible (Takeaway)</option>
+                    <option value="planificado">Planificar retiro/entrega</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Pago -->
+        <div class="checkout-section">
+            <h3><i class="fas fa-credit-card"></i> Método de Pago</h3>
+            <div class="form-group">
+                <select id="payment-method" class="form-control">
+                    <option value="mercadopago">Mercado Pago (Tarjeta/Saldo)</option>
+                    <option value="transferencia">Transferencia Bancaria</option>
+                </select>
+            </div>
+            
+            <div id="transfer-info" style="display: none; padding: 15px; background: #f0f7f4; border-radius: 12px; border: 1px solid #cceadd; font-size: 13px; color: #1e4634;">
+                <p style="margin-top:0"><strong>Datos para transferir:</strong></p>
+                <p>Alias: corcega.cafe.mp<br>CBU: 00000031000...<br>Titular: Córcega Café</p>
+                <p style="margin-bottom:0"><i>* Una vez realizado el pedido, deberás enviar el comprobante por WhatsApp.</i></p>
+            </div>
+
+            <button class="btn-checkout" id="btn-finalizar-pedido" style="margin-top:20px">
+                CONFIRMAR Y PAGAR
+            </button>
+        </div>
+    </div>
+
+    <script type="module" src="js/tienda/checkout.js"></script>
+</body>
+</html>
