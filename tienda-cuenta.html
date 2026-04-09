@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Cuenta - Córcega Café</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link rel="stylesheet" href="css/tienda/tienda.css">
+    <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 40px auto;
+            padding: 20px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: var(--radio);
+            padding: 30px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .auth-card h2 {
+            font-family: var(--font-display);
+            margin-bottom: 10px;
+            color: var(--panel-oscuro);
+        }
+
+        .auth-card p {
+            font-size: 14px;
+            color: var(--texto-muted);
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--panel-oscuro);
+            text-transform: uppercase;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            font-family: var(--font-base);
+            font-size: 15px;
+        }
+
+        .btn-auth {
+            width: 100%;
+            padding: 14px;
+            background: var(--naranja-oscuro);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-family: var(--font-accent);
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.2s;
+        }
+
+        .btn-auth:active {
+            transform: scale(0.98);
+        }
+
+        .toggle-auth {
+            margin-top: 20px;
+            font-size: 13px;
+            color: var(--texto-muted);
+        }
+
+        .toggle-auth span {
+            color: var(--naranja-accent);
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Profile/Orders View */
+        .profile-view {
+            display: none;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .order-status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .status-pendiente_pago { background: #fffbe6; color: #faad14; }
+        .status-pagado { background: #f6ffed; color: #52c41a; }
+        .status-en_preparacion { background: #e6fffb; color: #13c2c2; }
+        .status-listo { background: #f9f0ff; color: #722ed1; }
+        .status-entregado { background: #f6ffed; color: #52c41a; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="logo-tienda" onclick="window.location.href='tienda.html'" style="cursor:pointer">
+        <h1 id="view-title">MI CUENTA</h1>
+    </header>
+
+    <!-- VISTA: LOGIN / REGISTRO -->
+    <div id="auth-view" class="auth-container">
+        <div class="auth-card" id="login-form">
+            <h2>¡Hola de nuevo!</h2>
+            <p>Ingresá a tu cuenta de la tienda para ver tus pedidos.</p>
+            <div class="form-group">
+                <label>DNI</label>
+                <input type="number" id="login-dni" class="form-control" placeholder="Tu número de documento">
+            </div>
+            <div class="form-group">
+                <label>Clave</label>
+                <input type="password" id="login-pass" class="form-control" placeholder="Tu contraseña">
+            </div>
+            <button class="btn-auth" id="btn-login">ENTRAR</button>
+            <div class="toggle-auth">¿No tenés cuenta? <span onclick="toggleAuth('register')">Registrate</span></div>
+        </div>
+
+        <div class="auth-card" id="register-form" style="display: none;">
+            <h2>Crear Cuenta</h2>
+            <p>Registrate para comprar más rápido y seguir tus pedidos.</p>
+            <div class="form-group">
+                <label>Nombre Completo</label>
+                <input type="text" id="reg-nombre" class="form-control" placeholder="Ej: Emiliano López">
+            </div>
+            <div class="form-group">
+                <label>DNI</label>
+                <input type="number" id="reg-dni" class="form-control" placeholder="Tu número de documento">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="reg-mail" class="form-control" placeholder="tu@email.com">
+            </div>
+            <div class="form-group">
+                <label>WhatsApp</label>
+                <input type="tel" id="reg-tel" class="form-control" placeholder="Cod. área + número">
+            </div>
+            <div class="form-group">
+                <label>Elegí una clave</label>
+                <input type="password" id="reg-pass" class="form-control" placeholder="Mínimo 6 caracteres">
+            </div>
+            <button class="btn-auth" id="btn-register">REGISTRARME</button>
+            <div class="toggle-auth">¿Ya tenés cuenta? <span onclick="toggleAuth('login')">Iniciá sesión</span></div>
+        </div>
+    </div>
+
+    <!-- VISTA: PERFIL Y ÓRDENES -->
+    <div id="profile-view" class="profile-view">
+        <div class="auth-card" style="margin-bottom: 20px; text-align: left; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 id="user-name" style="margin: 0; font-family: var(--font-display);">Hola, Cliente</h3>
+                <p id="user-dni" style="margin: 0; font-size: 12px;"></p>
+            </div>
+            <button onclick="logout()" style="background: none; border: none; color: var(--error); cursor: pointer; font-weight: 700; font-size: 13px;">
+                CERRAR SESIÓN
+            </button>
+        </div>
+
+        <h3 style="font-family: var(--font-accent); font-size: 14px; margin-bottom: 15px;">🛍️ MIS ÚLTIMOS PEDIDOS</h3>
+        <div id="orders-list">
+            <!-- Injected by JS -->
+        </div>
+    </div>
+
+    <script>
+        function toggleAuth(view) {
+            document.getElementById('login-form').style.display = view === 'login' ? 'block' : 'none';
+            document.getElementById('register-form').style.display = view === 'register' ? 'block' : 'none';
+        }
+    </script>
+    <script type="module" src="js/tienda/tienda-auth.js"></script>
+</body>
+</html>

@@ -23,6 +23,16 @@ function init() {
     }
     renderSummary();
     setupEventListeners();
+    checkExistingSession();
+}
+
+function checkExistingSession() {
+    const sessionDni = localStorage.getItem('corcega_tienda_dni');
+    if (sessionDni) {
+        // Podríamos traer los datos de Firestore o usar los guardados en localStorage
+        document.getElementById('client-name').value = localStorage.getItem('corcega_tienda_nombre') || '';
+        // Si quisiéramos email/tel, tendríamos que guardarlos en el login
+    }
 }
 
 function renderSummary() {
@@ -91,12 +101,13 @@ async function handleOrderSubmission() {
 
     try {
         const total = cart.reduce((acc, item) => acc + (item.precio * item.qty), 0);
+        const sessionDni = localStorage.getItem('corcega_tienda_dni');
         
         const orderData = {
             cliente: {
                 nombre,
                 whatsapp,
-                dni: dni || null,
+                dni: sessionDni || null,
                 direccion: deliveryMethod === 'delivery' ? direccion : 'Retiro en local'
             },
             items: cart,
