@@ -1,4 +1,12 @@
-import { db } from '../firebase-config.js';
+import { app, db, auth } from '../firebase-config.js';
+import { 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword, 
+    signInWithPopup, 
+    GoogleAuthProvider,
+    onAuthStateChanged,
+    signOut
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { doc, getDoc, setDoc, getDocs, query, collection, where, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 // --- ELEMENTS ---
@@ -11,100 +19,113 @@ const userDni = document.getElementById('user-dni');
 // --- BUTTONS ---
 const btnLogin = document.getElementById('btn-login');
 const btnRegister = document.getElementById('btn-register');
+const btnGoogle = document.getElementById('btn-google');
+
+const googleProvider = new GoogleAuthProvider();
 
 // --- INITIALIZATION ---
-async function init() {
-    const sessionDni = localStorage.getItem('corcega_tienda_dni');
-    if (sessionDni) {
-        showProfile(sessionDni);
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // User logged in
+        showProfile(user);
+    } else {
+        // User logged out
+        authView.style.display = 'block';
+        profileView.style.display = 'none';
+        localStorage.removeItem('corcega_tienda_dni');
     }
+});
 
-    if (btnLogin) btnLogin.onclick = handleLogin;
-    if (btnRegister) btnRegister.onclick = handleRegister;
-}
+if (btnLogin) btnLogin.onclick = handleLogin;
+if (btnRegister) btnRegister.onclick = handleRegister;
+if (btnGoogle) btnGoogle.onclick = handleGoogleLogin;
 
 // --- LOGIC ---
 async function handleLogin() {
-    const dni = document.getElementById('login-dni').value.trim();
+    const email = document.getElementById('login-email').value.trim();
     const pass = document.getElementById('login-pass').value.trim();
 
-    if (!dni || !pass) return alert("Completá todos los campos.");
+    if (!email || !pass) return alert("Completá email y clave.");
 
     try {
-        const userRef = doc(db, "usuarios_tienda", dni);
-        const snap = await getDoc(userRef);
-
-        if (snap.exists()) {
-            const userData = snap.data();
-            if (userData.password === pass) {
-                localStorage.setItem('corcega_tienda_dni', dni);
-                localStorage.setItem('corcega_tienda_nombre', userData.nombre);
-                showProfile(dni);
-            } else {
-                alert("PIN/Clave incorrecta.");
-            }
-        } else {
-            alert("No encontramos una cuenta con ese DNI. Por favor registrate.");
-        }
+        await signInWithEmailAndPassword(auth, email, pass);
     } catch (err) {
         console.error(err);
-        alert("Error al iniciar sesión.");
+        alert("Error: Usuario o contraseña incorrectos.");
+    }
+}
+
+async function handleGoogleLogin() {
+    try {
+        await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+        console.error(err);
+        alert("Error al ingresar con Google.");
     }
 }
 
 async function handleRegister() {
     const nombre = document.getElementById('reg-nombre').value.trim();
     const dni = document.getElementById('reg-dni').value.trim();
-    const email = document.getElementById('reg-mail').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
     const tel = document.getElementById('reg-tel').value.trim();
     const pass = document.getElementById('reg-pass').value.trim();
 
     if (!nombre || !dni || !email || !pass) return alert("Por favor completá los campos obligatorios.");
-    if (pass.length < 4) return alert("La clave debe tener al menos 4 caracteres.");
+    if (pass.length < 6) return alert("La clave debe tener al menos 6 caracteres.");
 
     try {
-        const userRef = doc(db, "usuarios_tienda", dni);
-        const existing = await getDoc(userRef);
-        if (existing.exists()) return alert("Ya existe una cuenta con este DNI.");
+        // 1. Crear usuario en Firebase Auth
+        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        const user = cred.user;
 
-        // 1. Guardar en Usuarios Tienda
-        const userStoreData = {
-            dni, nombre, email, whatsapp: tel, password: pass,
+        // 2. Guardar datos extras en Firestore
+        await setDoc(doc(db, "usuarios_tienda", user.uid), {
+            uid: user.uid,
+            dni, nombre, email, whatsapp: tel,
             creado: serverTimestamp()
-        };
-        await setDoc(userRef, userStoreData);
+        });
 
-        // 2. Vinculación inteligente con Cafecitos (Loyalty)
+        // 3. Vincular con Cafecitos
         const loyaltyRef = doc(db, "clientes", dni);
         const loyaltySnap = await getDoc(loyaltyRef);
-        
         if (!loyaltySnap.exists()) {
-            // Lo creamos en cafecitos también para que ya tenga su tarjeta
             await setDoc(loyaltyRef, {
-                dni, nombre, email, cafes: 0, 
-                tienda_active: true, // Tip para saber que viene de la tienda
+                dni, nombre, email, cafes: 0,
+                tienda_uid: user.uid,
                 creado: serverTimestamp()
             });
         }
 
-        localStorage.setItem('corcega_tienda_dni', dni);
-        localStorage.setItem('corcega_tienda_nombre', nombre);
-        showProfile(dni);
-
     } catch (err) {
         console.error(err);
-        alert("Error al registrar cuenta.");
+        alert("Error al registrar: " + err.message);
     }
 }
 
-async function showProfile(dni) {
+async function showProfile(user) {
     authView.style.display = 'none';
     profileView.style.display = 'block';
     
-    userName.innerText = `¡Hola, ${localStorage.getItem('corcega_tienda_nombre')}!`;
-    userDni.innerText = `DNI: ${dni}`;
+    // Traer datos extras de Firestore
+    const snap = await getDoc(doc(db, "usuarios_tienda", user.uid));
+    let dni = "";
+    if (snap.exists()) {
+        const data = snap.data();
+        userName.innerText = `¡Hola, ${data.nombre}!`;
+        userDni.innerText = `DNI: ${data.dni}`;
+        dni = data.dni;
+        localStorage.setItem('corcega_tienda_dni', dni);
+        localStorage.setItem('corcega_tienda_nombre', data.nombre);
+    } else {
+        userName.innerText = `¡Hola, ${user.displayName || user.email}!`;
+        // Si entró por Google y no tiene doc, podríamos pedirle DNI
+        userDni.innerText = "Registrá tu DNI para sumar cafecitos.";
+    }
 
-    fetchOrders(dni);
+    if (dni) {
+        fetchOrders(dni);
+    }
 }
 
 async function fetchOrders(dni) {
@@ -119,7 +140,7 @@ async function fetchOrders(dni) {
         const snap = await getDocs(q);
 
         if (snap.empty) {
-            ordersList.innerHTML = '<div class="order-card" style="text-align:center; opacity:0.6;">Aún no tenés pedidos realizados.</div>';
+            ordersList.innerHTML = '<div class="order-card" style="text-align:center; opacity:0.6;">Aún no tenés pedidos registrados.</div>';
             return;
         }
 
@@ -130,7 +151,7 @@ async function fetchOrders(dni) {
                 <div class="order-card">
                     <div class="order-header">
                         <span style="font-weight:700; color:var(--panel-oscuro);">Pedido #${doc.id.substring(0,8)}</span>
-                        <span class="order-status status-${order.estado}">${formatStatus(order.estado)}</span>
+                        <span class="order-status status-${order.estado || 'pendiente_pago'}">${formatStatus(order.estado)}</span>
                     </div>
                     <div style="font-size:13px; margin-bottom:10px; color:var(--texto-muted);">${date}</div>
                     <div style="font-size:13px; border-top:1px solid #eee; padding-top:10px;">
@@ -158,13 +179,9 @@ function formatStatus(status) {
         'en_camino': '🛵 En camino',
         'entregado': '✅ Entregado'
     };
-    return map[status] || status;
+    return map[status] || '🕒 Pendiente';
 }
 
 window.logout = () => {
-    localStorage.removeItem('corcega_tienda_dni');
-    localStorage.removeItem('corcega_tienda_nombre');
-    window.location.reload();
+    signOut(auth);
 };
-
-init();

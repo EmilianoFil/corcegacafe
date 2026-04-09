@@ -13,7 +13,7 @@ const cartDrawer = document.getElementById('cart-drawer');
 const cartOverlay = document.getElementById('cart-overlay');
 const cartItemsList = document.getElementById('cart-items-list');
 const cartTotal = document.getElementById('cart-total');
-const categoryChips = document.querySelectorAll('.cat-chip');
+// const categoryChips = document.querySelectorAll('.category-chip'); // We'll select them inside setup
 
 // --- INITIALIZATION ---
 async function init() {
@@ -170,16 +170,29 @@ function closeCart() {
 
 // --- EVENTS ---
 function setupEventListeners() {
-    document.getElementById('btn-open-cart').onclick = openCart;
-    document.getElementById('btn-close-cart').onclick = closeCart;
-    cartOverlay.onclick = closeCart;
+    const btnOpenCartHeader = document.getElementById('cart-btn');
+    const btnOpenCartFloat = document.getElementById('btn-open-cart');
+    
+    if (btnOpenCartHeader) btnOpenCartHeader.onclick = openCart;
+    if (btnOpenCartFloat) btnOpenCartFloat.onclick = openCart;
+    
+    const btnCloseCart = document.getElementById('btn-close-cart');
+    if (btnCloseCart) btnCloseCart.onclick = closeCart;
+    
+    if (cartOverlay) cartOverlay.onclick = closeCart;
 
-    categoryChips.forEach(chip => {
+    const chips = document.querySelectorAll('.category-chip');
+    chips.forEach(chip => {
         chip.onclick = () => {
-            categoryChips.forEach(c => c.classList.remove('active'));
+            chips.forEach(c => c.classList.remove('active'));
             chip.classList.add('active');
             activeCategory = chip.dataset.cat;
             renderProducts();
+            
+            // On mobile, scroll up slightly to show products if they clicked the bottom bar
+            if(window.innerWidth < 768) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         };
     });
 

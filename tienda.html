@@ -20,10 +20,11 @@
 
     <!-- Header -->
     <header>
-        <img src="css/img/Corcega_Logo_Original.png" alt="Córcega Café Logo" class="logo-tienda">
-        <div style="display:flex; gap:15px; align-items:center;">
-            <a href="tienda-cuenta.html" style="color:var(--panel-oscuro); text-decoration:none; font-size:20px; margin-right: 5px;" title="Mi Cuenta"><i class="fas fa-user-circle"></i></a>
-            <div class="cart-icon" id="cart-btn">
+        <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="logo-tienda" onclick="window.location.href='index.html'" style="cursor:pointer">
+        <h1>TIENDA CÓRCEGA</h1>
+        <div class="header-actions">
+            <a href="tienda-cuenta.html" title="Mi Cuenta"><i class="fas fa-user-circle"></i></a>
+            <div class="cart-icon" id="cart-btn" style="position:relative;">
                 <i class="fas fa-shopping-bag"></i>
                 <span class="cart-count">0</span>
             </div>
@@ -31,13 +32,13 @@
     </header>
 
     <!-- Categories -->
-    <nav class="categories-nav">
-        <div class="cat-chip active" data-cat="todos">Todos</div>
-        <div class="cat-chip" data-cat="cafe">Cafetería</div>
-        <div class="cat-chip" data-cat="pasteleria">Pastelería</div>
-        <div class="cat-chip" data-cat="merchandising">Merch</div>
-        <div class="cat-chip" data-cat="otros">Otros</div>
-    </nav>
+    <div class="categories-container" id="categories-nav">
+        <div class="category-chip active" data-cat="todos">Todos</div>
+        <div class="category-chip" data-cat="cafe">Cafetería</div>
+        <div class="category-chip" data-cat="pasteleria">Pastelería</div>
+        <div class="category-chip" data-cat="merchandising">Merch</div>
+        <div class="category-chip" data-cat="otros">Otros</div>
+    </div>
 
     <!-- Product Display -->
     <main class="products-grid" id="products-container">
