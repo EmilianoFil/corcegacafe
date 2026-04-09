@@ -112,39 +112,97 @@ async function showProfile(user) {
     let dni = "";
     if (snap.exists()) {
         const data = snap.data();
-        userName.innerText = `¡Hola, ${data.nombre}!`;
-        userDni.innerText = `DNI: ${data.dni}`;
+        userName.innerText = `¡Hola, ${data.nombre || user.displayName || user.email.split('@')[0]}!`;
+        userDni.innerText = data.dni ? `DNI: ${data.dni}` : "Falta vincular DNI";
         dni = data.dni;
-        localStorage.setItem('corcega_tienda_dni', dni);
-        localStorage.setItem('corcega_tienda_nombre', data.nombre);
+        
+        document.getElementById('dni-link-section').style.display = data.dni ? 'none' : 'block';
+        
+        if (dni) {
+            localStorage.setItem('corcega_tienda_dni', dni);
+            localStorage.setItem('corcega_tienda_nombre', data.nombre);
+        }
     } else {
         userName.innerText = `¡Hola, ${user.displayName || user.email}!`;
-        // Si entró por Google y no tiene doc, podríamos pedirle DNI
-        userDni.innerText = "Registrá tu DNI para sumar cafecitos.";
+        userDni.innerText = "Registrá tu DNI para ver tus pedidos.";
+        document.getElementById('dni-link-section').style.display = 'block';
     }
 
-    if (dni) {
-        fetchOrders(dni);
-    }
+    // El fetch de órdenes ahora es más inteligente
+    fetchOrders(dni, user.email);
 }
 
-async function fetchOrders(dni) {
+// Botón para vincular DNI después de entrar con Google
+const btnLinkDni = document.getElementById('btn-link-dni');
+if (btnLinkDni) {
+    btnLinkDni.onclick = async () => {
+        const dni = document.getElementById('link-dni-input').value.trim();
+        if (!dni) return alert("Ingresá tu DNI.");
+        
+        const user = auth.currentUser;
+        if (!user) return;
+
+        try {
+            await setDoc(doc(db, "usuarios_tienda", user.uid), {
+                uid: user.uid,
+                email: user.email,
+                nombre: user.displayName || user.email.split('@')[0],
+                dni: dni,
+                whatsapp: "",
+                actualizado: serverTimestamp()
+            }, { merge: true });
+            
+            alert("¡DNI vinculado! Cargando tus datos...");
+            showProfile(user);
+        } catch (err) {
+            console.error(err);
+            alert("Error al vincular DNI.");
+        }
+    };
+}
+
+async function fetchOrders(dni, email) {
     ordersList.innerHTML = '<p style="font-size:12px; opacity:0.6;">Cargando tus pedidos...</p>';
     
     try {
-        const q = query(
-            collection(db, "ordenes"),
-            where("cliente.dni", "==", dni),
-            orderBy("timestamp", "desc")
-        );
-        const snap = await getDocs(q);
+        let orders = [];
 
-        if (snap.empty) {
+        // 1. Buscar por DNI (Prioridad)
+        if (dni) {
+            const qDni = query(
+                collection(db, "ordenes"),
+                where("cliente.dni", "==", dni),
+                orderBy("timestamp", "desc")
+            );
+            const snapDni = await getDocs(qDni);
+            snapDni.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
+        }
+
+        // 2. Buscar por Email (Seguro)
+        if (email) {
+            const qEmail = query(
+                collection(db, "ordenes"),
+                where("cliente.email", "==", email),
+                orderBy("timestamp", "desc")
+            );
+            const snapEmail = await getDocs(qEmail);
+            snapEmail.forEach(doc => {
+                // Evitar duplicados si ya lo encontramos por DNI
+                if (!orders.find(o => o.id === doc.id)) {
+                    orders.push({ id: doc.id, ...doc.data() });
+                }
+            });
+        }
+
+        if (orders.length === 0) {
             ordersList.innerHTML = '<div class="order-card" style="text-align:center; opacity:0.6;">Aún no tenés pedidos registrados.</div>';
             return;
         }
 
-        ordersList.innerHTML = snap.docs.map(doc => {
+        // Ordenar por fecha (ya que combinamos dos queries)
+        orders.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+        ordersList.innerHTML = orders.map(order => {
             const order = doc.data();
             const date = order.timestamp ? order.timestamp.toDate().toLocaleDateString('es-AR') : '-';
             return `

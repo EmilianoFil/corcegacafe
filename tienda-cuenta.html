@@ -229,14 +229,25 @@
 
     <!-- VISTA: PERFIL Y ÓRDENES -->
     <div id="profile-view" class="profile-view">
-        <div class="auth-card" style="margin-bottom: 20px; text-align: left; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h3 id="user-name" style="margin: 0; font-family: var(--font-display);">Hola, Cliente</h3>
-                <p id="user-dni" style="margin: 0; font-size: 12px;"></p>
+        <div class="auth-card" style="margin-bottom: 20px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div>
+                    <h3 id="user-name" style="margin: 0; font-family: var(--font-display);">Hola, Cliente</h3>
+                    <p id="user-dni" style="margin: 0; font-size: 13px; color: var(--texto-muted);"></p>
+                </div>
+                <button onclick="logout()" style="background: none; border: none; color: var(--error); cursor: pointer; font-weight: 700; font-size: 13px;">
+                    CERRAR SESIÓN
+                </button>
             </div>
-            <button onclick="logout()" style="background: none; border: none; color: var(--error); cursor: pointer; font-weight: 700; font-size: 13px;">
-                CERRAR SESIÓN
-            </button>
+
+            <!-- Form para vincular DNI si falta -->
+            <div id="dni-link-section" style="display: none; border-top: 1px dashed var(--border); padding-top: 15px; margin-top: 15px;">
+                <p style="font-size: 12px; margin-bottom: 10px;">Para ver tus pedidos y sumar cafecitos, vinculá tu DNI:</p>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="link-dni-input" class="form-control" placeholder="Tu DNI sin puntos" style="padding: 10px; font-size: 14px;">
+                    <button id="btn-link-dni" class="btn-auth" style="padding: 10px 20px; width: auto; font-size: 12px;">VINCULAR</button>
+                </div>
+            </div>
         </div>
 
         <h3 style="font-family: var(--font-accent); font-size: 14px; margin-bottom: 15px;">🛍️ MIS ÚLTIMOS PEDIDOS</h3>
