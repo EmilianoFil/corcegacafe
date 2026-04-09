@@ -14,30 +14,32 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- Custom Style -->
-    <link rel="stylesheet" href="css/tienda/tienda.css?v=1.2">
+    <link rel="stylesheet" href="css/tienda/tienda.css?v=1.3">
 </head>
 <body>
 
-    <!-- Header -->
-    <header>
-        <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="logo-tienda" onclick="window.location.href='index.html'" style="cursor:pointer">
-        <h1>TIENDA<br>CÓRCEGA</h1>
-        <div class="header-actions">
-            <a href="tienda-cuenta.html" title="Mi Cuenta"><i class="fas fa-user-circle"></i></a>
-            <div class="cart-icon" id="cart-btn" style="position:relative;">
-                <i class="fas fa-shopping-bag"></i>
-                <span class="cart-count">0</span>
+    <div class="top-bar">
+        <!-- Header -->
+        <header>
+            <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="logo-tienda" onclick="window.location.href='index.html'" style="cursor:pointer">
+            <h1>TIENDA<br>CÓRCEGA</h1>
+            <div class="header-actions">
+                <a href="tienda-cuenta.html" title="Mi Cuenta"><i class="fas fa-user-circle"></i></a>
+                <div class="cart-icon" id="cart-btn" style="position:relative;">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="cart-count">0</span>
+                </div>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <!-- Categories -->
-    <div class="categories-container" id="categories-nav">
-        <div class="category-chip active" data-cat="todos">Todos</div>
-        <div class="category-chip" data-cat="cafe">Cafetería</div>
-        <div class="category-chip" data-cat="pasteleria">Pastelería</div>
-        <div class="category-chip" data-cat="merchandising">Merch</div>
-        <div class="category-chip" data-cat="otros">Otros</div>
+        <!-- Categories -->
+        <div class="categories-container" id="categories-nav">
+            <div class="category-chip active" data-cat="todos">Todos</div>
+            <div class="category-chip" data-cat="cafe">Cafetería</div>
+            <div class="category-chip" data-cat="pasteleria">Pastelería</div>
+            <div class="category-chip" data-cat="merchandising">Merch</div>
+            <div class="category-chip" data-cat="otros">Otros</div>
+        </div>
     </div>
 
     <!-- Product Display -->
