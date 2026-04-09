@@ -98,7 +98,7 @@ header h1 {
 }
 
 .auth-container, .profile-view {
-    margin-top: 200px !important; /* Margen agresivo para evitar solapamiento */
+    margin-top: 40px !important; /* Ahora que el header es sticky, 40px es el aire perfecto */
 }
 
 .categories-container {
