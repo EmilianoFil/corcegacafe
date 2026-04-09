@@ -69,6 +69,7 @@ function setupEventListeners() {
 async function handleOrderSubmission() {
     const nombre = document.getElementById('client-name').value.trim();
     const whatsapp = document.getElementById('client-phone').value.trim();
+    const dni = document.getElementById('client-dni').value.trim();
     const notas = document.getElementById('client-note').value.trim();
     const direccion = document.getElementById('client-address').value.trim();
     const horario = document.getElementById('order-schedule').value;
@@ -95,6 +96,7 @@ async function handleOrderSubmission() {
             cliente: {
                 nombre,
                 whatsapp,
+                dni: dni || null,
                 direccion: deliveryMethod === 'delivery' ? direccion : 'Retiro en local'
             },
             items: cart,

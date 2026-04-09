@@ -295,22 +295,39 @@ export async function loadOrdenesTable() {
                     data: 'estado',
                     render: function(data) {
                         const statusMap = {
-                            'pendiente_pago': { label: 'Pendiente', color: '#faad14', bg: '#fffbe6' },
-                            'pagado': { label: 'Pagado', color: '#52c41a', bg: '#f6ffed' },
-                            'cancelado': { label: 'Cancelado', color: '#ff4d4f', bg: '#fff1f0' },
-                            'completado': { label: 'Completado', color: '#1890ff', bg: '#e6f7ff' }
+                            'pendiente_pago': { label: '💳 Pendiente Pago', color: '#faad14', bg: '#fffbe6' },
+                            'pagado': { label: '💰 Pagado', color: '#52c41a', bg: '#f6ffed' },
+                            'en_preparacion': { label: '☕ En Preparación', color: '#13c2c2', bg: '#e6fffb' },
+                            'listo': { label: '📦 Listo para Retirar', color: '#722ed1', bg: '#f9f0ff' },
+                            'en_camino': { label: '🛵 En Camino', color: '#1890ff', bg: '#e6f7ff' },
+                            'entregado': { label: '✅ Entregado', color: '#52c41a', bg: '#f6ffed' },
+                            'cancelado': { label: '❌ Cancelado', color: '#ff4d4f', bg: '#fff1f0' }
                         };
                         const s = statusMap[data] || { label: data, color: '#000', bg: '#eee' };
-                        return `<span style="background:${s.bg}; border:1px solid ${s.color}; color:${s.color}; padding:4px 8px; border-radius:12px; font-size:0.75rem; font-weight:bold;">${s.label}</span>`;
+                        return `<span style="background:${s.bg}; border:1px solid ${s.color}; color:${s.color}; padding:4px 10px; border-radius:12px; font-size:0.75rem; font-weight:bold; white-space:nowrap;">${s.label}</span>`;
                     }
                 },
                 {
                     data: null,
                     render: function (data) {
                         return `
-                            <button onclick="window.tiendaAdmin.verDetalleOrden('${data.id}')" style="background:var(--bg-color); border:1px solid var(--border); border-radius:6px; padding:6px 10px; cursor:pointer;" title="Ver Detalle">👁️</button>
-                            <button onclick="window.tiendaAdmin.cambiarEstadoOrden('${data.id}', 'pagado')" style="background:#f6ffed; border:1px solid #b7eb8f; border-radius:6px; padding:6px 10px; cursor:pointer;" title="Marcar Pagado">✅</button>
-                            <button onclick="window.tiendaAdmin.cambiarEstadoOrden('${data.id}', 'cancelado')" style="background:#fff1f0; border:1px solid #ffccc7; border-radius:6px; padding:6px 10px; cursor:pointer;" title="Cancelar">❌</button>
+                            <div style="display:flex; gap:5px;">
+                                <button onclick="window.tiendaAdmin.verDetalleOrden('${data.id}')" style="background:var(--bg-color); border:1px solid var(--border); border-radius:6px; padding:6px 10px; cursor:pointer;" title="Ver Detalle">👁️</button>
+                                
+                                <select onchange="window.tiendaAdmin.cambiarEstadoOrden('${data.id}', this.value)" style="padding:4px; border-radius:6px; font-size:0.75rem; border:1px solid var(--border); background:white;">
+                                    <option value="" disabled selected>Cambiar Estado...</option>
+                                    <option value="pagado">💰 Pagado</option>
+                                    <option value="en_preparacion">☕ En Preparación</option>
+                                    <option value="listo">📦 Listo</option>
+                                    <option value="en_camino">🛵 En Camino</option>
+                                    <option value="entregado">✅ Entregado</option>
+                                    <option value="cancelado">❌ Cancelado</option>
+                                </select>
+
+                                <button onclick="window.tiendaAdmin.notificarWhatsApp('${data.id}')" style="background:#e7f7ed; border:1px solid #25d366; border-radius:6px; padding:6px 10px; cursor:pointer;" title="Notificar por WhatsApp">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:16px; height:16px;">
+                                </button>
+                            </div>
                         `;
                     }
                 }
@@ -378,6 +395,30 @@ export async function verDetalleOrden(id) {
         `;
 
         document.body.insertAdjacentHTML('beforeend', modalHtml);
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+export async function notificarWhatsApp(id) {
+    try {
+        const docSnap = await getDoc(doc(db, "ordenes", id));
+        if (!docSnap.exists()) return;
+        const orden = docSnap.data();
+
+        const statusTexts = {
+            'pagado': '¡Recibimos tu pago correctamente! Ya estamos procesando tu pedido.',
+            'en_preparacion': '¡Tu pedido ya está en preparación! ☕🔥',
+            'listo': '¡Tu pedido ya está listo para retirar! Te esperamos en Córcega. 🏝️',
+            'en_camino': '¡Tu pedido ya va en camino a tu domicilio! 🛵💨',
+            'entregado': '¡Gracias por tu compra! Que disfrutes tu pedido. 😉'
+        };
+
+        const msg = statusTexts[orden.estado] || '¡Hola! Te escribimos por tu pedido en Córcega Café.';
+        const text = encodeURIComponent(`Hola ${orden.cliente.nombre}! ${msg}\n\nPedido: #${id.substring(0,6)}`);
+        const url = `https://wa.me/549${orden.cliente.whatsapp}?text=${text}`;
+        
+        window.open(url, '_blank');
     } catch (error) {
         console.error(error);
     }

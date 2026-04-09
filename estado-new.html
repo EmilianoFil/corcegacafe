@@ -375,7 +375,15 @@
             <div id="grid" class="grid"></div>
 
             <div class="actions">
-                <a href="index.html" class="btn btn-white">Volver</a>
+                <a href="tienda.html" class="btn btn-white" style="background:#01323f; color:white;">Volver a la Tienda</a>
+                <a href="index.html" class="btn btn-white">Cerrar Sesión</a>
+            </div>
+
+            <div id="pedidos-section" style="margin-top:40px; text-align:left; display:none;">
+                <h3 style="font-size:1.2rem; margin-bottom:15px; text-align:center;">📦 Mis Pedidos</h3>
+                <div id="lista-pedidos" style="display:grid; gap:12px;">
+                    <!-- Pedidos se cargan aquí -->
+                </div>
             </div>
         </div>
 
@@ -399,7 +407,7 @@
     <script type="module">
         import { app, db } from './js/firebase-config.js';
         import {
-            doc, getDoc, addDoc, collection, updateDoc
+            doc, getDoc, addDoc, collection, updateDoc, query, where, orderBy, getDocs
         } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const params = new URLSearchParams(window.location.search);
@@ -423,6 +431,9 @@
                 }
 
                 const data = snap.data();
+                
+                // Fetch orders for this DNI
+                fetchUserOrders(dni);
 
                 // Logic to automatically use Instagram stamp when reaching 8 cafes
                 if (data.sigue_instagram === true && data.sello_instagram_usado === false && (data.cafes || 0) >= 8) {
@@ -576,6 +587,54 @@
             });
 
             setTimeout(() => canvas.remove(), 5000);
+        }
+
+        async function fetchUserOrders(dni) {
+            const container = document.getElementById('pedidos-section');
+            const lista = document.getElementById('lista-pedidos');
+            
+            try {
+                const q = query(
+                    collection(db, "ordenes"), 
+                    where("cliente.dni", "==", dni),
+                    orderBy("timestamp", "desc")
+                );
+                const snap = await getDocs(q);
+                
+                if (snap.empty) return;
+
+                container.style.display = 'block';
+                lista.innerHTML = snap.docs.map(doc => {
+                    const order = doc.data();
+                    const statusMap = {
+                        'pendiente_pago': '⌛ Pendiente de Pago',
+                        'pagado': '💰 Pagado - Procesando',
+                        'en_preparacion': '☕ En Preparación',
+                        'listo': '📦 ¡Listo para retirar!',
+                        'en_camino': '🛵 En camino',
+                        'entregado': '✅ Entregado',
+                        'cancelado': '❌ Cancelado'
+                    };
+                    const statusLabel = statusMap[order.estado] || order.estado;
+                    const date = order.timestamp ? order.timestamp.toDate().toLocaleDateString('es-AR') : '-';
+                    
+                    return `
+                        <div style="background:rgba(255,255,255,0.8); padding:15px; border-radius:16px; border:1px solid rgba(1,50,63,0.1);">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                                <span style="font-weight:700; font-size:0.9rem;">#${doc.id.substring(0,6)}</span>
+                                <span style="font-size:0.8rem; color: #666;">${date}</span>
+                            </div>
+                            <div style="font-size:0.85rem; font-weight:600; color:var(--accent);">${statusLabel}</div>
+                            <div style="font-size:0.8rem; margin-top:5px; color:#333;">
+                                ${order.items.map(i => `${i.qty}x ${i.nombre}`).join(', ')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error("Error fetching orders:", err);
+            }
         }
 
         init();
