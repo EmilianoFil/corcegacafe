@@ -140,9 +140,10 @@ async function showProfile(user) {
         const loyaltySnap = await getDoc(doc(db, "clientes", dni));
         if (loyaltySnap.exists()) {
             const loyData = loyaltySnap.data();
-            if (!whatsapp) whatsapp = loyData.whatsapp || loyData.telefono || "";
-            if (!diaRec && loyData.nacimiento_dia) diaRec = loyData.nacimiento_dia;
-            if (!mesRec && loyData.nacimiento_mes) mesRec = loyData.nacimiento_mes;
+            // En el club de fidelidad los campos se llaman cumple_dia, cumple_mes y telefono
+            if (!whatsapp) whatsapp = loyData.telefono || loyData.whatsapp || "";
+            if (!diaRec && loyData.cumple_dia) diaRec = loyData.cumple_dia;
+            if (!mesRec && loyData.cumple_mes) mesRec = loyData.cumple_mes;
         }
     }
 
