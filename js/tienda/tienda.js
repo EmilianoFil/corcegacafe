@@ -1,5 +1,6 @@
-import { db } from '../firebase-config.js';
-import { collection, getDocs, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { db, auth } from '../firebase-config.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { collection, getDocs, query, where, orderBy, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 // --- STATE ---
 let products = [];
@@ -8,6 +9,23 @@ let activeCategory = 'todos';
 
 // --- ELEMENTS ---
 const productsGrid = document.getElementById('products-container');
+const userGreeting = document.getElementById('user-greeting');
+
+// --- AUTH LISTENER ---
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // Buscar nombre en Firestore
+        const snap = await getDoc(doc(db, "usuarios_tienda", user.uid));
+        let nombre = user.displayName || user.email.split('@')[0];
+        if (snap.exists()) {
+            nombre = snap.data().nombre.split(' ')[0]; // Solo primer nombre
+        }
+        userGreeting.innerText = `¡HOLA, ${nombre.toUpperCase()}!`;
+        userGreeting.style.display = 'block';
+    } else {
+        userGreeting.style.display = 'none';
+    }
+});
 const cartBadge = document.getElementById('cart-badge');
 const cartDrawer = document.getElementById('cart-drawer');
 const cartOverlay = document.getElementById('cart-overlay');
