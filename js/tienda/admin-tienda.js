@@ -391,7 +391,12 @@ export async function verDetalleOrden(id) {
                         <span>TOTAL</span>
                         <span>$${orden.total.toLocaleString('es-AR')}</span>
                     </div>
-                    <button onclick="document.getElementById('modal-detalle-orden').remove()" class="btn-primary" style="width:100%; margin-top:20px;">Cerrar</button>
+
+                    <button id="btn-copy-mp-${id}" onclick="window.tiendaAdmin.copiarLinkPago('${id}')" class="btn-secondary" style="width:100%; margin-top:15px; font-size: 0.8rem; border-color: #009ee3; color: #009ee3; display: flex; align-items:center; justify-content:center; gap:8px;">
+                        <span>🔗</span> Copiar Link de Pago (MP)
+                    </button>
+
+                    <button onclick="document.getElementById('modal-detalle-orden').remove()" class="btn-primary" style="width:100%; margin-top:10px;">Cerrar</button>
                 </div>
             </div>
         `;
@@ -423,5 +428,44 @@ export async function notificarWhatsApp(id) {
         window.open(url, '_blank');
     } catch (error) {
         console.error(error);
+    }
+}
+
+export async function copiarLinkPago(orderId) {
+    const btn = document.getElementById(`btn-copy-mp-${orderId}`);
+    const originalText = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = "Generando... ⏳";
+
+    try {
+        const response = await fetch('https://crearpreferenciamp-ioo4dzpz2a-uc.a.run.app', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId })
+        });
+
+        const data = await response.json();
+        
+        if (data.init_point) {
+            await navigator.clipboard.writeText(data.init_point);
+            btn.innerHTML = "✅ ¡LINK COPIADO!";
+            btn.style.background = "#e6f7ff";
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.style.background = "white";
+            }, 3000);
+        } else {
+            alert("No se pudo generar el link.");
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Error al conectar con el servidor.");
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     }
 }

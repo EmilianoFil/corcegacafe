@@ -165,7 +165,7 @@ async function handleOrderSubmission() {
         } else {
             // Mercado Pago FLOW REAL
             try {
-                const response = await fetch("https://us-central1-corcega-loyalty-club.cloudfunctions.net/crearPreferenciaMP", {
+                const response = await fetch("https://crearpreferenciamp-ioo4dzpz2a-uc.a.run.app", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({

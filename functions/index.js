@@ -990,10 +990,23 @@ exports.crearPreferenciaMP = onRequest(
   (req, res) => {
     corsHandler(req, res, async () => {
       try {
-        const { items, orderId, successUrl, backUrl } = req.body;
+        let { items, orderId, successUrl, backUrl } = req.body;
 
-        if (!items || !orderId) {
-          return res.status(400).send("Faltan items o orderId");
+        if (!orderId) {
+          return res.status(400).send("Falta orderId");
+        }
+
+        // Si no vienen items, los buscamos en Firestore
+        if (!items) {
+          const orderDoc = await admin.firestore().collection("ordenes").doc(orderId).get();
+          if (!orderDoc.exists) {
+            return res.status(404).send("Orden no encontrada");
+          }
+          items = orderDoc.data().items;
+        }
+
+        if (!items || items.length === 0) {
+          return res.status(400).send("No hay items para esta orden");
         }
 
         const client = new MercadoPagoConfig({ accessToken: mpAccessToken.value() });

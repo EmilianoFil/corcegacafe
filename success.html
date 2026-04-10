@@ -169,16 +169,22 @@
                 pagoText.innerText = "Pago confirmado ✨";
                 mainTitle.innerText = "¡Todo en marcha!";
                 actionArea.innerHTML = '<button onclick="window.location.href=\'tienda.html\'" class="btn-checkout" style="background:#d86634; color:white; border:none; width:100%; padding:18px; border-radius:12px; font-weight:700; cursor:pointer;">VOLVER A LA TIENDA</button>';
-            } else if (order.estado === 'rechazado' || (mpStatus && mpStatus !== 'approved' && order.estado !== 'pagado')) {
-                stepPago.classList.add('error');
-                pagoText.innerText = "Hubo un problema con el pago";
-                mainTitle.innerText = "Ups... algo falló";
-                actionArea.innerHTML = `<button onclick="retryPayment('${order.id}')" class="btn-retry">REINTENTAR PAGO</button>`;
-            } else {
-                pagoText.innerText = "Esperando confirmación";
+            } else if (order.estado === 'pendiente_pago' || order.metodoPago === 'transferencia' || order.estado === 'rechazado') {
+                if (order.estado !== 'pagado') {
+                    stepPago.classList.remove('active');
+                    pagoText.innerText = order.metodoPago === 'transferencia' ? "Esperando transferencia" : "Pago pendiente";
+                    mainTitle.innerText = "¡Pedido recibido!";
+                    actionArea.innerHTML = `
+                        <div style="margin-top:20px;">
+                            ${order.metodoPago === 'transferencia' ? '<p style="font-size:12px; margin-bottom:10px; color:#666;">¿Preferís pagar con tarjeta o Mercado Pago?</p>' : ''}
+                            <button id="btn-pay-mp" onclick="retryPayment('${id}')" class="btn-retry" style="background:#009ee3; margin-bottom:10px;">PAGAR CON MERCADO PAGO</button>
+                            <button onclick="window.location.href='tienda.html'" class="btn-checkout" style="background:#eee; color:#666; width:100%; border:none; padding:15px; border-radius:12px; font-weight:700; cursor:pointer;">VOLVER A LA TIENDA</button>
+                        </div>
+                    `;
+                }
             }
 
-            // 2. Lógica de producción (Pintar según estado de Firestore)
+            // 2. Lógica de producción... (Pintar según estado de Firestore)
             const estados = ['pagado', 'preparando', 'listo', 'finalizado'];
             const actualIdx = estados.indexOf(order.estado);
 
@@ -188,8 +194,31 @@
         }
 
         window.retryPayment = async (id) => {
-            // Mandar al usuario de vuelta al checkout o podés implementar una llamada directa a MP acá
-            window.location.href = 'checkout.html'; 
+            const btn = document.getElementById('btn-pay-mp');
+            btn.innerText = "Generando link... ⏳";
+            btn.disabled = true;
+
+            try {
+                // Traer la orden para tener los items
+                const response = await fetch('https://crearpreferenciamp-ioo4dzpz2a-uc.a.run.app', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderId: id })
+                });
+                
+                const data = await response.json();
+                if (data.init_point) {
+                    window.location.href = data.init_point;
+                } else {
+                    alert("No pudimos generar el link de pago. Intentá más tarde.");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Hubo un error al conectar con Mercado Pago.");
+            } finally {
+                btn.innerText = "PAGAR CON MERCADO PAGO";
+                btn.disabled = false;
+            }
         };
     </script>
 </body>
