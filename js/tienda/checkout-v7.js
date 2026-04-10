@@ -158,10 +158,9 @@ async function handleOrderSubmission() {
 
         // 2. Lógica según método de pago
         if (metodoPago === 'transferencia') {
-            // Limpiar carrito y redirigir a éxito
+            // Limpiar carrito y redirigir a éxito directamente
             localStorage.removeItem('corcega_cart');
-            alert("¡Pedido realizado con éxito! Por favor enviá el comprobante de transferencia por WhatsApp.");
-            window.location.href = `https://wa.me/5491122334455?text=Hola! Realicé el pedido #${orderId}. Te adjunto el comprobante.`;
+            window.location.href = `success.html?orderId=${orderId}`;
         } else {
             // Mercado Pago FLOW REAL
             try {

@@ -345,9 +345,12 @@ async function fetchOrders(dni, email) {
                     </div>
                     <div style="margin-top:10px; padding-top:10px; border-top:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-weight:700; color:var(--panel-oscuro);">$${order.total.toLocaleString('es-AR')}</span>
-                        <div style="display:flex; gap:8px;">
+                        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
                             ${order.estado !== 'pagado' && order.estado !== 'entregado' && order.estado !== 'cancelado' 
-                                ? `<button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer;">PAGAR CON MERCADOPAGO</button>` 
+                                ? (order.metodoPago === 'transferencia' 
+                                    ? `<a href="https://wa.me/5491122334455?text=${encodeURIComponent('Hola Córcega! Adjunto comprobante del pedido #' + order.id.substring(0,6))}" target="_blank" style="background:#25d366; border:none; color:white; padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:5px;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:14px; height:14px;"> COMPROBANTE</a>
+                                       <button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer;">PAGAR MP</button>`
+                                    : `<button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer;">PAGAR CON MERCADOPAGO</button>`)
                                 : ''}
                             <button onclick="window.location.href='success.html?orderId=${order.id}'" style="background:none; border:2px solid var(--naranja-accent); color:var(--naranja-accent); padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer;">VER SEGUIMIENTO</button>
                         </div>
