@@ -187,7 +187,8 @@
 
     <!-- Firebase SDK -->
     <script type="module">
-        import { db } from './js/firebase-config.js';
+        import { db, auth } from './js/firebase-config.js';
+        import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
         import { doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -200,22 +201,20 @@
             // Ya aterrizamos en seguimiento, limpiamos el carrito local
             localStorage.removeItem('corcega_cart');
             
+            // Listener de estado de la orden (público via OrderID)
+            const id = urlParams.get('orderId');
+            if (id) {
+                document.getElementById('order-id-badge').innerText = 'ORDEN #' + id.substring(0,8).toUpperCase();
+                initStatusListener(id);
+            } else {
+                window.location.href = 'tienda.html';
+            }
+
+            // Opcional: Si el usuario está logueado, podemos mostrar un saludo o link a su cuenta
             onAuthStateChanged(auth, (user) => {
-                if (!user) {
-                    console.log("No user session, redirecting to login...");
-                    // Guardamos a dónde quería ir para volver después del login
-                    sessionStorage.setItem('redirectAfterLogin', window.location.href);
-                    window.location.href = 'login.html';
-                    return;
-                }
-                
-                // Si hay usuario, procedemos a cargar la orden
-                const id = urlParams.get('orderId');
-                if (id) {
-                    document.getElementById('order-id-badge').innerText = 'ORDEN #' + id.substring(0,8).toUpperCase();
-                    initStatusListener(id);
-                } else {
-                    window.location.href = 'index.html';
+                if (user) {
+                    console.log("Usuario logueado:", user.email);
+                    // Podríamos mostrar un botón de "Volver a mi cuenta"
                 }
             });
         }
