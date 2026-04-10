@@ -101,8 +101,8 @@
                 <div class="step-text" id="pago-text">Pago en verificación</div>
             </div>
             <div class="step" id="step-preparacion">
-                <div class="step-icon"><i class="fas fa-coffee"></i></div>
-                <div class="step-text">Preparando tu café</div>
+                <div class="step-icon"><i class="fas fa-boxes-packing"></i></div>
+                <div class="step-text">Preparando tu pedido</div>
             </div>
             <div class="step" id="step-entrega">
                 <div class="step-icon"><i class="fas fa-hand-holding-heart"></i></div>
@@ -168,7 +168,7 @@
                 stepPago.classList.add('active');
                 pagoText.innerText = "Pago confirmado ✨";
                 mainTitle.innerText = "¡Todo en marcha!";
-                actionArea.innerHTML = '<button onclick="window.location.href=\'tienda.html\'" class="btn-checkout" style="background:#eee; color:#666;">VOLVER A LA TIENDA</button>';
+                actionArea.innerHTML = '<button onclick="window.location.href=\'tienda.html\'" class="btn-checkout" style="background:#d86634; color:white; border:none; width:100%; padding:18px; border-radius:12px; font-weight:700; cursor:pointer;">VOLVER A LA TIENDA</button>';
             } else if (order.estado === 'rechazado' || (mpStatus && mpStatus !== 'approved' && order.estado !== 'pagado')) {
                 stepPago.classList.add('error');
                 pagoText.innerText = "Hubo un problema con el pago";
