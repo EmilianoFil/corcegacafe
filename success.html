@@ -283,8 +283,11 @@
             document.getElementById('step-entrega').classList.remove('active');
             document.getElementById('step-finalizado').classList.remove('active');
 
-            // 1. Lógica de Pago
-            if (order.estado === 'pagado') {
+            const estados = ['pagado', 'en_preparacion', 'listo', 'finalizado'];
+            const actualIdx = estados.indexOf(order.estado);
+
+            // 1. Lógica de Pago (Paso 2)
+            if (order.estado === 'pagado' || actualIdx >= 1) {
                 stepPago.classList.add('active');
                 pagoText.innerText = "Pago confirmado ✨";
                 mainTitle.innerText = "¡Todo en marcha!";
@@ -328,9 +331,6 @@
             }
 
             // 2. Lógica de producción... (Pintar según estado de Firestore)
-            const estados = ['pagado', 'en_preparacion', 'listo', 'finalizado'];
-            const actualIdx = estados.indexOf(order.estado);
-
             if (actualIdx >= 1) document.getElementById('step-preparacion').classList.add('active');
             if (actualIdx >= 2) document.getElementById('step-entrega').classList.add('active');
             if (actualIdx >= 3) document.getElementById('step-finalizado').classList.add('active');
