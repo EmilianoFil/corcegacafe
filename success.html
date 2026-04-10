@@ -61,26 +61,88 @@
         .step.error .step-text { color: #d86634; }
 
         .btn-retry {
-            background: #d86634;
+            background: #009ee3;
             color: white;
             border: none;
-            padding: 15px 30px;
-            border-radius: 12px;
+            padding: 16px 30px;
+            border-radius: 14px;
             font-weight: 700;
             cursor: pointer;
             width: 100%;
-            margin-top: 20px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 158, 227, 0.2);
+        }
+        
+        .btn-wa {
+            background: #25d366;
+            color: white;
+            border: none;
+            padding: 16px 30px;
+            border-radius: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2);
+        }
+
+        .btn-primary-corcega {
+            background: #d1643c;
+            color: white;
+            border: none;
+            padding: 16px 30px;
+            border-radius: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(209, 100, 60, 0.2);
+        }
+
+        .btn-outline-corcega {
+            background: white;
+            color: #d1643c;
+            border: 2px solid #d1643c;
+            padding: 14px 30px;
+            border-radius: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-retry:hover, .btn-wa:hover, .btn-primary-corcega:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
         }
 
         .order-badge {
-            background: #f8f9fa;
-            padding: 5px 15px;
+            background: #fdf6f2;
+            padding: 8px 20px;
             border-radius: 100px;
             font-size: 12px;
-            font-weight: 700;
-            color: #666;
+            font-weight: 800;
+            color: #d1643c;
             display: inline-block;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(209, 100, 60, 0.1);
         }
     </style>
 </head>
@@ -176,36 +238,36 @@
                 stepPago.classList.add('error');
                 pagoText.innerText = "Pago rechazado ❌";
                 mainTitle.innerText = "¡Ups! Algo falló con el pago";
-                actionArea.innerHTML = `
-                    <div style="margin-top:20px;">
-                        <p style="font-size:13px; margin-bottom:15px; color:#d86634; line-height:1.4;">No pudimos procesar tu pago por Mercado Pago. <br><b>No te preocupes, tu pedido está guardado.</b></p>
-                        <button id="btn-pay-mp" onclick="retryPayment('${orderId}')" class="btn-retry" style="background:#009ee3;">REINTENTAR PAGO</button>
-                    </div>
-                `;
+                actionArea.innerHTML = btnHome + btnOrders;
             } else if (order.metodoPago === 'transferencia') {
                 stepPago.classList.remove('active');
                 pagoText.innerText = "Validación de pago 🕒";
                 mainTitle.innerText = "¡Pedido recibido!";
-                const waMsg = encodeURIComponent(`Hola Córcega! Realicé el pedido #${orderId.substring(0,6)}. Te adjunto el comprobante de transferencia.`);
                 actionArea.innerHTML = `
-                    <div style="margin-top:20px;">
-                        <p style="font-size:13px; margin-bottom:15px; color:#666; line-height:1.4;">Para procesar tu pedido, por favor envíanos el comprobante por WhatsApp.</p>
-                        <a href="https://wa.me/5491136053892?text=${waMsg}" target="_blank" class="btn-retry" style="background:#25d366; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:8px;">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:20px; height:20px;">
-                            ENVIAR COMPROBANTE
-                        </a>
-                        <p style="font-size:11px; margin-top:25px; color:#999; border-top: 1px dashed #eee; padding-top:15px;">¿Deseas cambiar el método de pago?</p>
-                        <button id="btn-pay-mp" onclick="retryPayment('${orderId}')" class="btn-retry" style="background:#009ee3; font-size:12px; padding:12px; margin-top:10px;">PAGAR CON MERCADOPAGO</button>
+                    <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">
+                        <p style="font-size:13px; color:#666; margin-bottom:5px;">Por favor envíanos el comprobante para procesar tu pedido:</p>
+                        ${btnWA}
+                        <p style="font-size:11px; color:#999; margin-top:10px; border-top: 1px dashed #eee; padding-top:10px;">¿Preferís pagar con tarjeta?</p>
+                        <div style="transform:scale(0.9);">${btnMP}</div>
+                        ${btnHome}
+                        ${btnOrders}
                     </div>
                 `;
-            } else if (order.estado === 'pendiente_pago' || order.estado === 'rechazado') {
+            } else {
+                // Pago pendiente Mercado Pago o Rechazado
                 stepPago.classList.remove('active');
-                pagoText.innerText = "Pago pendiente";
-                mainTitle.innerText = "¡Pedido recibido!";
+                if (order.estado === 'rechazado') stepPago.classList.add('error');
+                
+                pagoText.innerText = order.estado === 'rechazado' ? "Pago rechazado ❌" : "Pago pendiente";
+                mainTitle.innerText = order.estado === 'rechazado' ? "¡Ups! Algo falló" : "¡Pedido recibido!";
+                
                 actionArea.innerHTML = `
-                    <div style="margin-top:20px;">
-                        <button id="btn-pay-mp" onclick="retryPayment('${orderId}')" class="btn-retry" style="background:#009ee3; margin-bottom:10px;">PAGAR CON MERCADOPAGO</button>
-                        <button onclick="window.location.href='tienda.html'" class="btn-checkout" style="background:#eee; color:#666; width:100%; border:none; padding:15px; border-radius:12px; font-weight:700; cursor:pointer;">VOLVER A LA TIENDA</button>
+                    <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">
+                        ${btnMP}
+                        <p style="font-size:11px; color:#999; margin-top:10px; border-top: 1px dashed #eee; padding-top:10px;">¿Preferís pagar por transferencia?</p>
+                        <div style="transform:scale(0.9);">${btnWA}</div>
+                        ${btnHome}
+                        ${btnOrders}
                     </div>
                 `;
             }
@@ -221,6 +283,7 @@
 
         window.retryPayment = async (id) => {
             const btn = document.getElementById('btn-pay-mp');
+            const originalText = btn.innerText;
             btn.innerText = "Redirigiendo... ⏳";
             btn.disabled = true;
 
