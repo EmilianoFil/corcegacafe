@@ -267,9 +267,10 @@ export async function loadOrdenesTable() {
             order: [[1, 'desc']],
             columns: [
                 { 
-                    data: 'id',
+                    data: null,
                     render: function(data) {
-                        return `<span style="font-family: monospace; font-size: 0.8rem;">#${data.substring(0,6)}...</span>`;
+                        const num = data.orderNumber ? `#${data.orderNumber}` : `#${data.id.substring(0,6)}...`;
+                        return `<span style="font-family: monospace; font-size: 0.8rem; font-weight:bold; color:#d86634;">${num}</span>`;
                     }
                 },
                 { 
@@ -392,7 +393,30 @@ export async function verDetalleOrden(id) {
                         <span>$${orden.total.toLocaleString('es-AR')}</span>
                     </div>
 
-                    <button id="btn-copy-mp-${id}" onclick="window.tiendaAdmin.copiarLinkPago('${id}')" class="btn-secondary" style="width:100%; margin-top:15px; font-size: 0.8rem; border-color: #009ee3; color: #009ee3; display: flex; align-items:center; justify-content:center; gap:8px;">
+                    ${orden.historial && orden.historial.length > 0 ? `
+                        <div style="margin-top:25px; padding:15px; background:#f9f9f9; border-radius:15px; border: 1px solid #eee;">
+                            <h4 style="margin:0 0 12px 0; font-size:0.85rem; color:#666; text-transform:uppercase; letter-spacing:1px;">Línea de Tiempo del Pedido</h4>
+                            <div style="display:flex; flex-direction:column; gap:10px;">
+                                ${orden.historial.map(h => {
+                                    const date = h.fecha.toDate();
+                                    const timeStr = date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second:'2-digit' });
+                                    const dateStr = date.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit' });
+                                    return `
+                                        <div style="display:flex; gap:12px; align-items:flex-start;">
+                                            <div style="min-width:75px; text-align:right;">
+                                                <div style="font-size:0.8rem; font-weight:700; color:var(--naranja-oscuro);">${timeStr}</div>
+                                                <div style="font-size:0.65rem; color:#999;">${dateStr}</div>
+                                            </div>
+                                            <div style="width:2px; height:22px; background:#d86634; opacity:0.3; margin-top:4px;"></div>
+                                            <div style="font-size:0.85rem; font-weight:600; color:#333; text-transform:capitalize;">${h.estado.replace(/_/g, ' ')}</div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <button id="btn-copy-mp-${id}" onclick="window.tiendaAdmin.copiarLinkPago('${id}')" class="btn-secondary" style="width:100%; margin-top:20px; font-size: 0.8rem; border-color: #009ee3; color: #009ee3; display: flex; align-items:center; justify-content:center; gap:8px;">
                         <span>🔗</span> Copiar Link de Pago (MP)
                     </button>
 

@@ -200,19 +200,42 @@
             // Ya aterrizamos en seguimiento, limpiamos el carrito local
             localStorage.removeItem('corcega_cart');
             
-            document.getElementById('order-id-badge').innerText = 'ORDEN #' + orderId.substring(0,8).toUpperCase();
-            initStatusListener(orderId);
+            onAuthStateChanged(auth, (user) => {
+                if (!user) {
+                    console.log("No user session, redirecting to login...");
+                    // Guardamos a dónde quería ir para volver después del login
+                    sessionStorage.setItem('redirectAfterLogin', window.location.href);
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                // Si hay usuario, procedemos a cargar la orden
+                const id = urlParams.get('orderId');
+                if (id) {
+                    document.getElementById('order-id-badge').innerText = 'ORDEN #' + id.substring(0,8).toUpperCase();
+                    initStatusListener(id);
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
         }
 
-        function initStatusListener(id) {
+        async function initStatusListener(id) {
             const orderRef = doc(db, "ordenes", id);
             
             // Escuchar cambios en tiempo real
             onSnapshot(orderRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const order = docSnap.data();
+                    if (order.orderNumber) {
+                        document.getElementById('order-id-badge').innerText = 'ORDEN #' + order.orderNumber;
+                    } else {
+                        document.getElementById('order-id-badge').innerText = 'ORDEN #' + id.substring(0,8).toUpperCase();
+                    }
                     updateSteppers(order);
                 }
+            }, (error) => {
+                console.error("Error en el listener (permisos):", error);
             });
         }
 
@@ -283,7 +306,7 @@
             }
 
             // 2. Lógica de producción... (Pintar según estado de Firestore)
-            const estados = ['pagado', 'preparando', 'listo', 'finalizado'];
+            const estados = ['pagado', 'en_preparacion', 'listo', 'finalizado'];
             const actualIdx = estados.indexOf(order.estado);
 
             if (actualIdx >= 1) document.getElementById('step-preparacion').classList.add('active');

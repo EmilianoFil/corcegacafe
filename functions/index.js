@@ -1,6 +1,11 @@
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onRequest } = require("firebase-functions/v2/https");
+const { onDocumentUpdated, onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { setGlobalOptions } = require("firebase-functions/v2");
 const { defineSecret } = require("firebase-functions/params");
+
+setGlobalOptions({ region: "us-central1" });
+
 const logger = require("firebase-functions/logger");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
@@ -9,6 +14,48 @@ const corsHandler = cors({ origin: true });
 const admin = require("firebase-admin");
 admin.initializeApp();
 const db = admin.firestore();
+
+// --- HELPERS VISUALES ---
+const renderStepperHtml = (estadoActual) => {
+    const pasos = [
+        { id: 'recibido', label: 'Pedido recibido', icon: '📝' },
+        { id: 'pagado', label: 'Pago confirmado', icon: '💳' },
+        { id: 'en_preparacion', label: 'Preparando', icon: '☕' },
+        { id: 'listo', label: 'Listo para retirar', icon: '🎁' },
+        { id: 'finalizado', label: 'Entregado', icon: '✨' }
+    ];
+
+    let indexActual = pasos.findIndex(p => p.id === estadoActual);
+    if (estadoActual === 'pendiente_pago' || estadoActual === 'transferencia') indexActual = 0;
+    if (indexActual === -1) indexActual = 0;
+
+    return `
+        <div style="margin: 30px 0; padding: 20px; background: #fdfcf7; border-radius: 20px; border: 1px solid #f0eee4;">
+            <div style="text-align: left; display: inline-block; width: 100%;">
+                ${pasos.map((paso, idx) => {
+                    const esCompletado = idx <= indexActual;
+                    const esUltimo = idx === pasos.length - 1;
+                    const colorPaso = esCompletado ? '#d86634' : '#cccccc';
+                    
+                    return `
+                        <div style="display: flex; align-items: center; margin-bottom: ${esUltimo ? '0' : '15px'};">
+                            <div style="min-width: 30px; font-size: 20px; text-align: center; color: ${colorPaso};">
+                                ${paso.icon}
+                            </div>
+                            <div style="margin-left: 15px; font-size: 14px; font-weight: ${idx === indexActual ? 'bold' : 'normal'}; color: ${esCompletado ? '#2b2b2b' : '#999'};">
+                                ${paso.label}
+                            </div>
+                            ${idx === indexActual ? `
+                                <span style="margin-left: 10px; font-size: 9px; background: #d86634; color: white; padding: 2px 8px; border-radius: 10px; font-weight: 800; display: inline-block; vertical-align: middle; line-height: 14px; height: 14px;">
+                                    AHORA
+                                </span>` : ''}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+};
 
 const emailUser = defineSecret("EMAIL_USER");
 const emailPass = defineSecret("EMAIL_PASS");
@@ -1089,5 +1136,252 @@ exports.webhookMP = onRequest(
         res.status(200).send("OK con error"); // Siempre 200 para que MP no reintente
       }
     });
+  }
+);
+
+// --- TRIGGERS PARA HISTORIAL Y MAILS DE ÓRDENES ---
+
+exports.onOrderCreated = onDocumentCreated({
+    document: "ordenes/{orderId}",
+    region: "us-central1",
+    secrets: [emailUser, emailPass],
+}, async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return;
+    const orderData = snapshot.data();
+    const orderId = event.params.orderId;
+    
+    // 1. Obtener número de orden correlativo usando una transacción
+    const counterRef = db.collection("metadata").doc("ordenes");
+    let orderNumber = "0000";
+
+    try {
+        orderNumber = await db.runTransaction(async (t) => {
+            const doc = await t.get(counterRef);
+            let nextNum = 1;
+            if (doc.exists) {
+                nextNum = (doc.data().lastNumber || 0) + 1;
+            }
+            t.set(counterRef, { lastNumber: nextNum }, { merge: true });
+            return nextNum.toString().padStart(4, '0');
+        });
+    } catch (e) {
+        logger.error("Error en transacción de número de orden:", e);
+        orderNumber = orderId.substring(0, 6).toUpperCase();
+    }
+
+    // 2. Inicializar historial y asignar número humano
+    await snapshot.ref.update({
+        orderNumber: orderNumber,
+        historial: [{
+            estado: orderData.estado || "recibido",
+            fecha: admin.firestore.Timestamp.now()
+        }]
+    });
+    logger.info(`Orden #${orderNumber} inicializada.`);
+
+    // 3. Preparar Detalle de Pedido para el Mail
+    const itemsHtml = orderData.items.map(item => `
+        <tr>
+            <td style="padding:12px 0; border-bottom:1px solid #f0f0f0;">
+                <span style="font-weight:bold; color:#d86634;">${item.qty}x</span> ${item.nombre}
+            </td>
+            <td style="padding:12px 0; border-bottom:1px solid #f0f0f0; text-align:right;">
+                $${(item.precio * item.qty).toLocaleString('es-AR')}
+            </td>
+        </tr>
+    `).join('');
+
+    // 4. Bloque de Transferencia (si aplica)
+    let transferBlock = "";
+    if (orderData.metodoPago === 'transferencia') {
+        const waMsg = encodeURIComponent(`Hola Córcega! Realicé el pedido #${orderNumber}. Te adjunto el comprobante.`);
+        transferBlock = `
+            <div style="background:#f0f7f4; padding:25px; border-radius:18px; margin:25px 0; border:1px solid #cceadd; text-align:left;">
+                <h3 style="color:#1e4634; margin:0 0 15px 0; font-size:16px;">💳 Datos para Transferencia</h3>
+                <p style="font-size:14px; margin:5px 0; color:#1e4634;"><strong>Alias:</strong> corcega.cafe.mp</p>
+                <p style="font-size:14px; margin:5px 0; color:#1e4634;"><strong>CBU:</strong> 0000003100030588661793</p>
+                <p style="font-size:14px; margin:5px 0; color:#1e4634;"><strong>Titular:</strong> Córcega Café</p>
+                
+                <a href="https://wa.me/5491136053892?text=${waMsg}" target="_blank" style="display:inline-flex; align-items:center; gap:10px; padding:14px 22px; background-color:#25d366; color:white; text-decoration:none; font-weight:bold; border-radius:12px; margin-top:20px; font-size:14px;">
+                   <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="20" height="20" style="vertical-align:middle; margin-right:8px;">
+                   ENVIAR COMPROBANTE
+                </a>
+            </div>
+        `;
+    }
+
+    // 5. Enviar Mail
+    const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: emailUser.value(),
+          pass: emailPass.value(),
+        },
+    });
+
+    const mailOptions = {
+        from: `Córcega Café <${emailUser.value()}>`,
+        to: "emilianofilgueira@gmail.com",
+        subject: `🐎 ¡Pedido Recibido! #${orderNumber}`,
+        html: `
+          <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
+            <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:140px; margin-bottom:30px;">
+            
+            <h2 style="color:#d86634; margin:0 0 10px 0; font-size:24px;">¡Gracias por tu compra!</h2>
+            <p style="font-size:16px; color:#666;">Hola <strong>${orderData.cliente.nombre}</strong>, recibimos tu pedido <strong>#${orderNumber}</strong>.</p>
+            
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:25px 0; border-top:2px solid #f0f0f0;">
+                ${itemsHtml}
+                <tr>
+                    <td style="padding:20px 0; font-size:18px; font-weight:800;">TOTAL</td>
+                    <td style="padding:20px 0; font-size:18px; font-weight:800; text-align:right; color:#d86634;">$${orderData.total.toLocaleString('es-AR')}</td>
+                </tr>
+            </table>
+
+            ${renderStepperHtml(orderData.estado || 'recibido')}
+
+            ${transferBlock}
+
+            <div style="margin:30px 0;">
+                <a href="https://corcegacafe.com.ar/success.html?orderId=${orderId}" style="display:inline-block; padding:18px 36px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:14px; box-shadow:0 6px 15px rgba(216,102,52,0.2); font-size:16px;">
+                   SEGUIR MI PEDIDO
+                </a>
+            </div>
+
+            <div style="margin-top:50px; padding-top:25px; border-top:1px solid #eee;">
+               <p style="font-size:12px; color:#999; margin:0; line-height:1.5;">Nos vemos pronto en la isla.<br><strong>Córcega Café</strong></p>
+            </div>
+          </div>
+        `,
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+    } catch (err) {
+        logger.error(`Error enviando mail inicial para #${orderNumber}:`, err);
+    }
+});
+
+exports.onOrderUpdated = onDocumentUpdated(
+  {
+    document: "ordenes/{orderId}",
+    region: "us-central1",
+    secrets: [emailUser, emailPass],
+  },
+  async (event) => {
+    const beforeData = event.data.before.data();
+    const afterData = event.data.after.data();
+    const orderId = event.params.orderId;
+
+    // Solo si el estado cambió
+    if (beforeData.estado !== afterData.estado) {
+      const nuevoEstado = afterData.estado;
+      
+      // 1. Actualizar historial en Firestore
+      await event.data.after.ref.update({
+        historial: admin.firestore.FieldValue.arrayUnion({
+          estado: nuevoEstado,
+          fecha: admin.firestore.Timestamp.now()
+        })
+      });
+
+      // 2. Enviar Mail de Notificación
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: emailUser.value(),
+          pass: emailPass.value(),
+        },
+      });
+
+      let statusMsg = "";
+      let emoji = "☕";
+      let color = "#d86634";
+
+      switch (nuevoEstado) {
+        case 'pagado': 
+            statusMsg = "¡Recibimos tu pago!"; 
+            emoji = "✅"; 
+            break;
+        case 'en_preparacion': 
+            statusMsg = "¡Estamos preparando tu pedido!"; 
+            emoji = "☕"; 
+            break;
+        case 'listo': 
+            statusMsg = "¡Tu pedido está listo para retirar!"; 
+            emoji = "🎁"; 
+            color = "#25d366";
+            break;
+        case 'finalizado': 
+            statusMsg = "¡Pedido entregado! Gracias por elegirnos."; 
+            emoji = "✨"; 
+            break;
+        case 'rechazado':
+            statusMsg = "Hubo un problema con tu pago";
+            emoji = "❌";
+            color = "#e74c3c";
+            break;
+        default: 
+            statusMsg = `Tu pedido cambió al estado: ${nuevoEstado}`;
+      }
+
+      const subject = `${emoji} ${statusMsg} - #${afterData.orderNumber || orderId.substring(0,8)}`;
+      
+      const itemsHtml = afterData.items.map(item => `
+          <tr>
+              <td style="padding:10px 0; border-bottom:1px solid #f0f0f0; font-size:14px;">
+                  <span style="font-weight:bold; color:#d86634;">${item.qty}x</span> ${item.nombre}
+              </td>
+              <td style="padding:10px 0; border-bottom:1px solid #f0f0f0; text-align:right; font-size:14px;">
+                  $${(item.precio * item.qty).toLocaleString('es-AR')}
+              </td>
+          </tr>
+      `).join('');
+
+      const mailOptions = {
+        from: `Córcega Café <${emailUser.value()}>`,
+        to: "emilianofilgueira@gmail.com",
+        subject: subject,
+        html: `
+          <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
+            <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:140px; margin-bottom:30px;">
+            
+            <h2 style="color:${color}; margin:0 0 10px 0; font-size:24px;">${statusMsg}</h2>
+            <p style="font-size:16px; color:#666;">Hola <strong>${afterData.cliente.nombre}</strong>, tu pedido <strong>#${afterData.orderNumber || orderId.substring(0,8)}</strong> acaba de dar un paso más.</p>
+            
+            ${renderStepperHtml(nuevoEstado)}
+
+            <div style="background:#fdfcf7; padding:20px; border-radius:18px; margin:25px 0; border:1px solid #f0eee4;">
+                <h4 style="margin:0 0 15px 0; font-size:12px; color:#999; text-transform:uppercase; letter-spacing:1px; text-align:left;">Resumen actualizado</h4>
+                <table width="100%" cellpadding="0" cellspacing="0" style="text-align:left;">
+                    ${itemsHtml}
+                    <tr>
+                        <td style="padding:15px 0; font-size:16px; font-weight:800;">TOTAL</td>
+                        <td style="padding:15px 0; font-size:16px; font-weight:800; text-align:right; color:#d86634;">$${afterData.total.toLocaleString('es-AR')}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="margin:30px 0;">
+                <a href="https://corcegacafe.com.ar/success.html?orderId=${orderId}" style="display:inline-block; padding:18px 36px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:14px; box-shadow:0 6px 15px rgba(216,102,52,0.2); font-size:16px;">
+                   VER MI PEDIDO
+                </a>
+            </div>
+
+            <div style="margin-top:50px; padding-top:25px; border-top:1px solid #eee;">
+               <p style="font-size:12px; color:#999; margin:0; line-height:1.5;">Nos vemos pronto en la isla.<br><strong>Córcega Café</strong></p>
+            </div>
+          </div>
+        `,
+      };
+
+      try {
+        await transporter.sendMail(mailOptions);
+        logger.info(`Mail enviado por cambio de estado: ${nuevoEstado}`);
+      } catch (err) {
+        logger.error("Error enviando mail de estado:", err);
+      }
+    }
   }
 );
