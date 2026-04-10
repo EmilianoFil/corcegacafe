@@ -345,7 +345,12 @@ async function fetchOrders(dni, email) {
                     </div>
                     <div style="margin-top:10px; padding-top:10px; border-top:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-weight:700; color:var(--panel-oscuro);">$${order.total.toLocaleString('es-AR')}</span>
-                        <button onclick="window.location.href='success.html?orderId=${order.id}'" style="background:none; border:2px solid var(--naranja-accent); color:var(--naranja-accent); padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer;">VER SEGUIMIENTO</button>
+                        <div style="display:flex; gap:8px;">
+                            ${order.estado !== 'pagado' && order.estado !== 'entregado' && order.estado !== 'cancelado' 
+                                ? `<button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer;">PAGAR</button>` 
+                                : ''}
+                            <button onclick="window.location.href='success.html?orderId=${order.id}'" style="background:none; border:2px solid var(--naranja-accent); color:var(--naranja-accent); padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer;">VER SEGUIMIENTO</button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -356,6 +361,34 @@ async function fetchOrders(dni, email) {
         ordersList.innerHTML = '<p style="color:red; font-size:12px;">Error al cargar pedidos.</p>';
     }
 }
+
+window.payOrder = async (orderId, btn) => {
+    const originalText = btn.innerText;
+    btn.innerText = "Generando... ⏳";
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('https://crearpreferenciamp-ioo4dzpz2a-uc.a.run.app', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId })
+        });
+        
+        const data = await response.json();
+        if (data.init_point) {
+            window.location.href = data.init_point;
+        } else {
+            alert("No pudimos generar el link de pago.");
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Error al conectar con Mercado Pago.");
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+};
 
 function formatStatus(status) {
     const map = {
