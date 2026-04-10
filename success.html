@@ -177,7 +177,7 @@
                     actionArea.innerHTML = `
                         <div style="margin-top:20px;">
                             ${order.metodoPago === 'transferencia' ? '<p style="font-size:12px; margin-bottom:10px; color:#666;">¿Preferís pagar con tarjeta o Mercado Pago?</p>' : ''}
-                            <button id="btn-pay-mp" onclick="retryPayment('${id}')" class="btn-retry" style="background:#009ee3; margin-bottom:10px;">PAGAR CON MERCADO PAGO</button>
+                            <button id="btn-pay-mp" onclick="retryPayment('${id}')" class="btn-retry" style="background:#009ee3; margin-bottom:10px;">PAGAR CON MERCADOPAGO</button>
                             <button onclick="window.location.href='tienda.html'" class="btn-checkout" style="background:#eee; color:#666; width:100%; border:none; padding:15px; border-radius:12px; font-weight:700; cursor:pointer;">VOLVER A LA TIENDA</button>
                         </div>
                     `;
@@ -195,15 +195,15 @@
 
         window.retryPayment = async (id) => {
             const btn = document.getElementById('btn-pay-mp');
-            btn.innerText = "Generando link... ⏳";
+            btn.innerText = "Redirigiendo... ⏳";
             btn.disabled = true;
 
             try {
-                // Traer la orden para tener los items
+                const successUrl = window.location.origin + "/success.html?orderId=" + id;
                 const response = await fetch('https://crearpreferenciamp-ioo4dzpz2a-uc.a.run.app', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderId: id })
+                    body: JSON.stringify({ orderId: id, successUrl })
                 });
                 
                 const data = await response.json();

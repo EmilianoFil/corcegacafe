@@ -347,7 +347,7 @@ async function fetchOrders(dni, email) {
                         <span style="font-weight:700; color:var(--panel-oscuro);">$${order.total.toLocaleString('es-AR')}</span>
                         <div style="display:flex; gap:8px;">
                             ${order.estado !== 'pagado' && order.estado !== 'entregado' && order.estado !== 'cancelado' 
-                                ? `<button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer;">PAGAR</button>` 
+                                ? `<button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer;">PAGAR CON MERCADOPAGO</button>` 
                                 : ''}
                             <button onclick="window.location.href='success.html?orderId=${order.id}'" style="background:none; border:2px solid var(--naranja-accent); color:var(--naranja-accent); padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer;">VER SEGUIMIENTO</button>
                         </div>
@@ -364,14 +364,15 @@ async function fetchOrders(dni, email) {
 
 window.payOrder = async (orderId, btn) => {
     const originalText = btn.innerText;
-    btn.innerText = "Generando... ⏳";
+    btn.innerText = "Redirigiendo... ⏳";
     btn.disabled = true;
 
     try {
+        const successUrl = window.location.origin + "/success.html?orderId=" + orderId;
         const response = await fetch('https://crearpreferenciamp-ioo4dzpz2a-uc.a.run.app', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId })
+            body: JSON.stringify({ orderId, successUrl })
         });
         
         const data = await response.json();
