@@ -276,7 +276,7 @@ export async function loadOrdenesTable() {
                     render: function(data) {
                         if (!data) return '-';
                         const date = data.toDate();
-                        return date.toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+                        return date.toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', hour12: false });
                     }
                 },
                 { 
