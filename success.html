@@ -222,6 +222,16 @@
             const actionArea = document.getElementById('action-area');
             const mainTitle = document.getElementById('main-title');
 
+            // Definición de botones reutilizables
+            const btnHome = `<button onclick="window.location.href='tienda.html'" class="btn-primary-corcega" style="margin-top:20px;">Seguir comprando</button>`;
+            const btnOrders = `<button onclick="window.location.href='tienda-cuenta.html'" class="btn-outline-corcega">Ver mis pedidos</button>`;
+            const waMsg = encodeURIComponent(`Hola Córcega! Realicé el pedido #${orderId.substring(0,6)}. Te adjunto el comprobante.`);
+            const btnWA = `
+                <a href="https://wa.me/5491136053892?text=${waMsg}" target="_blank" class="btn-wa">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:20px;"> Enviar Comprobante
+                </a>`;
+            const btnMP = `<button id="btn-pay-mp" onclick="retryPayment('${orderId}')" class="btn-retry">Pagar con MercadoPago</button>`;
+
             // Reset
             stepPago.classList.remove('active', 'error');
             document.getElementById('step-preparacion').classList.remove('active');
@@ -233,7 +243,7 @@
                 stepPago.classList.add('active');
                 pagoText.innerText = "Pago confirmado ✨";
                 mainTitle.innerText = "¡Todo en marcha!";
-                actionArea.innerHTML = '<button onclick="window.location.href=\'tienda.html\'" class="btn-checkout" style="background:#d86634; color:white; border:none; width:100%; padding:18px; border-radius:12px; font-weight:700; cursor:pointer;">VOLVER A LA TIENDA</button>';
+                actionArea.innerHTML = btnHome + btnOrders;
             } else if (order.estado === 'rechazado') {
                 stepPago.classList.add('error');
                 pagoText.innerText = "Pago rechazado ❌";
