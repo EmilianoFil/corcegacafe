@@ -343,8 +343,9 @@ async function fetchOrders(dni, email) {
                     <div style="font-size:13px; border-top:1px solid #eee; padding-top:10px;">
                         ${order.items.map(item => `${item.qty}x ${item.nombre}`).join('<br>')}
                     </div>
-                    <div style="margin-top:10px; font-weight:700; text-align:right;">
-                        TOTAL: $${order.total.toLocaleString('es-AR')}
+                    <div style="margin-top:10px; padding-top:10px; border-top:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:700; color:var(--panel-oscuro);">$${order.total.toLocaleString('es-AR')}</span>
+                        <button onclick="window.location.href='success.html?orderId=${order.id}'" style="background:none; border:2px solid var(--naranja-accent); color:var(--naranja-accent); padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer;">VER SEGUIMIENTO</button>
                     </div>
                 </div>
             `;

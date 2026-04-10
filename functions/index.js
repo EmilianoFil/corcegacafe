@@ -1023,10 +1023,57 @@ exports.crearPreferenciaMP = onRequest(
           id: result.id,
           init_point: result.init_point 
         });
-
       } catch (error) {
         logger.error("Error creando preferencia MP:", error);
         res.status(500).json({ error: error.message });
+      }
+    });
+  }
+);
+
+exports.webhookMP = onRequest(
+  { region: "us-central1", secrets: [mpAccessToken] },
+  (req, res) => {
+    // MP envía un POST con el 'id' del pago o la notificación
+    corsHandler(req, res, async () => {
+      try {
+        const { query } = req;
+        const topic = query.topic || query.type;
+        const id = query.id || (req.body.data && req.body.data.id);
+
+        if (topic === 'payment' && id) {
+          logger.info(`Webhook MP: Recibido pago ID ${id}`);
+
+          // Consultar el estado del pago en Mercado Pago
+          const client = new MercadoPagoConfig({ accessToken: mpAccessToken.value() });
+          const payment = new (require("mercadopago").Payment)(client);
+          
+          const paymentData = await payment.get({ id });
+          const orderId = paymentData.external_reference;
+          const status = paymentData.status;
+
+          logger.info(`Pedido ${orderId} - Estado MP: ${status}`);
+
+          if (orderId && (status === 'approved' || status === 'authorized')) {
+            // Actualizar Firestore
+            await db.collection("ordenes").doc(orderId).update({
+                estado: 'pagado',
+                mp_payment_id: String(id),
+                pago_detalles: {
+                    metodo: paymentData.payment_method_id,
+                    tipo: paymentData.payment_type_id,
+                    monto: paymentData.transaction_amount,
+                    fecha_aprobado: paymentData.date_approved
+                }
+            });
+            logger.info(`Orden ${orderId} marcada como PAGADA.`);
+          }
+        }
+
+        res.status(200).send("OK");
+      } catch (error) {
+        logger.error("Error en webhook MP:", error);
+        res.status(200).send("OK con error"); // Siempre 200 para que MP no reintente
       }
     });
   }
