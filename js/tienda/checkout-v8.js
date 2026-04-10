@@ -164,21 +164,21 @@ async function handleOrderSubmission() {
         } else {
             // Mercado Pago FLOW REAL
             try {
+                const successUrl = window.location.origin + window.location.pathname.replace('checkout.html', 'success.html') + "?orderId=" + orderId;
                 const response = await fetch("https://crearpreferenciamp-ioo4dzpz2a-uc.a.run.app", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         items: cart,
                         orderId: orderId,
-                        successUrl: window.location.origin + window.location.pathname.replace('checkout.html', 'success.html') + "?orderId=" + orderId,
-                        backUrl: window.location.href
+                        successUrl: successUrl,
+                        backUrl: successUrl // Si falla o vuelve, que vaya al seguimiento de esa orden
                     })
                 });
 
                 const pref = await response.json();
                 
                 if (pref.init_point) {
-                    localStorage.removeItem('corcega_cart');
                     window.location.href = pref.init_point;
                 } else {
                     throw new Error("No se pudo obtener el link de pago");

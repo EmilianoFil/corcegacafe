@@ -135,6 +135,9 @@
         if (!orderId) {
             window.location.href = 'tienda.html';
         } else {
+            // Ya aterrizamos en seguimiento, limpiamos el carrito local
+            localStorage.removeItem('corcega_cart');
+            
             document.getElementById('order-id-badge').innerText = 'ORDEN #' + orderId.substring(0,8).toUpperCase();
             initStatusListener(orderId);
         }
@@ -169,6 +172,16 @@
                 pagoText.innerText = "Pago confirmado ✨";
                 mainTitle.innerText = "¡Todo en marcha!";
                 actionArea.innerHTML = '<button onclick="window.location.href=\'tienda.html\'" class="btn-checkout" style="background:#d86634; color:white; border:none; width:100%; padding:18px; border-radius:12px; font-weight:700; cursor:pointer;">VOLVER A LA TIENDA</button>';
+            } else if (order.estado === 'rechazado') {
+                stepPago.classList.add('error');
+                pagoText.innerText = "Pago rechazado ❌";
+                mainTitle.innerText = "¡Ups! Algo falló con el pago";
+                actionArea.innerHTML = `
+                    <div style="margin-top:20px;">
+                        <p style="font-size:13px; margin-bottom:15px; color:#d86634; line-height:1.4;">No pudimos procesar tu pago por Mercado Pago. <br><b>No te preocupes, tu pedido está guardado.</b></p>
+                        <button id="btn-pay-mp" onclick="retryPayment('${orderId}')" class="btn-retry" style="background:#009ee3;">REINTENTAR PAGO</button>
+                    </div>
+                `;
             } else if (order.metodoPago === 'transferencia') {
                 stepPago.classList.remove('active');
                 pagoText.innerText = "Validación de pago 🕒";
