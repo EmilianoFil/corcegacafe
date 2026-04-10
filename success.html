@@ -164,16 +164,16 @@
             document.getElementById('step-finalizado').classList.remove('active');
 
             // 1. Lógica de Pago
-            if (order.estado === 'pagado' || order.metodoPago === 'transferencia') {
+            if (order.estado === 'pagado') {
                 stepPago.classList.add('active');
                 pagoText.innerText = "Pago confirmado ✨";
                 mainTitle.innerText = "¡Todo en marcha!";
                 actionArea.innerHTML = '<button onclick="window.location.href=\'tienda.html\'" class="btn-checkout" style="background:#d86634; color:white; border:none; width:100%; padding:18px; border-radius:12px; font-weight:700; cursor:pointer;">VOLVER A LA TIENDA</button>';
-            } else if (order.metodoPago === 'transferencia' && order.estado !== 'pagado') {
+            } else if (order.metodoPago === 'transferencia') {
                 stepPago.classList.remove('active');
-                pagoText.innerText = "Esperando transferencia";
+                pagoText.innerText = "Validación de pago 🕒";
                 mainTitle.innerText = "¡Pedido recibido!";
-                const waMsg = encodeURIComponent(`Hola Córcega! Realicé el pedido #${id.substring(0,6)}. Te adjunto el comprobante de transferencia.`);
+                const waMsg = encodeURIComponent(`Hola Córcega! Realicé el pedido #${orderId.substring(0,6)}. Te adjunto el comprobante de transferencia.`);
                 actionArea.innerHTML = `
                     <div style="margin-top:20px;">
                         <p style="font-size:13px; margin-bottom:15px; color:#666; line-height:1.4;">Para procesar tu pedido, por favor envíanos el comprobante por WhatsApp.</p>
@@ -181,8 +181,8 @@
                             <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:20px; height:20px;">
                             ENVIAR COMPROBANTE
                         </a>
-                        <p style="font-size:11px; margin-top:15px; color:#999;">¿Deseas cambiar el método de pago?</p>
-                        <button id="btn-pay-mp" onclick="retryPayment('${id}')" class="btn-retry" style="background:#009ee3; font-size:12px; padding:10px;">PAGAR CON MERCADOPAGO</button>
+                        <p style="font-size:11px; margin-top:25px; color:#999; border-top: 1px dashed #eee; padding-top:15px;">¿Deseas cambiar el método de pago?</p>
+                        <button id="btn-pay-mp" onclick="retryPayment('${orderId}')" class="btn-retry" style="background:#009ee3; font-size:12px; padding:12px; margin-top:10px;">PAGAR CON MERCADOPAGO</button>
                     </div>
                 `;
             } else if (order.estado === 'pendiente_pago' || order.estado === 'rechazado') {
@@ -191,7 +191,7 @@
                 mainTitle.innerText = "¡Pedido recibido!";
                 actionArea.innerHTML = `
                     <div style="margin-top:20px;">
-                        <button id="btn-pay-mp" onclick="retryPayment('${id}')" class="btn-retry" style="background:#009ee3; margin-bottom:10px;">PAGAR CON MERCADOPAGO</button>
+                        <button id="btn-pay-mp" onclick="retryPayment('${orderId}')" class="btn-retry" style="background:#009ee3; margin-bottom:10px;">PAGAR CON MERCADOPAGO</button>
                         <button onclick="window.location.href='tienda.html'" class="btn-checkout" style="background:#eee; color:#666; width:100%; border:none; padding:15px; border-radius:12px; font-weight:700; cursor:pointer;">VOLVER A LA TIENDA</button>
                     </div>
                 `;
