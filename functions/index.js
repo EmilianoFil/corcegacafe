@@ -981,3 +981,53 @@ exports.enviarMailCampana = onRequest(
     });
   }
 );
+
+const { MercadoPagoConfig, Preference } = require("mercadopago");
+const mpAccessToken = defineSecret("MP_ACCESS_TOKEN");
+
+exports.crearPreferenciaMP = onRequest(
+  { region: "us-central1", secrets: [mpAccessToken] },
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      try {
+        const { items, orderId, successUrl, backUrl } = req.body;
+
+        if (!items || !orderId) {
+          return res.status(400).send("Faltan items o orderId");
+        }
+
+        const client = new MercadoPagoConfig({ accessToken: mpAccessToken.value() });
+        const preference = new Preference(client);
+
+        const body = {
+          items: items.map(item => ({
+            id: item.id || "prod",
+            title: item.nombre,
+            quantity: item.qty,
+            unit_price: Number(item.precio),
+            currency_id: "ARS"
+          })),
+          external_reference: orderId,
+          back_urls: {
+            success: successUrl || "https://corcegacafe.com.ar/success.html",
+            failure: backUrl || "https://corcegacafe.com.ar/checkout.html",
+            pending: backUrl || "https://corcegacafe.com.ar/checkout.html"
+          },
+          auto_return: "approved",
+          notification_url: `https://us-central1-corcega-loyalty-club.cloudfunctions.net/webhookMP`
+        };
+
+        const result = await preference.create({ body });
+        
+        res.status(200).json({ 
+          id: result.id,
+          init_point: result.init_point 
+        });
+
+      } catch (error) {
+        logger.error("Error creando preferencia MP:", error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+  }
+);
