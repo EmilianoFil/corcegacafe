@@ -171,8 +171,8 @@ async function handleOrderSubmission() {
                     body: JSON.stringify({
                         items: cart,
                         orderId: orderId,
-                        successUrl: "https://corcegacafe.com.ar/success.html?orderId=" + orderId,
-                        backUrl: "https://corcegacafe.com.ar/checkout.html"
+                        successUrl: window.location.origin + window.location.pathname.replace('checkout.html', 'success.html') + "?orderId=" + orderId,
+                        backUrl: window.location.href
                     })
                 });
 
