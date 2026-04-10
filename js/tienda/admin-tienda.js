@@ -264,6 +264,7 @@ export async function loadOrdenesTable() {
 
         $('#tablaOrdenesDash').DataTable({
             data: ordenesData,
+            order: [[1, 'desc']],
             columns: [
                 { 
                     data: 'id',
@@ -273,9 +274,10 @@ export async function loadOrdenesTable() {
                 },
                 { 
                     data: 'timestamp',
-                    render: function(data) {
+                    render: function(data, type) {
                         if (!data) return '-';
                         const date = data.toDate();
+                        if (type === 'sort') return date.getTime();
                         return date.toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', hour12: false });
                     }
                 },
