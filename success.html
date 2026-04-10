@@ -220,29 +220,49 @@
         }
 
         async function initStatusListener(id) {
+            // 1. Primer intento: Obtener data pública (Seguro y Funciona sin login)
+            const publicOrder = await fetchPublicOrder(id);
+            if (publicOrder) {
+                updateSteppers(publicOrder);
+            }
+
+            // 2. Segundo intento: Escucha real-time (Solo si tiene permisos/login)
             const orderRef = doc(db, "ordenes", id);
-            
-            // Escuchar cambios en tiempo real
             onSnapshot(orderRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const order = docSnap.data();
-                    if (order.orderNumber) {
-                        document.getElementById('order-id-badge').innerText = 'ORDEN #' + order.orderNumber;
-                    } else {
-                        document.getElementById('order-id-badge').innerText = 'ORDEN #' + id.substring(0,8).toUpperCase();
-                    }
                     updateSteppers(order);
                 }
             }, (error) => {
-                console.error("Error en el listener (permisos):", error);
+                console.warn("Escucha real-time deshabilitada (vía pública):", error.message);
+                // Si la escucha real-time falla, podemos re-consultar la función cada 2 min
+                setTimeout(() => fetchPublicOrder(id).then(o => o && updateSteppers(o)), 120000);
             });
         }
 
+        async function fetchPublicOrder(orderId) {
+            try {
+                const response = await fetch('https://getpublicorder-ioo4dzpz2a-uc.a.run.app', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderId })
+                });
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (err) {
+                console.error("Error fetching public order:", err);
+                return null;
+            }
+        }
+
         function updateSteppers(order) {
+            if (!order) return;
+            
+            // Actualizar ID Badge
+            const orderNum = order.orderNumber || order.id?.substring(0,8) || orderId?.substring(0,8);
+            document.getElementById('order-id-badge').innerText = 'ORDEN #' + orderNum;
+
             const stepPago = document.getElementById('step-pago');
-            const pagoText = document.getElementById('pago-text');
-            const actionArea = document.getElementById('action-area');
-            const mainTitle = document.getElementById('main-title');
 
             // Definición de botones reutilizables
             const btnHome = `<button onclick="window.location.href='tienda.html'" class="btn-primary-corcega" style="margin-top:20px;">Seguir comprando</button>`;

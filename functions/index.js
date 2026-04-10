@@ -1385,3 +1385,42 @@ exports.onOrderUpdated = onDocumentUpdated(
     }
   }
 );
+
+/**
+ * Obtener estado público de una orden (vía OrderID)
+ * Devuelve solo datos no sensibles para el tracking sin login.
+ */
+exports.getPublicOrder = onRequest(async (req, res) => {
+  corsHandler(req, res, async () => {
+    const { orderId } = req.body;
+    if (!orderId) {
+      return res.status(400).send({ error: "Falta orderId" });
+    }
+
+    try {
+      const doc = await admin.firestore().collection("ordenes").doc(orderId).get();
+      if (!doc.exists) {
+        return res.status(404).send({ error: "Pedido no encontrado" });
+      }
+
+      const data = doc.data();
+
+      // Filtramos solo data pública segura (PII OMITTED)
+      const publicData = {
+        id: doc.id,
+        orderNumber: data.orderNumber || doc.id.substring(0, 8),
+        estado: data.estado,
+        items: data.items.map(i => ({ nombre: i.nombre, qty: i.qty, precio: i.precio })),
+        total: data.total,
+        metodoEntrega: data.metodoEntrega,
+        metodoPago: data.metodoPago,
+        timestamp: data.timestamp
+      };
+
+      res.status(200).send(publicData);
+    } catch (error) {
+      console.error(error);
+      res.status(500).send({ error: "Error interno" });
+    }
+  });
+});
