@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Gracias por tu compra! - Córcega Café</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/tienda/tienda.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .success-container {
+            max-width: 600px;
+            margin: 100px auto;
+            text-align: center;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        .success-icon {
+            font-size: 60px;
+            color: #4BB543;
+            margin-bottom: 20px;
+        }
+        h1 { font-family: var(--font-display); margin-bottom: 15px; }
+        p { color: var(--texto-muted); margin-bottom: 30px; }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <i class="fas fa-check-circle success-icon"></i>
+        <h1>¡Pedido Recibido!</h1>
+        <p>Tu orden ha sido procesada con éxito. En breve recibirás un mensaje por WhatsApp para coordinar la entrega.</p>
+        <div id="order-id-display" style="font-weight: 700; color: var(--panel-oscuro); margin-bottom: 30px;"></div>
+        <button onclick="window.location.href='tienda.html'" class="btn-checkout" style="width: auto; padding: 15px 40px;">VOLVER A LA TIENDA</button>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('orderId');
+        if (orderId) {
+            document.getElementById('order-id-display').innerText = 'ID DE PEDIDO: #' + orderId.substring(0,8).toUpperCase();
+        }
+    </script>
+</body>
+</html>

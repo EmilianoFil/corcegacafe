@@ -162,12 +162,32 @@ async function handleOrderSubmission() {
             alert("¡Pedido realizado con éxito! Por favor enviá el comprobante de transferencia por WhatsApp.");
             window.location.href = `https://wa.me/5491122334455?text=Hola! Realicé el pedido #${orderId}. Te adjunto el comprobante.`;
         } else {
-            // Mercado Pago FLOW
-            alert("Redirigiendo a Mercado Pago...");
-            // TODO: Integrar con Cloud Function para obtener el link de pago real
-            // Por ahora registramos la orden y simulamos
-            localStorage.removeItem('corcega_cart');
-            window.location.href = "success.html?orderId=" + orderId;
+            // Mercado Pago FLOW REAL
+            try {
+                const response = await fetch("https://us-central1-corcega-loyalty-club.cloudfunctions.net/crearPreferenciaMP", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        items: cart,
+                        orderId: orderId,
+                        successUrl: "https://corcegacafe.com.ar/success.html?orderId=" + orderId,
+                        backUrl: "https://corcegacafe.com.ar/checkout.html"
+                    })
+                });
+
+                const pref = await response.json();
+                
+                if (pref.init_point) {
+                    localStorage.removeItem('corcega_cart');
+                    window.location.href = pref.init_point;
+                } else {
+                    throw new Error("No se pudo obtener el link de pago");
+                }
+            } catch (err) {
+                console.error("Error redirecting to MP:", err);
+                alert("Error al conectar con Mercado Pago. Pero tu pedido fue registrado. Envianos un mensaje.");
+                window.location.href = "success.html?orderId=" + orderId;
+            }
         }
 
     } catch (err) {
