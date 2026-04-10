@@ -3,45 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>¡Gracias por tu compra! - Córcega Café</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Syncopate:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/tienda/tienda.css">
+    <title>Estado de tu Pedido - Córcega Café</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/tienda/tienda.css?v=1.5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .success-container {
-            max-width: 600px;
-            margin: 100px auto;
-            text-align: center;
-            padding: 40px 20px;
+        body { background-color: #fdfcf7; }
+        .success-card {
+            max-width: 500px;
+            margin: 40px auto;
             background: white;
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border-radius: 32px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.05);
         }
-        .success-icon {
-            font-size: 60px;
-            color: #4BB543;
+        
+        /* Stepper Styles */
+        .stepper {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin: 40px 0;
+            text-align: left;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+        }
+        .step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 30px;
+            width: 2px;
+            height: 20px;
+            background: #eee;
+        }
+        .step-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: white;
+            z-index: 1;
+        }
+        .step.active .step-icon { background: #4BB543; }
+        .step.error .step-icon { background: #d86634; }
+        .step-text { font-size: 15px; font-weight: 500; color: #aaa; }
+        .step.active .step-text { color: var(--panel-oscuro); font-weight: 700; }
+        .step.error .step-text { color: #d86634; }
+
+        .btn-retry {
+            background: #d86634;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .order-badge {
+            background: #f8f9fa;
+            padding: 5px 15px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #666;
+            display: inline-block;
             margin-bottom: 20px;
         }
-        h1 { font-family: var(--font-display); margin-bottom: 15px; }
-        p { color: var(--texto-muted); margin-bottom: 30px; }
     </style>
 </head>
 <body>
-    <div class="success-container">
-        <i class="fas fa-check-circle success-icon"></i>
-        <h1>¡Pedido Recibido!</h1>
-        <p>Tu orden ha sido procesada con éxito. En breve recibirás un mensaje por WhatsApp para coordinar la entrega.</p>
-        <div id="order-id-display" style="font-weight: 700; color: var(--panel-oscuro); margin-bottom: 30px;"></div>
-        <button onclick="window.location.href='tienda.html'" class="btn-checkout" style="width: auto; padding: 15px 40px;">VOLVER A LA TIENDA</button>
+    <div class="success-card">
+        <div id="status-header">
+            <h1 id="main-title" style="font-family: 'Playfair Display', serif; margin-bottom: 5px;">Procesando...</h1>
+            <div id="order-id-badge" class="order-badge">Buscando pedido...</div>
+        </div>
+
+        <div class="stepper" id="order-stepper">
+            <div class="step active" id="step-recibido">
+                <div class="step-icon"><i class="fas fa-check"></i></div>
+                <div class="step-text">Pedido recibido</div>
+            </div>
+            <div class="step" id="step-pago">
+                <div class="step-icon"><i class="fas fa-credit-card"></i></div>
+                <div class="step-text" id="pago-text">Pago en verificación</div>
+            </div>
+            <div class="step" id="step-preparacion">
+                <div class="step-icon"><i class="fas fa-coffee"></i></div>
+                <div class="step-text">Preparando tu café</div>
+            </div>
+            <div class="step" id="step-entrega">
+                <div class="step-icon"><i class="fas fa-hand-holding-heart"></i></div>
+                <div class="step-text">Listo para retirar / En camino</div>
+            </div>
+            <div class="step" id="step-finalizado">
+                <div class="step-icon"><i class="fas fa-flag-checkered"></i></div>
+                <div class="step-text">Entregado</div>
+            </div>
+        </div>
+
+        <div id="action-area">
+            <!-- Dinámico: Botón reintentar o Volver -->
+        </div>
+
+        <p style="font-size: 13px; color: #999; margin-top: 40px;">
+            Podés cerrar esta página. Te avisaremos por WhatsApp ante cualquier cambio.
+        </p>
     </div>
 
-    <script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { db } from './js/firebase-config.js';
+        import { doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('orderId');
-        if (orderId) {
-            document.getElementById('order-id-display').innerText = 'ID DE PEDIDO: #' + orderId.substring(0,8).toUpperCase();
+        const mpStatus = urlParams.get('status');
+
+        if (!orderId) {
+            window.location.href = 'tienda.html';
+        } else {
+            document.getElementById('order-id-badge').innerText = 'ORDEN #' + orderId.substring(0,8).toUpperCase();
+            initStatusListener(orderId);
         }
+
+        function initStatusListener(id) {
+            const orderRef = doc(db, "ordenes", id);
+            
+            // Escuchar cambios en tiempo real
+            onSnapshot(orderRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const order = docSnap.data();
+                    updateSteppers(order);
+                }
+            });
+        }
+
+        function updateSteppers(order) {
+            const stepPago = document.getElementById('step-pago');
+            const pagoText = document.getElementById('pago-text');
+            const actionArea = document.getElementById('action-area');
+            const mainTitle = document.getElementById('main-title');
+
+            // Reset
+            stepPago.classList.remove('active', 'error');
+            document.getElementById('step-preparacion').classList.remove('active');
+            document.getElementById('step-entrega').classList.remove('active');
+            document.getElementById('step-finalizado').classList.remove('active');
+
+            // 1. Lógica de Pago
+            if (order.estado === 'pagado' || order.metodoPago === 'transferencia') {
+                stepPago.classList.add('active');
+                pagoText.innerText = "Pago confirmado ✨";
+                mainTitle.innerText = "¡Todo en marcha!";
+                actionArea.innerHTML = '<button onclick="window.location.href=\'tienda.html\'" class="btn-checkout" style="background:#eee; color:#666;">VOLVER A LA TIENDA</button>';
+            } else if (order.estado === 'rechazado' || (mpStatus && mpStatus !== 'approved' && order.estado !== 'pagado')) {
+                stepPago.classList.add('error');
+                pagoText.innerText = "Hubo un problema con el pago";
+                mainTitle.innerText = "Ups... algo falló";
+                actionArea.innerHTML = `<button onclick="retryPayment('${order.id}')" class="btn-retry">REINTENTAR PAGO</button>`;
+            } else {
+                pagoText.innerText = "Esperando confirmación";
+            }
+
+            // 2. Lógica de producción (Pintar según estado de Firestore)
+            const estados = ['pagado', 'preparando', 'listo', 'finalizado'];
+            const actualIdx = estados.indexOf(order.estado);
+
+            if (actualIdx >= 1) document.getElementById('step-preparacion').classList.add('active');
+            if (actualIdx >= 2) document.getElementById('step-entrega').classList.add('active');
+            if (actualIdx >= 3) document.getElementById('step-finalizado').classList.add('active');
+        }
+
+        window.retryPayment = async (id) => {
+            // Mandar al usuario de vuelta al checkout o podés implementar una llamada directa a MP acá
+            window.location.href = 'checkout.html'; 
+        };
     </script>
 </body>
 </html>
