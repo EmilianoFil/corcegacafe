@@ -11,7 +11,8 @@ const cartDrawer = document.getElementById('cart-drawer');
 const cartOverlay = document.getElementById('cart-overlay');
 const cartItemsList = document.getElementById('cart-items-list');
 const cartTotal = document.getElementById('cart-total');
-const cartBadges = document.querySelectorAll('.cart-count, .cart-count-badge');
+// Selector más agresivo para las burbujas
+const getCartBadges = () => document.querySelectorAll('.cart-count, .cart-count-badge, #cart-badge');
 
 // --- INIT ---
 async function init() {
@@ -136,9 +137,12 @@ function closeCart() {
 function updateCartUI() {
     // Badges count
     const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
-    cartBadges.forEach(b => {
+    const badges = getCartBadges();
+    badges.forEach(b => {
         b.innerText = totalItems;
         b.style.display = totalItems > 0 ? 'flex' : 'none';
+        // Forzar visibilidad
+        if (totalItems > 0) b.style.setProperty('display', 'flex', 'important');
     });
 
     if (cart.length === 0) {
