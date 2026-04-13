@@ -69,8 +69,10 @@ async function loadProductData(id) {
 function renderProductDetail() {
     const p = currentProduct;
     
-    // Breadcrumbs
-    document.getElementById('breadcrumb-category').innerText = p.categoria || 'Tienda';
+    // Breadcrumbs y Tags
+    const categoria = p.categoria || 'Tienda';
+    document.getElementById('breadcrumb-category').innerText = categoria;
+    document.getElementById('prod-cat-tag').innerText = categoria.toUpperCase();
     document.getElementById('breadcrumb-name').innerText = p.nombre;
     
     // Titulo y Precio
