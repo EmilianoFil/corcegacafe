@@ -114,5 +114,44 @@
         </div>
     </div>
 
+    <!-- Modal: Detalle de Producto -->
+    <div id="product-modal" class="modal-overlay" style="display: none;">
+        <button class="btn-close-modal" id="btn-close-product-modal"><i class="fas fa-times"></i></button>
+        <div class="modal-content product-detail-modal">
+            <div class="product-detail-grid">
+                <!-- Carrusel del Detalle -->
+                <div class="product-detail-media">
+                    <div class="detail-carousel-container" id="detail-carousel-inner">
+                        <!-- Imágenes dinámicas -->
+                    </div>
+                    <button class="carousel-nav prev" onclick="window.moveDetailCarousel(-1)"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-nav next" onclick="window.moveDetailCarousel(1)"><i class="fas fa-chevron-right"></i></button>
+                    <div class="carousel-dots" id="detail-carousel-dots"></div>
+                </div>
+
+                <div class="product-detail-info">
+                    <span id="detail-category" class="category-pill">Categoría</span>
+                    <h2 id="detail-name">Nombre del Producto</h2>
+                    <p id="detail-description" class="long-description">
+                        Cargando descripción...
+                    </p>
+                    <div class="detail-price-row">
+                        <span id="detail-price" class="price-tag">$0.00</span>
+                        <div class="detail-add-controls">
+                            <div class="qty-selector">
+                                <button onclick="window.adjustDetailQty(-1)"><i class="fas fa-minus"></i></button>
+                                <span id="detail-qty">1</span>
+                                <button onclick="window.adjustDetailQty(1)"><i class="fas fa-plus"></i></button>
+                            </div>
+                            <button class="btn-primary-corcega" id="btn-modal-add-to-cart">
+                                AGREGAR AL CARRITO
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
