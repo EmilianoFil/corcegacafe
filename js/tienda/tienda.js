@@ -235,12 +235,13 @@ function setupEventListeners() {
     // BOTONES DEL MODAL
     document.getElementById('modal-btn-login').onclick = () => {
         sessionStorage.setItem('redirectAfterLogin', 'checkout.html');
-        window.location.href = 'login.html';
+        window.location.href = 'tienda-cuenta.html';
     };
 
     document.getElementById('modal-btn-register').onclick = () => {
         sessionStorage.setItem('redirectAfterLogin', 'checkout.html');
-        window.location.href = 'registro.html';
+        // Usamos un hash para que tienda-cuenta sepa que queremos registrar
+        window.location.href = 'tienda-cuenta.html#register';
     };
 
     document.getElementById('modal-btn-guest').onclick = () => {

@@ -33,6 +33,11 @@ onAuthStateChanged(auth, async (user) => {
         authView.style.display = 'block';
         profileView.style.display = 'none';
         localStorage.removeItem('corcega_tienda_dni');
+
+        // Detectar si queremos mostrar Registro directamente
+        if (window.location.hash === '#register') {
+            toggleAuth('register');
+        }
     }
 });
 
