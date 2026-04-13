@@ -144,16 +144,47 @@
             margin-bottom: 25px;
             border: 1px solid rgba(209, 100, 60, 0.1);
         }
+
+        /* Spinner */
+        .loader-container {
+            padding: 50px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #d86634;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
     <div class="success-card">
         <div id="status-header">
-            <h1 id="main-title" style="font-family: 'Playfair Display', serif; margin-bottom: 5px;">Procesando...</h1>
-            <div id="order-id-badge" class="order-badge">Buscando pedido...</div>
+            <h1 id="main-title" style="font-family: 'Playfair Display', serif; margin-bottom: 5px;">Buscando...</h1>
+            <div id="order-id-badge" class="order-badge">Consultando sistema...</div>
         </div>
 
-        <div class="stepper" id="order-stepper">
+        <!-- Loader -->
+        <div id="order-loader" class="loader-container">
+            <div class="spinner"></div>
+            <p style="font-size: 13px; color: #999; margin-top: 15px;">Estamos trayendo los detalles de tu pedido...</p>
+        </div>
+
+        <div class="stepper" id="order-stepper" style="display: none; animation: fadeIn 0.8s ease forwards;">
             <div class="step active" id="step-recibido">
                 <div class="step-icon"><i class="fas fa-check"></i></div>
                 <div class="step-text">Pedido recibido</div>
@@ -261,6 +292,10 @@
             // Actualizar ID Badge
             const orderNum = order.orderNumber || order.id?.substring(0,8) || orderId?.substring(0,8);
             document.getElementById('order-id-badge').innerText = 'ORDEN #' + orderNum;
+            
+            // Ocultar Loader y Mostrar Stepper
+            document.getElementById('order-loader').style.display = 'none';
+            document.getElementById('order-stepper').style.display = 'flex';
 
             const stepPago = document.getElementById('step-pago');
             const pagoText = document.getElementById('pago-text');
