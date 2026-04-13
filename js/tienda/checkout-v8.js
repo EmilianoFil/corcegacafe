@@ -43,6 +43,12 @@ function autofillData(profile) {
     if (profile.nombre) document.getElementById('client-name').value = profile.nombre;
     if (profile.whatsapp) document.getElementById('client-phone').value = profile.whatsapp;
     if (profile.dni) document.getElementById('client-dni').value = profile.dni;
+    
+    // Si ya tenemos el mail del perfil, lo ocultamos para no pedirlo 2 veces
+    if (profile.email || auth.currentUser?.email) {
+        document.getElementById('client-email').value = profile.email || auth.currentUser.email;
+        document.getElementById('group-email').style.display = 'none';
+    }
 
     // Si tiene direcciones, agregar un selector opcional
     if (profile.direcciones && profile.direcciones.length > 0) {
@@ -110,6 +116,7 @@ function setupEventListeners() {
 
 async function handleOrderSubmission() {
     const nombre = document.getElementById('client-name').value.trim();
+    const email = document.getElementById('client-email').value.trim();
     const whatsapp = document.getElementById('client-phone').value.trim();
     const dni = document.getElementById('client-dni').value.trim();
     const notas = document.getElementById('client-note').value.trim();
@@ -118,8 +125,8 @@ async function handleOrderSubmission() {
     const metodoPago = paymentMethod.value;
 
     // Validation
-    if (!nombre || !whatsapp) {
-        alert("Por favor completá tu nombre y WhatsApp para que podamos contactarte.");
+    if (!nombre || !whatsapp || !email) {
+        alert("Por favor completá tu nombre, email y WhatsApp para que podamos contactarte y enviarte el seguimiento.");
         return;
     }
 
@@ -138,6 +145,7 @@ async function handleOrderSubmission() {
         const orderData = {
             cliente: {
                 nombre,
+                email,
                 whatsapp,
                 dni: sessionDni || null,
                 direccion: deliveryMethod === 'delivery' ? direccion : 'Retiro en local'

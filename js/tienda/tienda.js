@@ -214,13 +214,37 @@ function setupEventListeners() {
         };
     });
 
+    // --- CHECKOUT FLOW ---
+    const checkoutModal = document.getElementById('checkout-modal');
+    
     document.getElementById('btn-go-to-checkout').onclick = () => {
         if (cart.length === 0) {
             alert("Tu carrito está vacío.");
             return;
         }
-        // Save current checkout state if needed
-        window.location.href = "checkout.html";
+
+        // Si el usuario está logueado, va directo
+        if (auth.currentUser) {
+            window.location.href = "checkout.html";
+        } else {
+            // Si no, mostramos el modal interruptor
+            checkoutModal.style.display = 'flex';
+        }
+    };
+
+    // BOTONES DEL MODAL
+    document.getElementById('modal-btn-login').onclick = () => {
+        sessionStorage.setItem('redirectAfterLogin', 'checkout.html');
+        window.location.href = 'login.html';
+    };
+
+    document.getElementById('modal-btn-register').onclick = () => {
+        sessionStorage.setItem('redirectAfterLogin', 'checkout.html');
+        window.location.href = 'registro.html';
+    };
+
+    document.getElementById('modal-btn-guest').onclick = () => {
+        window.location.href = 'checkout.html';
     };
 }
 

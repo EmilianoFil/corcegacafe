@@ -104,6 +104,14 @@ async function handleRegister() {
 }
 
 async function showProfile(user) {
+    // Si veníamos del checkout, redirigir de vuelta
+    const redirect = sessionStorage.getItem('redirectAfterLogin');
+    if (redirect) {
+        sessionStorage.removeItem('redirectAfterLogin');
+        window.location.href = redirect;
+        return;
+    }
+
     authView.style.display = 'none';
     profileView.style.display = 'block';
     

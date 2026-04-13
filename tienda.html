@@ -88,6 +88,31 @@
 
     <!-- Scripts -->
     <script type="module" src="js/tienda/tienda.js?v=1.1"></script>
+    
+    <!-- Modal Checkout -->
+    <div class="modal-overlay" id="checkout-modal">
+        <div class="modal-checkout">
+            <h2 style="font-family: var(--font-display); color: var(--panel-oscuro);">¡Casi listo! ☕</h2>
+            <p>Iniciá sesión para sumar cafecitos y ver tu historial, o continuá como invitado.</p>
+            
+            <div class="modal-actions">
+                <button class="btn-modal btn-modal-primary" id="modal-btn-login">
+                    INICIAR SESIÓN
+                </button>
+                <button class="btn-modal btn-modal-accent" id="modal-btn-register">
+                    CREAR CUENTA
+                </button>
+                <button class="btn-modal btn-modal-outline" id="modal-btn-guest">
+                    CONTINUAR COMO INVITADO
+                </button>
+            </div>
+            
+            <button onclick="document.getElementById('checkout-modal').style.display='none'" 
+                style="margin-top: 20px; background: none; border: none; font-size: 12px; font-weight: 600; color: #999; cursor: pointer;">
+                VOLVER AL CARRITO
+            </button>
+        </div>
+    </div>
 
 </body>
 </html>
