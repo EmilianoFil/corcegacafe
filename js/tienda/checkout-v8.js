@@ -44,10 +44,14 @@ function autofillData(profile) {
     if (profile.whatsapp) document.getElementById('client-phone').value = profile.whatsapp;
     if (profile.dni) document.getElementById('client-dni').value = profile.dni;
     
-    // Si ya tenemos el mail del perfil, lo ocultamos para no pedirlo 2 veces
+    // Si ya tenemos el mail del perfil, lo bloqueamos pero lo dejamos visible
     if (profile.email || auth.currentUser?.email) {
-        document.getElementById('client-email').value = profile.email || auth.currentUser.email;
-        document.getElementById('group-email').style.display = 'none';
+        const emailInput = document.getElementById('client-email');
+        emailInput.value = profile.email || auth.currentUser.email;
+        emailInput.readOnly = true;
+        emailInput.style.background = "#f0f0f0";
+        emailInput.style.color = "#888";
+        emailInput.style.cursor = "not-allowed";
     }
 
     // Si tiene direcciones, agregar un selector opcional

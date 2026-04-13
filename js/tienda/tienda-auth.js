@@ -122,6 +122,7 @@ async function showProfile(user) {
     
     // Traer datos extras de Firestore
     const snap = await getDoc(doc(db, "usuarios_tienda", user.uid));
+    let nombreActual = snap.exists() ? snap.data().nombre : (user.displayName || "");
     let dni = "";
     let whatsapp = "";
     let diaRec = "";
@@ -161,6 +162,7 @@ async function showProfile(user) {
     }
 
     // Populate fields
+    document.getElementById('user-name-input').value = nombreActual;
     document.getElementById('user-tel-input').value = whatsapp;
     document.getElementById('user-nac-dia').value = diaRec;
     document.getElementById('user-nac-mes').value = mesRec;
@@ -177,17 +179,35 @@ if (btnSaveData) {
         const user = auth.currentUser;
         if (!user) return;
 
+        const nombre = document.getElementById('user-name-input').value.trim();
         const whatsapp = document.getElementById('user-tel-input').value.trim();
         const dia = document.getElementById('user-nac-dia').value.trim();
         const mes = document.getElementById('user-nac-mes').value.trim();
 
+        if (!nombre) return alert("El nombre no puede estar vacío.");
+
         try {
             await setDoc(doc(db, "usuarios_tienda", user.uid), {
+                nombre,
                 whatsapp,
                 nacimiento_dia: dia,
                 nacimiento_mes: mes,
                 actualizado: serverTimestamp()
             }, { merge: true });
+
+            // Actualizar UI instantáneamente
+            userName.innerText = `¡Hola, ${nombre.split(' ')[0]}!`;
+            
+            // También actualizar en Clientes (Fidelidad) si tiene DNI
+            const sessionDni = localStorage.getItem('corcega_tienda_dni');
+            if (sessionDni) {
+                await setDoc(doc(db, "clientes", sessionDni), {
+                    nombre,
+                    whatsapp, // Sync phone too
+                    actualizado: serverTimestamp()
+                }, { merge: true });
+            }
+
             alert("¡Datos guardados correctamente!");
         } catch (err) {
             console.error(err);
