@@ -65,7 +65,7 @@
         .btn-reset:hover { transform: translateY(-2px); filter: brightness(1.1); }
         .btn-reset:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
         
-        #loading-view, #success-view, #error-view { display: none; }
+        #loading-view, #form-view, #success-view, #error-view { display: none; }
     </style>
 </head>
 <body>
@@ -80,7 +80,7 @@
         </div>
 
         <!-- Vista 2: Formulario de Nueva Clave -->
-        <div id="form-view">
+        <div id="form-view" style="display: none;">
             <h2>Nueva Contraseña</h2>
             <p>Escribí tu nueva clave de acceso para continuar.</p>
             <div class="form-group">
