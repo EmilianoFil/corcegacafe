@@ -130,7 +130,11 @@ async function showProfile(user) {
 
     if (snap.exists()) {
         const data = snap.data();
-        userName.innerText = `¡Hola, ${data.nombre || user.displayName || user.email.split('@')[0]}!`;
+        let displayNombre = data.nombre || user.displayName || user.email.split('@')[0];
+        // Capitalizar primera letra para que no parezca un mail
+        displayNombre = displayNombre.charAt(0).toUpperCase() + displayNombre.slice(1);
+        
+        userName.innerText = `¡Hola, ${displayNombre}!`;
         userDni.innerText = data.dni ? `DNI: ${data.dni}` : "Falta vincular DNI";
         dni = data.dni;
         whatsapp = data.whatsapp || "";
@@ -195,8 +199,10 @@ if (btnSaveData) {
                 actualizado: serverTimestamp()
             }, { merge: true });
 
-            // Actualizar UI instantáneamente
-            userName.innerText = `¡Hola, ${nombre.split(' ')[0]}!`;
+            // Actualizar UI instantáneamente (Capitalizando el primer nombre)
+            let primerNombre = nombre.split(' ')[0];
+            primerNombre = primerNombre.charAt(0).toUpperCase() + primerNombre.slice(1);
+            userName.innerText = `¡Hola, ${primerNombre}!`;
             
             // También actualizar en Clientes (Fidelidad) si tiene DNI
             const sessionDni = localStorage.getItem('corcega_tienda_dni');
