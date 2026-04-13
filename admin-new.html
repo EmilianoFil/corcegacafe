@@ -975,8 +975,12 @@
                         <input type="text" id="prod-nombre" required>
                     </div>
                     <div class="input-group">
-                        <label>Descripción</label>
-                        <textarea id="prod-descripcion" rows="3" required></textarea>
+                        <label>Descripción Corta (Lista)</label>
+                        <textarea id="prod-descripcion" rows="2" placeholder="Ej: Notas de chocolate y avellanas..." required></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Descripción Larga (Detalle del Producto)</label>
+                        <textarea id="prod-descripcion-larga" rows="5" placeholder="Historia del café, origen, proceso de tostado..."></textarea>
                     </div>
                     <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 0;">
                         <div class="input-group">
@@ -1005,20 +1009,35 @@
                     </div>
                     
                     <div class="input-group">
-                        <label>Imagen del Producto</label>
-                        <div style="display: flex; gap: 15px; align-items: center; background: var(--primary-light); padding: 20px; border-radius: 16px; border: 2px dashed var(--primary);">
+                        <label>Imagen Principal (Portada)</label>
+                        <div style="display: flex; gap: 15px; align-items: center; background: #fdfcf7; padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
                             <div style="flex: 1;">
                                 <input type="file" id="prod-imagen-file" accept="image/*" style="display: none;" onchange="window.tiendaAdmin.handleProductImageUpload(this)">
                                 <button type="button" class="btn-primary" onclick="document.getElementById('prod-imagen-file').click()" id="btn-select-prod-img" style="background: var(--secondary); margin-bottom: 0;">
-                                    📁 Seleccionar/Cambiar Imagen
+                                    📸 Seleccionar Foto Principal
                                 </button>
-                                <p id="prod-upload-status" style="font-size: 0.85rem; color: var(--secondary); margin-top: 10px; font-weight: 500;">No se eligió archivo</p>
+                                <input type="hidden" id="prod-imagen-url">
                             </div>
                             <div id="prod-preview-container" style="display: none;">
-                                <img id="prod-imagen-preview" src="" style="height: 80px; width: 80px; object-fit: cover; border-radius: 12px; border: 2px solid var(--white); box-shadow: var(--shadow);">
+                                <img id="prod-imagen-preview" src="" style="height: 80px; width: 80px; object-fit: cover; border-radius: 12px;">
                             </div>
                         </div>
-                        <input type="hidden" id="prod-imagen-url">
+                    </div>
+
+                    <div class="input-group">
+                        <label>Galería de Fotos Extra (Carrusel)</label>
+                        <div style="background: #fdfcf7; padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
+                            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                                <input type="file" id="prod-gallery-file" accept="image/*" style="display: none;" onchange="window.tiendaAdmin.agregarAFotosGaleria(this)">
+                                <button type="button" class="btn-primary" onclick="document.getElementById('prod-gallery-file').click()" id="btn-add-gallery" style="background: var(--primary); margin: 0; font-size: 0.85rem;">
+                                    + Agregar Foto a la Galería
+                                </button>
+                                <p id="gallery-status" style="font-size: 0.75rem; margin: 0; align-self: center;"></p>
+                            </div>
+                            <div id="gallery-previews" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <!-- Acá van las miniaturas de la galería -->
+                            </div>
+                        </div>
                     </div>
                     
                     <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -1243,7 +1262,7 @@
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
         import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
-        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=6';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=7';
         window.tiendaAdmin = tiendaAdmin;
 
         let adminData = null;

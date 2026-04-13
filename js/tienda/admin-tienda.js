@@ -7,6 +7,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 let productosData = [];
+let imagenesGaleria = []; // Para manejar las fotos extra en el formulario
 
 // ============================================
 // UI FORMS
@@ -20,8 +21,10 @@ export function mostrarFormularioProducto() {
     document.getElementById('prod-imagen-url').value = '';
     document.getElementById('prod-preview-container').style.display = 'none';
     document.getElementById('prod-imagen-preview').src = '';
-    document.getElementById('prod-upload-status').innerText = 'No se eligió archivo';
-    document.getElementById('prod-upload-status').style.color = 'var(--text-muted)';
+    
+    // Reset Galería
+    imagenesGaleria = [];
+    renderGalleryPreviews();
     
     // Scroll hacia el formulario
     document.getElementById('form-producto-container').scrollIntoView({ behavior: 'smooth' });
@@ -61,11 +64,57 @@ export async function handleProductImageUpload(input) {
 
     } catch (err) {
         console.error(err);
-        status.innerText = "Error al subir imagen ❌";
-        status.style.color = "var(--error)";
+        alert("Error al subir imagen");
     } finally {
         btn.disabled = false;
     }
+}
+
+export async function agregarAFotosGaleria(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const btn = document.getElementById('btn-add-gallery');
+    const status = document.getElementById('gallery-status');
+
+    btn.disabled = true;
+    status.innerText = "Subiendo... ⏳";
+
+    try {
+        const fileName = `productos/galeria/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, fileName);
+
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+
+        imagenesGaleria.push(url);
+        renderGalleryPreviews();
+        status.innerText = "¡Agregada! ✅";
+
+    } catch (err) {
+        console.error(err);
+        status.innerText = "Error ❌";
+    } finally {
+        btn.disabled = false;
+        setTimeout(() => status.innerText = "", 2000);
+    }
+}
+
+function renderGalleryPreviews() {
+    const container = document.getElementById('gallery-previews');
+    if (!container) return;
+
+    container.innerHTML = imagenesGaleria.map((url, index) => `
+        <div style="position: relative;">
+            <img src="${url}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px;">
+            <button type="button" onclick="window.tiendaAdmin.eliminarFotoGaleria(${index})" style="position: absolute; top: -5px; right: -5px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 10px;">×</button>
+        </div>
+    `).join('');
+}
+
+export function eliminarFotoGaleria(index) {
+    imagenesGaleria.splice(index, 1);
+    renderGalleryPreviews();
 }
 
 // ============================================
@@ -97,11 +146,13 @@ export async function guardarProducto(event) {
         const productoData = {
             nombre,
             descripcion,
+            descripcion_larga: document.getElementById('prod-descripcion-larga').value.trim(),
             precio,
             stock,
             categoria,
             activo,
             imagenUrl,
+            imagenes: imagenesGaleria // Guardamos el array de la galería
         };
 
         if (id) {
@@ -146,19 +197,17 @@ export function editarProducto(id) {
     document.getElementById('prod-stock').value = prod.stock || 0;
     document.getElementById('prod-categoria').value = prod.categoria || 'otros';
     document.getElementById('prod-activo').checked = prod.activo ?? true;
+    document.getElementById('prod-descripcion-larga').value = prod.descripcion_larga || '';
     
     document.getElementById('prod-imagen-url').value = prod.imagenUrl || '';
-    
     if (prod.imagenUrl) {
         document.getElementById('prod-imagen-preview').src = prod.imagenUrl;
         document.getElementById('prod-preview-container').style.display = 'block';
-        document.getElementById('prod-upload-status').innerText = 'Imagen cargada ✅';
-        document.getElementById('prod-upload-status').style.color = 'var(--success)';
-    } else {
-        document.getElementById('prod-preview-container').style.display = 'none';
-        document.getElementById('prod-upload-status').innerText = 'Sin imagen';
-        document.getElementById('prod-upload-status').style.color = 'var(--text-muted)';
     }
+
+    // Cargar Galería
+    imagenesGaleria = prod.imagenes || [];
+    renderGalleryPreviews();
 }
 
 export async function eliminarProducto(id, nombre) {
