@@ -224,17 +224,17 @@ function updateCartUI() {
 
     cartItemsList.innerHTML = cart.map((item, index) => `
         <div class="cart-item">
-            <img src="${item.imagenUrl || 'https://placehold.co/100x100'}" alt="${item.nombre}">
+            <img src="${item.imagenUrl || 'https://placehold.co/100x100'}" alt="${item.nombre}" class="cart-item-img">
             <div class="cart-item-info">
-                <h4>${item.nombre}</h4>
-                <p>$${item.precio.toLocaleString('es-AR')}</p>
-                <div class="cart-item-qty">
-                    <button onclick="updateQty(${index}, -1)"><i class="fas fa-minus"></i></button>
+                <div class="cart-item-title">${item.nombre}</div>
+                <div class="cart-item-price">$${item.precio.toLocaleString('es-AR')}</div>
+                <div class="cart-item-controls">
+                    <button class="qty-btn" onclick="updateQty(${index}, -1)"><i class="fas fa-minus"></i></button>
                     <span>${item.qty}</span>
-                    <button onclick="updateQty(${index}, 1)"><i class="fas fa-plus"></i></button>
+                    <button class="qty-btn" onclick="updateQty(${index}, 1)"><i class="fas fa-plus"></i></button>
                 </div>
             </div>
-            <button class="btn-remove-item" onclick="removeItem(${index})"><i class="fas fa-trash"></i></button>
+            <button class="btn-remove-item" onclick="removeItem(${index})" style="background:none; border:none; color:#ff4d4d; cursor:pointer;"><i class="fas fa-trash"></i></button>
         </div>
     `).join('');
 
