@@ -129,9 +129,11 @@ export async function guardarProducto(event) {
     const descripcion = document.getElementById('prod-descripcion').value.trim();
     const precio = parseFloat(document.getElementById('prod-precio').value);
     const stock = parseInt(document.getElementById('prod-stock').value) || 0;
+    const controlarStock = document.getElementById('prod-controlar-stock').checked;
     const categoria = document.getElementById('prod-categoria').value;
     const activo = document.getElementById('prod-activo').checked;
     const imagenUrl = document.getElementById('prod-imagen-url').value;
+    const descripcion_larga = document.getElementById('prod-descripcion-larga').value.trim();
 
     if (!nombre || !precio) {
         alert("Completa el nombre y el precio del producto.");
@@ -146,13 +148,14 @@ export async function guardarProducto(event) {
         const productoData = {
             nombre,
             descripcion,
-            descripcion_larga: document.getElementById('prod-descripcion-larga').value.trim(),
+            descripcion_larga,
             precio,
             stock,
+            controlarStock,
             categoria,
             activo,
             imagenUrl,
-            imagenes: imagenesGaleria // Guardamos el array de la galería
+            imagenes: imagenesGaleria 
         };
 
         if (id) {
@@ -195,6 +198,7 @@ export function editarProducto(id) {
     document.getElementById('prod-descripcion').value = prod.descripcion || '';
     document.getElementById('prod-precio').value = prod.precio || 0;
     document.getElementById('prod-stock').value = prod.stock || 0;
+    document.getElementById('prod-controlar-stock').checked = prod.controlarStock || false;
     document.getElementById('prod-categoria').value = prod.categoria || 'otros';
     document.getElementById('prod-activo').checked = prod.activo ?? true;
     document.getElementById('prod-descripcion-larga').value = prod.descripcion_larga || '';

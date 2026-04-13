@@ -316,6 +316,41 @@ header h1 {
   transform: scale(0.98);
 }
 
+.produc.btn-add-cart:active {
+    transform: scale(0.95);
+}
+
+/* Badge Agotado */
+.badge-agotado {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: #e74c3c;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    z-index: 10;
+    box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
+}
+
+.product-card.agotado {
+    opacity: 0.85;
+}
+
+.product-card.agotado .product-img-container img {
+    filter: grayscale(100%) contrast(0.8);
+    opacity: 0.6;
+}
+
+.product-card.agotado .btn-add-cart {
+    background: #ccc !important;
+    cursor: not-allowed;
+}
+
         .product-img-container {
             position: relative;
             background: #f9f9f9;

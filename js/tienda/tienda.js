@@ -75,25 +75,28 @@ function renderProducts() {
         // Fallback si no hay nada
         if (imagenes.length === 0) imagenes.push('https://placehold.co/400x400/fdfcf7/01323f?text=Córcega');
         
+        const isAgotado = p.controlarStock && p.stock <= 0;
+        
         return `
-            <div class="product-card" data-id="${p.id}" style="animation-delay: ${index * 0.05}s">
+            <div class="product-card ${isAgotado ? 'agotado' : ''}" data-id="${p.id}" style="animation-delay: ${index * 0.05}s">
                 <div class="product-img-container">
+                    ${isAgotado ? '<div class="badge-agotado">AGOTADO</div>' : ''}
                     <div class="card-carousel" id="carousel-${p.id}">
                         ${imagenes.map((img, i) => `
                             <img src="${img}" class="${i === 0 ? 'active' : ''}" alt="${p.nombre}">
                         `).join('')}
                     </div>
-                    ${imagenes.length > 1 ? `
+                    ${imagenes.length > 1 && !isAgotado ? `
                         <button class="card-nav prev" onclick="event.stopPropagation(); moveGridCarousel('${p.id}', -1)"><i class="fas fa-chevron-left"></i></button>
                         <button class="card-nav next" onclick="event.stopPropagation(); moveGridCarousel('${p.id}', 1)"><i class="fas fa-chevron-right"></i></button>
                     ` : ''}
                 </div>
                 <div class="product-info" onclick="window.location.href='producto.html?id=${p.id}'">
-                    <h3 class="product-title">${p.nombre}</h3>
+                    <h3 class="product-title">${p.nombre} ${isAgotado ? '(Agotado)' : ''}</h3>
                     <p class="product-desc">${p.descripcion || ''}</p>
                     <div class="product-footer">
                         <span class="product-price">$${p.precio.toLocaleString('es-AR')}</span>
-                        <button class="btn-add-cart" data-id="${p.id}" onclick="event.stopPropagation()">
+                        <button class="btn-add-cart" data-id="${p.id}" onclick="event.stopPropagation()" ${isAgotado ? 'disabled' : ''}>
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
@@ -394,20 +397,29 @@ document.getElementById('btn-modal-add-to-cart').onclick = () => {
 };
 
 // Ajuste en addToCart para poder silenciar el 'openCart'
-window.addToCart = function(id, autoOpen = true) {
+window.addToCart = function(id, autoOpen = true, requestedQty = 1) {
     const product = products.find(p => p.id === id);
     if (!product) return;
 
+    // VALIDACIÓN DE STOCK
+    if (product.controlarStock) {
+        const inCart = (cart.find(item => item.id === id)?.qty || 0);
+        if (inCart + requestedQty > product.stock) {
+            alert(`¡Lo sentimos! Solo quedan ${product.stock} unidades de este producto.`);
+            return;
+        }
+    }
+
     const existing = cart.find(item => item.id === id);
     if (existing) {
-        existing.qty++;
+        existing.qty += requestedQty;
     } else {
         cart.push({
             id: product.id,
             nombre: product.nombre,
             precio: product.precio,
             imagenUrl: product.imagenUrl,
-            qty: 1
+            qty: requestedQty
         });
     }
 

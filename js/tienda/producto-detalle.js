@@ -42,12 +42,24 @@ async function loadProductData(id) {
 function renderProductDetail() {
     const p = currentProduct;
     
+    const isAgotado = p.controlarStock && p.stock <= 0;
+    
     // Textos
     document.getElementById('breadcrumb-category').innerText = p.categoria || 'Tienda';
     document.getElementById('breadcrumb-name').innerText = p.nombre;
-    document.getElementById('prod-title').innerText = p.nombre;
+    document.getElementById('prod-title').innerText = p.nombre + (isAgotado ? ' (Agotado)' : '');
     document.getElementById('prod-price').innerText = `$${p.precio.toLocaleString('es-AR')}`;
     document.getElementById('prod-desc').innerHTML = p.descripcion_larga || p.descripcion || 'Sin descripción detallada por ahora.';
+
+    if (isAgotado) {
+        const btn = document.getElementById('btn-add-to-cart-page');
+        btn.innerText = "SIN STOCK";
+        btn.disabled = true;
+        btn.style.background = "#ccc";
+        btn.style.cursor = "not-allowed";
+        document.querySelector('.quantity-control').style.opacity = "0.5";
+        document.querySelector('.quantity-control').style.pointerEvents = "none";
+    }
 
     // Imágenes
     let imagenes = [];
@@ -93,6 +105,15 @@ window.changeQty = function(delta) {
 // Cart Logic Integration
 function addToCartFromPage() {
     if (!currentProduct) return;
+
+    // VALIDACIÓN DE STOCK
+    if (currentProduct.controlarStock) {
+        const inCart = (cart.find(item => item.id === currentProduct.id)?.qty || 0);
+        if (inCart + currentQty > currentProduct.stock) {
+            alert(`¡Lo sentimos! Solo quedan ${currentProduct.stock} unidades de este producto.`);
+            return;
+        }
+    }
 
     for(let i=0; i<currentQty; i++) {
         const existing = cart.find(item => item.id === currentProduct.id);

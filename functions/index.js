@@ -1170,7 +1170,30 @@ exports.onOrderCreated = onDocumentCreated({
         orderNumber = orderId.substring(0, 6).toUpperCase();
     }
 
-    // 2. Inicializar historial y asignar número humano
+    // 2. Descontar Stock si corresponde
+    try {
+        const batch = db.batch();
+        for (const item of orderData.items) {
+            const productRef = db.collection("productos").doc(item.id);
+            const productDoc = await productRef.get();
+            
+            if (productDoc.exists) {
+                const pData = productDoc.data();
+                // Solo descontamos si controlarStock es true
+                if (pData.controlarStock === true) {
+                    const currentStock = pData.stock || 0;
+                    const newStock = Math.max(0, currentStock - item.qty);
+                    batch.update(productRef, { stock: newStock });
+                    logger.info(`Stock actualizado para ${item.nombre}: ${currentStock} -> ${newStock}`);
+                }
+            }
+        }
+        await batch.commit();
+    } catch (err) {
+        logger.error("Error descontando stock:", err);
+    }
+
+    // 3. Inicializar historial y asignar número humano
     await snapshot.ref.update({
         orderNumber: orderNumber,
         historial: [{
