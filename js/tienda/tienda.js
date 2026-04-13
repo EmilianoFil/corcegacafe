@@ -66,7 +66,14 @@ function renderProducts() {
     }
 
     productsGrid.innerHTML = filtered.map((p, index) => {
-        const imagenes = p.imagenes && p.imagenes.length > 0 ? p.imagenes : [p.imagenUrl || 'https://placehold.co/400x400/fdfcf7/01323f?text=Córcega'];
+        let imagenes = [];
+        if (p.imagenUrl) imagenes.push(p.imagenUrl);
+        if (p.imagenes && Array.isArray(p.imagenes)) {
+            imagenes = [...imagenes, ...p.imagenes];
+        }
+        
+        // Fallback si no hay nada
+        if (imagenes.length === 0) imagenes.push('https://placehold.co/400x400/fdfcf7/01323f?text=Córcega');
         
         return `
             <div class="product-card" data-id="${p.id}" style="animation-delay: ${index * 0.05}s">
@@ -311,10 +318,15 @@ window.openProductModal = function(id) {
     document.getElementById('detail-name').innerText = product.nombre;
     document.getElementById('detail-category').innerText = product.categoria || 'Café';
     document.getElementById('detail-description').innerText = product.descripcion_larga || product.descripcion || 'Sin descripción detallada por ahora.';
-    document.getElementById('detail-price').innerText = `$${product.precio.toLocaleString('es-AR')}`;
+    document.getElementById('detail-price').innerText = `$${product.price ? product.price.toLocaleString('es-AR') : product.precio.toLocaleString('es-AR')}`;
     document.getElementById('detail-qty').innerText = currentModalQty;
 
-    const imagenes = product.imagenes && product.imagenes.length > 0 ? product.imagenes : [product.imagenUrl];
+    let imagenes = [];
+    if (product.imagenUrl) imagenes.push(product.imagenUrl);
+    if (product.imagenes && Array.isArray(product.imagenes)) {
+        imagenes = [...imagenes, ...product.imagenes];
+    }
+    if (imagenes.length === 0) imagenes.push('https://placehold.co/400x400/fdfcf7/01323f?text=Córcega');
     const carouselInner = document.getElementById('detail-carousel-inner');
     const dotsContainer = document.getElementById('detail-carousel-dots');
 
