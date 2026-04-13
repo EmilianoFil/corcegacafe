@@ -88,7 +88,7 @@ function renderProducts() {
                         <button class="card-nav next" onclick="event.stopPropagation(); moveGridCarousel('${p.id}', 1)"><i class="fas fa-chevron-right"></i></button>
                     ` : ''}
                 </div>
-                <div class="product-info" onclick="openProductModal('${p.id}')">
+                <div class="product-info" onclick="window.location.href='producto.html?id=${p.id}'">
                     <h3 class="product-title">${p.nombre}</h3>
                     <p class="product-desc">${p.descripcion || ''}</p>
                     <div class="product-footer">
@@ -114,7 +114,7 @@ function renderProducts() {
     document.querySelectorAll('.product-img-container').forEach(container => {
         container.onclick = () => {
             const id = container.closest('.product-card').dataset.id;
-            openProductModal(id);
+            window.location.href = `producto.html?id=${id}`;
         };
     });
 }

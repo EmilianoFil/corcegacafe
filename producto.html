@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Córcega Café - Producto</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/tienda/tienda.css?v=1.7">
+    <style>
+        :root {
+            --naranja-accent: #e67e22;
+            --panel-oscuro: #01323f;
+            --texto-muted: #666;
+            --bg-crema: #fdfcf7;
+        }
+
+        body {
+            background: white;
+            color: var(--panel-oscuro);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .product-page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Breadcrumbs */
+        .breadcrumbs {
+            font-size: 12px;
+            color: var(--texto-muted);
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .breadcrumbs a { color: inherit; text-decoration: none; }
+        .breadcrumbs span { margin: 0 10px; opacity: 0.5; }
+
+        .product-main-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 60px;
+            align-items: start;
+        }
+
+        /* Carrusel / Fotos */
+        .product-gallery {
+            position: sticky;
+            top: 40px;
+        }
+
+        .main-image-container {
+            width: 100%;
+            aspect-ratio: 1/1;
+            background: var(--bg-crema);
+            border-radius: 24px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .main-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.5s;
+        }
+
+        .gallery-thumbs {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .thumb {
+            width: 70px;
+            height: 70px;
+            border-radius: 12px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .thumb.active { border-color: var(--naranja-accent); }
+
+        /* Contenido Info */
+        .product-info-sticky {
+            padding-right: 20px;
+        }
+
+        .product-info-sticky h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 42px;
+            margin: 0 0 10px 0;
+            line-height: 1.1;
+        }
+
+        .price-tag {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--naranja-accent);
+            margin-bottom: 30px;
+            display: block;
+        }
+
+        .product-description {
+            color: #444;
+            line-height: 1.8;
+            font-size: 16px;
+            margin-bottom: 40px;
+        }
+
+        /* Opciones Dynamicas */
+        .product-options {
+            border-top: 1px solid #eee;
+            padding-top: 30px;
+            margin-bottom: 30px;
+        }
+
+        .option-group {
+            margin-bottom: 25px;
+        }
+
+        .option-group label {
+            display: block;
+            font-weight: 700;
+            font-size: 13px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .option-select {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            font-family: inherit;
+            font-size: 15px;
+            color: var(--panel-oscuro);
+            background: white;
+        }
+
+        /* Add to cart section */
+        .buy-box {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            background: #f5f5f5;
+            border-radius: 12px;
+            padding: 5px;
+        }
+
+        .quantity-control button {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: transparent;
+            font-size: 18px;
+            cursor: pointer;
+            color: var(--panel-oscuro);
+        }
+
+        .quantity-control span {
+            width: 30px;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .btn-add-to-cart {
+            flex: 1;
+            background: var(--panel-oscuro);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-add-to-cart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(1, 50, 63, 0.15);
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 850px) {
+            .product-main-grid { grid-template-columns: 1fr; gap: 30px; }
+            .product-info-sticky h1 { font-size: 32px; }
+            .product-gallery { position: relative; top: 0; }
+        }
+
+        /* Cart Badge Fix */
+        .cart-nav-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 50%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            cursor: pointer;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="product-page-container">
+        <!-- Breadcrumbs -->
+        <div class="breadcrumbs">
+            <a href="index.html">Inicio</a> <span>/</span> 
+            <a href="tienda.html">Tienda</a> <span>/</span> 
+            <span id="breadcrumb-category">Categoría</span> <span>/</span> 
+            <strong id="breadcrumb-name">Producto</strong>
+        </div>
+
+        <div class="product-main-grid" id="main-product-loader">
+            <div style="grid-column: 1/-1; text-align: center; padding: 100px;">
+                <i class="fas fa-circle-notch fa-spin fa-2x"></i>
+            </div>
+        </div>
+
+        <div class="product-main-grid" id="product-content" style="display: none;">
+            <!-- Izquierda: Fotos -->
+            <div class="product-gallery">
+                <div class="main-image-container">
+                    <img id="main-prod-img" src="" alt="">
+                </div>
+                <div class="gallery-thumbs" id="gallery-thumbs-list">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+
+            <!-- Derecha: Info y Compra -->
+            <div class="product-info-sticky">
+                <h1 id="prod-title">Cargando...</h1>
+                <span class="price-tag" id="prod-price">$0.00</span>
+                
+                <div class="product-description" id="prod-desc">
+                    Cargando descripción detallada del producto...
+                </div>
+
+                <div class="product-options" id="prod-options-container" style="display: none;">
+                    <!-- Opciones si existen -->
+                </div>
+
+                <div class="buy-box">
+                    <div class="quantity-control">
+                        <button onclick="changeQty(-1)"><i class="fas fa-minus"></i></button>
+                        <span id="prod-qty">1</span>
+                        <button onclick="changeQty(1)"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <button class="btn-add-to-cart" id="btn-add-to-cart-page">
+                        AGREGAR AL CARRITO
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de lógica dinámica -->
+    <script type="module" src="js/tienda/producto-detalle.js?v=1.0"></script>
+</body>
+</html>
