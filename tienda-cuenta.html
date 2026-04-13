@@ -254,6 +254,9 @@
                 <label>CLAVE</label>
                 <input type="password" id="login-pass" class="form-control" placeholder="••••••••">
             </div>
+            <div style="text-align: right; margin-top: -10px; margin-bottom: 20px;">
+                <span onclick="toggleAuth('forgot')" style="font-size: 12px; color: var(--naranja-accent); cursor: pointer; font-weight: 600;">¿Olvidaste tu contraseña?</span>
+            </div>
             <button class="btn-auth" id="btn-login">ENTRAR</button>
             <div class="toggle-auth">¿No tenés cuenta? <span onclick="toggleAuth('register')">Registrate</span></div>
         </div>
@@ -283,6 +286,17 @@
             </div>
             <button class="btn-auth" id="btn-register">REGISTRARME</button>
             <div class="toggle-auth">¿Ya tenés cuenta? <span onclick="toggleAuth('login')">Iniciá sesión</span></div>
+        </div>
+
+        <div class="auth-card" id="forgot-form" style="display: none;">
+            <h2>Recuperar Clave</h2>
+            <p>Ingresá tu email y te enviaremos un link para crear una nueva contraseña.</p>
+            <div class="form-group">
+                <label>Email de tu cuenta</label>
+                <input type="email" id="forgot-email" class="form-control" placeholder="tu@email.com">
+            </div>
+            <button class="btn-auth" id="btn-reset-pass">ENVIAR LINK</button>
+            <div class="toggle-auth">Volver al <span onclick="toggleAuth('login')">Inicio de sesión</span></div>
         </div>
     </div>
 
@@ -393,6 +407,7 @@
         function toggleAuth(view) {
             document.getElementById('login-form').style.display = view === 'login' ? 'block' : 'none';
             document.getElementById('register-form').style.display = view === 'register' ? 'block' : 'none';
+            document.getElementById('forgot-form').style.display = view === 'forgot' ? 'block' : 'none';
         }
     </script>
     <script type="module" src="js/tienda/tienda-auth.js?v=1.7"></script>

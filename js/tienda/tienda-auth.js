@@ -5,7 +5,8 @@ import {
     signInWithPopup, 
     GoogleAuthProvider,
     onAuthStateChanged,
-    signOut
+    signOut,
+    sendPasswordResetEmail
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { doc, getDoc, setDoc, getDocs, query, collection, where, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
@@ -52,6 +53,9 @@ onAuthStateChanged(auth, async (user) => {
 if (btnLogin) btnLogin.onclick = handleLogin;
 if (btnRegister) btnRegister.onclick = handleRegister;
 if (btnGoogle) btnGoogle.onclick = handleGoogleLogin;
+
+const btnResetPass = document.getElementById('btn-reset-pass');
+if (btnResetPass) btnResetPass.onclick = handleResetPassword;
 
 // --- LOGIC ---
 async function handleLogin() {
@@ -113,6 +117,30 @@ async function handleRegister() {
     } catch (err) {
         console.error(err);
         alert("Error al registrar: " + err.message);
+    }
+}
+
+async function handleResetPassword() {
+    const email = document.getElementById('forgot-email').value.trim();
+    if (!email) return alert("Por favor, ingresá tu email.");
+
+    const btn = document.getElementById('btn-reset-pass');
+    const originalText = btn.innerText;
+    btn.innerText = "Enviando... ⏳";
+    btn.disabled = true;
+
+    try {
+        await sendPasswordResetEmail(auth, email);
+        alert("¡Mail enviado! Revisá tu bandeja de entrada (y la de spam por las dudas).");
+        toggleAuth('login');
+    } catch (err) {
+        console.error(err);
+        alert("Error: No pudimos enviar el mail. Verificá que el email sea correcto.");
+    } finally {
+        if (btn) {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
     }
 }
 
