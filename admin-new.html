@@ -988,12 +988,8 @@
                             <input type="number" id="prod-precio" required min="0">
                         </div>
                         <div class="input-group">
-                            <label>Stock</label>
-                            <div style="display: flex; align-items: center; gap: 10px; background: white; padding: 10px; border-radius: 12px; border: 1px solid var(--border);">
-                                <input type="checkbox" id="prod-controlar-stock" style="width: auto;">
-                                <label for="prod-controlar-stock" style="margin-bottom: 0; font-size: 0.8rem; color: var(--texto-muted);">Controlar Stock</label>
-                                <input type="number" id="prod-stock" value="0" min="0" style="flex: 1; border: none; padding: 0; outline: none; text-align: right;">
-                            </div>
+                            <label>Stock (0 para ilimitado)</label>
+                            <input type="number" id="prod-stock" value="0" min="0">
                         </div>
                     </div>
                     <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 0;">

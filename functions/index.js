@@ -1179,9 +1179,9 @@ exports.onOrderCreated = onDocumentCreated({
             
             if (productDoc.exists) {
                 const pData = productDoc.data();
-                // Solo descontamos si controlarStock es true
-                if (pData.controlarStock === true) {
-                    const currentStock = pData.stock || 0;
+                // Solo descontamos si stock > 0 (0 es ilimitado según el admin)
+                if (pData.stock > 0) {
+                    const currentStock = pData.stock;
                     const newStock = Math.max(0, currentStock - item.qty);
                     batch.update(productRef, { stock: newStock });
                     logger.info(`Stock actualizado para ${item.nombre}: ${currentStock} -> ${newStock}`);
