@@ -151,18 +151,20 @@ function removeFromCart(id) {
     updateCartUI();
 }
 
-function updateQty(id, delta) {
-    const item = cart.find(i => i.id === id);
-    if (!item) return;
+window.updateQty = function (index, delta) {
+    const item = cart[index];
+    if (delta > 0 && item.stock > 0 && item.qty >= item.stock) {
+        alert(`¡Lo sentimos! Solo quedan ${item.stock} unidades de ${item.nombre}.`);
+        return;
+    }
 
     item.qty += delta;
-    if (item.qty <= 0) {
-        removeFromCart(id);
-    } else {
-        saveCart();
-        updateCartUI();
+    if (item.qty < 1) {
+        cart.splice(index, 1);
     }
-}
+    saveCart();
+    updateCartUI();
+};
 
 function saveCart() {
     localStorage.setItem('corcega_cart', JSON.stringify(cart));
@@ -419,7 +421,8 @@ window.addToCart = function(id, autoOpen = true, requestedQty = 1) {
             nombre: product.nombre,
             precio: product.precio,
             imagenUrl: product.imagenUrl,
-            qty: requestedQty
+            qty: requestedQty,
+            stock: product.stock // Guardamos el stock en el item del carrito
         });
     }
 
