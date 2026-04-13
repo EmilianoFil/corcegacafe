@@ -192,8 +192,8 @@ function saveAndRefresh() {
 function addToCartFromPage() {
     if (!currentProduct) return;
 
-    // VALIDACIÓN DE STOCK
-    if (currentProduct.controlarStock) {
+    // VALIDACIÓN DE STOCK: Solo si es > 0 (0 es ilimitado)
+    if (currentProduct.stock > 0) {
         const inCart = (cart.find(item => item.id === currentProduct.id)?.qty || 0);
         if (inCart + currentQty > currentProduct.stock) {
             alert(`¡Lo sentimos! Solo quedan ${currentProduct.stock} unidades de este producto.`);

@@ -401,8 +401,8 @@ window.addToCart = function(id, autoOpen = true, requestedQty = 1) {
     const product = products.find(p => p.id === id);
     if (!product) return;
 
-    // VALIDACIÓN DE STOCK
-    if (product.controlarStock) {
+    // VALIDACIÓN DE STOCK: Solo si stock > 0 (0 es ilimitado)
+    if (product.stock > 0) {
         const inCart = (cart.find(item => item.id === id)?.qty || 0);
         if (inCart + requestedQty > product.stock) {
             alert(`¡Lo sentimos! Solo quedan ${product.stock} unidades de este producto.`);
