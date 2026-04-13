@@ -65,27 +65,50 @@ function renderProducts() {
         return;
     }
 
-    productsGrid.innerHTML = filtered.map((p, index) => `
-        <div class="product-card" style="animation-delay: ${index * 0.05}s">
-            <div class="product-img-container">
-                <img src="${p.imagenUrl || 'https://placehold.co/400x400/fdfcf7/01323f?text=Córcega'}" alt="${p.nombre}">
-            </div>
-            <div class="product-info">
-                <h3 class="product-title">${p.nombre}</h3>
-                <p class="product-desc">${p.descripcion || ''}</p>
-                <div class="product-footer">
-                    <span class="product-price">$${p.precio.toLocaleString('es-AR')}</span>
-                    <button class="btn-add-cart" data-id="${p.id}">
-                        <i class="fas fa-plus"></i>
-                    </button>
+    productsGrid.innerHTML = filtered.map((p, index) => {
+        const imagenes = p.imagenes && p.imagenes.length > 0 ? p.imagenes : [p.imagenUrl || 'https://placehold.co/400x400/fdfcf7/01323f?text=Córcega'];
+        
+        return `
+            <div class="product-card" data-id="${p.id}" style="animation-delay: ${index * 0.05}s">
+                <div class="product-img-container">
+                    <div class="card-carousel" id="carousel-${p.id}">
+                        ${imagenes.map((img, i) => `
+                            <img src="${img}" class="${i === 0 ? 'active' : ''}" alt="${p.nombre}">
+                        `).join('')}
+                    </div>
+                    ${imagenes.length > 1 ? `
+                        <button class="card-nav prev" onclick="event.stopPropagation(); moveGridCarousel('${p.id}', -1)"><i class="fas fa-chevron-left"></i></button>
+                        <button class="card-nav next" onclick="event.stopPropagation(); moveGridCarousel('${p.id}', 1)"><i class="fas fa-chevron-right"></i></button>
+                    ` : ''}
+                </div>
+                <div class="product-info" onclick="openProductModal('${p.id}')">
+                    <h3 class="product-title">${p.nombre}</h3>
+                    <p class="product-desc">${p.descripcion || ''}</p>
+                    <div class="product-footer">
+                        <span class="product-price">$${p.precio.toLocaleString('es-AR')}</span>
+                        <button class="btn-add-cart" data-id="${p.id}" onclick="event.stopPropagation()">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 
     // Re-attach add-to-cart listeners
     document.querySelectorAll('.btn-add-cart').forEach(btn => {
-        btn.onclick = () => addToCart(btn.dataset.id);
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            addToCart(btn.dataset.id);
+        };
+    });
+
+    // Make image container clickable too
+    document.querySelectorAll('.product-img-container').forEach(container => {
+        container.onclick = () => {
+            const id = container.closest('.product-card').dataset.id;
+            openProductModal(id);
+        };
     });
 }
 
@@ -257,3 +280,124 @@ window.tienda = {
 
 // --- RUN ---
 init();
+// --- PRODUCT MODAL & CAROUSEL ---
+let currentProduct = null;
+let currentImgIdx = 0;
+let currentModalQty = 1;
+
+window.openProductModal = function(id) {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+
+    currentProduct = product;
+    currentImgIdx = 0;
+    currentModalQty = 1;
+
+    document.getElementById('detail-name').innerText = product.nombre;
+    document.getElementById('detail-category').innerText = product.categoria || 'Café';
+    document.getElementById('detail-description').innerText = product.descripcion_larga || product.descripcion || 'Sin descripción detallada por ahora.';
+    document.getElementById('detail-price').innerText = `$${product.precio.toLocaleString('es-AR')}`;
+    document.getElementById('detail-qty').innerText = currentModalQty;
+
+    const imagenes = product.imagenes && product.imagenes.length > 0 ? product.imagenes : [product.imagenUrl];
+    const carouselInner = document.getElementById('detail-carousel-inner');
+    const dotsContainer = document.getElementById('detail-carousel-dots');
+
+    carouselInner.innerHTML = imagenes.map(img => `<img src="${img}">`).join('');
+    dotsContainer.innerHTML = imagenes.map((_, i) => `<span class="dot ${i === 0 ? 'active' : ''}" onclick="goToDetailSlide(${i})"></span>`).join('');
+    
+    updateDetailCarousel();
+    
+    document.getElementById('product-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Evitar scroll de fondo
+};
+
+// Cerrar Modal
+document.getElementById('btn-close-product-modal').onclick = () => {
+    document.getElementById('product-modal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+};
+
+window.onclick = (event) => {
+    const modal = document.getElementById('product-modal');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+};
+
+// Controles del Carrusel del Modal
+window.moveDetailCarousel = function(delta) {
+    const imagenes = currentProduct.imagenes && currentProduct.imagenes.length > 0 ? currentProduct.imagenes : [currentProduct.imagenUrl];
+    currentImgIdx = (currentImgIdx + delta + imagenes.length) % imagenes.length;
+    updateDetailCarousel();
+};
+
+window.goToDetailSlide = function(idx) {
+    currentImgIdx = idx;
+    updateDetailCarousel();
+};
+
+function updateDetailCarousel() {
+    const carouselInner = document.getElementById('detail-carousel-inner');
+    carouselInner.style.transform = `translateX(-${currentImgIdx * 100}%)`;
+    
+    // Update dots
+    const dots = document.querySelectorAll('#detail-carousel-dots .dot');
+    dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === currentImgIdx);
+    });
+}
+
+// Controles del Carrusel en la Card (Giro rápido)
+window.moveGridCarousel = function(id, delta) {
+    const container = document.getElementById(`carousel-${id}`);
+    const imgs = container.querySelectorAll('img');
+    let activeIdx = Array.from(imgs).findIndex(img => img.classList.contains('active'));
+    
+    imgs[activeIdx].classList.remove('active');
+    activeIdx = (activeIdx + delta + imgs.length) % imgs.length;
+    imgs[activeIdx].classList.add('active');
+};
+
+// Ajustar Cantidad en Modal
+window.adjustDetailQty = function(delta) {
+    currentModalQty = Math.max(1, currentModalQty + delta);
+    document.getElementById('detail-qty').innerText = currentModalQty;
+};
+
+// Agregar al carrito desde Modal
+document.getElementById('btn-modal-add-to-cart').onclick = () => {
+    if (!currentProduct) return;
+    
+    for (let i = 0; i < currentModalQty; i++) {
+        addToCart(currentProduct.id, false); // false para no abrir el carrito cada vez si agregamos n
+    }
+    
+    openCart();
+    document.getElementById('btn-close-product-modal').click();
+};
+
+// Ajuste en addToCart para poder silenciar el 'openCart'
+const originalAddToCart = addToCart;
+window.addToCart = function(id, autoOpen = true) {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+
+    const existing = cart.find(item => item.id === id);
+    if (existing) {
+        existing.qty++;
+    } else {
+        cart.push({
+            id: product.id,
+            nombre: product.nombre,
+            precio: product.precio,
+            imagenUrl: product.imagenUrl,
+            qty: 1
+        });
+    }
+
+    saveCart();
+    updateCartUI();
+    if (autoOpen) openCart();
+};
