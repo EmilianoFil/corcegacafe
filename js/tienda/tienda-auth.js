@@ -130,6 +130,16 @@ async function handleResetPassword() {
     btn.disabled = true;
 
     try {
+        // --- VALIDACIÓN PREVIA ---
+        // Verificamos si el usuario existe en nuestra base para dar mejor feedback
+        const q = query(collection(db, "usuarios_tienda"), where("email", "==", email));
+        const snap = await getDocs(q);
+        
+        if (snap.empty) {
+            alert("No encontramos ninguna cuenta asociada a ese email. ¿Estás seguro de que es el correcto?");
+            return;
+        }
+
         await sendPasswordResetEmail(auth, email);
         alert("¡Mail enviado! Revisá tu bandeja de entrada (y la de spam por las dudas).");
         toggleAuth('login');
