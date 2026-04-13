@@ -140,8 +140,16 @@ async function handleResetPassword() {
             return;
         }
 
-        await sendPasswordResetEmail(auth, email);
-        alert("¡Mail enviado! Revisá tu bandeja de entrada (y la de spam por las dudas).");
+        // --- NUEVA LÓGICA: MAIL BRANDED ---
+        const response = await fetch('https://enviarmailrecupero-ioo4dzpz2a-uc.a.run.app', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        
+        if (!response.ok) throw new Error("Error en la respuesta del servidor");
+
+        alert("¡Mail enviado! Revisá tu bandeja de entrada (y la de spam por las dudas, aunque ahora llega mejor).");
         toggleAuth('login');
     } catch (err) {
         console.error(err);

@@ -1434,3 +1434,63 @@ exports.getPublicOrder = onRequest(async (req, res) => {
     }
   });
 });
+
+exports.enviarMailRecupero = onRequest(
+  { region: "us-central1", secrets: [emailUser, emailPass] },
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      const { email } = req.body;
+      if (!email) return res.status(400).send({ error: "Email requerido" });
+
+      try {
+        // 1. Generar el link de reseteo oficial de Firebase
+        const actionCodeSettings = {
+          url: 'https://corcegacafe.com.ar/tienda-cuenta.html', // A donde vuelve dsp de resetear
+        };
+        const resetLink = await admin.auth().generatePasswordResetLink(email, actionCodeSettings);
+
+        // 2. Enviar el mail con nuestro diseño
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: emailUser.value(),
+            pass: emailPass.value(),
+          },
+        });
+
+        const mailOptions = {
+          from: `Córcega Café <${emailUser.value()}>`,
+          to: email,
+          subject: "☕ Recuperar tu contraseña - Córcega Café",
+          html: `
+            <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:40px; border:1px solid #eee; border-radius:30px;">
+              <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:120px; margin-bottom:30px;">
+              
+              <h2 style="color:#d86634; margin:0 0 15px 0; font-size:22px;">¿Te olvidaste la clave?</h2>
+              <p style="font-size:16px; color:#666; line-height:1.5;">No te preocupes, a todos nos pasa. Hacé clic en el siguiente botón para crear una nueva contraseña y volver a disfrutar de tu café favorito.</p>
+              
+              <div style="margin:40px 0;">
+                  <a href="${resetLink}" style="display:inline-block; padding:18px 36px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:16px; box-shadow:0 6px 15px rgba(216,102,52,0.2); font-size:16px;">
+                     RESETEAR CONTRASEÑA
+                  </a>
+              </div>
+
+              <p style="font-size:12px; color:#999; margin-top:30px;">Si no solicitaste este cambio, podés ignorar este mail tranquilamente.</p>
+              
+              <div style="margin-top:40px; padding-top:20px; border-top:1px solid #eee;">
+                 <p style="font-size:11px; color:#999;">Nos vemos pronto en la isla.<br><strong>Equipo Córcega Café</strong></p>
+              </div>
+            </div>
+          `,
+        };
+
+        await transporter.sendMail(mailOptions);
+        res.status(200).send({ success: true });
+
+      } catch (error) {
+        console.error("Error en mail de recupero:", error);
+        res.status(500).send({ error: error.message });
+      }
+    });
+  }
+);
