@@ -285,6 +285,21 @@ let currentProduct = null;
 let currentImgIdx = 0;
 let currentModalQty = 1;
 
+// Definimos funciones globales PRIMERO
+window.moveGridCarousel = function(id, delta) {
+    const container = document.getElementById(`carousel-${id}`);
+    if (!container) return;
+    const imgs = container.querySelectorAll('img');
+    if (imgs.length === 0) return;
+    
+    let activeIdx = Array.from(imgs).findIndex(img => img.classList.contains('active'));
+    if (activeIdx === -1) activeIdx = 0;
+    
+    imgs[activeIdx].classList.remove('active');
+    activeIdx = (activeIdx + delta + imgs.length) % imgs.length;
+    imgs[activeIdx].classList.add('active');
+};
+
 window.openProductModal = function(id) {
     const product = products.find(p => p.id === id);
     if (!product) return;
@@ -304,13 +319,41 @@ window.openProductModal = function(id) {
     const dotsContainer = document.getElementById('detail-carousel-dots');
 
     carouselInner.innerHTML = imagenes.map(img => `<img src="${img}">`).join('');
-    dotsContainer.innerHTML = imagenes.map((_, i) => `<span class="dot ${i === 0 ? 'active' : ''}" onclick="goToDetailSlide(${i})"></span>`).join('');
+    dotsContainer.innerHTML = imagenes.map((_, i) => `<span class="dot ${i === 0 ? 'active' : ''}" onclick="window.goToDetailSlide(${i})"></span>`).join('');
     
     updateDetailCarousel();
     
     document.getElementById('product-modal').style.display = 'flex';
-    document.body.style.overflow = 'hidden'; // Evitar scroll de fondo
+    document.body.style.overflow = 'hidden'; 
 };
+
+window.moveDetailCarousel = function(delta) {
+    const imagenes = currentProduct.imagenes && currentProduct.imagenes.length > 0 ? currentProduct.imagenes : [currentProduct.imagenUrl];
+    currentImgIdx = (currentImgIdx + delta + imagenes.length) % imagenes.length;
+    updateDetailCarousel();
+};
+
+window.goToDetailSlide = function(idx) {
+    currentImgIdx = idx;
+    updateDetailCarousel();
+};
+
+window.adjustDetailQty = function(delta) {
+    currentModalQty = Math.max(1, currentModalQty + delta);
+    document.getElementById('detail-qty').innerText = currentModalQty;
+};
+
+function updateDetailCarousel() {
+    const carouselInner = document.getElementById('detail-carousel-inner');
+    if (!carouselInner) return;
+    carouselInner.style.transform = `translateX(-${currentImgIdx * 100}%)`;
+    
+    // Update dots
+    const dots = document.querySelectorAll('#detail-carousel-dots .dot');
+    dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === currentImgIdx);
+    });
+}
 
 // Cerrar Modal
 document.getElementById('btn-close-product-modal').onclick = () => {
@@ -326,52 +369,12 @@ window.onclick = (event) => {
     }
 };
 
-// Controles del Carrusel del Modal
-window.moveDetailCarousel = function(delta) {
-    const imagenes = currentProduct.imagenes && currentProduct.imagenes.length > 0 ? currentProduct.imagenes : [currentProduct.imagenUrl];
-    currentImgIdx = (currentImgIdx + delta + imagenes.length) % imagenes.length;
-    updateDetailCarousel();
-};
-
-window.goToDetailSlide = function(idx) {
-    currentImgIdx = idx;
-    updateDetailCarousel();
-};
-
-function updateDetailCarousel() {
-    const carouselInner = document.getElementById('detail-carousel-inner');
-    carouselInner.style.transform = `translateX(-${currentImgIdx * 100}%)`;
-    
-    // Update dots
-    const dots = document.querySelectorAll('#detail-carousel-dots .dot');
-    dots.forEach((dot, i) => {
-        dot.classList.toggle('active', i === currentImgIdx);
-    });
-}
-
-// Controles del Carrusel en la Card (Giro rápido)
-window.moveGridCarousel = function(id, delta) {
-    const container = document.getElementById(`carousel-${id}`);
-    const imgs = container.querySelectorAll('img');
-    let activeIdx = Array.from(imgs).findIndex(img => img.classList.contains('active'));
-    
-    imgs[activeIdx].classList.remove('active');
-    activeIdx = (activeIdx + delta + imgs.length) % imgs.length;
-    imgs[activeIdx].classList.add('active');
-};
-
-// Ajustar Cantidad en Modal
-window.adjustDetailQty = function(delta) {
-    currentModalQty = Math.max(1, currentModalQty + delta);
-    document.getElementById('detail-qty').innerText = currentModalQty;
-};
-
 // Agregar al carrito desde Modal
 document.getElementById('btn-modal-add-to-cart').onclick = () => {
     if (!currentProduct) return;
     
     for (let i = 0; i < currentModalQty; i++) {
-        addToCart(currentProduct.id, false); // false para no abrir el carrito cada vez si agregamos n
+        addToCart(currentProduct.id, false); 
     }
     
     openCart();
@@ -379,7 +382,6 @@ document.getElementById('btn-modal-add-to-cart').onclick = () => {
 };
 
 // Ajuste en addToCart para poder silenciar el 'openCart'
-const originalAddToCart = addToCart;
 window.addToCart = function(id, autoOpen = true) {
     const product = products.find(p => p.id === id);
     if (!product) return;
