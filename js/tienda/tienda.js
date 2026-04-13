@@ -91,7 +91,7 @@ function renderProducts() {
                     <p class="product-desc">${p.descripcion || ''}</p>
                     <div class="product-footer">
                         <span class="product-price">$${p.precio.toLocaleString('es-AR')}</span>
-                        <button class="btn-add-cart" data-id="${p.id}" onclick="event.stopPropagation()">
+                        <button class="btn-add-cart" onclick="event.stopPropagation(); window.addToCart('${p.id}')">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
@@ -119,15 +119,6 @@ window.moveGridCarousel = function(productId, direction) {
 };
 
 function setupEventListeners() {
-    // Delegación para botones de agregar al carrito
-    productsGrid.addEventListener('click', (e) => {
-        const btn = e.target.closest('.btn-add-cart');
-        if (btn) {
-            const id = btn.dataset.id;
-            window.addToCart(id);
-        }
-    });
-
     const categoryChips = document.querySelectorAll('.category-chip');
     categoryChips.forEach(chip => {
         chip.addEventListener('click', () => {
