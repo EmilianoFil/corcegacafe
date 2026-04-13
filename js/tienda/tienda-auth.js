@@ -130,23 +130,18 @@ async function handleResetPassword() {
     btn.disabled = true;
 
     try {
-        // --- VALIDACIÓN PREVIA ---
-        // Verificamos si el usuario existe en nuestra base para dar mejor feedback
-        const q = query(collection(db, "usuarios_tienda"), where("email", "==", email));
-        const snap = await getDocs(q);
-        
-        if (snap.empty) {
-            alert("No encontramos ninguna cuenta asociada a ese email. ¿Estás seguro de que es el correcto?");
-            return;
-        }
-
-        // --- NUEVA LÓGICA: MAIL BRANDED ---
+        // --- NUEVA LÓGICA: TODO EN EL SERVIDOR ---
         const response = await fetch('https://enviarmailrecupero-ioo4dzpz2a-uc.a.run.app', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
         });
         
+        if (response.status === 404) {
+            alert("No encontramos ninguna cuenta asociada a ese email. Verificá que esté bien escrito.");
+            return;
+        }
+
         if (!response.ok) throw new Error("Error en la respuesta del servidor");
 
         alert("¡Mail enviado! Revisá tu bandeja de entrada (y la de spam por las dudas, aunque ahora llega mejor).");

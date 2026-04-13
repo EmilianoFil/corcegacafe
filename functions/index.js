@@ -1443,6 +1443,13 @@ exports.enviarMailRecupero = onRequest(
       if (!email) return res.status(400).send({ error: "Email requerido" });
 
       try {
+        // --- VALIDACIÓN DE EXISTENCIA ---
+        const userSnap = await admin.firestore().collection("usuarios_tienda").where("email", "==", email).limit(1).get();
+        
+        if (userSnap.empty) {
+            return res.status(404).send({ error: "usuario_no_encontrado" });
+        }
+
         // 1. Generar el link de reseteo oficial de Firebase
         const actionCodeSettings = {
           url: 'https://corcegacafe.com.ar/tienda-cuenta.html', // A donde vuelve dsp de resetear
