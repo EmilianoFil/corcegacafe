@@ -6,6 +6,13 @@ let currentProduct = null;
 let currentQty = 1;
 let cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
 
+// --- ELEMENTS ---
+const cartDrawer = document.getElementById('cart-drawer');
+const cartOverlay = document.getElementById('cart-overlay');
+const cartItemsList = document.getElementById('cart-items-list');
+const cartTotal = document.getElementById('cart-total');
+const cartBadges = document.querySelectorAll('.cart-count, .cart-count-badge');
+
 // --- INIT ---
 async function init() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -16,8 +23,9 @@ async function init() {
         return;
     }
 
+    setupCartEvents();
     await loadProductData(productId);
-    updateCartVisuals();
+    updateCartUI();
 }
 
 // Load from Firestore
@@ -38,15 +46,16 @@ async function loadProductData(id) {
     }
 }
 
-// Render UI
+// Render UI Detail
 function renderProductDetail() {
     const p = currentProduct;
     
-    const isAgotado = p.controlarStock && p.stock <= 0;
-    
-    // Textos
+    // Breadcrumbs
     document.getElementById('breadcrumb-category').innerText = p.categoria || 'Tienda';
     document.getElementById('breadcrumb-name').innerText = p.nombre;
+    
+    // Titulo y Precio
+    const isAgotado = p.controlarStock && p.stock <= 0;
     document.getElementById('prod-title').innerText = p.nombre + (isAgotado ? ' (Agotado)' : '');
     document.getElementById('prod-price').innerText = `$${p.precio.toLocaleString('es-AR')}`;
     document.getElementById('prod-desc').innerHTML = p.descripcion_larga || p.descripcion || 'Sin descripción detallada por ahora.';
@@ -87,10 +96,11 @@ function renderProductDetail() {
 
 // Interactivity
 window.changeMainImage = function(url, thumbEl) {
-    document.getElementById('main-prod-img').style.opacity = '0';
+    const mainImg = document.getElementById('main-prod-img');
+    mainImg.style.opacity = '0';
     setTimeout(() => {
-        document.getElementById('main-prod-img').src = url;
-        document.getElementById('main-prod-img').style.opacity = '1';
+        mainImg.src = url;
+        mainImg.style.opacity = '1';
     }, 200);
 
     document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
@@ -102,7 +112,79 @@ window.changeQty = function(delta) {
     document.getElementById('prod-qty').innerText = currentQty;
 };
 
-// Cart Logic Integration
+// --- CART CORE LOGIC ---
+function setupCartEvents() {
+    document.getElementById('btn-open-cart').onclick = openCart;
+    document.getElementById('cart-btn-header').onclick = openCart;
+    document.getElementById('btn-close-cart').onclick = closeCart;
+    cartOverlay.onclick = closeCart;
+    document.getElementById('btn-go-to-checkout').onclick = () => window.location.href = 'checkout.html';
+}
+
+function openCart() {
+    cartDrawer.classList.add('active');
+    cartOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCart() {
+    cartDrawer.classList.remove('active');
+    cartOverlay.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+function updateCartUI() {
+    // Badges count
+    const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+    cartBadges.forEach(b => {
+        b.innerText = totalItems;
+        b.style.display = totalItems > 0 ? 'flex' : 'none';
+    });
+
+    if (cart.length === 0) {
+        cartItemsList.innerHTML = `<div class="cart-empty"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío</p></div>`;
+        cartTotal.innerText = "$0.00";
+        return;
+    }
+
+    cartItemsList.innerHTML = cart.map((item, index) => `
+        <div class="cart-item">
+            <img src="${item.imagenUrl || 'https://placehold.co/100x100'}" alt="${item.nombre}">
+            <div class="cart-item-info">
+                <h4>${item.nombre}</h4>
+                <p>$${item.precio.toLocaleString('es-AR')}</p>
+                <div class="cart-item-qty">
+                    <button onclick="updateQty(${index}, -1)"><i class="fas fa-minus"></i></button>
+                    <span>${item.qty}</span>
+                    <button onclick="updateQty(${index}, 1)"><i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+            <button class="btn-remove-item" onclick="removeItem(${index})"><i class="fas fa-trash"></i></button>
+        </div>
+    `).join('');
+
+    const total = cart.reduce((sum, item) => sum + (item.precio * item.qty), 0);
+    cartTotal.innerText = `$${total.toLocaleString('es-AR')}`;
+}
+
+window.updateQty = function(index, delta) {
+    cart[index].qty += delta;
+    if (cart[index].qty < 1) {
+        cart.splice(index, 1);
+    }
+    saveAndRefresh();
+};
+
+window.removeItem = function(index) {
+    cart.splice(index, 1);
+    saveAndRefresh();
+};
+
+function saveAndRefresh() {
+    localStorage.setItem('corcega_cart', JSON.stringify(cart));
+    updateCartUI();
+}
+
 function addToCartFromPage() {
     if (!currentProduct) return;
 
@@ -115,38 +197,21 @@ function addToCartFromPage() {
         }
     }
 
-    for(let i=0; i<currentQty; i++) {
-        const existing = cart.find(item => item.id === currentProduct.id);
-        if (existing) {
-            existing.qty++;
-        } else {
-            cart.push({
-                id: currentProduct.id,
-                nombre: currentProduct.nombre,
-                precio: currentProduct.precio,
-                imagenUrl: currentProduct.imagenUrl,
-                qty: 1
-            });
-        }
+    const existing = cart.find(item => item.id === currentProduct.id);
+    if (existing) {
+        existing.qty += currentQty;
+    } else {
+        cart.push({
+            id: currentProduct.id,
+            nombre: currentProduct.nombre,
+            precio: currentProduct.precio,
+            imagenUrl: currentProduct.imagenUrl,
+            qty: currentQty
+        });
     }
 
-    localStorage.setItem('corcega_cart', JSON.stringify(cart));
-    
-    // Animación de feedback
-    const btn = document.getElementById('btn-add-to-cart-page');
-    const originalText = btn.innerText;
-    btn.innerText = "¡AGREGADO! ✅";
-    btn.style.background = "#27ae60";
-    
-    setTimeout(() => {
-        btn.innerText = originalText;
-        btn.style.background = "";
-    }, 2000);
-}
-
-function updateCartVisuals() {
-    // Aquí podrías agregar un contador de carrito si quisieras arriba, 
-    // pero por ahora compartimos el localStorage con tienda.html
+    saveAndRefresh();
+    openCart();
 }
 
 init();
