@@ -206,12 +206,33 @@ if (btnSaveData) {
             
             // También actualizar en Clientes (Fidelidad) si tiene DNI
             const sessionDni = localStorage.getItem('corcega_tienda_dni');
+            const userEmail = user.email;
+
             if (sessionDni) {
                 await setDoc(doc(db, "clientes", sessionDni), {
                     nombre,
                     whatsapp, // Sync phone too
                     actualizado: serverTimestamp()
                 }, { merge: true });
+            }
+
+            // --- PROPAGACIÓN A PEDIDOS ---
+            // Actualizamos el nombre en todos los pedidos de este mail para que los mails de seguimiento salgan bien
+            const qOrders = query(collection(db, "ordenes"), where("cliente.email", "==", userEmail));
+            const ordersSnap = await getDocs(qOrders);
+            
+            const batchPromises = [];
+            ordersSnap.forEach(orderDoc => {
+                batchPromises.push(setDoc(doc(db, "ordenes", orderDoc.id), {
+                    cliente: {
+                        nombre: nombre
+                    }
+                }, { merge: true }));
+            });
+
+            if (batchPromises.length > 0) {
+                await Promise.all(batchPromises);
+                console.log(`Nombre propagado a ${batchPromises.length} pedidos.`);
             }
 
             alert("¡Datos guardados correctamente!");
