@@ -1452,9 +1452,14 @@ exports.enviarMailRecupero = onRequest(
 
         // 1. Generar el link de reseteo oficial de Firebase
         const actionCodeSettings = {
-          url: 'https://corcegacafe.com.ar/tienda-cuenta.html', // A donde vuelve dsp de resetear
+          url: 'https://corcegacafe.com.ar/tienda-cuenta.html',
         };
-        const resetLink = await admin.auth().generatePasswordResetLink(email, actionCodeSettings);
+        const firebaseLink = await admin.auth().generatePasswordResetLink(email, actionCodeSettings);
+        
+        // Extraer el código secreto y armar nuestro propio link custom
+        const urlObj = new URL(firebaseLink);
+        const oobCode = urlObj.searchParams.get('oobCode');
+        const customResetLink = `https://corcegacafe.com.ar/recuperar.html?oobCode=${oobCode}`;
 
         // 2. Enviar el mail con nuestro diseño
         const transporter = nodemailer.createTransport({
@@ -1477,7 +1482,7 @@ exports.enviarMailRecupero = onRequest(
               <p style="font-size:16px; color:#666; line-height:1.5;">No te preocupes, a todos nos pasa. Hacé clic en el siguiente botón para crear una nueva contraseña y volver a disfrutar de tu café favorito.</p>
               
               <div style="margin:40px 0;">
-                  <a href="${resetLink}" style="display:inline-block; padding:18px 36px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:16px; box-shadow:0 6px 15px rgba(216,102,52,0.2); font-size:16px;">
+                  <a href="${customResetLink}" style="display:inline-block; padding:18px 36px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:16px; box-shadow:0 6px 15px rgba(216,102,52,0.2); font-size:16px;">
                      RESETEAR CONTRASEÑA
                   </a>
               </div>

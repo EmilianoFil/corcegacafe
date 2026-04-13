@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nueva Contraseña - Córcega Café</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/tienda/tienda.css?v=2.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { 
+            background-color: #fdfcf7; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-image: url('css/img/pattern-corcega.png');
+            background-size: 300px;
+        }
+        .reset-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            max-width: 400px;
+            width: 90%;
+            padding: 40px;
+            border-radius: 32px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .reset-card img { max-width: 120px; margin-bottom: 30px; }
+        .reset-card h2 { font-family: 'Playfair Display', serif; color: var(--panel-oscuro); margin-bottom: 10px; }
+        .reset-card p { font-size: 14px; color: #666; margin-bottom: 30px; line-height: 1.5; }
+        
+        .form-group { text-align: left; margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 11px; font-weight: 800; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .form-control {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 2px solid #eee;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            background: white;
+        }
+        .form-control:focus { border-color: var(--naranja-accent); outline: none; }
+        
+        .btn-reset {
+            background: #d1643c;
+            color: white;
+            border: none;
+            padding: 16px 30px;
+            border-radius: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(209, 100, 60, 0.2);
+        }
+        .btn-reset:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-reset:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
+        
+        #loading-view, #success-view, #error-view { display: none; }
+    </style>
+</head>
+<body>
+    <div class="reset-card">
+        <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega">
+        
+        <!-- Vista 1: Procesando Código -->
+        <div id="loading-view" style="display: block;">
+            <h2>Validando...</h2>
+            <p>Estamos verificando tu solicitud de cambio de clave.</p>
+            <div class="spinner" style="margin: 20px auto; width: 30px; height: 30px; border: 3px solid #eee; border-top: 3px solid #d1643c; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        </div>
+
+        <!-- Vista 2: Formulario de Nueva Clave -->
+        <div id="form-view">
+            <h2>Nueva Contraseña</h2>
+            <p>Escribí tu nueva clave de acceso para continuar.</p>
+            <div class="form-group">
+                <label>NUEVA CLAVE (mín. 6 caracteres)</label>
+                <input type="password" id="new-pass" class="form-control" placeholder="••••••••">
+            </div>
+            <div class="form-group">
+                <label>CONFIRMAR CLAVE</label>
+                <input type="password" id="confirm-pass" class="form-control" placeholder="••••••••">
+            </div>
+            <button class="btn-reset" id="btn-submit-reset">CAMBIAR CONTRASEÑA</button>
+        </div>
+
+        <!-- Vista 3: Éxito -->
+        <div id="success-view">
+            <h2 style="color: #4BB543;">¡Listo! ✨</h2>
+            <p>Tu contraseña se actualizó correctamente. Ya podés volver a la tienda e ingresar.</p>
+            <button class="btn-reset" onclick="window.location.href='tienda-cuenta.html'">VOLVER AL LOGIN</button>
+        </div>
+
+        <!-- Vista 4: Error -->
+        <div id="error-view">
+            <h2 style="color: #d1643c;">¡Vaya! ☕</h2>
+            <p id="error-msg">El link de recuperación expiró o ya fue utilizado.</p>
+            <button class="btn-reset" onclick="window.location.href='tienda-cuenta.html'">SOLICITAR OTRO</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth } from './js/firebase-config.js';
+        import { verifyPasswordResetCode, confirmPasswordReset } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const oobCode = urlParams.get('oobCode');
+
+        const loadingView = document.getElementById('loading-view');
+        const formView = document.getElementById('form-view');
+        const successView = document.getElementById('success-view');
+        const errorView = document.getElementById('error-view');
+        const errorMsg = document.getElementById('error-msg');
+
+        if (!oobCode) {
+            showView('error');
+            errorMsg.innerText = "No encontramos un código de recuperación válido.";
+        } else {
+            // Verificar si el código es válido
+            verifyPasswordResetCode(auth, oobCode)
+                .then((email) => {
+                    showView('form');
+                    console.log("Validado para:", email);
+                })
+                .catch((error) => {
+                    console.error(error);
+                    showView('error');
+                });
+        }
+
+        document.getElementById('btn-submit-reset').onclick = async () => {
+            const pass = document.getElementById('new-pass').value;
+            const confirm = document.getElementById('confirm-pass').value;
+
+            if (pass.length < 6) return alert("La clave debe tener al menos 6 caracteres.");
+            if (pass !== confirm) return alert("Las claves no coinciden.");
+
+            const btn = document.getElementById('btn-submit-reset');
+            btn.innerText = "Cambiando... ⏳";
+            btn.disabled = true;
+
+            try {
+                await confirmPasswordReset(auth, oobCode, pass);
+                showView('success');
+            } catch (error) {
+                console.error(error);
+                alert("Hubo un error al cambiar la contraseña. Reintentá en unos minutos.");
+                btn.innerText = "CAMBIAR CONTRASEÑA";
+                btn.disabled = false;
+            }
+        };
+
+        function showView(view) {
+            loadingView.style.display = 'none';
+            formView.style.display = 'none';
+            successView.style.display = 'none';
+            errorView.style.display = 'none';
+
+            if (view === 'loading') loadingView.style.display = 'block';
+            if (view === 'form') formView.style.display = 'block';
+            if (view === 'success') successView.style.display = 'block';
+            if (view === 'error') errorView.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
