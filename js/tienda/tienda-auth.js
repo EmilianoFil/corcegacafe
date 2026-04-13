@@ -26,7 +26,15 @@ const googleProvider = new GoogleAuthProvider();
 // --- INITIALIZATION ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // User logged in
+        // Redirección inmediata si venimos del checkout
+        const redirect = sessionStorage.getItem('redirectAfterLogin');
+        if (redirect) {
+            sessionStorage.removeItem('redirectAfterLogin');
+            window.location.href = redirect;
+            return;
+        }
+        
+        // Si no hay redirección, mostrar perfil normal
         showProfile(user);
     } else {
         // User logged out
@@ -109,14 +117,6 @@ async function handleRegister() {
 }
 
 async function showProfile(user) {
-    // Si veníamos del checkout, redirigir de vuelta
-    const redirect = sessionStorage.getItem('redirectAfterLogin');
-    if (redirect) {
-        sessionStorage.removeItem('redirectAfterLogin');
-        window.location.href = redirect;
-        return;
-    }
-
     authView.style.display = 'none';
     profileView.style.display = 'block';
     
