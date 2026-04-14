@@ -84,10 +84,38 @@ async function applyStoreConfig() {
             cashInfoEl.innerHTML = `<p style="margin:0; white-space: pre-wrap;">${config.pagos.efectivo.info}</p>`;
             transferInfo.parentNode.insertBefore(cashInfoEl, transferInfo.nextSibling);
         }
+
+        // 4. Agenda
+        initAgendaPicker(config.agenda);
         
     } catch (err) {
         console.error("Error applying config:", err);
     }
+}
+
+function initAgendaPicker(agendaConfig) {
+    const minDays = agendaConfig?.minAnticipacion || 0;
+    const blockedDates = agendaConfig?.fechasBloqueadas || [];
+    const workingDays = agendaConfig?.diasSemana || [0, 1, 2, 3, 4, 5, 6];
+
+    const minDate = new Date();
+    // Ajuste por zona horaria local para evitar saltos raros
+    minDate.setHours(0,0,0,0);
+    minDate.setDate(minDate.getDate() + minDays);
+
+    flatpickr("#order-schedule", {
+        locale: "es",
+        minDate: minDate,
+        dateFormat: "l d/m/Y",
+        disable: [
+            function(date) {
+                // date.getDay() devuelve 0 para domingo, 1 para lunes, etc.
+                return !workingDays.includes(date.getDay());
+            },
+            ...blockedDates
+        ],
+        // Si el primer día calculado está deshabilitado, flatpickr buscará el siguiente automáticamente al abrir
+    });
 }
 
 function autofillData(profile) {

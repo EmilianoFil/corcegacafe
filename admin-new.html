@@ -1294,6 +1294,36 @@
                     </div>
                 </div>
 
+                <!-- Agenda -->
+                <div class="card">
+                    <h4 style="margin-top:0; margin-bottom: 25px;">Agenda y Disponibilidad 🗓️</h4>
+                    
+                    <div class="input-group">
+                        <label>Días mínimos de anticipación</label>
+                        <input type="number" id="conf-agenda-min" placeholder="0 = Disponible hoy">
+                        <small style="color: var(--text-muted); font-size: 11px;">Ej: '2' hará que el primer día elegible sea pasado mañana.</small>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <label style="font-size: 11px; font-weight: 800; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;">Días de la semana habilitados</label>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; margin-top: 10px;">
+                            <label style="font-size: 12px; display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="conf-day-1" checked> Lun</label>
+                            <label style="font-size: 12px; display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="conf-day-2" checked> Mar</label>
+                            <label style="font-size: 12px; display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="conf-day-3" checked> Mié</label>
+                            <label style="font-size: 12px; display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="conf-day-4" checked> Jue</label>
+                            <label style="font-size: 12px; display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="conf-day-5" checked> Vie</label>
+                            <label style="font-size: 12px; display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="conf-day-6" checked> Sáb</label>
+                            <label style="font-size: 12px; display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="conf-day-0"> Dom</label>
+                        </div>
+                    </div>
+
+                    <div class="input-group" style="margin-top: 25px;">
+                        <label>Fechas específicas deshabilitadas</label>
+                        <textarea id="conf-agenda-blocked" rows="3" class="form-control" style="width:100%; border:1px solid #eee; border-radius:8px; font-size: 12px; margin-top: 5px; padding: 10px; font-family: inherit;" placeholder="YYYY-MM-DD, YYYY-MM-DD (separadas por coma)"></textarea>
+                        <small style="color: var(--text-muted); font-size: 11px;">Ej: 2024-12-25, 2025-01-01 (Feriados)</small>
+                    </div>
+                </div>
+
                 <!-- Contacto -->
                 <div class="card">
                     <h4 style="margin-top:0; margin-bottom: 25px;">Contacto & Seguimiento 📱</h4>

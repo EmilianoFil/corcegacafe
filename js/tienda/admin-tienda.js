@@ -471,6 +471,17 @@ export async function loadConfigStore() {
                 document.getElementById('conf-contact-wa').value = data.contacto?.whatsapp || "";
             if (document.getElementById('conf-contact-ig'))
                 document.getElementById('conf-contact-ig').value = data.contacto?.instagram || "";
+
+            // Agenda
+            if (document.getElementById('conf-agenda-min'))
+                document.getElementById('conf-agenda-min').value = data.agenda?.minAnticipacion || 0;
+            if (document.getElementById('conf-agenda-blocked'))
+                document.getElementById('conf-agenda-blocked').value = (data.agenda?.fechasBloqueadas || []).join(", ");
+            
+            for (let i = 0; i <= 6; i++) {
+                const el = document.getElementById(`conf-day-${i}`);
+                if (el) el.checked = data.agenda?.diasSemana?.includes(i) ?? true;
+            }
         }
     } catch (err) {
         console.error("Error loading config:", err);
@@ -482,6 +493,11 @@ export async function guardarConfigStore() {
     const originalText = btn.innerText;
     btn.disabled = true;
     btn.innerText = "Guardando... ⏳";
+
+    const diasSemana = [];
+    for (let i = 0; i <= 6; i++) {
+        if (document.getElementById(`conf-day-${i}`)?.checked) diasSemana.push(i);
+    }
 
     const configData = {
         delivery: {
@@ -503,6 +519,11 @@ export async function guardarConfigStore() {
         contacto: {
             whatsapp: document.getElementById('conf-contact-wa').value.trim(),
             instagram: document.getElementById('conf-contact-ig').value.trim()
+        },
+        agenda: {
+            minAnticipacion: parseInt(document.getElementById('conf-agenda-min').value) || 0,
+            fechasBloqueadas: document.getElementById('conf-agenda-blocked').value.split(',').map(s => s.trim()).filter(s => s !== ""),
+            diasSemana: diasSemana
         },
         actualizadoEn: serverTimestamp()
     };

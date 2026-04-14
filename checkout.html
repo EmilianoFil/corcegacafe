@@ -10,6 +10,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <link rel="stylesheet" href="css/tienda/tienda.css?v=1.4">
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+
     <style>
         .checkout-container {
             max-width: 600px;
@@ -220,11 +225,8 @@
             </div>
 
             <div class="form-group">
-                <label>¿Para cuándo lo querés?</label>
-                <select id="order-schedule" class="form-control">
-                    <option value="ahora">Lo antes posible (Takeaway)</option>
-                    <option value="planificado">Planificar retiro/entrega</option>
-                </select>
+                <label>¿Para cuándo lo querés? (Habilitados según agenda)</label>
+                <input type="text" id="order-schedule" class="form-control" placeholder="Elegí un día disponible..." readonly>
             </div>
         </div>
 
