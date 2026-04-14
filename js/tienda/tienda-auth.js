@@ -16,7 +16,6 @@ const authView = document.getElementById('auth-view');
 const profileView = document.getElementById('profile-view');
 const ordersList = document.getElementById('orders-list');
 const userName = document.getElementById('user-name');
-const userDni = document.getElementById('user-dni');
 
 // --- BUTTONS ---
 const btnLogin = document.getElementById('btn-login');
@@ -239,7 +238,7 @@ if (btnSaveData) {
             // Actualizar UI instantáneamente (Capitalizando el primer nombre)
             let primerNombre = nombre.split(' ')[0];
             primerNombre = primerNombre.charAt(0).toUpperCase() + primerNombre.slice(1);
-            userName.innerText = `¡Hola, ${primerNombre}!`;
+            if (userName) userName.innerText = `¡Hola, ${primerNombre}!`;
             
             // También actualizar en Clientes (Fidelidad) si tiene DNI
             const sessionDni = localStorage.getItem('corcega_tienda_dni');

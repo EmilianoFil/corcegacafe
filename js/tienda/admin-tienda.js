@@ -329,13 +329,15 @@ export async function eliminarCategoria(id, nombre) {
 
 export async function loadOrdenesTable() {
     try {
-        const q = query(collection(db, "ordenes"), orderBy("fecha", "desc"));
+        const q = query(collection(db, "ordenes"), orderBy("timestamp", "desc"));
         const snap = await getDocs(q);
         const ordenes = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         const tbody = document.querySelector('#tablaOrdenesDash tbody');
+        if (!tbody) return;
+
         tbody.innerHTML = ordenes.map(o => {
-            const date = o.fecha?.toDate ? o.fecha.toDate().toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+            const date = o.timestamp?.toDate ? o.timestamp.toDate().toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }) : (o.fecha?.toDate ? o.fecha.toDate().toLocaleString('es-AR') : '—');
             let statusClass = 'status-' + o.estado;
             return `
                 <tr>
