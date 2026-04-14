@@ -17,6 +17,33 @@
   --radio: 24px;
 }
 
+/* Agotado Styles */
+.product-card.agotado {
+  opacity: 0.8;
+}
+.product-card.agotado .product-img-container img {
+  filter: grayscale(0.8);
+}
+.badge-agotado {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: white;
+  color: var(--panel-oscuro);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  z-index: 10;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  letter-spacing: 1px;
+}
+.btn-add-cart:disabled {
+  background: #eee !important;
+  color: #aaa !important;
+  cursor: not-allowed !important;
+}
+
 /* Standardized Loader */
 .corcega-loader-container {
     display: flex;

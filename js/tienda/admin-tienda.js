@@ -29,6 +29,9 @@ export async function mostrarFormularioProducto() {
     // Asegurar que las categorías estén cargadas
     await fetchCategoriasParaForm();
     
+    document.getElementById('prod-stock').disabled = false;
+    document.getElementById('prod-stock-ilimitado').checked = false;
+    
     // Scroll hacia el formulario
     document.getElementById('form-producto-container').scrollIntoView({ behavior: 'smooth' });
 }
@@ -140,33 +143,45 @@ export async function loadProductosTable() {
         productosData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         const tbody = document.querySelector('#tablaProductosDash tbody');
-        tbody.innerHTML = productosData.map(p => `
-            <tr>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
-                    <img src="${p.imagenUrl || 'https://placehold.co/50x50'}" style="width: 45px; height: 45px; border-radius: 10px; object-fit: cover; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                </td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
-                    <div style="font-weight:700; color:var(--secondary);">${p.nombre}</div>
-                    <div style="font-size: 0.7rem; color: #999;">ID: ${p.id.substring(0,6)}</div>
-                </td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-weight:800; color:var(--primary); font-size: 1rem;">
-                    $${p.precio.toLocaleString('es-AR')}
-                </td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-weight: 500;">
-                    ${p.stock > 0 ? `<span style="color:#333;">${p.stock}</span>` : '<span style="color:#aaa; font-style:italic;">Ilimitado</span>'}
-                </td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
-                    <span style="background:rgba(13, 43, 55, 0.05); color:var(--secondary); padding:4px 10px; border-radius:8px; font-size:0.7rem; font-weight:700; text-transform:uppercase;">${p.categoria || 'Sin Cat'}</span>
-                </td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
-                    ${p.activo !== false ? '<span style="color:var(--success); font-weight:700;"><span style="font-size:1.2rem; vertical-align:middle;">•</span> Activo</span>' : '<span style="color:#aaa; font-weight:700;"><span style="font-size:1.2rem; vertical-align:middle;">•</span> Oculto</span>'}
-                </td>
-                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; text-align: right;">
-                    <button class="btn-secondary" onclick="window.tiendaAdmin.editarProducto('${p.id}')" style="padding:6px 12px; font-size:0.75rem; font-weight:600; margin:0; width:auto;">Editar</button>
-                    <button class="btn-secondary" onclick="window.tiendaAdmin.eliminarProducto('${p.id}')" style="padding:6px 12px; font-size:0.75rem; font-weight:600; color:var(--error); border-color:#ffebeb; margin:0; width:auto;">Borrar</button>
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = productosData.map(p => {
+             const stockDisplay = p.stockIlimitado 
+                ? '<span style="color:#aaa; font-style:italic;">∞ Ilimitado</span>'
+                : `<span style="color:${p.stock <= 5 ? 'var(--error)' : '#333'}; font-weight:700;">${p.stock}</span>`;
+
+             return `
+                <tr>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                        <img src="${p.imagenUrl || 'https://placehold.co/50x50'}" style="width: 45px; height: 45px; border-radius: 10px; object-fit: cover; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                        <div style="font-weight:700; color:var(--secondary);">${p.nombre}</div>
+                        <div style="font-size: 0.7rem; color: #999;">ID: ${p.id.substring(0,6)}</div>
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-weight:800; color:var(--primary); font-size: 1rem;">
+                        $${p.precio.toLocaleString('es-AR')}
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            ${stockDisplay}
+                            ${!p.stockIlimitado ? `
+                                <button onclick="window.tiendaAdmin.ajustarStockRapido('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')" style="background:#f0f0f0; border:none; border-radius:4px; cursor:pointer; padding:2px 6px; font-size:12px; font-weight:bold;" title="Ajustar Stock (Sumar/Restar)">+/-</button>
+                            ` : ''}
+                            <button onclick="window.tiendaAdmin.verHistorialStock('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')" style="background:none; border:none; cursor:pointer; font-size:12px; margin-left:5px; opacity:0.5;">📜</button>
+                        </div>
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                        <span style="background:rgba(13, 43, 55, 0.05); color:var(--secondary); padding:4px 10px; border-radius:8px; font-size:0.7rem; font-weight:700; text-transform:uppercase;">${p.categoria || 'Sin Cat'}</span>
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                        ${p.activo !== false ? '<span style="color:var(--success); font-weight:700;"><span style="font-size:1.2rem; vertical-align:middle;">•</span> Activo</span>' : '<span style="color:#aaa; font-weight:700;"><span style="font-size:1.2rem; vertical-align:middle;">•</span> Oculto</span>'}
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; text-align: right;">
+                        <button class="btn-secondary" onclick="window.tiendaAdmin.editarProducto('${p.id}')" style="padding:6px 12px; font-size:0.75rem; font-weight:600; margin:0; width:auto;">Editar</button>
+                        <button class="btn-secondary" onclick="window.tiendaAdmin.eliminarProducto('${p.id}')" style="padding:6px 12px; font-size:0.75rem; font-weight:600; color:var(--error); border-color:#ffebeb; margin:0; width:auto;">Borrar</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     } catch (err) {
         console.error("Error loading products:", err);
     }
@@ -178,12 +193,16 @@ export async function guardarProducto(e) {
     const id = document.getElementById('prod-id').value;
     const btn = document.getElementById('btn-save-producto');
     
+    const stockIlimitado = document.getElementById('prod-stock-ilimitado').checked;
+    const stockActual = parseInt(document.getElementById('prod-stock').value) || 0;
+
     const productData = {
         nombre: document.getElementById('prod-nombre').value,
         descripcion: document.getElementById('prod-descripcion').value,
         descripcion_larga: document.getElementById('prod-descripcion-larga').value,
         precio: parseFloat(document.getElementById('prod-precio').value),
-        stock: parseInt(document.getElementById('prod-stock').value) || 0,
+        stock: stockActual,
+        stockIlimitado: stockIlimitado,
         categoria: document.getElementById('prod-categoria').value,
         activo: document.getElementById('prod-activo').checked,
         imagenUrl: document.getElementById('prod-imagen-url').value,
@@ -196,10 +215,16 @@ export async function guardarProducto(e) {
 
     try {
         if (id) {
+            // Verificar si el stock cambió para registrar movimiento
+            const pOld = productosData.find(p => p.id === id);
+            if (pOld && (pOld.stock !== productData.stock || pOld.stockIlimitado !== productData.stockIlimitado)) {
+                await registrarMovimientoStock(id, productData.stock, 'ajuste', 'Ajuste manual desde edición');
+            }
             await updateDoc(doc(db, "productos", id), productData);
         } else {
             productData.creadoEn = serverTimestamp();
-            await addDoc(collection(db, "productos"), productData);
+            const docRef = await addDoc(collection(db, "productos"), productData);
+            await registrarMovimientoStock(docRef.id, productData.stock, 'entrada', 'Stock inicial al crear producto');
         }
         ocultarFormularioProducto();
         loadProductosTable();
@@ -227,6 +252,8 @@ export async function editarProducto(id) {
     document.getElementById('prod-descripcion-larga').value = p.descripcion_larga || '';
     document.getElementById('prod-precio').value = p.precio;
     document.getElementById('prod-stock').value = p.stock || 0;
+    document.getElementById('prod-stock-ilimitado').checked = p.stockIlimitado || false;
+    document.getElementById('prod-stock').disabled = p.stockIlimitado || false;
     document.getElementById('prod-categoria').value = p.categoria || '';
     document.getElementById('prod-activo').checked = p.activo !== false;
     document.getElementById('prod-imagen-url').value = p.imagenUrl || '';
@@ -576,5 +603,100 @@ export async function guardarConfigStore() {
     } finally {
         btn.disabled = false;
         btn.innerText = originalText;
+    }
+}
+// ============================================
+// STOCK MANAGEMENT
+// ============================================
+
+export async function registrarMovimientoStock(prodId, cantidad, tipo, motivo) {
+    // tipo: 'entrada' (suma), 'salida_venta' (resta), 'ajuste' (set exacto)
+    try {
+        await addDoc(collection(db, "productos", prodId, "movimientos_stock"), {
+            cantidad: cantidad,
+            tipo: tipo,
+            motivo: motivo,
+            timestamp: serverTimestamp()
+        });
+    } catch (err) {
+        console.error("Error al registrar movimiento de stock:", err);
+    }
+}
+
+export async function ajustarStockRapido(id, nombre) {
+    const p = productosData.find(item => item.id === id);
+    if (!p) return;
+
+    const sumaString = prompt(`¿Qué ajuste querés hacer en "${nombre}"?\nUsa números positivos para sumar (ej: 10) o negativos para restar (ej: -5).\nStock Actual: ${p.stock}`, "10");
+    if (sumaString === null) return;
+    
+    const suma = parseInt(sumaString);
+    if (isNaN(suma) || suma === 0) {
+        alert("Ingresá un número válido distinto de 0.");
+        return;
+    }
+
+    const nuevoStock = Math.max(0, (p.stock || 0) + suma);
+    const tipo = suma > 0 ? 'entrada' : 'salida_ajuste';
+    const motivo = suma > 0 ? 'Agregado rápido desde tabla' : 'Disminución rápida desde tabla';
+
+    try {
+        await updateDoc(doc(db, "productos", id), {
+            stock: nuevoStock,
+            actualizadoEn: serverTimestamp()
+        });
+        await registrarMovimientoStock(id, Math.abs(suma), tipo, motivo);
+        alert(`Stock actualizado: ${nuevoStock} unidades.`);
+        loadProductosTable();
+    } catch (err) {
+        console.error(err);
+        alert("Error al actualizar stock.");
+    }
+}
+
+export async function verHistorialStock(id, nombre) {
+    const modal = document.getElementById('modal-stock-history');
+    const list = document.getElementById('stock-history-list');
+    const title = document.getElementById('stock-history-prod-name');
+    
+    modal.style.display = 'flex';
+    title.innerText = nombre;
+    list.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">Cargando historial...</div>';
+
+    try {
+        const q = query(
+            collection(db, "productos", id, "movimientos_stock"),
+            orderBy("timestamp", "desc")
+        );
+        const snap = await getDocs(q);
+        
+        if (snap.empty) {
+            list.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">No hay movimientos registrados.</div>';
+            return;
+        }
+
+        list.innerHTML = snap.docs.map(doc => {
+            const m = doc.data();
+            const fecha = m.timestamp?.toDate ? m.timestamp.toDate().toLocaleString('es-AR') : '—';
+            const color = m.tipo === 'entrada' ? 'var(--success)' : (m.tipo === 'salida_venta' ? 'var(--error)' : 'var(--secondary)');
+            const prefijo = m.tipo === 'entrada' ? '+' : (m.tipo === 'salida_venta' ? '-' : '=');
+            
+            return `
+                <div style="background:#fdfcf7; padding:12px; border-radius:10px; border:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:700; font-size:0.8rem; color:${color}; text-transform:uppercase;">${m.tipo.replace('_', ' ')}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">${m.motivo || 'Sin motivo'}</div>
+                        <div style="font-size:0.65rem; color:#aaa; margin-top:4px;">${fecha}</div>
+                    </div>
+                    <div style="font-weight:800; font-size:1.1rem; color:${color};">
+                        ${prefijo}${m.cantidad}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error("Error fetching stock history:", err);
+        list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--error);">Error al cargar el historial.</div>';
     }
 }

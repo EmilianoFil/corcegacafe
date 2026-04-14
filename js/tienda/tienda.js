@@ -110,9 +110,12 @@ function renderProducts() {
         }
         if (imagenes.length === 0) imagenes.push('https://placehold.co/400x400/fdfcf7/01323f?text=Córcega');
         
+        const isAgotado = (p.stockIlimitado !== true && (p.stock === 0 || p.stock === undefined));
+
         return `
-            <div class="product-card" data-id="${p.id}" style="animation-delay: ${index * 0.05}s">
+            <div class="product-card ${isAgotado ? 'agotado' : ''}" data-id="${p.id}" style="animation-delay: ${index * 0.05}s">
                 <div class="product-img-container" onclick="window.location.href='producto.html?id=${p.id}'">
+                    ${isAgotado ? '<div class="badge-agotado">AGOTADO</div>' : ''}
                     <div class="card-carousel" id="carousel-${p.id}">
                         ${imagenes.map((img, i) => `
                             <img src="${img}" class="${i === 0 ? 'active' : ''}" alt="${p.nombre}">
@@ -124,8 +127,8 @@ function renderProducts() {
                     <p class="product-desc">${p.descripcion || ''}</p>
                     <div class="product-footer">
                         <span class="product-price">$${p.precio.toLocaleString('es-AR')}</span>
-                        <button class="btn-add-cart" onclick="event.stopPropagation(); window.addToCart('${p.id}')">
-                            <i class="fas fa-plus"></i>
+                        <button class="btn-add-cart" onclick="event.stopPropagation(); window.addToCart('${p.id}')" ${isAgotado ? 'disabled' : ''}>
+                            <i class="fas fa-${isAgotado ? 'times' : 'plus'}"></i>
                         </button>
                     </div>
                 </div>
@@ -140,10 +143,11 @@ window.addToCart = function(id) {
     if (!p) return;
 
     // Validación de Stock
-    if (p.stock > 0) {
+    if (p.stockIlimitado !== true) {
+        const stockDisponible = p.stock || 0;
         const inCart = (cart.find(item => item.id === id)?.qty || 0);
-        if (inCart >= p.stock) {
-            alert(`¡Lo sentimos! Solo quedan ${p.stock} unidades de este producto.`);
+        if (inCart >= stockDisponible) {
+            alert(`¡Lo sentimos! Solo quedan ${stockDisponible} unidades de este producto.`);
             return;
         }
     }
@@ -205,9 +209,12 @@ function updateCartUI() {
 
 window.updateQty = function(index, delta) {
     const item = cart[index];
-    if (delta > 0 && item.stock > 0 && item.qty >= item.stock) {
-        alert(`¡Lo sentimos! Solo quedan ${item.stock} unidades de este producto.`);
-        return;
+    if (delta > 0 && item.stockIlimitado !== true) {
+        const stockDisponible = item.stock || 0;
+        if (item.qty >= stockDisponible) {
+            alert(`¡Lo sentimos! Solo quedan ${stockDisponible} unidades de este producto.`);
+            return;
+        }
     }
     item.qty += delta;
     if (item.qty < 1) cart.splice(index, 1);

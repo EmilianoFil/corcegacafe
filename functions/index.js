@@ -1179,11 +1179,24 @@ exports.onOrderCreated = onDocumentCreated({
             
             if (productDoc.exists) {
                 const pData = productDoc.data();
-                // Solo descontamos si stock > 0 (0 es ilimitado según el admin)
-                if (pData.stock > 0) {
-                    const currentStock = pData.stock;
+                // Solo descontamos si NO es ilimitado
+                if (pData.stockIlimitado !== true) {
+                    const currentStock = pData.stock || 0;
                     const newStock = Math.max(0, currentStock - item.qty);
-                    batch.update(productRef, { stock: newStock });
+                    batch.update(productRef, { 
+                        stock: newStock,
+                        actualizadoEn: admin.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    // Registrar movimiento de stock en subcolección
+                    const movimientoRef = productRef.collection("movimientos_stock").doc();
+                    batch.set(movimientoRef, {
+                        cantidad: item.qty,
+                        tipo: 'salida_venta',
+                        motivo: `Pedido #${orderNumber} (${orderId})`,
+                        timestamp: admin.firestore.FieldValue.serverTimestamp()
+                    });
+
                     logger.info(`Stock actualizado para ${item.nombre}: ${currentStock} -> ${newStock}`);
                 }
             }
