@@ -153,25 +153,63 @@
             margin-bottom: 20px;
         }
 
-        /* Config Aware Sections (Hide until ready) */
-        .config-aware {
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s ease;
+        /* Global Loader */
+        #loader-global {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #fdfcf7;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s;
         }
-        .config-aware.ready {
+
+        #loader-global.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .galope {
+            width: 80px;
+            animation: galope 1.5s infinite ease-in-out;
+        }
+
+        @keyframes galope {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+        }
+
+        #loader-global p {
+            font-family: 'Playfair Display', serif;
+            font-size: 18px;
+            color: var(--panel-oscuro);
+            margin-top: 20px;
+            letter-spacing: 1px;
+        }
+
+        .checkout-container {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .checkout-container.ready {
             opacity: 1;
-            pointer-events: all;
         }
     </style>
 </head>
 <body>
 
+    <div id="loader-global">
+        <img src="css/img/Corcega_Logo_Original.png" class="galope">
+        <p>Preparando tu pedido...</p>
+    </div>
+
     <div class="top-bar">
         <header id="main-header" data-title="FINALIZAR<br>PEDIDO"></header>
     </div>
 
-    <div class="checkout-container">
+    <div class="checkout-container" id="checkout-main-container">
         <button class="back-btn" onclick="window.location.href='tienda.html'">
             <i class="fas fa-arrow-left"></i> Volver a la tienda
         </button>
@@ -215,7 +253,7 @@
         </div>
 
         <!-- Método de Entrega -->
-        <div class="checkout-section config-aware">
+        <div class="checkout-section">
             <h3><i class="fas fa-truck"></i> Entrega / Retiro</h3>
             <div class="method-selector">
                 <div class="method-card active" data-method="pickup">
@@ -242,7 +280,7 @@
         </div>
 
         <!-- Pago -->
-        <div class="checkout-section config-aware">
+        <div class="checkout-section">
             <h3><i class="fas fa-credit-card"></i> Método de Pago</h3>
             <div class="form-group">
                 <select id="payment-method" class="form-control">

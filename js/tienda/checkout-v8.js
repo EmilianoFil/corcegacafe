@@ -25,11 +25,12 @@ async function init() {
         return;
     }
 
+    // 1. Cargar Configuración
     await applyStoreConfig();
     renderSummary();
     setupEventListeners();
     
-    // Auth Listener for prefill
+    // 2. Auth Listener (Autofill)
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             const snap = await getDoc(doc(db, "usuarios_tienda", user.uid));
@@ -38,7 +39,21 @@ async function init() {
                 autofillData(userProfile);
             }
         }
+        // Ocultar loader una vez que sabemos si hay usuario o no
+        hideGlobalLoader();
     });
+
+    // Fallback por si Auth tarda demasiado
+    setTimeout(hideGlobalLoader, 3000);
+}
+
+function hideGlobalLoader() {
+    const loader = document.getElementById('loader-global');
+    const container = document.getElementById('checkout-main-container');
+    if (loader && !loader.classList.contains('hidden')) {
+        loader.classList.add('hidden');
+        if (container) container.classList.add('ready');
+    }
 }
 
 async function applyStoreConfig() {
@@ -90,9 +105,6 @@ async function applyStoreConfig() {
         
     } catch (err) {
         console.error("Error applying config:", err);
-    } finally {
-        // Mostrar secciones una vez procesado todo
-        document.querySelectorAll('.config-aware').forEach(el => el.classList.add('ready'));
     }
 }
 
