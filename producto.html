@@ -201,13 +201,12 @@
             <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="logo-tienda" onclick="window.location.href='tienda.html'" style="cursor:pointer">
             <h1>TIENDA<br>CÓRCEGA</h1>
             <div class="header-actions">
-                <a href="tienda-cuenta.html" title="Mi Cuenta" id="user-link">
-                    <span id="user-greeting" style="font-family: var(--font-sync); font-size: 9px; margin-right: 10px; color: var(--panel-oscuro); display: none;"></span>
-                    <i class="fas fa-user-circle"></i>
-                </a>
-                <div class="cart-icon" id="cart-btn-header">
+                <div class="user-area" id="header-user-area" style="display: flex; align-items: center;">
+                    <!-- Dinámico -->
+                </div>
+                <div class="cart-icon" id="cart-btn-header" onclick="window.tienda?.toggleCart()" style="position:relative; cursor:pointer;">
                     <i class="fas fa-shopping-bag"></i>
-                    <span class="cart-count-badge">0</span>
+                    <span class="cart-count" id="cart-count">0</span>
                 </div>
             </div>
         </header>
