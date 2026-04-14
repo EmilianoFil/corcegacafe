@@ -16,7 +16,7 @@ export function initHeader() {
     // Inyectamos la estructura estandarizada
     headerElement.innerHTML = `
         <div class="header-left">
-            <a href="index.html">
+            <a href="tienda.html">
                 <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="mini-logo logo-tienda">
             </a>
         </div>
