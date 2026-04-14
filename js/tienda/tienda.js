@@ -4,6 +4,7 @@ import { collection, getDocs, query, where, orderBy, doc, getDoc } from 'https:/
 
 // --- STATE ---
 let products = [];
+let categories = [];
 let cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
 let activeCategory = 'todos';
 
@@ -15,6 +16,7 @@ const cartDrawer = document.getElementById('cart-drawer');
 const cartOverlay = document.getElementById('cart-overlay');
 const cartItemsList = document.getElementById('cart-items-list');
 const cartTotal = document.getElementById('cart-total');
+const catsNav = document.getElementById('categories-nav');
 
 // --- AUTH LISTENER ---
 onAuthStateChanged(auth, async (user) => {
@@ -24,22 +26,38 @@ onAuthStateChanged(auth, async (user) => {
         if (snap.exists()) {
             nombre = snap.data().nombre.split(' ')[0];
         }
-        userGreeting.innerText = `¡HOLA, ${nombre.toUpperCase()}!`;
-        userGreeting.style.display = 'block';
+        if (userGreeting) {
+            userGreeting.innerText = `¡HOLA, ${nombre.toUpperCase()}!`;
+            userGreeting.style.display = 'block';
+        }
     } else {
-        userGreeting.style.display = 'none';
+        if (userGreeting) userGreeting.style.display = 'none';
     }
 });
 
 // --- INITIALIZATION ---
 async function init() {
-    await fetchProducts();
+    await Promise.all([
+        fetchCategories(),
+        fetchProducts()
+    ]);
+    renderCategories();
     renderProducts();
     updateCartUI();
-    setupEventListeners();
+    setupCartEvents();
 }
 
 // --- DATA FETCHING ---
+async function fetchCategories() {
+    try {
+        const snap = await getDocs(query(collection(db, "categorias"), orderBy("nombre", "asc")));
+        categories = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (err) {
+        console.error("Error fetching categories:", err);
+        categories = [];
+    }
+}
+
 async function fetchProducts() {
     try {
         const productsRef = collection(db, "productos");
@@ -48,18 +66,42 @@ async function fetchProducts() {
         products = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (err) {
         console.error("Error fetching products:", err);
-        productsGrid.innerHTML = `<div style="grid-column: 1/-1; color: var(--texto-muted);">Error al cargar productos.</div>`;
+        if (productsGrid) productsGrid.innerHTML = `<div style="grid-column: 1/-1; color: var(--texto-muted);">Error al cargar productos.</div>`;
     }
 }
 
 // --- RENDERING ---
+function renderCategories() {
+    if (!catsNav) return;
+    
+    let html = `<div class="category-chip ${activeCategory === 'todos' ? 'active' : ''}" data-cat="todos">Todos</div>`;
+    
+    html += categories.map(c => `
+        <div class="category-chip ${activeCategory === c.id ? 'active' : ''}" data-cat="${c.id}">${c.nombre}</div>
+    `).join('');
+    
+    catsNav.innerHTML = html;
+
+    // Eventos para los chips
+    document.querySelectorAll('.category-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            activeCategory = chip.dataset.cat;
+            document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            renderProducts();
+        });
+    });
+}
+
 function renderProducts() {
+    if (!productsGrid) return;
+
     const filtered = activeCategory === 'todos' 
         ? products 
         : products.filter(p => p.categoria === activeCategory);
 
     if (filtered.length === 0) {
-        productsGrid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; color: var(--texto-muted);">No hay productos en esta categoría.</div>`;
+        productsGrid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; color: var(--texto-muted); text-align:center;">No hay productos en esta categoría.</div>`;
         return;
     }
 
@@ -71,20 +113,14 @@ function renderProducts() {
         }
         if (imagenes.length === 0) imagenes.push('https://placehold.co/400x400/fdfcf7/01323f?text=Córcega');
         
-        const isAgotado = (p.stock > 0 && p.stock <= 0); // Esto se calcula dinámicamente si quisiéramos ocultarlo
-        
         return `
             <div class="product-card" data-id="${p.id}" style="animation-delay: ${index * 0.05}s">
-                <div class="product-img-container">
+                <div class="product-img-container" onclick="window.location.href='producto.html?id=${p.id}'">
                     <div class="card-carousel" id="carousel-${p.id}">
                         ${imagenes.map((img, i) => `
                             <img src="${img}" class="${i === 0 ? 'active' : ''}" alt="${p.nombre}">
                         `).join('')}
                     </div>
-                    ${imagenes.length > 1 ? `
-                        <button class="card-nav prev" onclick="event.stopPropagation(); moveGridCarousel('${p.id}', -1)"><i class="fas fa-chevron-left"></i></button>
-                        <button class="card-nav next" onclick="event.stopPropagation(); moveGridCarousel('${p.id}', 1)"><i class="fas fa-chevron-right"></i></button>
-                    ` : ''}
                 </div>
                 <div class="product-info" onclick="window.location.href='producto.html?id=${p.id}'">
                     <h3 class="product-title">${p.nombre}</h3>
@@ -101,120 +137,48 @@ function renderProducts() {
     }).join('');
 }
 
-// --- GLOBAL FUNCTIONS & EVENTS ---
-window.moveGridCarousel = function(productId, direction) {
-    const carousel = document.getElementById(`carousel-${productId}`);
-    if (!carousel) return;
-    const items = carousel.querySelectorAll('img');
-    if (items.length <= 1) return;
+// --- CART INTERACTIVITY ---
+window.addToCart = function(id) {
+    const p = products.find(item => item.id === id);
+    if (!p) return;
 
-    let activeIndex = Array.from(items).findIndex(img => img.classList.contains('active'));
-    items[activeIndex].classList.remove('active');
-
-    activeIndex += direction;
-    if (activeIndex >= items.length) activeIndex = 0;
-    if (activeIndex < 0) activeIndex = items.length - 1;
-
-    items[activeIndex].classList.add('active');
-};
-
-function setupEventListeners() {
-    const categoryChips = document.querySelectorAll('.category-chip');
-    categoryChips.forEach(chip => {
-        chip.addEventListener('click', () => {
-            categoryChips.forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-            activeCategory = chip.dataset.category;
-            renderProducts();
-        });
-    });
-
-    document.getElementById('cart-btn-header')?.addEventListener('click', openCart);
-    document.getElementById('btn-open-cart')?.addEventListener('click', openCart);
-    document.getElementById('btn-close-cart')?.addEventListener('click', closeCart);
-    cartOverlay?.addEventListener('click', closeCart);
-    document.getElementById('btn-go-to-checkout')?.addEventListener('click', () => {
-        window.location.href = 'checkout.html';
-    });
-}
-
-// --- CART CORE ---
-function openCart() {
-    cartDrawer.classList.add('active');
-    cartOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeCart() {
-    cartDrawer.classList.remove('active');
-    cartOverlay.classList.remove('active');
-    document.body.style.overflow = 'auto';
-}
-
-window.addToCart = function(id, autoOpen = true, requestedQty = 1) {
-    const product = products.find(p => p.id === id);
-    if (!product) return;
-
-    if (product.stock > 0) {
+    // Validación de Stock
+    if (p.stock > 0) {
         const inCart = (cart.find(item => item.id === id)?.qty || 0);
-        if (inCart + requestedQty > product.stock) {
-            alert(`¡Lo sentimos! Solo quedan ${product.stock} unidades de este producto.`);
+        if (inCart >= p.stock) {
+            alert(`¡Lo sentimos! Solo quedan ${p.stock} unidades de este producto.`);
             return;
         }
     }
 
     const existing = cart.find(item => item.id === id);
     if (existing) {
-        existing.qty += requestedQty;
+        existing.qty++;
     } else {
-        cart.push({
-            id: product.id,
-            nombre: product.nombre,
-            precio: product.precio,
-            imagenUrl: product.imagenUrl,
-            qty: requestedQty,
-            stock: product.stock
-        });
+        cart.push({ ...p, qty: 1 });
     }
 
-    saveCart();
-    updateCartUI();
-    if (autoOpen) openCart();
+    saveAndRefresh();
+    openCart();
 };
 
-window.updateQty = function(index, delta) {
-    const item = cart[index];
-    if (delta > 0 && item.stock > 0 && item.qty >= item.stock) {
-        alert(`¡Lo sentimos! Solo quedan ${item.stock} unidades de este producto.`);
-        return;
-    }
-
-    item.qty += delta;
-    if (item.qty < 1) {
-        cart.splice(index, 1);
-    }
-    saveCart();
-    updateCartUI();
-};
-
-window.removeItem = function(index) {
-    cart.splice(index, 1);
-    saveCart();
-    updateCartUI();
-};
-
-function saveCart() {
+function saveAndRefresh() {
     localStorage.setItem('corcega_cart', JSON.stringify(cart));
+    updateCartUI();
 }
 
 function updateCartUI() {
     const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
-    const badges = document.querySelectorAll('.cart-count, .cart-count-badge');
+    const badges = document.querySelectorAll('.cart-count, .cart-count-badge, #cart-badge');
     badges.forEach(b => {
         b.innerText = totalItems;
         b.style.display = totalItems > 0 ? 'flex' : 'none';
-        if (totalItems > 0) b.style.setProperty('display', 'flex', 'important');
+        if (totalItems > 0) {
+            b.style.setProperty('display', 'flex', 'important');
+        }
     });
+
+    if (!cartItemsList) return;
 
     if (cart.length === 0) {
         cartItemsList.innerHTML = `<div class="cart-empty"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío</p></div>`;
@@ -241,5 +205,71 @@ function updateCartUI() {
     const total = cart.reduce((sum, item) => sum + (item.precio * item.qty), 0);
     cartTotal.innerText = `$${total.toLocaleString('es-AR')}`;
 }
+
+window.updateQty = function(index, delta) {
+    const item = cart[index];
+    if (delta > 0 && item.stock > 0 && item.qty >= item.stock) {
+        alert(`¡Lo sentimos! Solo quedan ${item.stock} unidades de este producto.`);
+        return;
+    }
+    item.qty += delta;
+    if (item.qty < 1) cart.splice(index, 1);
+    saveAndRefresh();
+};
+
+window.removeItem = function(index) {
+    cart.splice(index, 1);
+    saveAndRefresh();
+};
+
+function setupCartEvents() {
+    document.getElementById('cart-btn-header')?.addEventListener('click', openCart);
+    document.getElementById('btn-open-cart')?.addEventListener('click', openCart);
+    document.getElementById('btn-close-cart')?.addEventListener('click', closeCart);
+    cartOverlay?.addEventListener('click', closeCart);
+    document.getElementById('btn-go-to-checkout')?.addEventListener('click', () => {
+        const checkoutModal = document.getElementById('checkout-modal');
+        if (checkoutModal) {
+            checkoutModal.style.display = 'flex';
+        } else {
+            window.location.href = 'checkout.html';
+        }
+    });
+
+    // Modal Events
+    document.getElementById('modal-btn-login')?.addEventListener('click', () => {
+        window.location.href = 'login.html?redirect=checkout.html';
+    });
+    document.getElementById('modal-btn-register')?.addEventListener('click', () => {
+        window.location.href = 'registro.html?redirect=checkout.html';
+    });
+    document.getElementById('modal-btn-guest')?.addEventListener('click', () => {
+        window.location.href = 'checkout.html';
+    });
+}
+
+function openCart() {
+    cartDrawer?.classList.add('active');
+    cartOverlay?.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCart() {
+    cartDrawer?.classList.remove('active');
+    cartOverlay?.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+// Carousel Nav in Grid
+window.moveGridCarousel = function(id, delta) {
+    const container = document.getElementById(`carousel-${id}`);
+    if (!container) return;
+    const imgs = container.querySelectorAll('img');
+    let activeIdx = Array.from(imgs).findIndex(img => img.classList.contains('active'));
+    
+    imgs[activeIdx].classList.remove('active');
+    activeIdx = (activeIdx + delta + imgs.length) % imgs.length;
+    imgs[activeIdx].classList.add('active');
+};
 
 init();

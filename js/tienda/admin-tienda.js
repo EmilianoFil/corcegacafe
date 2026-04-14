@@ -1,6 +1,6 @@
 import { db, storage } from '../firebase-config.js';
 import {
-    collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy
+    collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy, setDoc
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import {
     ref, uploadBytes, getDownloadURL
@@ -13,7 +13,7 @@ let imagenesGaleria = []; // Para manejar las fotos extra en el formulario
 // UI FORMS
 // ============================================
 
-export function mostrarFormularioProducto() {
+export async function mostrarFormularioProducto() {
     document.getElementById('form-producto-container').style.display = 'block';
     document.getElementById('form-producto-title').innerText = 'Nuevo Producto';
     document.getElementById('form-producto').reset();
@@ -25,9 +25,26 @@ export function mostrarFormularioProducto() {
     // Reset Galería
     imagenesGaleria = [];
     renderGalleryPreviews();
+
+    // Asegurar que las categorías estén cargadas
+    await fetchCategoriasParaForm();
     
     // Scroll hacia el formulario
     document.getElementById('form-producto-container').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function fetchCategoriasParaForm() {
+    try {
+        const q = query(collection(db, "categorias"), orderBy("nombre", "asc"));
+        const snap = await getDocs(q);
+        const cats = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const select = document.getElementById('prod-categoria');
+        if (select) {
+            select.innerHTML = cats.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+        }
+    } catch (err) {
+        console.error("Error fetching categories for form:", err);
+    }
 }
 
 export function ocultarFormularioProducto() {
@@ -40,13 +57,11 @@ export async function handleProductImageUpload(input) {
     if (!file) return;
 
     const btn = document.getElementById('btn-select-prod-img');
-    const status = document.getElementById('prod-upload-status');
     const preview = document.getElementById('prod-imagen-preview');
     const previewContainer = document.getElementById('prod-preview-container');
 
     btn.disabled = true;
-    status.innerText = "Subiendo imagen... ⏳";
-    status.style.color = "var(--primary)";
+    btn.innerHTML = "Subiendo... ⏳";
 
     try {
         const fileName = `productos/${Date.now()}_${file.name}`;
@@ -56,15 +71,14 @@ export async function handleProductImageUpload(input) {
         const url = await getDownloadURL(storageRef);
 
         document.getElementById('prod-imagen-url').value = url;
-
-        status.innerText = "¡Imagen lista! ✅";
-        status.style.color = "var(--success)";
         preview.src = url;
         previewContainer.style.display = "block";
+        btn.innerHTML = "📸 ¡Cambiar Foto!";
 
     } catch (err) {
         console.error(err);
         alert("Error al subir imagen");
+        btn.innerHTML = "📸 Seleccionar Foto Principal";
     } finally {
         btn.disabled = false;
     }
@@ -102,375 +116,266 @@ export async function agregarAFotosGaleria(input) {
 
 function renderGalleryPreviews() {
     const container = document.getElementById('gallery-previews');
-    if (!container) return;
-
     container.innerHTML = imagenesGaleria.map((url, index) => `
         <div style="position: relative;">
-            <img src="${url}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px;">
-            <button type="button" onclick="window.tiendaAdmin.eliminarFotoGaleria(${index})" style="position: absolute; top: -5px; right: -5px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 10px;">×</button>
+            <img src="${url}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+            <button type="button" onclick="window.tiendaAdmin.eliminarDeGaleria(${index})" style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 10px;">×</button>
         </div>
     `).join('');
 }
 
-export function eliminarFotoGaleria(index) {
+export function eliminarDeGaleria(index) {
     imagenesGaleria.splice(index, 1);
     renderGalleryPreviews();
 }
 
 // ============================================
-// PRODUCTOS CRUD
+// PRODUCT CRUD
 // ============================================
 
-export async function guardarProducto(event) {
-    event.preventDefault();
+export async function loadProductosTable() {
+    try {
+        const q = query(collection(db, "productos"), orderBy("nombre", "asc"));
+        const snap = await getDocs(q);
+        productosData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const tbody = document.querySelector('#tablaProductosDash tbody');
+        tbody.innerHTML = productosData.map(p => `
+            <tr>
+                <td><img src="${p.imagenUrl || 'https://placehold.co/50x50'}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;"></td>
+                <td style="font-weight:700;">${p.nombre}</td>
+                <td style="font-weight:700; color:var(--primary);">$${p.precio.toLocaleString('es-AR')}</td>
+                <td>${p.stock > 0 ? p.stock : '<span style="color:#aaa;">Ilimitado</span>'}</td>
+                <td><span style="background:#eee; padding:3px 8px; border-radius:12px; font-size:0.75rem;">${p.categoria || 'Sin Cat'}</span></td>
+                <td>${p.activo !== false ? '<span style="color:var(--success)">● Activo</span>' : '<span style="color:#aaa">○ Oculto</span>'}</td>
+                <td>
+                    <button class="btn-secondary" onclick="window.tiendaAdmin.editarProducto('${p.id}')" style="padding:6px 10px; font-size:12px; margin:0">Editar</button>
+                    <button class="btn-secondary" onclick="window.tiendaAdmin.eliminarProducto('${p.id}')" style="padding:6px 10px; font-size:12px; color:var(--error); margin:0">Borrar</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        console.error("Error loading products:", err);
+    }
+}
+
+export async function guardarProducto(e) {
+    if (e) e.preventDefault();
     
     const id = document.getElementById('prod-id').value;
-    const nombre = document.getElementById('prod-nombre').value.trim();
-    const descripcion = document.getElementById('prod-descripcion').value.trim();
-    const precio = parseFloat(document.getElementById('prod-precio').value);
-    const stock = parseInt(document.getElementById('prod-stock').value) || 0;
-    const categoria = document.getElementById('prod-categoria').value;
-    const activo = document.getElementById('prod-activo').checked;
-    const imagenUrl = document.getElementById('prod-imagen-url').value;
-    const descripcion_larga = document.getElementById('prod-descripcion-larga').value.trim();
-
-    if (!nombre || !precio) {
-        alert("Completa el nombre y el precio del producto.");
-        return;
-    }
-
     const btn = document.getElementById('btn-save-producto');
+    
+    const productData = {
+        nombre: document.getElementById('prod-nombre').value,
+        descripcion: document.getElementById('prod-descripcion').value,
+        descripcion_larga: document.getElementById('prod-descripcion-larga').value,
+        precio: parseFloat(document.getElementById('prod-precio').value),
+        stock: parseInt(document.getElementById('prod-stock').value) || 0,
+        categoria: document.getElementById('prod-categoria').value,
+        activo: document.getElementById('prod-activo').checked,
+        imagenUrl: document.getElementById('prod-imagen-url').value,
+        imagenes: imagenesGaleria,
+        actualizadoEn: serverTimestamp()
+    };
+
     btn.disabled = true;
     btn.innerText = "Guardando... ⏳";
 
     try {
-        const productoData = {
-            nombre,
-            descripcion,
-            descripcion_larga,
-            precio,
-            stock,
-            categoria,
-            activo,
-            imagenUrl,
-            imagenes: imagenesGaleria 
-        };
-
         if (id) {
-            // Update
-            const docRef = doc(db, "productos", id);
-            await updateDoc(docRef, {
-                ...productoData,
-                actualizadoEn: serverTimestamp()
-            });
-            alert("✅ ¡Producto actualizado con éxito!");
+            await updateDoc(doc(db, "productos", id), productData);
         } else {
-            // Create
-            await addDoc(collection(db, "productos"), {
-                ...productoData,
-                creadoEn: serverTimestamp()
-            });
-            alert("✅ ¡Producto creado con éxito!");
+            productData.creadoEn = serverTimestamp();
+            await addDoc(collection(db, "productos"), productData);
         }
-
         ocultarFormularioProducto();
-        await loadProductosTable(); // Recargar la tabla
-    } catch (error) {
-        console.error("Error guardando producto:", error);
-        alert("❌ Error al guardar el producto.");
+        loadProductosTable();
+        alert("¡Producto guardado!");
+    } catch (err) {
+        console.error(err);
+        alert("Error al guardar producto");
     } finally {
         btn.disabled = false;
         btn.innerText = "Guardar Producto";
     }
 }
 
-export function editarProducto(id) {
-    const prod = productosData.find(p => p.id === id);
-    if (!prod) return;
+export async function editarProducto(id) {
+    const p = productosData.find(item => item.id === id);
+    if (!p) return;
 
-    mostrarFormularioProducto();
+    await fetchCategoriasParaForm(); // Asegurar categorías actuales
+
+    document.getElementById('form-producto-container').style.display = 'block';
     document.getElementById('form-producto-title').innerText = 'Editar Producto';
+    document.getElementById('prod-id').value = p.id;
+    document.getElementById('prod-nombre').value = p.nombre;
+    document.getElementById('prod-descripcion').value = p.descripcion || '';
+    document.getElementById('prod-descripcion-larga').value = p.descripcion_larga || '';
+    document.getElementById('prod-precio').value = p.precio;
+    document.getElementById('prod-stock').value = p.stock || 0;
+    document.getElementById('prod-categoria').value = p.categoria || '';
+    document.getElementById('prod-activo').checked = p.activo !== false;
+    document.getElementById('prod-imagen-url').value = p.imagenUrl || '';
     
-    document.getElementById('prod-id').value = prod.id;
-    document.getElementById('prod-nombre').value = prod.nombre || '';
-    document.getElementById('prod-descripcion').value = prod.descripcion || '';
-    document.getElementById('prod-precio').value = prod.precio || 0;
-    document.getElementById('prod-stock').value = prod.stock || 0;
-    document.getElementById('prod-categoria').value = prod.categoria || 'otros';
-    document.getElementById('prod-activo').checked = prod.activo ?? true;
-    document.getElementById('prod-descripcion-larga').value = prod.descripcion_larga || '';
-    
-    document.getElementById('prod-imagen-url').value = prod.imagenUrl || '';
-    if (prod.imagenUrl) {
-        document.getElementById('prod-imagen-preview').src = prod.imagenUrl;
+    if (p.imagenUrl) {
+        document.getElementById('prod-imagen-preview').src = p.imagenUrl;
         document.getElementById('prod-preview-container').style.display = 'block';
     }
 
-    // Cargar Galería
-    imagenesGaleria = prod.imagenes || [];
+    imagenesGaleria = p.imagenes || [];
     renderGalleryPreviews();
+
+    document.getElementById('form-producto-container').scrollIntoView({ behavior: 'smooth' });
 }
 
-export async function eliminarProducto(id, nombre) {
-    if (!confirm(`¿Estás seguro de que deseas eliminar el producto "${nombre}"?\nEsta acción no se puede deshacer.`)) {
-        return;
-    }
-
+export async function eliminarProducto(id) {
+    if (!confirm("¿Seguro que querés borrar este producto?")) return;
     try {
         await deleteDoc(doc(db, "productos", id));
-        alert("✅ Producto eliminado exitosamente.");
-        await loadProductosTable();
-    } catch (error) {
-        console.error("Error al eliminar:", error);
-        alert("❌ Ocurrió un error al intentar eliminar el producto.");
-    }
-}
-
-export async function loadProductosTable() {
-    try {
-        const q = query(collection(db, "productos"), orderBy("creadoEn", "desc"));
-        const snap = await getDocs(q);
-        
-        productosData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        if ($.fn.DataTable.isDataTable('#tablaProductosDash')) {
-            $('#tablaProductosDash').DataTable().destroy();
-        }
-
-        $('#tablaProductosDash').DataTable({
-            data: productosData,
-            columns: [
-                { 
-                    data: 'imagenUrl',
-                    render: function (data) {
-                        return data ? `<img src="${data}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px;">` : '🛒';
-                    }
-                },
-                { data: 'nombre' },
-                { 
-                    data: 'precio',
-                    render: function(data) {
-                        return `$${data.toLocaleString('es-AR')}`;
-                    }
-                },
-                { 
-                    data: 'stock',
-                    render: function(data) {
-                        return data > 0 ? `<span style="font-weight:bold;">${data}</span>` : '<span style="color:var(--text-muted); font-style:italic;">Ilimitado/Agotado</span>';
-                    }
-                },
-                { 
-                    data: 'categoria',
-                    render: function(data) {
-                        const cats = {
-                            'cafe': 'Cafetería',
-                            'pasteleria': 'Pastelería',
-                            'merchandising': 'Merchandising',
-                            'otros': 'Otros'
-                        };
-                        return `<span style="background: var(--bg-color); padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; border: 1px solid var(--border);">${cats[data] || data}</span>`;
-                    }
-                },
-                { 
-                    data: 'activo',
-                    render: function(data) {
-                        return data ? '<span style="color:var(--success); font-weight:bold;">● Activo</span>' : '<span style="color:var(--error); font-weight:bold;">○ Pausado</span>';
-                    }
-                },
-                {
-                    data: null,
-                    render: function (data) {
-                        return `
-                            <button onclick="window.tiendaAdmin.editarProducto('${data.id}')" style="background:var(--bg-color); border:1px solid var(--border); border-radius:6px; padding:6px 10px; cursor:pointer;" title="Editar">✏️</button>
-                            <button onclick="window.tiendaAdmin.eliminarProducto('${data.id}', '${data.nombre.replace(/'/g, "\\'")}')" style="background:#fff1f0; border:1px solid #ffccc7; border-radius:6px; padding:6px 10px; cursor:pointer;" title="Eliminar">🗑️</button>
-                        `;
-                    }
-                }
-            ],
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-            }
-        });
-
-    } catch (error) {
-        console.error("Error loading products:", error);
+        loadProductosTable();
+    } catch (err) {
+        console.error(err);
     }
 }
 
 // ============================================
-// ORDENES
+// CATEGORIES MANAGEMENT
+// ============================================
+
+export async function loadCategoriasTable() {
+    try {
+        const q = query(collection(db, "categorias"), orderBy("nombre", "asc"));
+        const snap = await getDocs(q);
+        const cats = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const tbody = document.getElementById('lista-categorias-body');
+        if (tbody) {
+            tbody.innerHTML = cats.map(c => `
+                <tr>
+                    <td style="font-weight:700;">${c.nombre}</td>
+                    <td style="color:#999; font-size:0.8rem;">${c.id}</td>
+                    <td style="text-align: right;">
+                        <button class="btn-secondary" onclick="window.tiendaAdmin.eliminarCategoria('${c.id}', '${c.nombre}')" style="padding:6px 12px; color:var(--error); border-color:#ffccc7; margin:0;">
+                            🗑️ Eliminar
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (err) {
+        console.error("Error loading categories:", err);
+    }
+}
+
+export async function guardarCategoria() {
+    const input = document.getElementById('cat-nombre');
+    const nombre = input.value.trim();
+
+    if (!nombre) return alert("Por favor, ingresá un nombre para la categoría.");
+
+    const slug = nombre.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+        .replace(/[^a-z0-9]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+
+    try {
+        await setDoc(doc(db, "categorias", slug), {
+            nombre: nombre,
+            creadoEn: serverTimestamp()
+        });
+
+        input.value = "";
+        loadCategoriasTable();
+        alert("✅ Categoría guardada!");
+    } catch (err) {
+        console.error(err);
+        alert("Error al guardar!");
+    }
+}
+
+export async function eliminarCategoria(id, nombre) {
+    if (!confirm(`¿Estás seguro de eliminar "${nombre}"?`)) return;
+
+    try {
+        await deleteDoc(doc(db, "categorias", id));
+        loadCategoriasTable();
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// ============================================
+// ORDERS LOGIC (Existing)
 // ============================================
 
 export async function loadOrdenesTable() {
-    console.log("Cargando órdenes desde Firestore... v2 🚀");
     try {
-        const q = query(collection(db, "ordenes"), orderBy("timestamp", "desc"));
+        const q = query(collection(db, "ordenes"), orderBy("fecha", "desc"));
         const snap = await getDocs(q);
-        const ordenesData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const ordenes = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        if ($.fn.DataTable.isDataTable('#tablaOrdenesDash')) {
-            $('#tablaOrdenesDash').DataTable().destroy();
-        }
-
-        $('#tablaOrdenesDash').DataTable({
-            data: ordenesData,
-            order: [[1, 'desc']],
-            columns: [
-                { 
-                    data: null,
-                    render: function(data) {
-                        const num = data.orderNumber ? `#${data.orderNumber}` : `#${data.id.substring(0,6)}...`;
-                        return `<span style="font-family: monospace; font-size: 0.8rem; font-weight:bold; color:#d86634;">${num}</span>`;
-                    }
-                },
-                { 
-                    data: 'timestamp',
-                    render: function(data, type) {
-                        if (!data) return '-';
-                        const date = data.toDate();
-                        if (type === 'sort') return date.getTime();
-                        return date.toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', hour12: false });
-                    }
-                },
-                { 
-                    data: 'cliente',
-                    render: function(data) {
-                        return `<strong>${data.nombre}</strong><br><span style="font-size:0.8rem; color:var(--texto-muted)">${data.whatsapp}</span>`;
-                    }
-                },
-                { 
-                    data: 'total',
-                    render: function(data) {
-                        return `<strong>$${data.toLocaleString('es-AR')}</strong>`;
-                    }
-                },
-                { 
-                    data: 'estado',
-                    render: function(data) {
-                        const statusMap = {
-                            'pendiente_pago': { label: '💳 Pendiente Pago', color: '#faad14', bg: '#fffbe6' },
-                            'pagado': { label: '💰 Pagado', color: '#52c41a', bg: '#f6ffed' },
-                            'en_preparacion': { label: '☕ En Preparación', color: '#13c2c2', bg: '#e6fffb' },
-                            'listo': { label: '📦 Listo para Retirar', color: '#722ed1', bg: '#f9f0ff' },
-                            'en_camino': { label: '🛵 En Camino', color: '#1890ff', bg: '#e6f7ff' },
-                            'entregado': { label: '✅ Entregado', color: '#52c41a', bg: '#f6ffed' },
-                            'cancelado': { label: '❌ Cancelado', color: '#ff4d4f', bg: '#fff1f0' }
-                        };
-                        const s = statusMap[data] || { label: data, color: '#000', bg: '#eee' };
-                        return `<span style="background:${s.bg}; border:1px solid ${s.color}; color:${s.color}; padding:4px 10px; border-radius:12px; font-size:0.75rem; font-weight:bold; white-space:nowrap;">${s.label}</span>`;
-                    }
-                },
-                {
-                    data: null,
-                    render: function (data) {
-                        return `
-                            <div style="display:flex; gap:5px;">
-                                <button onclick="window.tiendaAdmin.verDetalleOrden('${data.id}')" style="background:var(--bg-color); border:1px solid var(--border); border-radius:6px; padding:6px 10px; cursor:pointer;" title="Ver Detalle">👁️</button>
-                                
-                                <select onchange="window.tiendaAdmin.cambiarEstadoOrden('${data.id}', this.value)" style="padding:4px; border-radius:6px; font-size:0.75rem; border:1px solid var(--border); background:white;">
-                                    <option value="" disabled selected>Cambiar Estado...</option>
-                                    <option value="pagado">💰 Pagado</option>
-                                    <option value="en_preparacion">☕ En Preparación</option>
-                                    <option value="listo">📦 Listo</option>
-                                    <option value="en_camino">🛵 En Camino</option>
-                                    <option value="entregado">✅ Entregado</option>
-                                    <option value="cancelado">❌ Cancelado</option>
-                                </select>
-
-                                <button onclick="window.tiendaAdmin.notificarWhatsApp('${data.id}')" style="background:#e7f7ed; border:1px solid #25d366; border-radius:6px; padding:6px 10px; cursor:pointer;" title="Notificar por WhatsApp">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:16px; height:16px;">
-                                </button>
-                            </div>
-                        `;
-                    }
-                }
-            ],
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-            }
-        });
-
-    } catch (error) {
-        console.error("Error loading orders:", error);
-    }
-}
-
-export async function cambiarEstadoOrden(id, nuevoEstado) {
-    if (!confirm(`¿Deseas marcar la orden como ${nuevoEstado}?`)) return;
-
-    try {
-        await updateDoc(doc(db, "ordenes", id), {
-            estado: nuevoEstado,
-            actualizadoEn: serverTimestamp()
-        });
-        alert("✅ Estado actualizado.");
-        await loadOrdenesTable();
-    } catch (error) {
-        console.error(error);
-        alert("❌ Error al actualizar estado.");
+        const tbody = document.querySelector('#tablaOrdenesDash tbody');
+        tbody.innerHTML = ordenes.map(o => {
+            const date = o.fecha?.toDate ? o.fecha.toDate().toLocaleString('es-AR') : '—';
+            let statusClass = 'status-' + o.estado;
+            return `
+                <tr>
+                    <td style="font-weight:700;">#${o.id.substring(0,6)}</td>
+                    <td style="font-size:0.85rem">${date}</td>
+                    <td>${o.cliente.nombre}</td>
+                    <td style="font-weight:700;">$${o.total.toLocaleString('es-AR')}</td>
+                    <td><span class="badge-status ${statusClass}">${o.estado.replace(/_/g, ' ').toUpperCase()}</span></td>
+                    <td>
+                        <button class="btn-secondary" onclick="window.tiendaAdmin.verDetalleOrden('${o.id}')" style="padding:4px 8px; font-size:12px; margin:0">Detalles</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (err) {
+        console.error("Error loading orders:", err);
     }
 }
 
 export async function verDetalleOrden(id) {
-    // Buscamos la orden localmente o en firestore
     try {
         const docSnap = await getDoc(doc(db, "ordenes", id));
         if (!docSnap.exists()) return;
         const orden = docSnap.data();
 
-        let itemsHtml = orden.items.map(item => `
-            <div style="display:flex; justify-content:space-between; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px;">
-                <span>${item.qty}x ${item.nombre}</span>
-                <span>$${(item.precio * item.qty).toLocaleString('es-AR')}</span>
-            </div>
-        `).join('');
-
         const modalHtml = `
-            <div id="modal-detalle-orden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;">
-                <div style="background:white; padding:30px; border-radius:20px; width:90%; max-width:500px; max-height: 80vh; overflow-y: auto;">
-                    <h3 style="margin-top:0">Detalle de Orden #${id.substring(0,8)}</h3>
-                    <p><strong>Cliente:</strong> ${orden.cliente.nombre}</p>
-                    <p><strong>WhatsApp:</strong> ${orden.cliente.whatsapp}</p>
-                    <p><strong>Entrega:</strong> ${orden.metodoEntrega === 'pickup' ? 'Retiro en Local' : 'Envio a Domicilio'}</p>
-                    <p><strong>Horario:</strong> ${orden.horario}</p>
-                    <p><strong>Notas:</strong> ${orden.notas || '-'}</p>
-                    <hr>
-                    <div style="margin:20px 0;">
-                        ${itemsHtml}
-                    </div>
-                    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.2rem;">
-                        <span>TOTAL</span>
-                        <span>$${orden.total.toLocaleString('es-AR')}</span>
+            <div id="modal-detalle-orden" class="modal-overlay" style="display:flex; align-items:center; justify-content:center; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9000; padding:20px;">
+                <div class="card" style="width:100%; max-width:550px; position:relative; max-height:90vh; overflow-y:auto; padding:30px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3 style="margin:0; font-size:1.4rem;">Orden #${id.substring(0,6)}</h3>
+                        <span class="badge-status status-${orden.estado}">${orden.estado.toUpperCase()}</span>
                     </div>
 
-                    ${orden.historial && orden.historial.length > 0 ? `
-                        <div style="margin-top:25px; padding:15px; background:#f9f9f9; border-radius:15px; border: 1px solid #eee;">
-                            <h4 style="margin:0 0 12px 0; font-size:0.85rem; color:#666; text-transform:uppercase; letter-spacing:1px;">Línea de Tiempo del Pedido</h4>
-                            <div style="display:flex; flex-direction:column; gap:10px;">
-                                ${orden.historial.map(h => {
-                                    const date = h.fecha.toDate();
-                                    const timeStr = date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second:'2-digit' });
-                                    const dateStr = date.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit' });
-                                    return `
-                                        <div style="display:flex; gap:12px; align-items:flex-start;">
-                                            <div style="min-width:75px; text-align:right;">
-                                                <div style="font-size:0.8rem; font-weight:700; color:var(--naranja-oscuro);">${timeStr}</div>
-                                                <div style="font-size:0.65rem; color:#999;">${dateStr}</div>
-                                            </div>
-                                            <div style="width:2px; height:22px; background:#d86634; opacity:0.3; margin-top:4px;"></div>
-                                            <div style="font-size:0.85rem; font-weight:600; color:#333; text-transform:capitalize;">${h.estado.replace(/_/g, ' ')}</div>
-                                        </div>
-                                    `;
-                                }).join('')}
+                    <div style="background:#fdfcf7; padding:20px; border-radius:16px; margin-bottom:20px; border:1px solid #eee;">
+                        <p style="margin:0 0 10px; font-weight:700;">Cliente:</p>
+                        <p style="margin:0; font-size:0.9rem;">${orden.cliente.nombre}<br>${orden.cliente.email}<br>WhatsApp: ${orden.cliente.whatsapp}</p>
+                    </div>
+
+                    <div style="margin-bottom:20px;">
+                        <p style="font-weight:700; margin-bottom:10px;">Productos:</p>
+                        ${orden.items.map(i => `
+                            <div style="display:flex; justify-content:space-between; font-size:0.9rem; padding:8px 0; border-bottom:1px solid #f9f9f9;">
+                                <span>${i.qty}x ${i.nombre}</span>
+                                <span style="font-weight:700;">$${(i.precio * i.qty).toLocaleString('es-AR')}</span>
                             </div>
+                        `).join('')}
+                        <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:1.1rem; font-weight:800; color:var(--primary);">
+                            <span>TOTAL</span>
+                            <span>$${orden.total.toLocaleString('es-AR')}</span>
                         </div>
-                    ` : ''}
+                    </div>
 
-                    <button id="btn-copy-mp-${id}" onclick="window.tiendaAdmin.copiarLinkPago('${id}')" class="btn-secondary" style="width:100%; margin-top:20px; font-size: 0.8rem; border-color: #009ee3; color: #009ee3; display: flex; align-items:center; justify-content:center; gap:8px;">
-                        <span>🔗</span> Copiar Link de Pago (MP)
+                    <button onclick="window.tiendaAdmin.notificarWhatsApp('${id}')" class="btn-primary" style="width:100%; background:#25d366; margin-bottom:15px; border:none; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        <i class="fab fa-whatsapp"></i> Notificar Cliente por WhatsApp
                     </button>
 
-                    <button onclick="document.getElementById('modal-detalle-orden').remove()" class="btn-primary" style="width:100%; margin-top:10px;">Cerrar</button>
+                    <button onclick="document.getElementById('modal-detalle-orden').remove()" class="btn-primary" style="width:100%;">Cerrar</button>
                 </div>
             </div>
         `;
@@ -502,44 +407,5 @@ export async function notificarWhatsApp(id) {
         window.open(url, '_blank');
     } catch (error) {
         console.error(error);
-    }
-}
-
-export async function copiarLinkPago(orderId) {
-    const btn = document.getElementById(`btn-copy-mp-${orderId}`);
-    const originalText = btn.innerHTML;
-    
-    btn.disabled = true;
-    btn.innerHTML = "Generando... ⏳";
-
-    try {
-        const response = await fetch('https://crearpreferenciamp-ioo4dzpz2a-uc.a.run.app', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId })
-        });
-
-        const data = await response.json();
-        
-        if (data.init_point) {
-            await navigator.clipboard.writeText(data.init_point);
-            btn.innerHTML = "✅ ¡LINK COPIADO!";
-            btn.style.background = "#e6f7ff";
-            
-            setTimeout(() => {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                btn.style.background = "white";
-            }, 3000);
-        } else {
-            alert("No se pudo generar el link.");
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-    } catch (err) {
-        console.error(err);
-        alert("Error al conectar con el servidor.");
-        btn.innerHTML = originalText;
-        btn.disabled = false;
     }
 }

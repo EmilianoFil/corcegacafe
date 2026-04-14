@@ -732,8 +732,9 @@
                 <li><a href="#clientes"><span class="icon">👥</span> Clientes</a></li>
                 <li><a href="admin-badges.html"><span class="icon">🎖️</span> Insignias</a></li>
                 <li><a href="#logs"><span class="icon">📜</span> Auditoría</a></li>
-                <li><a href="#tienda-productos"><span class="icon">📦</span> Tienda: Productos</a></li>
-                <li><a href="#tienda-ordenes"><span class="icon">🛒</span> Tienda: Órdenes</a></li>
+                <li><a href="#tienda-productos"><span class="icon">🛒</span> Productos</a></li>
+                <li><a href="#tienda-categorias"><span class="icon">🏷️</span> Categorías</a></li>
+                <li><a href="#tienda-ordenes"><span class="icon">📦</span> Órdenes</a></li>
                 <li><a href="#mails"><span class="icon">📧</span> Mails</a></li>
                 <li><a href="#tools"><span class="icon">🛠️</span> Herramientas</a></li>
             </ul>
@@ -1065,6 +1066,40 @@
             </div>
         </section>
 
+        <!-- TIENDA CATEGORIAS SECTION -->
+        <section id="tienda-categorias" class="section-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h3 style="margin:0">Gestión de Categorías 🏷️</h3>
+            </div>
+            
+            <div class="card" style="margin-bottom: 25px; padding: 25px;">
+                <p style="font-size: 0.9rem; color: var(--texto-muted); margin-bottom: 20px;">
+                    Las categorías que agregues aquí aparecerán automáticamente en los filtros de la tienda y al crear nuevos productos.
+                </p>
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <input type="text" id="cat-nombre" placeholder="Nombre de la categoría (ej: Merchandising)" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border);">
+                    </div>
+                    <button class="btn-primary" onclick="window.tiendaAdmin.guardarCategoria()" style="margin:0; padding: 0 25px;">+ Agregar</button>
+                </div>
+            </div>
+
+            <div id="table-categorias-wrapper" class="card" style="padding: 20px;">
+                <table id="tablaCategoriasDash" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Slug (ID)</th>
+                            <th style="text-align: right;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-categorias-body">
+                        <!-- Categorías dinámicas -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <!-- TIENDA ORDENES SECTION -->
         <section id="tienda-ordenes" class="section-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
@@ -1355,6 +1390,7 @@
                 if (target === 'logs' && (typeof logsData !== 'undefined' && logsData.length === 0)) loadLogsTable();
                 if (target === 'mails') loadCampanasHistory();
                 if (target === 'tienda-productos') window.tiendaAdmin.loadProductosTable();
+                if (target === 'tienda-categorias') window.tiendaAdmin.loadCategoriasTable();
                 if (target === 'tienda-ordenes') window.tiendaAdmin.loadOrdenesTable();
             });
         });
