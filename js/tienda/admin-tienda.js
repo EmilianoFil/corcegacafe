@@ -376,6 +376,9 @@ export async function loadOrdenesTable() {
                     <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-weight:600; font-size:14px; vertical-align: middle;">
                         ${o.cliente.nombre}
                     </td>
+                    <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-weight:700; font-size:11px; color:var(--naranja-oscuro); vertical-align: middle;">
+                        ${o.horario || '<span style="color:#aaa">No especificado</span>'}
+                    </td>
                     <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-weight:800; color:var(--naranja-accent); font-size:14px; vertical-align: middle;">
                         $${o.total.toLocaleString('es-AR')}
                     </td>
@@ -699,4 +702,109 @@ export async function verHistorialStock(id, nombre) {
         console.error("Error fetching stock history:", err);
         list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--error);">Error al cargar el historial.</div>';
     }
+}
+
+// ============================================
+// CALENDAR LOGIC
+// ============================================
+
+let currentCalendarDate = new Date();
+
+export async function mostrarCalendarioPedidos() {
+    const modal = document.getElementById('modal-calendario-pedidos');
+    modal.style.display = 'flex';
+    renderCalendar();
+}
+
+export async function renderCalendar() {
+    const grid = document.getElementById('calendar-grid-container');
+    const nav = document.getElementById('calendar-header-nav');
+    
+    // Header navigation
+    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    nav.innerHTML = `
+        <button onclick="window.tiendaAdmin.changeMonth(-1)" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">◀️</button>
+        <span style="font-weight:800; font-size:1.1rem; min-width:150px; text-align:center;">${monthNames[currentCalendarDate.getMonth()]} ${currentCalendarDate.getFullYear()}</span>
+        <button onclick="window.tiendaAdmin.changeMonth(1)" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">▶️</button>
+    `;
+
+    // Fetch all relevant orders
+    const q = query(collection(db, "ordenes"), orderBy("timestamp", "desc"));
+    const snap = await getDocs(q);
+    const orders = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Clear previous days (keep headers)
+    const headers = Array.from(grid.children).slice(0, 7);
+    grid.innerHTML = '';
+    headers.forEach(h => grid.appendChild(h));
+
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay(); // 0 is Sunday
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Padding for first week
+    for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement('div');
+        empty.style.background = "#fafafa";
+        empty.style.height = "120px";
+        empty.style.border = "1px solid #eee";
+        grid.appendChild(empty);
+    }
+
+    // Days
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dayBox = document.createElement('div');
+        dayBox.style.cssText = "background:white; min-height:120px; border:1px solid #eee; padding:5px; position:relative; overflow-y:auto;";
+        dayBox.innerHTML = `<span style="font-weight:800; font-size:0.75rem; color:#ccc;">${d}</span>`;
+        
+        // Find orders for this day
+        // Flatpickr format "l d/m/Y" -> e.g. "Sábado 20/04/2026"
+        const dayStr = d.toString().padStart(2, '0');
+        const monthStr = (month + 1).toString().padStart(2, '0');
+        const targetDatePart = `${dayStr}/${monthStr}/${year}`;
+
+        const dailyOrders = orders.filter(o => o.horario && o.horario.includes(targetDatePart));
+
+        dailyOrders.forEach(o => {
+            const item = document.createElement('div');
+            item.style.cssText = `font-size: 10px; margin-top:2px; padding:3px 6px; border-radius:4px; background:${getOrderStatusBg(o.estado)}; color:${getOrderStatusColor(o.estado)}; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;`;
+            item.innerText = `${o.cliente.nombre.split(' ')[0]}: #${o.id.substring(0,4)}`;
+            item.title = `${o.cliente.nombre} - ${o.horario}`;
+            item.onclick = (e) => {
+                e.stopPropagation();
+                window.tiendaAdmin.verDetalleOrden(o.id);
+            };
+            dayBox.appendChild(item);
+        });
+
+        grid.appendChild(dayBox);
+    }
+}
+
+function getOrderStatusBg(status) {
+    const bgs = {
+        'pendiente_pago': '#fff2f0',
+        'pagado': '#f6ffed',
+        'en_preparacion': '#e6f7ff',
+        'listo': '#f9f0ff',
+        'entregado': '#fafafa'
+    };
+    return bgs[status] || '#f5f5f5';
+}
+
+function getOrderStatusColor(status) {
+    const colors = {
+        'pendiente_pago': '#ff4d4f',
+        'pagado': '#52c41a',
+        'en_preparacion': '#1890ff',
+        'listo': '#722ed1',
+        'entregado': '#999'
+    };
+    return colors[status] || '#666';
+}
+
+export function changeMonth(delta) {
+    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta);
+    renderCalendar();
 }
