@@ -430,9 +430,91 @@ export async function notificarWhatsApp(id) {
         const msg = statusTexts[orden.estado] || '¡Hola! Te escribimos por tu pedido en Córcega Café.';
         const text = encodeURIComponent(`Hola ${orden.cliente.nombre}! ${msg}\n\nPedido: #${id.substring(0,6)}`);
         const url = `https://wa.me/549${orden.cliente.whatsapp}?text=${text}`;
-        
         window.open(url, '_blank');
     } catch (error) {
         console.error(error);
+    }
+}
+
+// ============================================
+// CONFIGURACION TIENDA
+// ============================================
+
+export async function loadConfigStore() {
+    try {
+        const snap = await getDoc(doc(db, "configuracion", "tienda"));
+        if (snap.exists()) {
+            const data = snap.data();
+            
+            // Delivery
+            if (document.getElementById('conf-delivery-enabled'))
+                document.getElementById('conf-delivery-enabled').checked = data.delivery?.habilitado || false;
+            if (document.getElementById('conf-delivery-cost'))
+                document.getElementById('conf-delivery-cost').value = data.delivery?.costo || 0;
+            if (document.getElementById('conf-delivery-min'))
+                document.getElementById('conf-delivery-min').value = data.delivery?.minimo || 0;
+            
+            // Pagos
+            if (document.getElementById('conf-pay-mp'))
+                document.getElementById('conf-pay-mp').checked = data.pagos?.mercadopago || false;
+            if (document.getElementById('conf-pay-transfer'))
+                document.getElementById('conf-pay-transfer').checked = data.pagos?.transferencia?.habilitado || false;
+            if (document.getElementById('conf-pay-transfer-info'))
+                document.getElementById('conf-pay-transfer-info').value = data.pagos?.transferencia?.info || "";
+            if (document.getElementById('conf-pay-cash'))
+                document.getElementById('conf-pay-cash').checked = data.pagos?.efectivo?.habilitado || false;
+            if (document.getElementById('conf-pay-cash-info'))
+                document.getElementById('conf-pay-cash-info').value = data.pagos?.efectivo?.info || "";
+            
+            // Contacto
+            if (document.getElementById('conf-contact-wa'))
+                document.getElementById('conf-contact-wa').value = data.contacto?.whatsapp || "";
+            if (document.getElementById('conf-contact-ig'))
+                document.getElementById('conf-contact-ig').value = data.contacto?.instagram || "";
+        }
+    } catch (err) {
+        console.error("Error loading config:", err);
+    }
+}
+
+export async function guardarConfigStore() {
+    const btn = event.currentTarget;
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = "Guardando... ⏳";
+
+    const configData = {
+        delivery: {
+            habilitado: document.getElementById('conf-delivery-enabled').checked,
+            costo: parseFloat(document.getElementById('conf-delivery-cost').value) || 0,
+            minimo: parseFloat(document.getElementById('conf-delivery-min').value) || 0
+        },
+        pagos: {
+            mercadopago: document.getElementById('conf-pay-mp').checked,
+            transferencia: {
+                habilitado: document.getElementById('conf-pay-transfer').checked,
+                info: document.getElementById('conf-pay-transfer-info').value.trim()
+            },
+            efectivo: {
+                habilitado: document.getElementById('conf-pay-cash').checked,
+                info: document.getElementById('conf-pay-cash-info').value.trim()
+            }
+        },
+        contacto: {
+            whatsapp: document.getElementById('conf-contact-wa').value.trim(),
+            instagram: document.getElementById('conf-contact-ig').value.trim()
+        },
+        actualizadoEn: serverTimestamp()
+    };
+
+    try {
+        await setDoc(doc(db, "configuracion", "tienda"), configData);
+        alert("¡Configuración guardada correctamente! ✅");
+    } catch (err) {
+        console.error("Error saving config:", err);
+        alert("Error al guardar la configuración.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = originalText;
     }
 }

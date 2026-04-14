@@ -746,6 +746,59 @@
             color: var(--error);
             background: #fff1f0;
         }
+        /* Switch Toggle */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 22px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #eee;
+            transition: .3s;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+
+        .slider.round {
+            border-radius: 22px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
     </style>
 </head>
 
@@ -776,6 +829,7 @@
                 <li><a href="#tienda-productos"><span class="icon">🛒</span> Productos</a></li>
                 <li><a href="#tienda-categorias"><span class="icon">🏷️</span> Categorías</a></li>
                 <li><a href="#tienda-ordenes"><span class="icon">📦</span> Órdenes</a></li>
+                <li><a href="#tienda-config"><span class="icon">⚙️</span> Configuración</a></li>
             </ul>
 
             <div class="nav-label">Marketing y Sistema</div>
@@ -1176,6 +1230,91 @@
             </div>
         </section>
 
+        <!-- TIENDA CONFIG SECTION -->
+        <section id="tienda-config" class="section-content">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                <h3 style="margin:0; font-size: 1.5rem;">Configuración de Tienda ⚙️</h3>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">MÉTODOS Y LOGÍSTICA</span>
+            </div>
+
+            <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px;">
+                <!-- Delivery -->
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                        <h4 style="margin:0">Logística / Delivery 🚚</h4>
+                        <label class="switch">
+                            <input type="checkbox" id="conf-delivery-enabled">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="input-group">
+                        <label>Costo de Envío ($)</label>
+                        <input type="number" id="conf-delivery-cost" placeholder="Ej: 500">
+                    </div>
+                    <div class="input-group">
+                        <label>Mínimo de Compra para Delivery ($)</label>
+                        <input type="number" id="conf-delivery-min" placeholder="Ej: 5000">
+                    </div>
+                </div>
+
+                <!-- Pagos -->
+                <div class="card">
+                    <h4 style="margin-top:0; margin-bottom: 25px;">Métodos de Pago 💳</h4>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 12px 15px; background: #fdfcf7; border: 1px solid var(--border); border-radius: 12px;">
+                        <span style="font-weight: 600;">Mercado Pago (Online)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="conf-pay-mp">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <div style="margin-bottom: 15px; padding: 15px; border: 1px solid var(--border); border-radius: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-weight: 600;">Transferencia Bancaria</span>
+                            <label class="switch">
+                                <input type="checkbox" id="conf-pay-transfer">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <label style="font-size: 10px; font-weight: 800; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;">Instrucciones para el cliente</label>
+                        <textarea id="conf-pay-transfer-info" rows="3" class="form-control" style="width:100%; border:1px solid #eee; border-radius:8px; font-size: 13px; margin-top: 5px; padding: 10px; font-family: inherit;" placeholder="Alias, CBU, Titular..."></textarea>
+                    </div>
+
+                    <div style="padding: 15px; border: 1px solid var(--border); border-radius: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-weight: 600;">Efectivo / En Local</span>
+                            <label class="switch">
+                                <input type="checkbox" id="conf-pay-cash">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <label style="font-size: 10px; font-weight: 800; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;">Instrucciones para el cliente</label>
+                        <textarea id="conf-pay-cash-info" rows="2" class="form-control" style="width:100%; border:1px solid #eee; border-radius:8px; font-size: 13px; margin-top: 5px; padding: 10px; font-family: inherit;" placeholder="Ej: Paga al retirar en el local."></textarea>
+                    </div>
+                </div>
+
+                <!-- Contacto -->
+                <div class="card">
+                    <h4 style="margin-top:0; margin-bottom: 25px;">Contacto & Seguimiento 📱</h4>
+                    <div class="input-group">
+                        <label>WhatsApp de Consultas (con código país)</label>
+                        <input type="tel" id="conf-contact-wa" placeholder="Ej: 5491122334455">
+                    </div>
+                    <div class="input-group">
+                        <label>Instagram Usuario (sin @)</label>
+                        <input type="text" id="conf-contact-ig" placeholder="Ej: corcegacafe">
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; text-align: right;">
+                <button class="btn-primary" onclick="window.tiendaAdmin.guardarConfigStore()" style="width: auto; padding: 15px 50px; font-size: 1rem; height: auto;">
+                    💾 Guardar Configuración
+                </button>
+            </div>
+        </section>
+
         <!-- MAILS SECTION -->
         <section id="mails" class="section-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
@@ -1445,6 +1584,7 @@
                 if (target === 'tienda-productos') window.tiendaAdmin.loadProductosTable();
                 if (target === 'tienda-categorias') window.tiendaAdmin.loadCategoriasTable();
                 if (target === 'tienda-ordenes') window.tiendaAdmin.loadOrdenesTable();
+                if (target === 'tienda-config') window.tiendaAdmin.loadConfigStore();
             });
         });
 

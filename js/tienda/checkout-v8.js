@@ -18,12 +18,14 @@ const transferInfo = document.getElementById('transfer-info');
 const btnFinalizar = document.getElementById('btn-finalizar-pedido');
 
 // --- INITIALIZATION ---
-function init() {
+async function init() {
     if (cart.length === 0) {
         alert("Tu carrito está vacío.");
         window.location.href = 'tienda.html';
         return;
     }
+
+    await applyStoreConfig();
     renderSummary();
     setupEventListeners();
     
@@ -37,6 +39,55 @@ function init() {
             }
         }
     });
+}
+
+async function applyStoreConfig() {
+    try {
+        const snap = await getDoc(doc(db, "configuracion", "tienda"));
+        if (!snap.exists()) return;
+        const config = snap.data();
+
+        // 1. Delivery
+        if (config.delivery?.habilitado === false) {
+            const deliveryCard = document.querySelector('.method-card[data-method="delivery"]');
+            if (deliveryCard) deliveryCard.style.display = 'none';
+            deliveryMethod = 'pickup';
+        }
+
+        // 2. Pagos
+        const mpEnabled = config.pagos?.mercadopago !== false;
+        const transferEnabled = config.pagos?.transferencia?.habilitado !== false;
+        const cashEnabled = config.pagos?.efectivo?.habilitado === true;
+
+        let paymentOptionsHTML = "";
+        if (mpEnabled) paymentOptionsHTML += `<option value="mercadopago">Mercado Pago</option>`;
+        if (transferEnabled) paymentOptionsHTML += `<option value="transferencia">Transferencia Bancaria</option>`;
+        if (cashEnabled) paymentOptionsHTML += `<option value="efectivo">Efectivo / En Local</option>`;
+
+        if (paymentMethod) paymentMethod.innerHTML = paymentOptionsHTML;
+
+        // 3. Info de pagos
+        if (config.pagos?.transferencia?.info) {
+             if (transferInfo) {
+                 transferInfo.innerHTML = `
+                    <p style="margin-top:0"><strong>Datos para transferir:</strong></p>
+                    <p style="white-space: pre-wrap; font-family: 'Inter', sans-serif;">${config.pagos.transferencia.info}</p>
+                    <p style="margin-bottom:0; font-size:11px; opacity:0.8;">* Una vez realizado el pedido, enviá el comprobante por WhatsApp.</p>
+                 `;
+             }
+        }
+
+        if (config.pagos?.efectivo?.info) {
+            const cashInfoEl = document.createElement('div');
+            cashInfoEl.id = 'cash-info';
+            cashInfoEl.style.cssText = "display: none; padding: 15px; background: #fdfaf0; border-radius: 12px; border: 1px solid #f2e9d0; font-size: 13px; color: #4d4430; margin-top: 10px;";
+            cashInfoEl.innerHTML = `<p style="margin:0; white-space: pre-wrap;">${config.pagos.efectivo.info}</p>`;
+            transferInfo.parentNode.insertBefore(cashInfoEl, transferInfo.nextSibling);
+        }
+        
+    } catch (err) {
+        console.error("Error applying config:", err);
+    }
 }
 
 function autofillData(profile) {
@@ -107,11 +158,11 @@ function setupEventListeners() {
 
     // Payment Method Toggles
     paymentMethod.onchange = (e) => {
-        if (e.target.value === 'transferencia') {
-            transferInfo.style.display = 'block';
-        } else {
-            transferInfo.style.display = 'none';
-        }
+        const val = e.target.value;
+        const cInfo = document.getElementById('cash-info');
+
+        if (transferInfo) transferInfo.style.display = (val === 'transferencia') ? 'block' : 'none';
+        if (cInfo) cInfo.style.display = (val === 'efectivo') ? 'block' : 'none';
     };
 
     // Final Action

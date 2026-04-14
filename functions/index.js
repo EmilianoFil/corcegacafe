@@ -1215,21 +1215,39 @@ exports.onOrderCreated = onDocumentCreated({
         </tr>
     `).join('');
 
-    // 4. Bloque de Transferencia (si aplica)
-    let transferBlock = "";
-    if (orderData.metodoPago === 'transferencia') {
+    // 4. Obtener Configuración de la Tienda para el Mail
+    let config = {};
+    try {
+        const confSnap = await db.collection("configuracion").doc("tienda").get();
+        if (confSnap.exists) config = confSnap.data();
+    } catch(err) {
+        logger.error("Error al leer config para mail:", err);
+    }
+
+    // Bloque de Transferencia (si aplica)
+    let extraInfoBlock = "";
+    if (orderData.metodoPago === 'transferencia' && config.pagos?.transferencia?.habilitado !== false) {
+        const transferInfo = config.pagos?.transferencia?.info || "Alias: corcega.cafe.mp\nCBU: 0000003100030588661793\nTitular: Córcega Café";
+        const waNumber = config.contacto?.whatsapp || "1136053892";
         const waMsg = encodeURIComponent(`Hola Córcega! Realicé el pedido #${orderNumber}. Te adjunto el comprobante.`);
-        transferBlock = `
+        
+        extraInfoBlock = `
             <div style="background:#f0f7f4; padding:25px; border-radius:18px; margin:25px 0; border:1px solid #cceadd; text-align:left;">
                 <h3 style="color:#1e4634; margin:0 0 15px 0; font-size:16px;">💳 Datos para Transferencia</h3>
-                <p style="font-size:14px; margin:5px 0; color:#1e4634;"><strong>Alias:</strong> corcega.cafe.mp</p>
-                <p style="font-size:14px; margin:5px 0; color:#1e4634;"><strong>CBU:</strong> 0000003100030588661793</p>
-                <p style="font-size:14px; margin:5px 0; color:#1e4634;"><strong>Titular:</strong> Córcega Café</p>
+                <p style="font-size:14px; margin:5px 0; color:#1e4634; white-space: pre-wrap;">${transferInfo}</p>
                 
-                <a href="https://wa.me/5491136053892?text=${waMsg}" target="_blank" style="display:inline-flex; align-items:center; gap:10px; padding:14px 22px; background-color:#25d366; color:white; text-decoration:none; font-weight:bold; border-radius:12px; margin-top:20px; font-size:14px;">
-                   <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="20" height="20" style="vertical-align:middle; margin-right:8px;">
+                <a href="https://wa.me/54${waNumber}?text=${waMsg}" target="_blank" style="display:inline-flex; align-items:center; gap:10px; padding:14px 22px; background-color:#25d366; color:white; text-decoration:none; font-weight:bold; border-radius:12px; margin-top:20px; font-size:14px;">
+                   <img src="https://emilianofil.github.io/corcegacafe/icons/whatsapp-white.svg" width="20" height="20" style="vertical-align:middle; margin-right:8px;">
                    ENVIAR COMPROBANTE
                 </a>
+            </div>
+        `;
+    } else if (orderData.metodoPago === 'efectivo') {
+        const cashInfo = config.pagos?.efectivo?.info || "Pagás al retirar en el local.";
+        extraInfoBlock = `
+            <div style="background:#fffaf0; padding:25px; border-radius:18px; margin:25px 0; border:1px solid #f2e9d0; text-align:left;">
+                <h3 style="color:#4d4430; margin:0 0 15px 0; font-size:16px;">💵 Pago en Efectivo</h3>
+                <p style="font-size:14px; margin:5px 0; color:#4d4430; white-space: pre-wrap;">${cashInfo}</p>
             </div>
         `;
     }
@@ -1269,7 +1287,7 @@ exports.onOrderCreated = onDocumentCreated({
 
             ${renderStepperHtml(orderData.estado || 'recibido')}
 
-            ${transferBlock}
+            ${extraInfoBlock}
 
             <div style="margin:30px 0;">
                 <a href="https://corcegacafe.com.ar/success.html?orderId=${orderId}" style="display:inline-block; padding:18px 36px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:14px; box-shadow:0 6px 15px rgba(216,102,52,0.2); font-size:16px;">
