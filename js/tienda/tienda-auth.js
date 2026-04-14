@@ -193,8 +193,23 @@ async function showProfile(user) {
         if (dniSection) dniSection.style.display = 'block';
     }
 
-    // --- CART SYNC ---
-    updateCartBadge();
+    // --- AUTOPRELOAD FROM LOYALTY ---
+    if (dni) {
+        const loyaltySnap = await getDoc(doc(db, "clientes", dni));
+        if (loyaltySnap.exists()) {
+            const loyData = loyaltySnap.data();
+            // Sync optional data if missing in usuarios_tienda
+            if (!whatsapp) whatsapp = loyData.telefono || loyData.whatsapp || "";
+            if (!diaRec && loyData.cumple_dia) diaRec = loyData.cumple_dia;
+            if (!mesRec && loyData.cumple_mes) mesRec = loyData.cumple_mes;
+        }
+    }
+
+    // Populate fields
+    if (document.getElementById('user-name-input')) document.getElementById('user-name-input').value = nombreActual;
+    if (document.getElementById('user-tel-input')) document.getElementById('user-tel-input').value = whatsapp;
+    if (document.getElementById('user-nac-dia')) document.getElementById('user-nac-dia').value = diaRec;
+    if (document.getElementById('user-nac-mes')) document.getElementById('user-nac-mes').value = mesRec;
 
     fetchOrders(dni, user.email);
     loadAddresses(user.uid);

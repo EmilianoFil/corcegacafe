@@ -338,26 +338,33 @@ export async function loadOrdenesTable() {
 
         tbody.innerHTML = ordenes.map(o => {
             const date = o.timestamp?.toDate ? o.timestamp.toDate().toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }) : (o.fecha?.toDate ? o.fecha.toDate().toLocaleString('es-AR') : '—');
-            let statusClass = 'status-' + o.estado;
             return `
                 <tr>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
-                        <span style="font-weight:800; color:var(--secondary); font-family:monospace;">#${o.id.substring(0,6).toUpperCase()}</span>
+                    <td style="padding: 15px; border-bottom: 1px solid #f5f5f5;">
+                        <span style="font-weight:800; color:var(--panel-oscuro); font-family:monospace; font-size:13px;">#${o.id.substring(0,8).toUpperCase()}</span>
                     </td>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-size:0.8rem; color:#666;">
+                    <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-size:12px; color:#666;">
                         ${date}
                     </td>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-weight:600;">
+                    <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-weight:600; font-size:14px;">
                         ${o.cliente.nombre}
                     </td>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-weight:800; color:var(--primary); font-size:1rem;">
+                    <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-weight:800; color:var(--naranja-accent); font-size:14px;">
                         $${o.total.toLocaleString('es-AR')}
                     </td>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
-                        <span class="badge-status ${statusClass}" style="padding: 4px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.5px;">${o.estado.replace(/_/g, ' ').toUpperCase()}</span>
+                    <td style="padding: 15px; border-bottom: 1px solid #f5f5f5;">
+                        <select onchange="window.tiendaAdmin.cambiarEstadoOrden('${o.id}', this.value)" class="status-select status-${o.estado}" style="padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; border: none; cursor:pointer;">
+                            <option value="pendiente_pago" ${o.estado === 'pendiente_pago' ? 'selected' : ''}>PENDIENTE PAGO</option>
+                            <option value="pagado" ${o.estado === 'pagado' ? 'selected' : ''}>PAGADO</option>
+                            <option value="en_preparacion" ${o.estado === 'en_preparacion' ? 'selected' : ''}>EN PREPARACIÓN</option>
+                            <option value="listo" ${o.estado === 'listo' ? 'selected' : ''}>LISTO / PARA RETIRAR</option>
+                            <option value="en_camino" ${o.estado === 'en_camino' ? 'selected' : ''}>EN CAMINO</option>
+                            <option value="entregado" ${o.estado === 'entregado' ? 'selected' : ''}>ENTREGADO</option>
+                            <option value="cancelado" ${o.estado === 'cancelado' ? 'selected' : ''}>CANCELADO</option>
+                        </select>
                     </td>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; text-align: right;">
-                        <button class="btn-secondary" onclick="window.tiendaAdmin.verDetalleOrden('${o.id}')" style="padding:6px 12px; font-size:0.75rem; font-weight:600; margin:0; width:auto; border-color:var(--secondary); color:var(--secondary);">🔍 Detalles</button>
+                    <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; text-align: right;">
+                        <button class="btn-secondary" onclick="window.tiendaAdmin.verDetalleOrden('${o.id}')" style="padding:6px 15px; font-size:11px; font-weight:700; border-radius:8px; border:1px solid #ddd; background:white; cursor:pointer;">🔍 DETALLES</button>
                     </td>
                 </tr>
             `;
@@ -383,7 +390,17 @@ export async function verDetalleOrden(id) {
 
                     <div style="background:#fdfcf7; padding:20px; border-radius:16px; margin-bottom:20px; border:1px solid #eee;">
                         <p style="margin:0 0 10px; font-weight:700;">Cliente:</p>
-                        <p style="margin:0; font-size:0.9rem;">${orden.cliente.nombre}<br>${orden.cliente.email}<br>WhatsApp: ${orden.cliente.whatsapp}</p>
+                        <p style="margin:0; font-size:0.9rem;">
+                            <b>${orden.cliente.nombre}</b><br>
+                            ${orden.cliente.email}<br>
+                            WhatsApp: ${orden.cliente.whatsapp}<br>
+                            ${orden.cliente.direccion ? `Entrega: ${orden.cliente.direccion}` : ''}
+                        </p>
+                    </div>
+
+                    <div style="background:var(--panel-oscuro); color:white; padding:15px 20px; border-radius:16px; margin-bottom:20px;">
+                        <p style="margin:0; font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; opacity:0.7;">PARA CUÁNDO LO QUIERE:</p>
+                        <p style="margin:5px 0 0; font-size:1.1rem; font-weight:800; font-family:var(--font-accent); color:var(--naranja-accent);">${orden.horario || 'Lo antes posible'}</p>
                     </div>
 
                     <div style="margin-bottom:20px;">
@@ -435,6 +452,22 @@ export async function notificarWhatsApp(id) {
         window.open(url, '_blank');
     } catch (error) {
         console.error(error);
+    }
+export async function cambiarEstadoOrden(id, nuevoEstado) {
+    try {
+        await updateDoc(doc(db, "ordenes", id), {
+            estado: nuevoEstado,
+            actualizadoEn: serverTimestamp()
+        });
+        
+        // Notificar por consola o feedback visual si se quiere
+        console.log(`Orden ${id} cambiada a ${nuevoEstado}`);
+        
+        // Refrescar tabla para actualizar colores de los selects (opcional, pero ayuda)
+        loadOrdenesTable();
+    } catch (err) {
+        console.error("Error al cambiar estado:", err);
+        alert("No se pudo cambiar el estado de la orden.");
     }
 }
 
