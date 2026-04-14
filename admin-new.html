@@ -985,9 +985,9 @@
 
         <!-- TIENDA PRODUCTOS SECTION -->
         <section id="tienda-productos" class="section-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                <h3 style="margin:0">Gestión de Productos 🛒</h3>
-                <button class="btn-primary" onclick="window.tiendaAdmin.mostrarFormularioProducto()" style="margin:0">+ Nuevo Producto</button>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                <h3 style="margin:0; font-size: 1.5rem;">Gestión de Productos 🛒</h3>
+                <button class="btn-primary" onclick="window.tiendaAdmin.mostrarFormularioProducto()" style="margin:0; width: auto; padding: 10px 20px; font-size: 0.85rem; height: auto;">+ Nuevo Producto</button>
             </div>
             
             <div id="form-producto-container" class="card form-container" style="display: none; margin-bottom: 20px;">
@@ -1072,20 +1072,22 @@
             </div>
 
             <div id="table-productos-wrapper">
-                <table id="tablaProductosDash" class="display" style="width:100%">
-                    <thead>
-                        <tr>
-                            <th>Imagen</th>
-                            <th>Nombre</th>
-                            <th>Precio</th>
-                            <th>Stock</th>
-                            <th>Categoría</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+                <div class="card" style="padding: 10px; border: 1px solid var(--border); background: white;">
+                    <table id="tablaProductosDash" class="display" style="width:100%; font-size: 0.85rem;">
+                        <thead style="background: #fdfcf7;">
+                            <tr>
+                                <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Imagen</th>
+                                <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Nombre</th>
+                                <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Precio</th>
+                                <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Stock</th>
+                                <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Categoría</th>
+                                <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Estado</th>
+                                <th style="text-align: right; padding: 12px 15px; border-bottom: 1px solid #eee;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
@@ -1127,24 +1129,27 @@
 
         <!-- TIENDA ORDENES SECTION -->
         <section id="tienda-ordenes" class="section-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                <h3 style="margin:0">Órdenes de Tienda 📦</h3>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                <h3 style="margin:0; font-size: 1.5rem;">Órdenes de Tienda 📦</h3>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">HISTORIAL DE VENTAS</span>
             </div>
             
             <div id="table-ordenes-wrapper">
-                <table id="tablaOrdenesDash" class="display" style="width:100%">
-                    <thead>
-                        <tr>
-                            <th>ID Orden</th>
-                            <th>Fecha</th>
-                            <th>Cliente</th>
-                            <th>Total</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+                <div class="card" style="padding: 10px; border: 1px solid var(--border); background: white;">
+                    <table id="tablaOrdenesDash" class="display" style="width:100%; font-size: 0.85rem;">
+                        <thead style="background: #fdfcf7;">
+                            <tr>
+                                <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">ID Orden</th>
+                                <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Fecha</th>
+                                <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Cliente</th>
+                                <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Total</th>
+                                <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Estado</th>
+                                <th style="text-align: right; padding: 12px 15px; border-bottom: 1px solid #eee;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </section>
 

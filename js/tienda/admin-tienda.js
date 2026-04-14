@@ -142,15 +142,28 @@ export async function loadProductosTable() {
         const tbody = document.querySelector('#tablaProductosDash tbody');
         tbody.innerHTML = productosData.map(p => `
             <tr>
-                <td><img src="${p.imagenUrl || 'https://placehold.co/50x50'}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;"></td>
-                <td style="font-weight:700;">${p.nombre}</td>
-                <td style="font-weight:700; color:var(--primary);">$${p.precio.toLocaleString('es-AR')}</td>
-                <td>${p.stock > 0 ? p.stock : '<span style="color:#aaa;">Ilimitado</span>'}</td>
-                <td><span style="background:#eee; padding:3px 8px; border-radius:12px; font-size:0.75rem;">${p.categoria || 'Sin Cat'}</span></td>
-                <td>${p.activo !== false ? '<span style="color:var(--success)">● Activo</span>' : '<span style="color:#aaa">○ Oculto</span>'}</td>
-                <td>
-                    <button class="btn-secondary" onclick="window.tiendaAdmin.editarProducto('${p.id}')" style="padding:6px 10px; font-size:12px; margin:0">Editar</button>
-                    <button class="btn-secondary" onclick="window.tiendaAdmin.eliminarProducto('${p.id}')" style="padding:6px 10px; font-size:12px; color:var(--error); margin:0">Borrar</button>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                    <img src="${p.imagenUrl || 'https://placehold.co/50x50'}" style="width: 45px; height: 45px; border-radius: 10px; object-fit: cover; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                </td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                    <div style="font-weight:700; color:var(--secondary);">${p.nombre}</div>
+                    <div style="font-size: 0.7rem; color: #999;">ID: ${p.id.substring(0,6)}</div>
+                </td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-weight:800; color:var(--primary); font-size: 1rem;">
+                    $${p.precio.toLocaleString('es-AR')}
+                </td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-weight: 500;">
+                    ${p.stock > 0 ? `<span style="color:#333;">${p.stock}</span>` : '<span style="color:#aaa; font-style:italic;">Ilimitado</span>'}
+                </td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                    <span style="background:rgba(13, 43, 55, 0.05); color:var(--secondary); padding:4px 10px; border-radius:8px; font-size:0.7rem; font-weight:700; text-transform:uppercase;">${p.categoria || 'Sin Cat'}</span>
+                </td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                    ${p.activo !== false ? '<span style="color:var(--success); font-weight:700;"><span style="font-size:1.2rem; vertical-align:middle;">•</span> Activo</span>' : '<span style="color:#aaa; font-weight:700;"><span style="font-size:1.2rem; vertical-align:middle;">•</span> Oculto</span>'}
+                </td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; text-align: right;">
+                    <button class="btn-secondary" onclick="window.tiendaAdmin.editarProducto('${p.id}')" style="padding:6px 12px; font-size:0.75rem; font-weight:600; margin:0; width:auto;">Editar</button>
+                    <button class="btn-secondary" onclick="window.tiendaAdmin.eliminarProducto('${p.id}')" style="padding:6px 12px; font-size:0.75rem; font-weight:600; color:var(--error); border-color:#ffebeb; margin:0; width:auto;">Borrar</button>
                 </td>
             </tr>
         `).join('');
@@ -322,17 +335,27 @@ export async function loadOrdenesTable() {
 
         const tbody = document.querySelector('#tablaOrdenesDash tbody');
         tbody.innerHTML = ordenes.map(o => {
-            const date = o.fecha?.toDate ? o.fecha.toDate().toLocaleString('es-AR') : '—';
+            const date = o.fecha?.toDate ? o.fecha.toDate().toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
             let statusClass = 'status-' + o.estado;
             return `
                 <tr>
-                    <td style="font-weight:700;">#${o.id.substring(0,6)}</td>
-                    <td style="font-size:0.85rem">${date}</td>
-                    <td>${o.cliente.nombre}</td>
-                    <td style="font-weight:700;">$${o.total.toLocaleString('es-AR')}</td>
-                    <td><span class="badge-status ${statusClass}">${o.estado.replace(/_/g, ' ').toUpperCase()}</span></td>
-                    <td>
-                        <button class="btn-secondary" onclick="window.tiendaAdmin.verDetalleOrden('${o.id}')" style="padding:4px 8px; font-size:12px; margin:0">Detalles</button>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                        <span style="font-weight:800; color:var(--secondary); font-family:monospace;">#${o.id.substring(0,6).toUpperCase()}</span>
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-size:0.8rem; color:#666;">
+                        ${date}
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-weight:600;">
+                        ${o.cliente.nombre}
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-weight:800; color:var(--primary); font-size:1rem;">
+                        $${o.total.toLocaleString('es-AR')}
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                        <span class="badge-status ${statusClass}" style="padding: 4px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.5px;">${o.estado.replace(/_/g, ' ').toUpperCase()}</span>
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; text-align: right;">
+                        <button class="btn-secondary" onclick="window.tiendaAdmin.verDetalleOrden('${o.id}')" style="padding:6px 12px; font-size:0.75rem; font-weight:600; margin:0; width:auto; border-color:var(--secondary); color:var(--secondary);">🔍 Detalles</button>
                     </td>
                 </tr>
             `;
