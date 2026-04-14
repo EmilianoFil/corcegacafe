@@ -130,60 +130,79 @@
         /* Caja de Accion */
         .action-box {
             background: white;
-            padding: 25px;
-            border-radius: 20px;
+            padding: 15px 20px;
+            border-radius: 18px;
             box-shadow: 0 10px 30px rgba(1, 50, 63, 0.04);
             border: 1px solid rgba(1, 50, 63, 0.02);
             display: inline-flex;
-            gap: 15px;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 280px;
+        }
+
+        .controls-row {
+            display: flex;
             align-items: center;
+            gap: 12px;
         }
 
         .qty-picker {
             display: flex;
             align-items: center;
             background: #f7f8fa;
-            border-radius: 12px;
-            padding: 4px;
+            border-radius: 10px;
+            padding: 2px;
+            height: 40px;
         }
         .qty-picker button {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border: none;
             background: white;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--panel-oscuro);
+            transition: all 0.2s;
+        }
+        .qty-picker button:hover {
+            background: var(--naranja-accent);
+            color: white;
         }
         .qty-picker span {
-            width: 40px;
+            width: 35px;
             text-align: center;
             font-weight: 700;
-            font-size: 16px;
+            font-size: 14px;
         }
 
         .btn-main-buy {
-            height: 48px;
-            padding: 0 25px;
+            flex: 1;
+            height: 40px;
+            padding: 0 15px;
             background: var(--panel-oscuro);
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 12px;
             cursor: pointer;
             transition: all 0.2s;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            gap: 8px;
         }
         .btn-main-buy:hover {
             background: var(--naranja-accent);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(237, 112, 83, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(237, 112, 83, 0.25);
         }
 
         @media (max-width: 950px) {
