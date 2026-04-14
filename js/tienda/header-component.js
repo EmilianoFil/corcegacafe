@@ -10,6 +10,9 @@ export function initHeader() {
     const headerElement = document.querySelector('header');
     if (!headerElement) return;
 
+    const customTitle = headerElement.getAttribute('data-title') || 'TIENDA<br>CÓRCEGA';
+    const titleLines = customTitle.includes('<br>') ? customTitle.split('<br>') : [customTitle, ''];
+
     // Inyectamos la estructura estandarizada
     headerElement.innerHTML = `
         <div class="header-left">
@@ -19,8 +22,8 @@ export function initHeader() {
         </div>
         <div class="header-center">
             <div class="brand">
-                <span class="brand-top">TIENDA</span>
-                <span class="brand-bottom">CÓRCEGA</span>
+                <span class="brand-top">${titleLines[0]}</span>
+                <span class="brand-bottom">${titleLines[1]}</span>
             </div>
         </div>
         <div class="header-right">

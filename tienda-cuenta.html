@@ -227,10 +227,7 @@
 <body>
 
     <div class="top-bar">
-        <header>
-            <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="logo-tienda" onclick="window.location.href='tienda.html'" style="cursor:pointer">
-            <h1 id="view-title">MI<br>CUENTA</h1>
-        </header>
+        <header id="main-header" data-title="MI<br>CUENTA"></header>
     </div>
 
     <!-- VISTA: LOGIN / REGISTRO -->
@@ -410,6 +407,7 @@
             document.getElementById('forgot-form').style.display = view === 'forgot' ? 'block' : 'none';
         }
     </script>
-    <script type="module" src="js/tienda/tienda-auth.js?v=1.9"></script>
+    <script type="module" src="js/tienda/header-component.js?v=1.0"></script>
+    <script type="module" src="js/tienda/tienda-auth.js"></script>
 </body>
 </html>
