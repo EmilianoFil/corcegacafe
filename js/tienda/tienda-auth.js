@@ -196,15 +196,23 @@ async function showProfile(user) {
     }
 
     // --- AUTOPRELOAD FROM LOYALTY ---
+    // Loyalty Points (Cafecitos)
+    const userPointsEl = document.getElementById('user-points');
     if (dni) {
         const loyaltySnap = await getDoc(doc(db, "clientes", dni));
         if (loyaltySnap.exists()) {
             const loyData = loyaltySnap.data();
-            // En el club de fidelidad los campos se llaman cumple_dia, cumple_mes y telefono
+            if (userPointsEl) userPointsEl.innerText = loyData.cafes || 0;
+            
+            // Sync optional data
             if (!whatsapp) whatsapp = loyData.telefono || loyData.whatsapp || "";
             if (!diaRec && loyData.cumple_dia) diaRec = loyData.cumple_dia;
             if (!mesRec && loyData.cumple_mes) mesRec = loyData.cumple_mes;
+        } else {
+            if (userPointsEl) userPointsEl.innerText = "0";
         }
+    } else {
+        if (userPointsEl) userPointsEl.innerText = "0";
     }
 
     // Populate fields
@@ -213,7 +221,6 @@ async function showProfile(user) {
     document.getElementById('user-nac-dia').value = diaRec;
     document.getElementById('user-nac-mes').value = mesRec;
 
-    // El fetch de órdenes ahora es más inteligente
     fetchOrders(dni, user.email);
     loadAddresses(user.uid);
 }
@@ -434,27 +441,36 @@ async function fetchOrders(dni, email) {
         orders.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
         ordersList.innerHTML = orders.map(order => {
-            const date = order.timestamp ? order.timestamp.toDate().toLocaleDateString('es-AR') : '-';
+            const date = order.timestamp ? order.timestamp.toDate().toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+            const statusLabel = formatStatus(order.estado);
+            const itemsSummary = order.items.map(item => `${item.qty}x ${item.nombre}`).join(', ');
+
             return `
                 <div class="order-card">
                     <div class="order-header">
-                        <span style="font-weight:700; color:var(--panel-oscuro);">Pedido #${order.id.substring(0,8)}</span>
-                        <span class="order-status status-${order.estado || 'pendiente_pago'}">${formatStatus(order.estado)}</span>
+                        <div style="display:flex; flex-direction:column; gap:2px;">
+                            <span style="font-size: 10px; font-weight: 700; opacity: 0.5;">ORDEN</span>
+                            <span style="font-weight: 800; font-family: var(--font-base); font-size: 15px;">#${order.id.substring(0,8).toUpperCase()}</span>
+                        </div>
+                        <span class="order-status status-${order.estado || 'pendiente_pago'}">${statusLabel}</span>
                     </div>
-                    <div style="font-size:13px; margin-bottom:10px; color:var(--texto-muted);">${date}</div>
-                    <div style="font-size:13px; border-top:1px solid #eee; padding-top:10px;">
-                        ${order.items.map(item => `${item.qty}x ${item.nombre}`).join('<br>')}
+                    
+                    <div style="font-size: 12px; font-weight: 500; color: var(--texto-muted);">${date}</div>
+
+                    <div class="order-items-summary">
+                        ${itemsSummary}
                     </div>
-                    <div style="margin-top:10px; padding-top:10px; border-top:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:700; color:var(--panel-oscuro);">$${order.total.toLocaleString('es-AR')}</span>
+
+                    <div class="order-footer">
+                        <span class="order-total">$${order.total.toLocaleString('es-AR')}</span>
                         <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
                             ${order.estado === 'pendiente_pago' 
                                 ? (order.metodoPago === 'transferencia' 
-                                    ? `<a href="https://wa.me/5491136053892?text=${encodeURIComponent('Hola Córcega! Adjunto comprobante del pedido #' + order.id.substring(0,6))}" target="_blank" style="background:#25d366; border:none; color:white; padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:5px;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:14px; height:14px;"> COMPROBANTE</a>
-                                       <button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer;">PAGAR MP</button>`
-                                    : `<button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer;">PAGAR CON MERCADOPAGO</button>`)
+                                    ? `<a href="https://wa.me/5491136053892?text=${encodeURIComponent('Hola Córcega! Adjunto comprobante del pedido #' + order.id.substring(0,8))}" target="_blank" style="background:#25d366; border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:5px;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:12px; height:12px;"> COMPROBANTE</a>
+                                       <button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer;">PAGAR CON MP</button>`
+                                    : `<button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer;">PAGAR CON MERCADOPAGO</button>`)
                                 : ''}
-                            <button onclick="window.location.href='success.html?orderId=${order.id}'" style="background:none; border:2px solid var(--naranja-accent); color:var(--naranja-accent); padding:6px 15px; border-radius:100px; font-size:11px; font-weight:800; cursor:pointer;">VER SEGUIMIENTO</button>
+                            <button onclick="window.location.href='success.html?orderId=${order.id}'" style="background:none; border:1px solid var(--naranja-accent); color:var(--naranja-accent); padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer;">VER SEGUIMIENTO</button>
                         </div>
                     </div>
                 </div>

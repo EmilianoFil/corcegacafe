@@ -129,92 +129,134 @@
         /* Profile/Orders View */
         .profile-view {
             display: none;
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
+            animation: fadeIn 0.4s ease;
         }
+
+        /* Membership/Loyalty Card Area */
+        .profile-hero {
+            position: relative;
+            background: var(--panel-oscuro);
+            border-radius: 24px;
+            padding: 40px;
+            color: white;
+            overflow: hidden;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 20px 40px rgba(1, 40, 50, 0.15);
+        }
+
+        .profile-hero::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('css/img/wallpaper.png');
+            background-size: 300px;
+            opacity: 0.08;
+            pointer-events: none;
+        }
+
+        .hero-info h2 {
+            font-family: var(--font-display);
+            font-size: 32px;
+            margin-bottom: 5px;
+            color: white;
+        }
+
+        .hero-info p {
+            font-size: 13px;
+            opacity: 0.7;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .loyalty-badge {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+
+        .loyalty-badge .count {
+            display: block;
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--naranja-accent);
+            line-height: 1;
+        }
+
+        .loyalty-badge .label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+            margin-top: 5px;
+            display: block;
+        }
+
         .account-tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 25px;
-            border-bottom: 2px solid #f0f0f0;
-            padding-bottom: 5px;
-            overflow-x: auto;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 5px;
+            background: #f0f2f5;
+            border-radius: 50px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
         }
         .tab-btn {
             background: none;
             border: none;
-            padding: 10px 15px;
+            padding: 10px 25px;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--texto-muted);
             cursor: pointer;
+            border-radius: 50px;
+            transition: all 0.3s;
             white-space: nowrap;
-            transition: all 0.3s ease;
-            position: relative;
         }
         .tab-btn.active {
-            color: var(--panel-oscuro);
-        }
-        .tab-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: -7px;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: var(--panel-oscuro);
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--panel-oscuro);
-            margin-bottom: 5px;
-            text-transform: uppercase;
-        }
-        .address-card {
             background: white;
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid #eee;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            color: var(--panel-oscuro);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
         }
 
-        @media (max-width: 600px) {
-            .profile-view {
-                margin-top: 20px !important;
-            }
-        }
-
+        /* Order Cards Premium */
         .order-card {
             background: white;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 15px;
-            border: 1px solid var(--border);
-            text-align: left;
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.02);
+            transition: transform 0.2s;
+        }
+        .order-card:hover {
+            transform: translateY(-2px);
         }
 
         .order-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
 
         .order-status {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 10px;
             font-weight: 800;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .status-pendiente_pago { background: #fffbe6; color: #faad14; }
@@ -222,6 +264,58 @@
         .status-en_preparacion { background: #e6fffb; color: #13c2c2; }
         .status-listo { background: #f9f0ff; color: #722ed1; }
         .status-entregado { background: #f6ffed; color: #52c41a; }
+
+        .order-items-summary {
+            font-size: 14px;
+            color: var(--texto-muted);
+            margin: 15px 0;
+            padding-top: 15px;
+            border-top: 1px dashed #eee;
+            line-height: 1.6;
+        }
+
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #f9f9f9;
+        }
+
+        .order-total {
+            font-weight: 800;
+            font-size: 16px;
+            color: var(--panel-oscuro);
+        }
+
+        .btn-logout {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-logout:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: white;
+        }
+
+        /* Address cards */
+        .address-card {
+            background: #fdfcf7;
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid var(--border);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -299,33 +393,38 @@
 
     <!-- VISTA: PERFIL Y ÓRDENES -->
     <div id="profile-view" class="profile-view" style="display:none;">
-        <div class="auth-card" style="margin-bottom: 20px; text-align: left;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <div>
-                    <h3 id="user-name" style="margin: 0; font-family: var(--font-display);">Hola, Cliente</h3>
-                    <p id="user-dni" style="margin: 0; font-size: 13px; color: var(--texto-muted);"></p>
-                </div>
-                <button onclick="logout()" style="background: none; border: none; color: var(--error); cursor: pointer; font-weight: 700; font-size: 13px;">
-                    CERRAR SESIÓN
-                </button>
+        
+        <!-- Perfil Hero -->
+        <div class="profile-hero">
+            <div class="hero-info">
+                <p>BIENVENIDO</p>
+                <h2 id="user-name">Córcega Fan</h2>
+                <button class="btn-logout" onclick="logout()">CERRAR SESIÓN</button>
             </div>
+            <div class="loyalty-badge">
+                <span class="count" id="user-points">-</span>
+                <span class="label">Cafecitos</span>
+            </div>
+        </div>
 
-            <!-- Form para vincular DNI si falta -->
-            <div id="dni-link-section" style="display: none; border-top: 1px dashed var(--border); padding-top: 15px; margin-top: 15px;">
-                <p style="font-size: 12px; margin-bottom: 10px;">Para ver tus pedidos y sumar cafecitos, vinculá tu DNI:</p>
-                <div style="display: flex; gap: 10px;">
-                    <input type="number" id="link-dni-input" class="form-control" placeholder="Tu DNI sin puntos" style="padding: 10px; font-size: 14px;">
-                    <button id="btn-link-dni" class="btn-auth" style="padding: 10px 20px; width: auto; font-size: 12px;">VINCULAR</button>
-                </div>
+        <!-- Alerta DNI (Solo si no tiene) -->
+        <div id="dni-link-section" style="display: none; background: #fffbe6; padding: 20px; border-radius: 20px; margin-bottom: 30px; border: 1px solid #ffe58f;">
+            <p style="font-size: 13px; font-weight: 700; color: #856404; margin-bottom: 10px;">¡Vinculá tu DNI para sumar puntos!</p>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="link-dni-input" class="form-control" placeholder="DNI sin puntos" style="background: white;">
+                <button id="btn-link-dni" class="btn-auth" style="width: auto; padding: 0 20px;">VINCULAR</button>
             </div>
         </div>
 
         <!-- TABS NAVIGATION -->
         <div class="account-tabs">
-            <button class="tab-btn active" onclick="showTab('pedidos')">🛍️ Pedidos</button>
-            <button class="tab-btn" onclick="showTab('datos')">👤 Mis Datos</button>
-            <button class="tab-btn" onclick="showTab('direcciones')">📍 Direcciones</button>
+            <button class="tab-btn active" onclick="showTab('pedidos')"><i class="fas fa-shopping-bag" style="margin-right:8px;"></i>Pedidos</button>
+            <button class="tab-btn" onclick="showTab('datos')"><i class="fas fa-user-edit" style="margin-right:8px;"></i>Mis Datos</button>
+            <button class="tab-btn" onclick="showTab('direcciones')"><i class="fas fa-map-marker-alt" style="margin-right:8px;"></i>Direcciones</button>
         </div>
+        
+        <!-- Contenido principal -->
+        <div class="account-container-content" style="max-width: 600px; margin: 0 auto;">
 
         <!-- TAB CONTENT: PEDIDOS -->
         <div id="tab-pedidos" class="tab-content" style="display:block;">
@@ -395,10 +494,11 @@
                     <input type="text" id="addr-piso" class="form-control" placeholder="Piso/Depto">
                 </div>
                 <input type="text" id="addr-nota" class="form-control" placeholder="Referencia (opcional)">
-                <button id="btn-save-address" class="btn-auth">GUARDAR DIRECCIÓN</button>
+                <button class="btn-primary-corcega" id="btn-save-address" style="width: 100%; border-radius: 12px; height: 45px;">GUARDAR DIRECCIÓN</button>
             </div>
         </div>
-    </div>
+    </div> <!-- .account-container-content -->
+</div> <!-- #profile-view -->
 
     <script>
         function toggleAuth(view) {
