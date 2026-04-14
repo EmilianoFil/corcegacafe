@@ -152,6 +152,17 @@
             font-weight: 600;
             margin-bottom: 20px;
         }
+
+        /* Config Aware Sections (Hide until ready) */
+        .config-aware {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        .config-aware.ready {
+            opacity: 1;
+            pointer-events: all;
+        }
     </style>
 </head>
 <body>
@@ -204,7 +215,7 @@
         </div>
 
         <!-- Método de Entrega -->
-        <div class="checkout-section">
+        <div class="checkout-section config-aware">
             <h3><i class="fas fa-truck"></i> Entrega / Retiro</h3>
             <div class="method-selector">
                 <div class="method-card active" data-method="pickup">
@@ -231,7 +242,7 @@
         </div>
 
         <!-- Pago -->
-        <div class="checkout-section">
+        <div class="checkout-section config-aware">
             <h3><i class="fas fa-credit-card"></i> Método de Pago</h3>
             <div class="form-group">
                 <select id="payment-method" class="form-control">

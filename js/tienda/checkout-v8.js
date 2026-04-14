@@ -90,6 +90,9 @@ async function applyStoreConfig() {
         
     } catch (err) {
         console.error("Error applying config:", err);
+    } finally {
+        // Mostrar secciones una vez procesado todo
+        document.querySelectorAll('.config-aware').forEach(el => el.classList.add('ready'));
     }
 }
 
