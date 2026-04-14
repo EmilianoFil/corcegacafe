@@ -57,33 +57,45 @@
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            padding: 30px 0;
+            padding: 20px 0;
             z-index: 100;
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.02);
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.01);
         }
 
         .sidebar-header {
-            padding: 0 24px 40px;
-            text-align: center;
+            padding: 10px 24px 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .sidebar-header img {
-            width: 90px;
-            margin-bottom: 15px;
-            filter: drop-shadow(0 4px 8px rgba(216, 102, 52, 0.2));
+            width: 45px;
+            filter: drop-shadow(0 2px 4px rgba(216, 102, 52, 0.1));
         }
 
         .sidebar-header h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.5rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
             margin: 0;
             color: var(--secondary);
-            letter-spacing: -0.5px;
+            font-weight: 800;
+        }
+
+        .nav-label {
+            font-size: 10px;
+            font-weight: 800;
+            color: #aaa;
+            padding: 20px 24px 10px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
         }
 
         nav {
             flex: 1;
-            padding: 0 16px;
+            padding: 0 12px;
             overflow-y: auto;
         }
 
@@ -94,73 +106,75 @@
         }
 
         nav li {
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
 
         nav a {
             display: flex;
             align-items: center;
-            padding: 14px 16px;
+            padding: 10px 16px;
             text-decoration: none;
             color: var(--text-muted);
+            font-size: 0.9rem;
             font-weight: 500;
-            border-radius: var(--radius);
+            border-radius: 12px;
             gap: 12px;
-            border: 1px solid transparent;
+            transition: all 0.2s;
         }
 
         nav a:hover {
-            background-color: var(--bg-color);
+            background-color: #f9f9f9;
             color: var(--primary);
         }
 
         nav a.active {
             background-color: var(--primary-light);
             color: var(--primary);
-            font-weight: 600;
-            border-color: rgba(216, 102, 52, 0.1);
+            font-weight: 700;
         }
 
         nav a .icon {
-            font-size: 1.3rem;
+            font-size: 1.1rem;
+            opacity: 0.7;
         }
 
         .sidebar-footer {
-            padding: 24px;
+            padding: 20px;
             border-top: 1px solid var(--border);
-            margin-top: auto;
+            background: #fafafa;
         }
 
         .user-info {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            font-size: 0.95rem;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 0.8rem;
             color: var(--secondary);
-            background: var(--bg-color);
-            padding: 12px;
-            border-radius: 12px;
+            font-weight: 700;
         }
 
         .btn-logout {
             width: 100%;
-            padding: 12px;
-            background: transparent;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            color: var(--error);
+            padding: 10px;
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-size: 0.75rem;
             font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            transition: all 0.2s;
         }
 
         .btn-logout:hover {
-            background: #fff1f0;
-            border-color: #ffccc7;
+            background: #fff5f5;
+            color: var(--error);
+            border-color: #ffdada;
         }
 
         /* Main Content area */
@@ -722,20 +736,29 @@
     <!-- Sidebar -->
     <aside>
         <div class="sidebar-header">
-            <img src="css/img/Corcega_Logo_Original.png" alt="Logo">
+            <img src="css/img/Corcega_Logo_Original.png" alt="Logo" style="width: 40px;">
             <h2>Admin Dash</h2>
         </div>
-        <nav>
-            <ul id="main-nav">
-                <li><a href="#dashboard" class="active"><span class="icon">📊</span> Dashboard</a></li>
+        <nav id="main-nav">
+            <div class="nav-label">Club Corcega</div>
+            <ul>
+                <li><a href="#dashboard" class="active"><span class="icon">📊</span> Resumen General</a></li>
                 <li><a href="#puntos"><span class="icon">☕</span> Sumar Cafecito</a></li>
                 <li><a href="#clientes"><span class="icon">👥</span> Clientes</a></li>
                 <li><a href="admin-badges.html"><span class="icon">🎖️</span> Insignias</a></li>
-                <li><a href="#logs"><span class="icon">📜</span> Auditoría</a></li>
+            </ul>
+
+            <div class="nav-label">Tienda Online</div>
+            <ul>
                 <li><a href="#tienda-productos"><span class="icon">🛒</span> Productos</a></li>
                 <li><a href="#tienda-categorias"><span class="icon">🏷️</span> Categorías</a></li>
                 <li><a href="#tienda-ordenes"><span class="icon">📦</span> Órdenes</a></li>
-                <li><a href="#mails"><span class="icon">📧</span> Mails</a></li>
+            </ul>
+
+            <div class="nav-label">Marketing y Sistema</div>
+            <ul>
+                <li><a href="#mails"><span class="icon">📧</span> Mails Masivos</a></li>
+                <li><a href="#logs"><span class="icon">📜</span> Auditoría</a></li>
                 <li><a href="#tools"><span class="icon">🛠️</span> Herramientas</a></li>
             </ul>
         </nav>
