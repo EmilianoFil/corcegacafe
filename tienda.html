@@ -31,8 +31,11 @@
     <!-- Product Display -->
     <main class="products-grid" id="products-container">
         <!-- Products will be injected here by JS -->
-        <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--texto-muted);">
-            <i class="fas fa-circle-notch fa-spin"></i> Cargando productos...
+        <div class="corcega-loader-container">
+            <div class="corcega-spinner">
+                <i class="fas fa-circle-notch fa-spin"></i>
+            </div>
+            <p class="corcega-loader-text">Cargando productos...</p>
         </div>
     </main>
 

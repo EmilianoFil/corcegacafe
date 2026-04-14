@@ -153,36 +153,6 @@
             margin-bottom: 20px;
         }
 
-        /* Inline Loader */
-        #checkout-loader {
-            text-align: center;
-            padding: 100px 20px;
-            color: var(--texto-muted);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
-
-        #checkout-loader i {
-            font-size: 48px;
-            color: var(--naranja-accent);
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        #checkout-loader p {
-            font-family: 'Playfair Display', serif;
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--panel-oscuro);
-            margin: 0;
-        }
-
         .checkout-container #checkout-content {
             display: none; /* Hide content while loading */
         }
@@ -205,9 +175,11 @@
 
     <div class="checkout-container" id="checkout-main-container">
         
-        <div id="checkout-loader">
-            <i class="fas fa-circle-notch fa-spin"></i>
-            <p>Preparando checkout...</p>
+        <div id="checkout-loader" class="corcega-loader-container">
+            <div class="corcega-spinner">
+                <i class="fas fa-circle-notch fa-spin"></i>
+            </div>
+            <p class="corcega-loader-text">Preparando checkout...</p>
         </div>
 
         <div id="checkout-content">

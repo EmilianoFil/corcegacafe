@@ -9,6 +9,7 @@ import {
     sendPasswordResetEmail
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { doc, getDoc, setDoc, getDocs, query, collection, where, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { LoaderManager } from './loader-manager.js';
 
 // --- ELEMENTS ---
 const authView = document.getElementById('auth-view');
@@ -392,7 +393,7 @@ if (btnLinkDni) {
 }
 
 async function fetchOrders(dni, email) {
-    ordersList.innerHTML = '<p style="font-size:12px; opacity:0.6;">Cargando tus pedidos...</p>';
+    ordersList.innerHTML = LoaderManager.getHTML("Cargando tus pedidos...");
     
     try {
         let orders = [];

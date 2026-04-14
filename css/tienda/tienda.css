@@ -17,6 +17,35 @@
   --radio: 24px;
 }
 
+/* Standardized Loader */
+.corcega-loader-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    gap: 15px;
+    animation: fadeInLoader 0.4s ease;
+    width: 100%;
+}
+.corcega-spinner {
+    font-size: 32px;
+    color: var(--naranja-accent);
+}
+.corcega-loader-text {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--panel-oscuro);
+    margin: 0;
+    letter-spacing: 0.5px;
+}
+@keyframes fadeInLoader {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 * {
   margin: 0;
   padding: 0;
