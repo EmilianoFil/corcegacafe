@@ -1091,35 +1091,37 @@
 
         <!-- TIENDA CATEGORIAS SECTION -->
         <section id="tienda-categorias" class="section-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                <h3 style="margin:0">Gestión de Categorías 🏷️</h3>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                <h3 style="margin:0; font-size: 1.5rem;">Categorías 🏷️</h3>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">TIENDA ONLINE</span>
             </div>
             
-            <div class="card" style="margin-bottom: 25px; padding: 25px;">
-                <p style="font-size: 0.9rem; color: var(--texto-muted); margin-bottom: 20px;">
-                    Las categorías que agregues aquí aparecerán automáticamente en los filtros de la tienda y al crear nuevos productos.
-                </p>
-                <div style="display: flex; gap: 10px;">
+            <div class="card" style="margin-bottom: 20px; padding: 20px; background: white; border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                <div style="display: flex; gap: 12px; align-items: center;">
                     <div style="flex: 1;">
-                        <input type="text" id="cat-nombre" placeholder="Nombre de la categoría (ej: Merchandising)" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border);">
+                        <input type="text" id="cat-nombre" placeholder="Ej: Café de Especialidad, Pastelería..." style="width: 100%; padding: 10px 16px; border-radius: 10px; border: 1px solid #ddd; font-size: 0.9rem; outline: none; transition: border-color 0.2s;">
                     </div>
-                    <button class="btn-primary" onclick="window.tiendaAdmin.guardarCategoria()" style="margin:0; padding: 0 25px;">+ Agregar</button>
+                    <button class="btn-primary" onclick="window.tiendaAdmin.guardarCategoria()" style="margin:0; padding: 11px 25px; width: auto; font-size: 0.85rem; height: auto;">
+                        <span style="margin-right: 5px;">+</span> Agregar
+                    </button>
                 </div>
             </div>
 
-            <div id="table-categorias-wrapper" class="card" style="padding: 20px;">
-                <table id="tablaCategoriasDash" class="display" style="width:100%">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Slug (ID)</th>
-                            <th style="text-align: right;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lista-categorias-body">
-                        <!-- Categorías dinámicas -->
-                    </tbody>
-                </table>
+            <div id="table-categorias-wrapper">
+                <div class="card" style="padding: 10px; border: 1px solid var(--border); background: white;">
+                    <table class="display" style="width:100%; border-collapse: collapse; font-size: 0.9rem;">
+                        <thead style="background: #fdfcf7;">
+                            <tr>
+                                <th style="text-align: left; padding: 12px 15px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid #eee;">Nombre de la Categoría</th>
+                                <th style="text-align: left; padding: 12px 15px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid #eee;">Slug</th>
+                                <th style="text-align: right; padding: 12px 15px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid #eee;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-categorias-body">
+                            <!-- Categorías dinámicas -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 

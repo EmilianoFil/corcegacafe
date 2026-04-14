@@ -252,16 +252,20 @@ export async function loadCategoriasTable() {
         const tbody = document.getElementById('lista-categorias-body');
         if (tbody) {
             tbody.innerHTML = cats.map(c => `
-                <tr>
-                    <td style="font-weight:700;">${c.nombre}</td>
-                    <td style="color:#999; font-size:0.8rem;">${c.id}</td>
-                    <td style="text-align: right;">
-                        <button class="btn-secondary" onclick="window.tiendaAdmin.eliminarCategoria('${c.id}', '${c.nombre}')" style="padding:6px 12px; color:var(--error); border-color:#ffccc7; margin:0;">
-                            🗑️ Eliminar
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
+            <tr>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                    <span style="font-weight:700; color:var(--secondary);">${c.nombre}</span>
+                </td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; color:#999; font-size:0.8rem; font-family:monospace;">
+                    ${c.id}
+                </td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; text-align: right;">
+                    <button class="btn-secondary" onclick="window.tiendaAdmin.eliminarCategoria('${c.id}', '${c.nombre}')" style="padding:5px 12px; font-size:0.75rem; color:var(--error); border-color:#ffebeb; background:#fff5f5; margin:0; width:auto;">
+                        🗑️ Eliminar
+                    </button>
+                </td>
+            </tr>
+        `).join('');
         }
     } catch (err) {
         console.error("Error loading categories:", err);
