@@ -26,33 +26,40 @@ async function init() {
     }
 
     // 1. Cargar Configuración
-    await applyStoreConfig();
+    try {
+        await applyStoreConfig();
+    } catch (err) {
+        console.error("Critical error loading config:", err);
+    }
+    
     renderSummary();
     setupEventListeners();
     
     // 2. Auth Listener (Autofill)
     onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            const snap = await getDoc(doc(db, "usuarios_tienda", user.uid));
-            if (snap.exists()) {
-                userProfile = snap.data();
-                autofillData(userProfile);
+        try {
+            if (user) {
+                const snap = await getDoc(doc(db, "usuarios_tienda", user.uid));
+                if (snap.exists()) {
+                    userProfile = snap.data();
+                    autofillData(userProfile);
+                }
             }
+        } catch (err) {
+            console.error("Error in auth listener:", err);
+        } finally {
+            showContent();
         }
-        // Ocultar loader una vez que sabemos si hay usuario o no
-        hideGlobalLoader();
     });
 
-    // Fallback por si Auth tarda demasiado
-    setTimeout(hideGlobalLoader, 3000);
+    // Fallback por si Auth tarda demasiado (máximo 2 segundos de espera extra)
+    setTimeout(showContent, 2000);
 }
 
-function hideGlobalLoader() {
-    const loader = document.getElementById('loader-global');
+function showContent() {
     const container = document.getElementById('checkout-main-container');
-    if (loader && !loader.classList.contains('hidden')) {
-        loader.classList.add('hidden');
-        if (container) container.classList.add('ready');
+    if (container && !container.classList.contains('ready')) {
+        container.classList.add('ready');
     }
 }
 

@@ -153,66 +153,59 @@
             margin-bottom: 20px;
         }
 
-        /* Global Loader */
-        #loader-global {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #fdfcf7;
+        /* Inline Loader */
+        #checkout-loader {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--texto-muted);
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            z-index: 9999;
-            transition: opacity 0.5s ease, visibility 0.5s;
+            gap: 15px;
         }
 
-        #loader-global.hidden {
-            opacity: 0;
-            visibility: hidden;
+        #checkout-loader i {
+            font-size: 32px;
+            color: var(--naranja-accent);
         }
 
-        .galope {
-            width: 80px;
-            animation: galope 1.5s infinite ease-in-out;
-        }
-
-        @keyframes galope {
-            0%, 100% { transform: translateY(0) rotate(-5deg); }
-            50% { transform: translateY(-15px) rotate(5deg); }
-        }
-
-        #loader-global p {
+        #checkout-loader p {
             font-family: 'Playfair Display', serif;
-            font-size: 18px;
-            color: var(--panel-oscuro);
-            margin-top: 20px;
-            letter-spacing: 1px;
+            font-size: 16px;
+            margin: 0;
         }
 
-        .checkout-container {
-            opacity: 0;
-            transition: opacity 0.5s ease;
+        .checkout-container #checkout-content {
+            display: none; /* Hide content while loading */
         }
-        .checkout-container.ready {
-            opacity: 1;
+        
+        .checkout-container.ready #checkout-content {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .checkout-container.ready #checkout-loader {
+            display: none;
         }
     </style>
 </head>
 <body>
-
-    <div id="loader-global">
-        <img src="css/img/Corcega_Logo_Original.png" class="galope">
-        <p>Preparando tu pedido...</p>
-    </div>
 
     <div class="top-bar">
         <header id="main-header" data-title="FINALIZAR<br>PEDIDO"></header>
     </div>
 
     <div class="checkout-container" id="checkout-main-container">
-        <button class="back-btn" onclick="window.location.href='tienda.html'">
-            <i class="fas fa-arrow-left"></i> Volver a la tienda
-        </button>
+        
+        <div id="checkout-loader">
+            <i class="fas fa-circle-notch fa-spin"></i>
+            <p>Preparando checkout...</p>
+        </div>
+
+        <div id="checkout-content">
+            <button class="back-btn" onclick="window.location.href='tienda.html'">
+                <i class="fas fa-arrow-left"></i> Volver a la tienda
+            </button>
 
         <!-- Resumen -->
         <div class="checkout-section">
