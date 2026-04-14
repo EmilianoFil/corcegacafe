@@ -14,23 +14,15 @@ const cartItemsList = document.getElementById('cart-items-list');
 const cartTotal = document.getElementById('cart-total');
 const getCartBadges = () => document.querySelectorAll('.cart-count, .cart-count-badge, #cart-badge');
 
-// --- AUTH LISTENER ---
-onAuthStateChanged(auth, async (user) => {
-    const userGreeting = document.getElementById('user-greeting');
-    if (user) {
-        const snap = await getDoc(doc(db, "usuarios_tienda", user.uid));
-        let nombre = user.displayName || user.email.split('@')[0];
-        if (snap.exists()) {
-            nombre = snap.data().nombre.split(' ')[0];
-        }
-        if (userGreeting) {
-            userGreeting.innerText = `¡HOLA, ${nombre.toUpperCase()}!`;
-            userGreeting.style.display = 'block';
-        }
-    } else {
-        if (userGreeting) userGreeting.style.display = 'none';
+// --- ACTIONS ---
+window.tienda = {
+    toggleCart: () => {
+        if (!cartDrawer) return;
+        cartDrawer.classList.toggle('active');
+        cartOverlay.classList.toggle('active');
+        document.body.style.overflow = cartDrawer.classList.contains('active') ? 'hidden' : 'auto';
     }
-});
+};
 
 // --- INIT ---
 async function init() {

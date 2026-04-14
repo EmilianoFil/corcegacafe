@@ -20,20 +20,7 @@
 
     <div class="top-bar">
         <!-- Header -->
-        <header>
-            <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="logo-tienda" onclick="window.location.href='index.html'" style="cursor:pointer">
-            <h1>TIENDA<br>CÓRCEGA</h1>
-            <div class="header-actions">
-                <a href="tienda-cuenta.html" title="Mi Cuenta" id="user-link" style="display:flex; align-items:center; text-decoration:none;">
-                    <span id="user-greeting" style="font-family: var(--font-sync); font-size: 9px; margin-right: 10px; color: var(--panel-oscuro); display: none;"></span>
-                    <i class="fas fa-user-circle"></i>
-                </a>
-                <div class="cart-icon" id="cart-btn" style="position:relative;">
-                    <i class="fas fa-shopping-bag"></i>
-                    <span class="cart-count">0</span>
-                </div>
-            </div>
-        </header>
+        <header id="main-header"></header>
 
         <!-- Categories -->
         <div class="categories-container" id="categories-nav">
@@ -83,7 +70,8 @@
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="js/tienda/tienda.js?v=1.8"></script>
+    <script type="module" src="js/tienda/header-component.js?v=1.0"></script>
+    <script type="module" src="js/tienda/tienda.js?v=1.6"></script>
     
     <!-- Modal Checkout -->
     <div class="modal-overlay" id="checkout-modal" style="display: none;">

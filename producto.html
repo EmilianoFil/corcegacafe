@@ -197,19 +197,7 @@
 <body>
 
     <div class="top-bar">
-        <header>
-            <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="logo-tienda" onclick="window.location.href='tienda.html'" style="cursor:pointer">
-            <h1>TIENDA<br>CÓRCEGA</h1>
-            <div class="header-actions">
-                <div class="user-area" id="header-user-area" style="display: flex; align-items: center;">
-                    <!-- Dinámico -->
-                </div>
-                <div class="cart-icon" id="cart-btn-header" onclick="window.tienda?.toggleCart()" style="position:relative; cursor:pointer;">
-                    <i class="fas fa-shopping-bag"></i>
-                    <span class="cart-count" id="cart-count">0</span>
-                </div>
-            </div>
-        </header>
+        <header id="main-header"></header>
     </div>
 
     <div class="product-page-container">
@@ -288,6 +276,7 @@
     </div>
 
     <!-- Scripts -->
+    <script type="module" src="js/tienda/header-component.js?v=1.0"></script>
     <script type="module" src="js/tienda/producto-detalle.js?v=1.2"></script>
 </body>
 </html>

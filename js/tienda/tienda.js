@@ -10,7 +10,6 @@ let activeCategory = 'todos';
 
 // --- ELEMENTS ---
 const productsGrid = document.getElementById('products-container');
-const userGreeting = document.getElementById('user-greeting');
 const cartBadge = document.getElementById('cart-badge');
 const cartDrawer = document.getElementById('cart-drawer');
 const cartOverlay = document.getElementById('cart-overlay');
@@ -18,22 +17,15 @@ const cartItemsList = document.getElementById('cart-items-list');
 const cartTotal = document.getElementById('cart-total');
 const catsNav = document.getElementById('categories-nav');
 
-// --- AUTH LISTENER ---
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        const snap = await getDoc(doc(db, "usuarios_tienda", user.uid));
-        let nombre = user.displayName || user.email.split('@')[0];
-        if (snap.exists()) {
-            nombre = snap.data().nombre.split(' ')[0];
-        }
-        if (userGreeting) {
-            userGreeting.innerText = `¡HOLA, ${nombre.toUpperCase()}!`;
-            userGreeting.style.display = 'block';
-        }
-    } else {
-        if (userGreeting) userGreeting.style.display = 'none';
+// --- ACTIONS ---
+window.tienda = {
+    toggleCart: () => {
+        if (!cartDrawer) return;
+        cartDrawer.classList.toggle('active');
+        cartOverlay.classList.toggle('active');
+        document.body.style.overflow = cartDrawer.classList.contains('active') ? 'hidden' : 'auto';
     }
-});
+};
 
 // --- INITIALIZATION ---
 async function init() {
