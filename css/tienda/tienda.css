@@ -147,10 +147,24 @@ header h1 {
 }
 
 .product-desc {
-    font-size: 13px;
-    color: var(--texto-muted);
+    font-size: 0.85rem;
+    color: var(--panel-oscuro);
+    opacity: 0.8;
     margin-bottom: 20px;
     line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: pre-wrap; /* Respeta saltos de línea */
+}
+
+.product-bio {
+    white-space: pre-wrap;
+}
+
+.product-detail-desc {
+    white-space: pre-wrap;
 }
 
 .product-footer {
