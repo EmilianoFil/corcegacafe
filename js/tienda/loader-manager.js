@@ -38,6 +38,8 @@ export const LoaderManager = {
                 gap: 15px;
                 animation: fadeInLoader 0.4s ease;
                 width: 100%;
+                grid-column: 1 / -1;
+                margin: 0 auto;
             }
             .corcega-spinner {
                 font-size: 32px;
