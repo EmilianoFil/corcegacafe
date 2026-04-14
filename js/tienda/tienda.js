@@ -18,6 +18,11 @@ const cartTotal = document.getElementById('cart-total');
 const catsNav = document.getElementById('categories-nav');
 
 // --- ACTIONS ---
+let userIsLogged = false;
+onAuthStateChanged(auth, (user) => {
+    userIsLogged = !!user;
+});
+
 window.tienda = {
     toggleCart: () => {
         if (!cartDrawer) return;
@@ -220,6 +225,12 @@ function setupCartEvents() {
     document.getElementById('btn-close-cart')?.addEventListener('click', closeCart);
     cartOverlay?.addEventListener('click', closeCart);
     document.getElementById('btn-go-to-checkout')?.addEventListener('click', () => {
+        // Si ya está logueado, vamos directo al checkout
+        if (userIsLogged) {
+            window.location.href = 'checkout.html';
+            return;
+        }
+
         const checkoutModal = document.getElementById('checkout-modal');
         if (checkoutModal) {
             checkoutModal.style.display = 'flex';
