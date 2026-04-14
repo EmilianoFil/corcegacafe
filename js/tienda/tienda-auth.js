@@ -35,14 +35,14 @@ onAuthStateChanged(auth, async (user) => {
             window.location.href = redirect;
             return;
         }
-        
-        // Si no hay redirección, mostrar perfil normal
         showProfile(user);
     } else {
         // User logged out
         authView.style.display = 'block';
         profileView.style.display = 'none';
         localStorage.removeItem('corcega_tienda_dni');
+
+        updateCartBadge(); // <-- Added this
 
         // Detectar si queremos mostrar Registro directamente
         if (window.location.hash === '#register') {
@@ -173,56 +173,44 @@ async function showProfile(user) {
     if (snap.exists()) {
         const data = snap.data();
         let displayNombre = data.nombre || user.displayName || user.email.split('@')[0];
-        // Capitalizar primera letra para que no parezca un mail
         displayNombre = displayNombre.charAt(0).toUpperCase() + displayNombre.slice(1);
         
-        userName.innerText = `¡Hola, ${displayNombre}!`;
-        userDni.innerText = data.dni ? `DNI: ${data.dni}` : "Falta vincular DNI";
+        if (userName) userName.innerText = `¡Hola, ${displayNombre}!`;
         dni = data.dni;
         whatsapp = data.whatsapp || "";
         diaRec = data.nacimiento_dia || "";
         mesRec = data.nacimiento_mes || "";
         
-        document.getElementById('dni-link-section').style.display = data.dni ? 'none' : 'block';
+        const dniSection = document.getElementById('dni-link-section');
+        if (dniSection) dniSection.style.display = data.dni ? 'none' : 'block';
         
         if (dni) {
             localStorage.setItem('corcega_tienda_dni', dni);
             localStorage.setItem('corcega_tienda_nombre', data.nombre);
         }
     } else {
-        userName.innerText = `¡Hola, ${user.displayName || user.email}!`;
-        userDni.innerText = "Registrá tu DNI para ver tus pedidos.";
-        document.getElementById('dni-link-section').style.display = 'block';
+        if (userName) userName.innerText = `¡Hola!`;
+        const dniSection = document.getElementById('dni-link-section');
+        if (dniSection) dniSection.style.display = 'block';
     }
 
-    // --- AUTOPRELOAD FROM LOYALTY ---
-    // Loyalty Points (Cafecitos)
-    const userPointsEl = document.getElementById('user-points');
-    if (dni) {
-        const loyaltySnap = await getDoc(doc(db, "clientes", dni));
-        if (loyaltySnap.exists()) {
-            const loyData = loyaltySnap.data();
-            if (userPointsEl) userPointsEl.innerText = loyData.cafes || 0;
-            
-            // Sync optional data
-            if (!whatsapp) whatsapp = loyData.telefono || loyData.whatsapp || "";
-            if (!diaRec && loyData.cumple_dia) diaRec = loyData.cumple_dia;
-            if (!mesRec && loyData.cumple_mes) mesRec = loyData.cumple_mes;
-        } else {
-            if (userPointsEl) userPointsEl.innerText = "0";
-        }
-    } else {
-        if (userPointsEl) userPointsEl.innerText = "0";
-    }
-
-    // Populate fields
-    document.getElementById('user-name-input').value = nombreActual;
-    document.getElementById('user-tel-input').value = whatsapp;
-    document.getElementById('user-nac-dia').value = diaRec;
-    document.getElementById('user-nac-mes').value = mesRec;
+    // --- CART SYNC ---
+    updateCartBadge();
 
     fetchOrders(dni, user.email);
     loadAddresses(user.uid);
+}
+
+function updateCartBadge() {
+    try {
+        const cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
+        const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+        const badges = document.querySelectorAll('.cart-count, #cart-count');
+        badges.forEach(b => {
+            b.innerText = totalItems;
+            b.style.display = totalItems > 0 ? 'flex' : 'none';
+        });
+    } catch (e) { console.error("Error updating cart badge:", e); }
 }
 
 // --- SAVE DATA ---
