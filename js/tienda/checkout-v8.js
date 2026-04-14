@@ -18,24 +18,17 @@ const transferInfo = document.getElementById('transfer-info');
 const btnFinalizar = document.getElementById('btn-finalizar-pedido');
 
 // --- INITIALIZATION ---
-async function init() {
+function init() {
     if (cart.length === 0) {
         alert("Tu carrito está vacío.");
         window.location.href = 'tienda.html';
         return;
     }
 
-    // 1. Cargar Configuración
-    try {
-        await applyStoreConfig();
-    } catch (err) {
-        console.error("Critical error loading config:", err);
-    }
-    
-    renderSummary();
-    setupEventListeners();
-    
-    // 2. Auth Listener (Autofill)
+    // 1. Fallback de seguridad (Si en 3.5s no cargó, mostramos igual)
+    setTimeout(showContent, 3500);
+
+    // 2. Auth Listener (Autofill) - Esto suele ser lo que más tarda
     onAuthStateChanged(auth, async (user) => {
         try {
             if (user) {
@@ -52,14 +45,27 @@ async function init() {
         }
     });
 
-    // Fallback por si Auth tarda demasiado (máximo 2 segundos de espera extra)
-    setTimeout(showContent, 2000);
+    // 3. Cargar Configuración y Renderizar (Async sin bloquear el hilo principal)
+    loadAsyncData();
+}
+
+async function loadAsyncData() {
+    try {
+        await applyStoreConfig();
+        renderSummary();
+        setupEventListeners();
+    } catch (err) {
+        console.error("Error loading async data:", err);
+    } finally {
+        showContent();
+    }
 }
 
 function showContent() {
     const container = document.getElementById('checkout-main-container');
     if (container && !container.classList.contains('ready')) {
         container.classList.add('ready');
+        console.log("Checkout ready.");
     }
 }
 
