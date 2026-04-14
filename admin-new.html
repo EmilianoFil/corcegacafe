@@ -295,36 +295,59 @@
 
         /* Forms */
         .form-container {
-            max-width: 550px;
+            max-width: 800px;
+            margin: 0 auto 40px;
+            padding: 30px !important;
+        }
+
+        .form-container h4 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            margin-bottom: 25px;
+            color: var(--secondary);
+            border-bottom: 2px solid var(--primary-light);
+            padding-bottom: 10px;
         }
 
         .input-group {
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .input-group label {
             display: block;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 10px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 8px;
             color: var(--secondary);
+            letter-spacing: 0.3px;
         }
 
-        .input-group input,
+        .input-group input, 
+        .input-group textarea, 
         .input-group select {
             width: 100%;
-            padding: 14px 18px;
-            border: 1px solid var(--border);
+            padding: 12px 16px;
+            border: 1.5px solid #eee;
             border-radius: 12px;
-            font-family: inherit;
-            font-size: 1rem;
-            background: #fafafa;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            background-color: #fafafa;
+            transition: all 0.25s ease;
+            outline: none;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
         }
 
-        .input-group input:focus {
-            outline: none;
+        .input-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus,
+        .input-group select:focus {
             border-color: var(--primary);
-            background: #fff;
+            background-color: white;
             box-shadow: 0 0 0 4px rgba(216, 102, 52, 0.1);
         }
 
