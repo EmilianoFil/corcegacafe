@@ -453,6 +453,8 @@ export async function notificarWhatsApp(id) {
     } catch (error) {
         console.error(error);
     }
+}
+
 export async function cambiarEstadoOrden(id, nuevoEstado) {
     try {
         await updateDoc(doc(db, "ordenes", id), {
