@@ -365,24 +365,25 @@ export async function loadOrdenesTable() {
 
         tbody.innerHTML = ordenes.map(o => {
             const date = o.timestamp?.toDate ? o.timestamp.toDate().toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }) : (o.fecha?.toDate ? o.fecha.toDate().toLocaleString('es-AR') : '—');
+            const rowBg = getOrderStatusBg(o.estado);
             return `
-                <tr>
-                    <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; vertical-align: middle;">
+                <tr style="background: ${rowBg};">
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); vertical-align: middle;">
                         <span style="font-weight:800; color:var(--panel-oscuro); font-family:monospace; font-size:13px;">#${o.id.substring(0,8).toUpperCase()}</span>
                     </td>
-                    <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-size:12px; color:#666; vertical-align: middle;">
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); font-size:12px; color:#666; vertical-align: middle;">
                         ${date}
                     </td>
-                    <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-weight:600; font-size:14px; vertical-align: middle;">
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); font-weight:600; font-size:14px; vertical-align: middle;">
                         ${o.cliente.nombre}
                     </td>
-                    <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-weight:700; font-size:11px; color:var(--naranja-oscuro); vertical-align: middle;">
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); font-weight:700; font-size:11px; color:var(--naranja-oscuro); vertical-align: middle;">
                         ${o.horario || '<span style="color:#aaa">No especificado</span>'}
                     </td>
-                    <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; font-weight:800; color:var(--naranja-accent); font-size:14px; vertical-align: middle;">
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); font-weight:800; color:var(--naranja-accent); font-size:14px; vertical-align: middle;">
                         $${o.total.toLocaleString('es-AR')}
                     </td>
-                    <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; vertical-align: middle;">
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); vertical-align: middle;">
                         <select onchange="window.tiendaAdmin.cambiarEstadoOrden('${o.id}', this.value)" class="status-select status-${o.estado}" style="padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; border: none; cursor:pointer; width: 100%; min-width: 140px;">
                             <option value="pendiente_pago" ${o.estado === 'pendiente_pago' ? 'selected' : ''}>PENDIENTE PAGO</option>
                             <option value="pagado" ${o.estado === 'pagado' ? 'selected' : ''}>PAGADO</option>
@@ -393,7 +394,7 @@ export async function loadOrdenesTable() {
                             <option value="cancelado" ${o.estado === 'cancelado' ? 'selected' : ''}>CANCELADO</option>
                         </select>
                     </td>
-                    <td style="padding: 15px; border-bottom: 1px solid #f5f5f5; text-align: right; vertical-align: middle;">
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); text-align: right; vertical-align: middle;">
                         <button class="btn-secondary" onclick="window.tiendaAdmin.verDetalleOrden('${o.id}')" style="padding:8px 15px; font-size:11px; font-weight:700; border-radius:8px; border:1px solid #eee; background:white; cursor:pointer; transition: all 0.2s;">🔍 DETALLES</button>
                     </td>
                 </tr>
