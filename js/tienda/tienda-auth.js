@@ -457,7 +457,10 @@ async function fetchOrders(dni, email) {
                         <span class="order-status status-${order.estado || 'pendiente_pago'}">${statusLabel}</span>
                     </div>
                     
-                    <div style="font-size: 12px; font-weight: 500; color: var(--texto-muted);">${date}</div>
+                    <div style="font-size: 11px; font-weight: 500; color: var(--texto-muted); display:flex; gap:10px; flex-wrap:wrap; margin-top:5px; margin-bottom:10px;">
+                        <span>Pedido el ${date}</span>
+                        ${order.horario ? `<span style="color:var(--naranja-oscuro); font-weight:700;"><i class="fas fa-calendar-day" style="margin-right:2px;"></i> ${order.horario}</span>` : ''}
+                    </div>
 
                     <div class="order-items-summary">
                         ${itemsSummary}
