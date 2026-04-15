@@ -1215,6 +1215,20 @@
                 <div style="display:flex; align-items:center; gap:15px;">
                     <h3 style="margin:0; font-size: 1.5rem;">Órdenes de Tienda 📦</h3>
                     <button class="btn-primary" onclick="window.tiendaAdmin.mostrarCalendarioPedidos()" style="margin:0; width: auto; padding: 8px 15px; font-size: 0.8rem; height: auto; background: var(--secondary);">📅 Vista Calendario</button>
+                    
+                    <div style="display:flex; align-items:center; gap:8px; margin-left: 10px;">
+                        <span style="font-size: 0.7rem; font-weight: 700; color: #999; text-transform: uppercase;">Filtrar:</span>
+                        <select id="filtro-estado-orden" onchange="window.tiendaAdmin.filtrarOrdenes(this.value)" style="padding: 6px 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 0.75rem; font-weight: 600; cursor: pointer; background: white;">
+                            <option value="todos">Todos los estados</option>
+                            <option value="pendiente_pago">Pendiente Pago</option>
+                            <option value="pagado">Pagado</option>
+                            <option value="en_preparacion">En Preparación</option>
+                            <option value="listo">Listo / Para Retirar</option>
+                            <option value="en_camino">En Camino</option>
+                            <option value="entregado">Entregado</option>
+                            <option value="cancelado">Cancelado</option>
+                        </select>
+                    </div>
                 </div>
                 <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">HISTORIAL DE VENTAS</span>
             </div>

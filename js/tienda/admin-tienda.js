@@ -354,11 +354,16 @@ export async function eliminarCategoria(id, nombre) {
 // ORDERS LOGIC (Existing)
 // ============================================
 
-export async function loadOrdenesTable() {
+export async function loadOrdenesTable(filtro = 'todos') {
     try {
-        const q = query(collection(db, "ordenes"), orderBy("timestamp", "desc"));
+        let q = query(collection(db, "ordenes"), orderBy("timestamp", "desc"));
         const snap = await getDocs(q);
-        const ordenes = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let ordenes = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Filtrado en memoria
+        if (filtro !== 'todos') {
+            ordenes = ordenes.filter(o => o.estado === filtro);
+        }
 
         const tbody = document.querySelector('#tablaOrdenesDash tbody');
         if (!tbody) return;
@@ -367,23 +372,23 @@ export async function loadOrdenesTable() {
             const date = o.timestamp?.toDate ? o.timestamp.toDate().toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }) : (o.fecha?.toDate ? o.fecha.toDate().toLocaleString('es-AR') : '—');
             const rowBg = getOrderStatusBg(o.estado);
             return `
-                <tr style="background: ${rowBg};">
-                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); vertical-align: middle;">
+                <tr style="background-color: ${rowBg} !important;">
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03) !important; vertical-align: middle; background-color: ${rowBg} !important;">
                         <span style="font-weight:800; color:var(--panel-oscuro); font-family:monospace; font-size:13px;">#${o.id.substring(0,8).toUpperCase()}</span>
                     </td>
-                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); font-size:12px; color:#666; vertical-align: middle;">
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03) !important; font-size:12px; color:#666; vertical-align: middle; background-color: ${rowBg} !important;">
                         ${date}
                     </td>
-                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); font-weight:600; font-size:14px; vertical-align: middle;">
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03) !important; font-weight:600; font-size:14px; vertical-align: middle; background-color: ${rowBg} !important;">
                         ${o.cliente.nombre}
                     </td>
-                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); font-weight:700; font-size:11px; color:var(--naranja-oscuro); vertical-align: middle;">
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03) !important; font-weight:700; font-size:11px; color:var(--naranja-oscuro); vertical-align: middle; background-color: ${rowBg} !important;">
                         ${o.horario || '<span style="color:#aaa">No especificado</span>'}
                     </td>
-                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); font-weight:800; color:var(--naranja-accent); font-size:14px; vertical-align: middle;">
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03) !important; font-weight:800; color:var(--naranja-accent); font-size:14px; vertical-align: middle; background-color: ${rowBg} !important;">
                         $${o.total.toLocaleString('es-AR')}
                     </td>
-                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); vertical-align: middle;">
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03) !important; vertical-align: middle; background-color: ${rowBg} !important;">
                         <select onchange="window.tiendaAdmin.cambiarEstadoOrden('${o.id}', this.value)" class="status-select status-${o.estado}" style="padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; border: none; cursor:pointer; width: 100%; min-width: 140px;">
                             <option value="pendiente_pago" ${o.estado === 'pendiente_pago' ? 'selected' : ''}>PENDIENTE PAGO</option>
                             <option value="pagado" ${o.estado === 'pagado' ? 'selected' : ''}>PAGADO</option>
@@ -394,7 +399,7 @@ export async function loadOrdenesTable() {
                             <option value="cancelado" ${o.estado === 'cancelado' ? 'selected' : ''}>CANCELADO</option>
                         </select>
                     </td>
-                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); text-align: right; vertical-align: middle;">
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03) !important; text-align: right; vertical-align: middle; background-color: ${rowBg} !important;">
                         <button class="btn-secondary" onclick="window.tiendaAdmin.verDetalleOrden('${o.id}')" style="padding:8px 15px; font-size:11px; font-weight:700; border-radius:8px; border:1px solid #eee; background:white; cursor:pointer; transition: all 0.2s;">🔍 DETALLES</button>
                     </td>
                 </tr>
@@ -403,6 +408,10 @@ export async function loadOrdenesTable() {
     } catch (err) {
         console.error("Error loading orders:", err);
     }
+}
+
+export function filtrarOrdenes(estado) {
+    loadOrdenesTable(estado);
 }
 
 export async function verDetalleOrden(id) {
