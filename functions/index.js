@@ -1115,18 +1115,24 @@ exports.webhookMP = onRequest(
           logger.info(`Pedido ${orderId} - Estado MP: ${status}`);
 
           if (orderId && (status === 'approved' || status === 'authorized')) {
-            // Actualizar Firestore
-            await db.collection("ordenes").doc(orderId).update({
-                estado: 'pagado',
-                mp_payment_id: String(id),
-                pago_detalles: {
-                    metodo: paymentData.payment_method_id,
-                    tipo: paymentData.payment_type_id,
-                    monto: paymentData.transaction_amount,
-                    fecha_aprobado: paymentData.date_approved
-                }
-            });
-            logger.info(`Orden ${orderId} marcada como PAGADA.`);
+            // Idempotencia: verificar si el pago ya fue procesado
+            const ordenRef = db.collection("ordenes").doc(orderId);
+            const ordenDoc = await ordenRef.get();
+            if (ordenDoc.exists && ordenDoc.data().mp_payment_id) {
+              logger.info(`Webhook duplicado ignorado para orden ${orderId} (pago ${id} ya procesado).`);
+            } else {
+              await ordenRef.update({
+                  estado: 'pagado',
+                  mp_payment_id: String(id),
+                  pago_detalles: {
+                      metodo: paymentData.payment_method_id,
+                      tipo: paymentData.payment_type_id,
+                      monto: paymentData.transaction_amount,
+                      fecha_aprobado: paymentData.date_approved
+                  }
+              });
+              logger.info(`Orden ${orderId} marcada como PAGADA.`);
+            }
           }
         }
 
