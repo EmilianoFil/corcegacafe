@@ -245,7 +245,7 @@ function updateCartUI() {
 
 window.updateQty = function (index, delta) {
     const item = cart[index];
-    if (delta > 0 && item.stock > 0 && item.qty >= item.stock) {
+    if (delta > 0 && item.stockIlimitado !== true && item.stock > 0 && item.qty >= item.stock) {
         alert(`¡Lo sentimos! Solo quedan ${item.stock} unidades de este producto.`);
         return;
     }
@@ -389,14 +389,15 @@ function addToCartFromPage() {
         const varData = p.variantes?.[key];
         const precio = varData?.precio ?? p.precio;
         const stock = varData?.stock ?? 0;
+        const ilimitado = varData?.stockIlimitado ?? false;
         const label = p.atributosVariantes.map(a => `${a.nombre}: ${selectedVariants[a.nombre]}`).join(' / ');
 
-        if (stock === 0) { alert('Sin stock en esta variante.'); return; }
+        if (!ilimitado && stock === 0) { alert('Sin stock en esta variante.'); return; }
 
         const cartKey = `${p.id}__${key}`;
         const existing = cart.find(item => item._cartKey === cartKey);
         if (existing) {
-            if (existing.qty + currentQty > stock) {
+            if (!ilimitado && existing.qty + currentQty > stock) {
                 alert(`Solo quedan ${stock} unidades de esta variante.`);
                 return;
             }
@@ -410,7 +411,7 @@ function addToCartFromPage() {
                 imagenUrl: p.imagenUrl,
                 qty: currentQty,
                 stock: stock,
-                stockIlimitado: false,
+                stockIlimitado: ilimitado,
                 variantKey: key,
                 variantLabel: label
             });

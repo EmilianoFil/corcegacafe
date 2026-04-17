@@ -1119,9 +1119,19 @@ export function renderCombinacionesTable(existingData) {
             <tr style="border-bottom:1px solid #f0f0f0;">
                 <td style="padding:10px 12px; font-weight:600; color:var(--secondary); font-size:0.82rem;">${label}</td>
                 <td style="padding:10px 12px; text-align:center;">
-                    <input type="number" min="0" value="${stockVal}" placeholder="0"
-                        data-variant-key="${key}" data-field="stock"
-                        style="width:70px; border:1px solid #eee; border-radius:8px; padding:6px; text-align:center; font-size:0.85rem;">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <input type="number" min="0" value="${stockVal}" placeholder="0"
+                            data-variant-key="${key}" data-field="stock"
+                            ${existing.stockIlimitado ? 'disabled' : ''}
+                            style="width:60px; border:1px solid #eee; border-radius:8px; padding:6px; text-align:center; font-size:0.85rem; opacity:${existing.stockIlimitado ? '0.35' : '1'};">
+                        <label title="Stock ilimitado" style="cursor:pointer; display:flex; align-items:center; gap:2px; font-size:14px; font-weight:700; color:#aaa; user-select:none;">
+                            <input type="checkbox" data-variant-key="${key}" data-field="stockIlimitado"
+                                ${existing.stockIlimitado ? 'checked' : ''}
+                                style="accent-color:var(--secondary); width:14px; height:14px; cursor:pointer;"
+                                onchange="(function(cb){ const row = cb.closest('tr'); const si = row.querySelector('input[data-field=stock]'); si.disabled = cb.checked; si.style.opacity = cb.checked ? '0.35' : '1'; })(this)">
+                            ∞
+                        </label>
+                    </div>
                 </td>
                 <td style="padding:10px 12px; text-align:center;">
                     <input type="number" min="0" value="${precioVal}" placeholder="Base"
@@ -1148,12 +1158,14 @@ export function collectVariantesData() {
         if (!result[key]) {
             // Preserve imagenUrl from _variantesData
             const saved = window._variantesData?.[key] || {};
-            result[key] = { stock: 0, precio: null, imagenUrl: saved.imagenUrl || null };
+            result[key] = { stock: 0, stockIlimitado: false, precio: null, imagenUrl: saved.imagenUrl || null };
         }
         if (field === 'stock') {
             result[key].stock = parseInt(input.value) || 0;
         } else if (field === 'precio') {
             result[key].precio = input.value.trim() !== '' ? parseFloat(input.value) : null;
+        } else if (field === 'stockIlimitado') {
+            result[key].stockIlimitado = input.checked;
         }
     });
     return result;

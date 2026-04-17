@@ -114,7 +114,7 @@ function renderProducts() {
         if (p.tieneVariantes) {
             // Para variantes: agotado solo si TODAS las combinaciones tienen stock 0
             const stocks = Object.values(p.variantes || {});
-            isAgotado = stocks.length > 0 && stocks.every(v => (v.stock || 0) === 0);
+            isAgotado = stocks.length > 0 && stocks.every(v => !v.stockIlimitado && (v.stock || 0) === 0);
         } else {
             isAgotado = (p.stockIlimitado !== true && (p.stock === 0 || p.stock === undefined));
         }
@@ -235,7 +235,7 @@ function openVariantPicker(p) {
                     // Check if this option has ANY combination with stock > 0
                     const hasStock = Object.entries(p.variantes || {}).some(([key, v]) => {
                         const parts = key.split('|');
-                        return parts[attrIdx] === op && (v.stock || 0) > 0;
+                        return parts[attrIdx] === op && (v.stockIlimitado || (v.stock || 0) > 0);
                     });
                     return hasStock
                         ? `<button type="button" class="vpm-option-btn"
@@ -277,6 +277,7 @@ window.vpmSelectOption = function(attrName, value, btn) {
         const varData = _vpmProduct.variantes?.[key];
         const precio = varData?.precio ?? _vpmProduct.precio;
         const stock = varData?.stock ?? 0;
+        const ilimitado = varData?.stockIlimitado ?? false;
         document.getElementById('vpm-precio-display').innerText = `$${precio.toLocaleString('es-AR')}`;
 
         // Swap picker image if variant has its own photo
@@ -300,7 +301,10 @@ window.vpmSelectOption = function(attrName, value, btn) {
         }
 
         const stockEl = document.getElementById('vpm-stock-display');
-        if (stock === 0) {
+        if (ilimitado) {
+            stockEl.innerText = '';
+            stockEl.style.color = '#aaa';
+        } else if (stock === 0) {
             stockEl.innerText = '⚠️ Sin stock';
             stockEl.style.color = 'var(--error, #e74c3c)';
         } else if (_vpmProduct.avisoStock && stock <= _vpmProduct.avisoStock) {
@@ -310,8 +314,9 @@ window.vpmSelectOption = function(attrName, value, btn) {
             stockEl.innerText = `${stock} disponibles`;
             stockEl.style.color = '#999';
         }
-        document.getElementById('vpm-add-btn').disabled = stock === 0;
-        document.getElementById('vpm-add-btn').style.background = stock === 0 ? '#ccc' : 'var(--panel-oscuro)';
+        const sinStock = !ilimitado && stock === 0;
+        document.getElementById('vpm-add-btn').disabled = sinStock;
+        document.getElementById('vpm-add-btn').style.background = sinStock ? '#ccc' : 'var(--panel-oscuro)';
         _vpmQty = 1;
         document.getElementById('vpm-qty').innerText = '1';
     }
@@ -324,7 +329,8 @@ window.vpmAdjustQty = function(delta) {
     const key = _vpmProduct.atributosVariantes.map(a => _vpmSelections[a.nombre]).join('|');
     const varData = _vpmProduct.variantes?.[key];
     const stock = varData?.stock ?? 0;
-    _vpmQty = Math.min(Math.max(1, _vpmQty + delta), stock);
+    const ilimitado = varData?.stockIlimitado ?? false;
+    _vpmQty = ilimitado ? Math.max(1, _vpmQty + delta) : Math.min(Math.max(1, _vpmQty + delta), stock);
     document.getElementById('vpm-qty').innerText = _vpmQty;
 };
 
@@ -339,9 +345,10 @@ window.vpmConfirm = function() {
     const varData = _vpmProduct.variantes?.[key];
     const precio = varData?.precio ?? _vpmProduct.precio;
     const stock = varData?.stock ?? 0;
+    const ilimitado = varData?.stockIlimitado ?? false;
     const label = _vpmProduct.atributosVariantes.map(a => `${a.nombre}: ${_vpmSelections[a.nombre]}`).join(' / ');
 
-    if (stock === 0) {
+    if (!ilimitado && stock === 0) {
         alert('Esta combinación no tiene stock disponible.');
         return;
     }
@@ -350,7 +357,7 @@ window.vpmConfirm = function() {
     const cartKey = `${_vpmProduct.id}__${key}`;
     const existing = cart.find(item => item._cartKey === cartKey);
     if (existing) {
-        if (existing.qty + _vpmQty > stock) {
+        if (!ilimitado && existing.qty + _vpmQty > stock) {
             alert(`Solo quedan ${stock} unidades de esta variante.`);
             return;
         }
@@ -364,7 +371,7 @@ window.vpmConfirm = function() {
             imagenUrl: _vpmProduct.imagenUrl,
             qty: _vpmQty,
             stock: stock,
-            stockIlimitado: false,
+            stockIlimitado: ilimitado,
             variantKey: key,
             variantLabel: label
         });
