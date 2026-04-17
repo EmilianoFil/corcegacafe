@@ -369,7 +369,9 @@ window.vpmSelectOption = function(attrName, value, btn) {
         const ilimitado = varData?.stockIlimitado ?? false;
         const reservaKey = `${_vpmProduct.id}_${key}`;
         const reserved = reservedByOthers[reservaKey] || 0;
-        const stock = ilimitado ? rawStock : Math.max(0, rawStock - reserved);
+        const cartKey = `${_vpmProduct.id}__${key}`;
+        const inCart = cart.find(item => item._cartKey === cartKey)?.qty || 0;
+        const stock = ilimitado ? rawStock : Math.max(0, rawStock - reserved - inCart);
 
         document.getElementById('vpm-precio-display').innerText = `$${precio.toLocaleString('es-AR')}`;
 
