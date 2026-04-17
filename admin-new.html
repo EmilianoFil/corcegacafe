@@ -1088,7 +1088,7 @@
                             <label>Precio ($)</label>
                             <input type="number" id="prod-precio" required min="0">
                         </div>
-                        <div class="input-group">
+                        <div class="input-group" id="stock-global-group">
                             <label>Stock Disponible</label>
                             <div style="display: flex; gap: 10px; align-items: center;">
                                 <input type="number" id="prod-stock" value="0" min="0" style="flex: 1;">
@@ -1096,6 +1096,14 @@
                                     <input type="checkbox" id="prod-stock-ilimitado" style="width: auto;" onchange="document.getElementById('prod-stock').disabled = this.checked"> ∞
                                 </label>
                             </div>
+                        </div>
+                        <div class="input-group" id="stock-variantes-group" style="display:none;">
+                            <label>Stock por Variante</label>
+                            <button type="button" onclick="window.tiendaAdmin.verStockVariantesForm()"
+                                style="background:#fdfcf7; border:1px solid var(--border); border-radius:10px; padding:10px 16px; font-size:0.85rem; font-weight:600; cursor:pointer; color:var(--secondary); display:flex; align-items:center; gap:8px; width:100%; transition:background 0.2s;"
+                                onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='#fdfcf7'">
+                                📊 Ver stock e historial por variante
+                            </button>
                         </div>
                     </div>
                     <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 0;">

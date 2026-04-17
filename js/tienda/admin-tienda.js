@@ -38,6 +38,8 @@ export async function mostrarFormularioProducto() {
     document.getElementById('combinaciones-section').style.display = 'none';
     document.getElementById('atributos-list').innerHTML = '';
     document.getElementById('combinaciones-tbody').innerHTML = '';
+    document.getElementById('stock-global-group').style.display = 'block';
+    document.getElementById('stock-variantes-group').style.display = 'none';
     window._variantesAtributos = [];
 
     // Scroll hacia el formulario
@@ -152,9 +154,16 @@ export async function loadProductosTable() {
 
         const tbody = document.querySelector('#tablaProductosDash tbody');
         tbody.innerHTML = productosData.map(p => {
-             const stockDisplay = p.stockIlimitado 
-                ? '<span style="color:#aaa; font-style:italic;">∞ Ilimitado</span>'
-                : `<span style="color:${p.stock <= 5 ? 'var(--error)' : '#333'}; font-weight:700;">${p.stock}</span>`;
+             let stockDisplay;
+             if (p.tieneVariantes) {
+                 const totalStock = Object.values(p.variantes || {}).reduce((s, v) => s + (v.stock || 0), 0);
+                 const nCombos = Object.keys(p.variantes || {}).length;
+                 stockDisplay = `<span style="color:var(--secondary); font-weight:700;">${totalStock}</span><span style="font-size:0.7rem; color:#aaa; margin-left:4px;">(${nCombos} var.)</span>`;
+             } else if (p.stockIlimitado) {
+                 stockDisplay = '<span style="color:#aaa; font-style:italic;">∞ Ilimitado</span>';
+             } else {
+                 stockDisplay = `<span style="color:${p.stock <= 5 ? 'var(--error)' : '#333'}; font-weight:700;">${p.stock}</span>`;
+             }
 
              return `
                 <tr>
@@ -171,10 +180,12 @@ export async function loadProductosTable() {
                     <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
                         <div style="display:flex; align-items:center; gap:8px;">
                             ${stockDisplay}
-                            ${!p.stockIlimitado ? `
-                                <button onclick="window.tiendaAdmin.ajustarStockRapido('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')" style="background:#f0f0f0; border:none; border-radius:4px; cursor:pointer; padding:2px 6px; font-size:12px; font-weight:bold;" title="Ajustar Stock (Sumar/Restar)">+/-</button>
+                            ${p.tieneVariantes ? `
+                                <button onclick="window.tiendaAdmin.verStockVariantesProd('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')" style="background:#e8f4fd; color:#1890ff; border:none; border-radius:6px; cursor:pointer; padding:3px 8px; font-size:11px; font-weight:700;" title="Ver stock e historial por variante">📊 Ver</button>
+                            ` : !p.stockIlimitado ? `
+                                <button onclick="window.tiendaAdmin.ajustarStockRapido('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')" style="background:#f0f0f0; border:none; border-radius:4px; cursor:pointer; padding:2px 6px; font-size:12px; font-weight:bold;" title="Ajustar Stock">+/-</button>
+                                <button onclick="window.tiendaAdmin.verHistorialStock('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')" style="background:none; border:none; cursor:pointer; font-size:12px; opacity:0.5;">📜</button>
                             ` : ''}
-                            <button onclick="window.tiendaAdmin.verHistorialStock('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')" style="background:none; border:none; cursor:pointer; font-size:12px; margin-left:5px; opacity:0.5;">📜</button>
                         </div>
                     </td>
                     <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
@@ -292,6 +303,8 @@ export async function editarProducto(id) {
 
     tienVarCheck.checked = p.tieneVariantes || false;
     varEditor.style.display = p.tieneVariantes ? 'block' : 'none';
+    document.getElementById('stock-global-group').style.display = p.tieneVariantes ? 'none' : 'block';
+    document.getElementById('stock-variantes-group').style.display = p.tieneVariantes ? 'block' : 'none';
     window._variantesAtributos = p.atributosVariantes ? JSON.parse(JSON.stringify(p.atributosVariantes)) : [];
     window._variantesData = p.variantes ? { ...p.variantes } : {};
 
@@ -867,10 +880,12 @@ export function changeMonth(delta) {
 
 export function toggleVariantesSection(checked) {
     document.getElementById('variantes-editor').style.display = checked ? 'block' : 'none';
+    document.getElementById('stock-global-group').style.display = checked ? 'none' : 'block';
+    document.getElementById('stock-variantes-group').style.display = checked ? 'block' : 'none';
     if (checked && (!window._variantesAtributos || window._variantesAtributos.length === 0)) {
         window._variantesAtributos = [];
         window._variantesData = {};
-        addAtributo(); // Start with one attribute
+        addAtributo();
     }
 }
 
@@ -994,4 +1009,105 @@ export function collectVariantesData() {
         }
     });
     return result;
+}
+
+// Modal de stock + historial por variante (desde la tabla de productos)
+export async function verStockVariantesProd(id, nombre) {
+    const p = productosData.find(item => item.id === id);
+    if (!p || !p.tieneVariantes) return;
+
+    // Fetch historial
+    const histSnap = await getDocs(query(
+        collection(db, "productos", id, "movimientos_stock"),
+        orderBy("timestamp", "desc")
+    ));
+    const movimientos = histSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const atributos = p.atributosVariantes || [];
+    const variantes = p.variantes || {};
+
+    // Build combinations rows
+    const combos = atributos.reduce((acc, attr) => {
+        if (acc.length === 0) return attr.opciones.map(o => [o]);
+        return acc.flatMap(combo => attr.opciones.map(o => [...combo, o]));
+    }, []);
+
+    const stockRows = combos.map(combo => {
+        const key = combo.join('|');
+        const label = atributos.map((a, i) => `${a.nombre}: ${combo[i]}`).join(' / ');
+        const stock = variantes[key]?.stock ?? 0;
+        const precio = variantes[key]?.precio;
+        const stockColor = stock === 0 ? 'var(--error)' : stock <= 3 ? 'orange' : 'var(--success)';
+        return `
+            <tr style="border-bottom:1px solid #f9f9f9;">
+                <td style="padding:10px 12px; font-weight:600; font-size:0.85rem;">${label}</td>
+                <td style="padding:10px 12px; text-align:center; font-weight:800; color:${stockColor};">${stock}</td>
+                <td style="padding:10px 12px; text-align:center; color:#999; font-size:0.8rem;">${precio != null ? '$' + precio.toLocaleString('es-AR') : '<span style="color:#ccc">Base</span>'}</td>
+            </tr>
+        `;
+    }).join('');
+
+    // Build history rows
+    const histRows = movimientos.length === 0
+        ? '<div style="text-align:center; padding:20px; color:#aaa; font-size:0.85rem;">Sin movimientos registrados.</div>'
+        : movimientos.map(m => {
+            const fecha = m.timestamp?.toDate ? m.timestamp.toDate().toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+            const color = m.tipo === 'entrada' ? 'var(--success)' : m.tipo === 'salida_venta' ? 'var(--error)' : 'var(--secondary)';
+            const prefijo = m.tipo === 'entrada' ? '+' : (m.tipo?.startsWith('salida') ? '-' : '=');
+            // Extract variant key from motivo if present
+            const varMatch = m.motivo?.match(/Variante: (.+?)(?:\)|$)/);
+            const varTag = varMatch ? `<span style="background:#f0f4ff; color:#666; border-radius:4px; padding:1px 6px; font-size:0.7rem; margin-left:4px;">${varMatch[1]}</span>` : '';
+            return `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid #f5f5f5; font-size:0.8rem;">
+                    <div>
+                        <span style="font-weight:700; color:${color}; text-transform:uppercase; font-size:0.7rem;">${(m.tipo || '').replace('_', ' ')}</span>${varTag}
+                        <div style="color:#999; margin-top:2px;">${m.motivo || ''}</div>
+                        <div style="color:#ccc; font-size:0.7rem;">${fecha}</div>
+                    </div>
+                    <div style="font-weight:800; font-size:1rem; color:${color}; white-space:nowrap;">${prefijo}${m.cantidad}</div>
+                </div>
+            `;
+        }).join('');
+
+    const modalHtml = `
+        <div id="modal-variantes-stock" style="display:flex; align-items:center; justify-content:center; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:12000; padding:20px;">
+            <div class="card" style="width:100%; max-width:580px; max-height:90vh; overflow-y:auto; padding:30px; position:relative;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 style="margin:0; font-size:1.2rem;">📊 Stock por variante</h3>
+                    <button onclick="document.getElementById('modal-variantes-stock').remove()" style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:#999; line-height:1;">×</button>
+                </div>
+                <p style="color:#666; font-size:0.85rem; margin:0 0 15px; font-weight:600;">${nombre}</p>
+
+                <table style="width:100%; border-collapse:collapse; margin-bottom:25px; font-size:0.85rem;">
+                    <thead>
+                        <tr style="background:#fdfcf7;">
+                            <th style="padding:10px 12px; text-align:left; font-size:0.75rem; color:#999; font-weight:700; text-transform:uppercase;">Variante</th>
+                            <th style="padding:10px 12px; text-align:center; font-size:0.75rem; color:#999; font-weight:700; text-transform:uppercase;">Stock</th>
+                            <th style="padding:10px 12px; text-align:center; font-size:0.75rem; color:#999; font-weight:700; text-transform:uppercase;">Precio</th>
+                        </tr>
+                    </thead>
+                    <tbody>${stockRows}</tbody>
+                </table>
+
+                <p style="font-weight:700; font-size:0.85rem; margin:0 0 10px; color:var(--secondary);">Historial de movimientos</p>
+                <div style="background:#fdfcf7; border-radius:12px; border:1px solid #eee; max-height:250px; overflow-y:auto;">
+                    ${histRows}
+                </div>
+
+                <button onclick="document.getElementById('modal-variantes-stock').remove()" class="btn-primary" style="width:100%; margin-top:20px;">Cerrar</button>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// Botón del formulario: muestra stock actual de la variante que se está editando
+export function verStockVariantesForm() {
+    const id = document.getElementById('prod-id').value;
+    const nombre = document.getElementById('prod-nombre').value || 'Producto';
+    if (id) {
+        verStockVariantesProd(id, nombre);
+    } else {
+        alert('Guardá el producto primero para ver el historial de stock.');
+    }
 }
