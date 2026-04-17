@@ -261,12 +261,19 @@ window.vpmSelectOption = function(attrName, value, btn) {
         if (varData?.imagenUrl) {
             const pickerImg = document.getElementById('vpm-img');
             if (pickerImg) {
-                pickerImg.style.opacity = '0';
                 pickerImg.style.transition = 'opacity 0.2s';
+                pickerImg.style.opacity = '0';
                 setTimeout(() => {
+                    pickerImg.onload = null;
+                    pickerImg.onload = () => {
+                        pickerImg.style.opacity = '1';
+                        pickerImg.onload = null;
+                    };
                     pickerImg.src = varData.imagenUrl;
-                    pickerImg.style.opacity = '1';
-                }, 180);
+                    if (pickerImg.complete && pickerImg.naturalWidth > 0) {
+                        pickerImg.style.opacity = '1';
+                    }
+                }, 220);
             }
         }
 

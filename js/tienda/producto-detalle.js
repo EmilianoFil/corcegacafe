@@ -139,10 +139,21 @@ function renderProductDetail() {
 window.changeMainImage = function(url, thumbEl) {
     const mainImg = document.getElementById('main-prod-img');
     mainImg.style.opacity = '0';
+
+    // Wait for fade-out (transition 0.4s), then swap src and only
+    // restore opacity once the new image is actually loaded — no blink
     setTimeout(() => {
+        mainImg.onload = null;
+        mainImg.onload = () => {
+            mainImg.style.opacity = '1';
+            mainImg.onload = null;
+        };
         mainImg.src = url;
-        mainImg.style.opacity = '1';
-    }, 200);
+        // If already in browser cache onload may not fire; handle that case
+        if (mainImg.complete && mainImg.naturalWidth > 0) {
+            mainImg.style.opacity = '1';
+        }
+    }, 420);
 
     if (thumbEl) {
         document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
