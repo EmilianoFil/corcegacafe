@@ -691,3 +691,39 @@ header {
 .tienda-footer-bottom a:hover {
   color: var(--naranja-accent);
 }
+
+/* ===== MOBILE HEADER ===== */
+@media (max-width: 600px) {
+    header {
+        padding: 0 16px !important;
+        height: 70px !important;
+    }
+
+    .mini-logo {
+        width: 36px !important;
+    }
+
+    /* Ocultar el saludo en mobile — los íconos son suficientes */
+    #header-user-greeting {
+        display: none !important;
+    }
+
+    .header-actions {
+        gap: 14px !important;
+    }
+
+    .header-actions a,
+    .cart-icon {
+        font-size: 22px !important;
+    }
+
+    .brand-top {
+        font-size: 8px !important;
+        letter-spacing: 2px !important;
+    }
+
+    .brand-bottom {
+        font-size: 9px !important;
+        letter-spacing: 3px !important;
+    }
+}
