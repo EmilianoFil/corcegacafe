@@ -2,6 +2,7 @@ import { db, auth } from '../firebase-config.js';
 console.log("=== CHECKOUT V4 ACTIVE (NO ALERT) ===");
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { deleteAllSessionReservas } from './cart-reservas.js';
 
 // --- STATE ---
 let cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
@@ -397,7 +398,10 @@ async function handleOrderSubmission() {
         const docRef = await addDoc(collection(db, "ordenes"), orderData);
         const orderId = docRef.id;
 
-        // 2. Lógica según método de pago
+        // 2. Limpiar reservas de sesión
+        try { await deleteAllSessionReservas(); } catch(e) { console.warn('Error clearing reservas:', e); }
+
+        // 3. Lógica según método de pago
         if (metodoPago === 'transferencia') {
             // Limpiar carrito y redirigir a éxito directamente
             localStorage.removeItem('corcega_cart');

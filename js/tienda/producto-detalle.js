@@ -1,12 +1,14 @@
 import { db, auth } from '../firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { writeReserva, deleteReserva, CART_TIMEOUT_MS } from './cart-reservas.js';
 
 // --- STATE ---
 let currentProduct = null;
 let currentQty = 1;
 let cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
 let selectedVariants = {};
+let cartTimerInterval = null;
 
 // --- ELEMENTS ---
 const cartDrawer = document.getElementById('cart-drawer');
@@ -61,13 +63,13 @@ async function loadProductData(id) {
 // Render UI Detail
 function renderProductDetail() {
     const p = currentProduct;
-    
+
     // Breadcrumbs y Tags
     const categoria = p.categoria || 'Tienda';
     document.getElementById('breadcrumb-category').innerText = categoria;
     document.getElementById('prod-cat-tag').innerText = categoria.toUpperCase();
     document.getElementById('breadcrumb-name').innerText = p.nombre;
-    
+
     // Titulo y Precio
     const isAgotado = (p.stock > 0 && p.stock <= 0);
     document.getElementById('prod-title').innerText = p.nombre + (isAgotado ? ' (Agotado)' : '');
@@ -195,6 +197,66 @@ window.changeQty = function(delta) {
     document.getElementById('prod-qty').innerText = currentQty;
 };
 
+// --- TOAST ---
+function showToast(msg, type = 'warning') {
+    const toast = document.createElement('div');
+    toast.style.cssText = `position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:${type === 'warning' ? '#f59e0b' : '#ef4444'}; color:white; padding:12px 20px; border-radius:12px; font-size:13px; font-weight:700; z-index:9999; box-shadow:0 4px 20px rgba(0,0,0,0.2); animation: fadeIn 0.3s ease;`;
+    toast.innerText = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+
+// --- CART TIMER ---
+function startCartTimer() {
+    if (cartTimerInterval) clearInterval(cartTimerInterval);
+
+    cartTimerInterval = setInterval(() => {
+        const countdowns = document.querySelectorAll('.reserva-countdown');
+        if (countdowns.length === 0) return;
+
+        const now = Date.now();
+        let needsRefresh = false;
+
+        countdowns.forEach(el => {
+            const expires = parseInt(el.dataset.expires, 10);
+            const remaining = expires - now;
+
+            if (remaining <= 0) {
+                const cartKey = el.dataset.cartKey;
+                const idx = cart.findIndex(item => {
+                    const key = item._cartKey || `${item.id}__base`;
+                    return key === cartKey;
+                });
+                if (idx !== -1) {
+                    const item = cart[idx];
+                    cart.splice(idx, 1);
+                    try { deleteReserva(item.id, item.variantKey || null); } catch(e) { console.warn('deleteReserva error:', e); }
+                    showToast(`⏰ "${item.nombre}" fue eliminado del carrito por inactividad.`, 'error');
+                    needsRefresh = true;
+                }
+            } else {
+                const totalSecs = Math.ceil(remaining / 1000);
+                const mins = Math.floor(totalSecs / 60);
+                const secs = totalSecs % 60;
+                const timeStr = `⏱ ${mins}:${String(secs).padStart(2, '0')}`;
+                el.innerText = timeStr;
+
+                if (remaining <= 2 * 60 * 1000) {
+                    el.style.color = '#ef4444';
+                    el.style.fontWeight = '800';
+                } else {
+                    el.style.color = '#f59e0b';
+                    el.style.fontWeight = '700';
+                }
+            }
+        });
+
+        if (needsRefresh) {
+            saveAndRefresh();
+        }
+    }, 1000);
+}
+
 // --- CART CORE LOGIC ---
 function setupCartEvents() {
     document.getElementById('btn-open-cart')?.addEventListener('click', openCart);
@@ -242,13 +304,23 @@ function updateCartUI() {
         checkoutBtn.onclick = () => { window.location.href = 'checkout.html'; };
     }
 
-    cartItemsList.innerHTML = cart.map((item, index) => `
+    cartItemsList.innerHTML = cart.map((item, index) => {
+        const cartKey = item._cartKey || `${item.id}__base`;
+        const countdownHtml = (!item.stockIlimitado && item.reservadoEn) ? `
+            <div class="reserva-countdown"
+                 data-expires="${item.reservadoEn + CART_TIMEOUT_MS}"
+                 data-cart-key="${cartKey}"
+                 style="font-size:11px; font-weight:700; margin-top:3px; color:#f59e0b;">
+            </div>
+        ` : '';
+        return `
         <div class="cart-item">
             <img src="${item.imagenUrl || 'https://placehold.co/100x100'}" alt="${item.nombre}" class="cart-item-img">
             <div class="cart-item-info">
                 <div class="cart-item-title">${item.nombre}</div>
                 ${item.variantLabel ? `<div style="font-size:0.72rem; color:var(--naranja-accent); font-weight:600; margin:2px 0;">${item.variantLabel}</div>` : ''}
                 <div class="cart-item-price">$${item.precio.toLocaleString('es-AR')}</div>
+                ${countdownHtml}
                 <div class="cart-item-controls">
                     <button class="qty-btn" onclick="updateQty(${index}, -1)"><i class="fas fa-minus"></i></button>
                     <span>${item.qty}</span>
@@ -257,10 +329,13 @@ function updateCartUI() {
             </div>
             <button class="btn-remove-item" onclick="removeItem(${index})" style="background:none; border:none; color:#ff4d4d; cursor:pointer;"><i class="fas fa-trash"></i></button>
         </div>
-    `).join('');
+        `;
+    }).join('');
 
     const total = cart.reduce((sum, item) => sum + (item.precio * item.qty), 0);
     cartTotal.innerText = `$${total.toLocaleString('es-AR')}`;
+
+    startCartTimer();
 }
 
 window.updateQty = function (index, delta) {
@@ -272,12 +347,23 @@ window.updateQty = function (index, delta) {
 
     item.qty += delta;
     if (item.qty < 1) {
+        if (item.stockIlimitado !== true) {
+            try { deleteReserva(item.id, item.variantKey || null); } catch(e) { console.warn('deleteReserva error:', e); }
+        }
         cart.splice(index, 1);
+    } else {
+        if (item.stockIlimitado !== true) {
+            try { writeReserva(item.id, item.variantKey || null, item.qty, item.nombre); } catch(e) { console.warn('writeReserva error:', e); }
+        }
     }
     saveAndRefresh();
 };
 
 window.removeItem = function(index) {
+    const item = cart[index];
+    if (item.stockIlimitado !== true) {
+        try { deleteReserva(item.id, item.variantKey || null); } catch(e) { console.warn('deleteReserva error:', e); }
+    }
     cart.splice(index, 1);
     saveAndRefresh();
 };
@@ -422,6 +508,9 @@ function addToCartFromPage() {
                 return;
             }
             existing.qty += currentQty;
+            if (!ilimitado) {
+                try { writeReserva(p.id, key, existing.qty, p.nombre + ' - ' + label); } catch(e) { console.warn('writeReserva error:', e); }
+            }
         } else {
             cart.push({
                 _cartKey: cartKey,
@@ -433,8 +522,12 @@ function addToCartFromPage() {
                 stock: stock,
                 stockIlimitado: ilimitado,
                 variantKey: key,
-                variantLabel: label
+                variantLabel: label,
+                reservadoEn: Date.now()
             });
+            if (!ilimitado) {
+                try { writeReserva(p.id, key, currentQty, p.nombre + ' - ' + label); } catch(e) { console.warn('writeReserva error:', e); }
+            }
         }
 
         saveAndRefresh();
@@ -454,6 +547,9 @@ function addToCartFromPage() {
     const existing = cart.find(item => item.id === currentProduct.id);
     if (existing) {
         existing.qty += currentQty;
+        if (currentProduct.stockIlimitado !== true) {
+            try { writeReserva(currentProduct.id, null, existing.qty, currentProduct.nombre); } catch(e) { console.warn('writeReserva error:', e); }
+        }
     } else {
         cart.push({
             id: currentProduct.id,
@@ -461,8 +557,13 @@ function addToCartFromPage() {
             precio: currentProduct.precio,
             imagenUrl: currentProduct.imagenUrl,
             qty: currentQty,
-            stock: currentProduct.stock
+            stock: currentProduct.stock,
+            stockIlimitado: currentProduct.stockIlimitado,
+            reservadoEn: Date.now()
         });
+        if (currentProduct.stockIlimitado !== true) {
+            try { writeReserva(currentProduct.id, null, currentQty, currentProduct.nombre); } catch(e) { console.warn('writeReserva error:', e); }
+        }
     }
 
     if (typeof gtag === 'function') {

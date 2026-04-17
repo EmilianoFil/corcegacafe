@@ -1,12 +1,15 @@
 import { db, auth } from '../firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { collection, getDocs, query, where, orderBy, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { writeReserva, deleteReserva, fetchReservedByOthers, getSessionId, CART_TIMEOUT_MS } from './cart-reservas.js';
 
 // --- STATE ---
 let products = [];
 let categories = [];
 let cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
 let activeCategory = 'todos';
+let reservedByOthers = {};
+let cartTimerInterval = null;
 
 // --- ELEMENTS ---
 const productsGrid = document.getElementById('products-container');
@@ -36,7 +39,8 @@ window.tienda = {
 async function init() {
     await Promise.all([
         fetchCategories(),
-        fetchProducts()
+        fetchProducts(),
+        fetchReservedByOthers().then(map => { reservedByOthers = map; }).catch(err => { console.warn('fetchReservedByOthers error:', err); })
     ]);
     renderCategories();
     renderProducts();
@@ -70,13 +74,13 @@ async function fetchProducts() {
 // --- RENDERING ---
 function renderCategories() {
     if (!catsNav) return;
-    
+
     let html = `<div class="category-chip ${activeCategory === 'todos' ? 'active' : ''}" data-cat="todos">Todos</div>`;
-    
+
     html += categories.map(c => `
         <div class="category-chip ${activeCategory === c.id ? 'active' : ''}" data-cat="${c.id}">${c.nombre}</div>
     `).join('');
-    
+
     catsNav.innerHTML = html;
 
     // Eventos para los chips
@@ -93,8 +97,8 @@ function renderCategories() {
 function renderProducts() {
     if (!productsGrid) return;
 
-    const filtered = activeCategory === 'todos' 
-        ? products 
+    const filtered = activeCategory === 'todos'
+        ? products
         : products.filter(p => p.categoria === activeCategory);
 
     if (filtered.length === 0) {
@@ -109,14 +113,26 @@ function renderProducts() {
             imagenes = [...imagenes, ...p.imagenes];
         }
         if (imagenes.length === 0) imagenes.push('https://placehold.co/400x400/fdfcf7/01323f?text=Córcega');
-        
+
         let isAgotado;
         if (p.tieneVariantes) {
-            // Para variantes: agotado solo si TODAS las combinaciones tienen stock 0
-            const stocks = Object.values(p.variantes || {});
-            isAgotado = stocks.length > 0 && stocks.every(v => !v.stockIlimitado && (v.stock || 0) === 0);
+            // Para variantes: agotado solo si TODAS las combinaciones tienen stock efectivo 0
+            const stocks = Object.entries(p.variantes || {});
+            isAgotado = stocks.length > 0 && stocks.every(([key, v]) => {
+                if (v.stockIlimitado) return false;
+                const reservaKey = `${p.id}_${key}`;
+                const reserved = reservedByOthers[reservaKey] || 0;
+                return (v.stock || 0) - reserved <= 0;
+            });
         } else {
-            isAgotado = (p.stockIlimitado !== true && (p.stock === 0 || p.stock === undefined));
+            if (p.stockIlimitado === true) {
+                isAgotado = false;
+            } else {
+                const reservaKey = `${p.id}_base`;
+                const reserved = reservedByOthers[reservaKey] || 0;
+                const effectiveStock = (p.stock || 0) - reserved;
+                isAgotado = effectiveStock <= 0;
+            }
         }
 
         return `
@@ -170,6 +186,67 @@ function renderProducts() {
     });
 }
 
+// --- TOAST ---
+function showToast(msg, type = 'warning') {
+    const toast = document.createElement('div');
+    toast.style.cssText = `position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:${type === 'warning' ? '#f59e0b' : '#ef4444'}; color:white; padding:12px 20px; border-radius:12px; font-size:13px; font-weight:700; z-index:9999; box-shadow:0 4px 20px rgba(0,0,0,0.2); animation: fadeIn 0.3s ease;`;
+    toast.innerText = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+
+// --- CART TIMER ---
+function startCartTimer() {
+    if (cartTimerInterval) clearInterval(cartTimerInterval);
+
+    cartTimerInterval = setInterval(() => {
+        const countdowns = document.querySelectorAll('.reserva-countdown');
+        if (countdowns.length === 0) return;
+
+        const now = Date.now();
+        let needsRefresh = false;
+
+        countdowns.forEach(el => {
+            const expires = parseInt(el.dataset.expires, 10);
+            const remaining = expires - now;
+
+            if (remaining <= 0) {
+                // Find and remove expired item
+                const cartKey = el.dataset.cartKey;
+                const idx = cart.findIndex(item => {
+                    const key = item._cartKey || `${item.id}__base`;
+                    return key === cartKey;
+                });
+                if (idx !== -1) {
+                    const item = cart[idx];
+                    cart.splice(idx, 1);
+                    try { deleteReserva(item.id, item.variantKey || null); } catch(e) { console.warn('deleteReserva error:', e); }
+                    showToast(`⏰ "${item.nombre}" fue eliminado del carrito por inactividad.`, 'error');
+                    needsRefresh = true;
+                }
+            } else {
+                const totalSecs = Math.ceil(remaining / 1000);
+                const mins = Math.floor(totalSecs / 60);
+                const secs = totalSecs % 60;
+                const timeStr = `⏱ ${mins}:${String(secs).padStart(2, '0')}`;
+                el.innerText = timeStr;
+
+                if (remaining <= 2 * 60 * 1000) {
+                    el.style.color = '#ef4444';
+                    el.style.fontWeight = '800';
+                } else {
+                    el.style.color = '#f59e0b';
+                    el.style.fontWeight = '700';
+                }
+            }
+        });
+
+        if (needsRefresh) {
+            saveAndRefresh();
+        }
+    }, 1000);
+}
+
 // --- CART INTERACTIVITY ---
 window.addToCart = function(id) {
     const p = products.find(item => item.id === id);
@@ -183,7 +260,9 @@ window.addToCart = function(id) {
 
     // Validación de Stock
     if (p.stockIlimitado !== true) {
-        const stockDisponible = p.stock || 0;
+        const reservaKey = `${p.id}_base`;
+        const reserved = reservedByOthers[reservaKey] || 0;
+        const stockDisponible = Math.max(0, (p.stock || 0) - reserved);
         const inCart = (cart.find(item => item.id === id)?.qty || 0);
         if (inCart >= stockDisponible) {
             alert(`¡Lo sentimos! Solo quedan ${stockDisponible} unidades de este producto.`);
@@ -194,8 +273,14 @@ window.addToCart = function(id) {
     const existing = cart.find(item => item.id === id);
     if (existing) {
         existing.qty++;
+        if (p.stockIlimitado !== true) {
+            try { writeReserva(id, null, existing.qty, p.nombre); } catch(e) { console.warn('writeReserva error:', e); }
+        }
     } else {
-        cart.push({ ...p, qty: 1 });
+        cart.push({ ...p, qty: 1, reservadoEn: Date.now() });
+        if (p.stockIlimitado !== true) {
+            try { writeReserva(id, null, 1, p.nombre); } catch(e) { console.warn('writeReserva error:', e); }
+        }
     }
 
     if (typeof gtag === 'function') {
@@ -235,7 +320,11 @@ function openVariantPicker(p) {
                     // Check if this option has ANY combination with stock > 0
                     const hasStock = Object.entries(p.variantes || {}).some(([key, v]) => {
                         const parts = key.split('|');
-                        return parts[attrIdx] === op && (v.stockIlimitado || (v.stock || 0) > 0);
+                        if (parts[attrIdx] !== op) return false;
+                        if (v.stockIlimitado) return true;
+                        const reservaKey = `${p.id}_${key}`;
+                        const reserved = reservedByOthers[reservaKey] || 0;
+                        return (v.stock || 0) - reserved > 0;
                     });
                     return hasStock
                         ? `<button type="button" class="vpm-option-btn"
@@ -276,8 +365,12 @@ window.vpmSelectOption = function(attrName, value, btn) {
         const key = _vpmProduct.atributosVariantes.map(a => _vpmSelections[a.nombre]).join('|');
         const varData = _vpmProduct.variantes?.[key];
         const precio = varData?.precio ?? _vpmProduct.precio;
-        const stock = varData?.stock ?? 0;
+        const rawStock = varData?.stock ?? 0;
         const ilimitado = varData?.stockIlimitado ?? false;
+        const reservaKey = `${_vpmProduct.id}_${key}`;
+        const reserved = reservedByOthers[reservaKey] || 0;
+        const stock = ilimitado ? rawStock : Math.max(0, rawStock - reserved);
+
         document.getElementById('vpm-precio-display').innerText = `$${precio.toLocaleString('es-AR')}`;
 
         // Swap picker image if variant has its own photo
@@ -328,11 +421,14 @@ window.vpmAdjustQty = function(delta) {
     if (!allSelected) return;
     const key = _vpmProduct.atributosVariantes.map(a => _vpmSelections[a.nombre]).join('|');
     const varData = _vpmProduct.variantes?.[key];
-    const stock = varData?.stock ?? 0;
+    const rawStock = varData?.stock ?? 0;
     const ilimitado = varData?.stockIlimitado ?? false;
     const cartKey = `${_vpmProduct.id}__${key}`;
     const inCart = cart.find(item => item._cartKey === cartKey)?.qty || 0;
-    const maxQty = ilimitado ? Infinity : Math.max(0, stock - inCart);
+    const reservaKey = `${_vpmProduct.id}_${key}`;
+    const reserved = reservedByOthers[reservaKey] || 0;
+    const effectiveStock = ilimitado ? Infinity : Math.max(0, rawStock - reserved);
+    const maxQty = ilimitado ? Infinity : Math.max(0, effectiveStock - inCart);
     _vpmQty = Math.min(maxQty, Math.max(1, _vpmQty + delta));
     document.getElementById('vpm-qty').innerText = _vpmQty;
 };
@@ -347,8 +443,11 @@ window.vpmConfirm = function() {
     const key = _vpmProduct.atributosVariantes.map(a => _vpmSelections[a.nombre]).join('|');
     const varData = _vpmProduct.variantes?.[key];
     const precio = varData?.precio ?? _vpmProduct.precio;
-    const stock = varData?.stock ?? 0;
+    const rawStock = varData?.stock ?? 0;
     const ilimitado = varData?.stockIlimitado ?? false;
+    const reservaKey = `${_vpmProduct.id}_${key}`;
+    const reserved = reservedByOthers[reservaKey] || 0;
+    const stock = ilimitado ? rawStock : Math.max(0, rawStock - reserved);
     const label = _vpmProduct.atributosVariantes.map(a => `${a.nombre}: ${_vpmSelections[a.nombre]}`).join(' / ');
 
     if (!ilimitado && stock === 0) {
@@ -365,6 +464,10 @@ window.vpmConfirm = function() {
             return;
         }
         existing.qty += _vpmQty;
+        if (!ilimitado) {
+            const totalQty = existing.qty;
+            try { writeReserva(_vpmProduct.id, key, totalQty, _vpmProduct.nombre + ' - ' + label); } catch(e) { console.warn('writeReserva error:', e); }
+        }
     } else {
         cart.push({
             _cartKey: cartKey,
@@ -373,11 +476,15 @@ window.vpmConfirm = function() {
             precio: precio,
             imagenUrl: _vpmProduct.imagenUrl,
             qty: _vpmQty,
-            stock: stock,
+            stock: rawStock,
             stockIlimitado: ilimitado,
             variantKey: key,
-            variantLabel: label
+            variantLabel: label,
+            reservadoEn: Date.now()
         });
+        if (!ilimitado) {
+            try { writeReserva(_vpmProduct.id, key, _vpmQty, _vpmProduct.nombre + ' - ' + label); } catch(e) { console.warn('writeReserva error:', e); }
+        }
     }
 
     if (typeof gtag === 'function') {
@@ -425,13 +532,23 @@ function updateCartUI() {
         checkoutBtn.onclick = () => { window.location.href = 'checkout.html'; };
     }
 
-    cartItemsList.innerHTML = cart.map((item, index) => `
+    cartItemsList.innerHTML = cart.map((item, index) => {
+        const cartKey = item._cartKey || `${item.id}__base`;
+        const countdownHtml = (!item.stockIlimitado && item.reservadoEn) ? `
+            <div class="reserva-countdown"
+                 data-expires="${item.reservadoEn + CART_TIMEOUT_MS}"
+                 data-cart-key="${cartKey}"
+                 style="font-size:11px; font-weight:700; margin-top:3px; color:#f59e0b;">
+            </div>
+        ` : '';
+        return `
         <div class="cart-item">
             <img src="${item.imagenUrl || 'https://placehold.co/100x100'}" alt="${item.nombre}" class="cart-item-img">
             <div class="cart-item-info">
                 <div class="cart-item-title">${item.nombre}</div>
                 ${item.variantLabel ? `<div style="font-size:0.72rem; color:var(--naranja-accent); font-weight:600; margin:2px 0;">${item.variantLabel}</div>` : ''}
                 <div class="cart-item-price">$${item.precio.toLocaleString('es-AR')}</div>
+                ${countdownHtml}
                 <div class="cart-item-controls">
                     <button class="qty-btn" onclick="updateQty(${index}, -1)"><i class="fas fa-minus"></i></button>
                     <span>${item.qty}</span>
@@ -440,10 +557,13 @@ function updateCartUI() {
             </div>
             <button class="btn-remove-item" onclick="removeItem(${index})" style="background:none; border:none; color:#ff4d4d; cursor:pointer;"><i class="fas fa-trash"></i></button>
         </div>
-    `).join('');
+        `;
+    }).join('');
 
     const total = cart.reduce((sum, item) => sum + (item.precio * item.qty), 0);
     cartTotal.innerText = `$${total.toLocaleString('es-AR')}`;
+
+    startCartTimer();
 }
 
 window.updateQty = function(index, delta) {
@@ -456,11 +576,24 @@ window.updateQty = function(index, delta) {
         }
     }
     item.qty += delta;
-    if (item.qty < 1) cart.splice(index, 1);
+    if (item.qty < 1) {
+        if (item.stockIlimitado !== true) {
+            try { deleteReserva(item.id, item.variantKey || null); } catch(e) { console.warn('deleteReserva error:', e); }
+        }
+        cart.splice(index, 1);
+    } else {
+        if (item.stockIlimitado !== true) {
+            try { writeReserva(item.id, item.variantKey || null, item.qty, item.nombre); } catch(e) { console.warn('writeReserva error:', e); }
+        }
+    }
     saveAndRefresh();
 };
 
 window.removeItem = function(index) {
+    const item = cart[index];
+    if (item.stockIlimitado !== true) {
+        try { deleteReserva(item.id, item.variantKey || null); } catch(e) { console.warn('deleteReserva error:', e); }
+    }
     cart.splice(index, 1);
     saveAndRefresh();
 };
