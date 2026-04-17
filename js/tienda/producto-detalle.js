@@ -171,7 +171,27 @@ window.changeMainImage = function(url, thumbEl) {
 };
 
 window.changeQty = function(delta) {
-    currentQty = Math.max(1, currentQty + delta);
+    const p = currentProduct;
+    let maxQty = Infinity;
+
+    if (p) {
+        if (p.tieneVariantes && p.atributosVariantes?.length) {
+            const allSelected = p.atributosVariantes.every(a => selectedVariants[a.nombre]);
+            if (allSelected) {
+                const key = p.atributosVariantes.map(a => selectedVariants[a.nombre]).join('|');
+                const varData = p.variantes?.[key];
+                if (varData && !varData.stockIlimitado) {
+                    const inCart = cart.find(item => item._cartKey === `${p.id}__${key}`)?.qty || 0;
+                    maxQty = Math.max(0, (varData.stock || 0) - inCart);
+                }
+            }
+        } else if (!p.stockIlimitado) {
+            const inCart = cart.find(item => item.id === p.id)?.qty || 0;
+            maxQty = Math.max(0, (p.stock || 0) - inCart);
+        }
+    }
+
+    currentQty = Math.min(maxQty, Math.max(1, currentQty + delta));
     document.getElementById('prod-qty').innerText = currentQty;
 };
 

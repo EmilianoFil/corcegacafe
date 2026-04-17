@@ -330,7 +330,10 @@ window.vpmAdjustQty = function(delta) {
     const varData = _vpmProduct.variantes?.[key];
     const stock = varData?.stock ?? 0;
     const ilimitado = varData?.stockIlimitado ?? false;
-    _vpmQty = ilimitado ? Math.max(1, _vpmQty + delta) : Math.min(Math.max(1, _vpmQty + delta), stock);
+    const cartKey = `${_vpmProduct.id}__${key}`;
+    const inCart = cart.find(item => item._cartKey === cartKey)?.qty || 0;
+    const maxQty = ilimitado ? Infinity : Math.max(0, stock - inCart);
+    _vpmQty = Math.min(maxQty, Math.max(1, _vpmQty + delta));
     document.getElementById('vpm-qty').innerText = _vpmQty;
 };
 
