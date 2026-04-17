@@ -110,7 +110,14 @@ function renderProducts() {
         }
         if (imagenes.length === 0) imagenes.push('https://placehold.co/400x400/fdfcf7/01323f?text=Córcega');
         
-        const isAgotado = (p.stockIlimitado !== true && (p.stock === 0 || p.stock === undefined));
+        let isAgotado;
+        if (p.tieneVariantes) {
+            // Para variantes: agotado solo si TODAS las combinaciones tienen stock 0
+            const stocks = Object.values(p.variantes || {});
+            isAgotado = stocks.length > 0 && stocks.every(v => (v.stock || 0) === 0);
+        } else {
+            isAgotado = (p.stockIlimitado !== true && (p.stock === 0 || p.stock === undefined));
+        }
 
         return `
             <div class="product-card ${isAgotado ? 'agotado' : ''}" data-id="${p.id}" style="animation-delay: ${index * 0.05}s">
@@ -186,18 +193,28 @@ function openVariantPicker(p) {
     document.getElementById('vpm-stock-display').innerText = '';
 
     const attrContainer = document.getElementById('vpm-atributos');
-    attrContainer.innerHTML = p.atributosVariantes.map(attr => `
+    attrContainer.innerHTML = p.atributosVariantes.map((attr, attrIdx) => `
         <div>
             <p style="font-weight:700; font-size:0.85rem; margin:0 0 8px; color:var(--panel-oscuro);">${attr.nombre}</p>
             <div style="display:flex; flex-wrap:wrap; gap:8px;">
-                ${attr.opciones.map(op => `
-                    <button type="button" class="vpm-option-btn"
-                        data-attr="${attr.nombre}" data-val="${op}"
-                        onclick="window.vpmSelectOption('${attr.nombre}', '${op}', this)"
-                        style="padding:8px 16px; border:2px solid #eee; border-radius:10px; background:white; cursor:pointer; font-size:0.85rem; font-weight:600; transition:all 0.15s; color:var(--panel-oscuro);">
-                        ${op}
-                    </button>
-                `).join('')}
+                ${attr.opciones.map(op => {
+                    // Check if this option has ANY combination with stock > 0
+                    const hasStock = Object.entries(p.variantes || {}).some(([key, v]) => {
+                        const parts = key.split('|');
+                        return parts[attrIdx] === op && (v.stock || 0) > 0;
+                    });
+                    return hasStock
+                        ? `<button type="button" class="vpm-option-btn"
+                                data-attr="${attr.nombre}" data-val="${op}"
+                                onclick="window.vpmSelectOption('${attr.nombre}', '${op}', this)"
+                                style="padding:8px 16px; border:2px solid #eee; border-radius:10px; background:white; cursor:pointer; font-size:0.85rem; font-weight:600; transition:all 0.15s; color:var(--panel-oscuro);">
+                                ${op}
+                           </button>`
+                        : `<button type="button" disabled
+                                style="padding:8px 16px; border:2px solid #f0f0f0; border-radius:10px; background:#fafafa; cursor:not-allowed; font-size:0.85rem; font-weight:600; color:#ccc; text-decoration:line-through;">
+                                ${op}
+                           </button>`;
+                }).join('')}
             </div>
         </div>
     `).join('');
