@@ -98,7 +98,17 @@ function renderProductDetail() {
     if (imagenes.length === 0) imagenes.push('https://placehold.co/400x400/fdfcf7/01323f?text=Córcega');
 
     const mainImg = document.getElementById('main-prod-img');
+    mainImg.style.opacity = '0';
+    mainImg.style.transition = 'opacity 0.4s ease';
+    mainImg.onload = () => {
+        mainImg.style.opacity = '1';
+        document.getElementById('main-prod-img').closest('.image-aspect')?.classList.add('img-loaded');
+    };
     mainImg.src = imagenes[0];
+    // Cached image
+    if (mainImg.complete && mainImg.naturalHeight !== 0) {
+        mainImg.style.opacity = '1';
+    }
 
     const thumbsContainer = document.getElementById('gallery-thumbs-list');
     thumbsContainer.innerHTML = imagenes.map((img, i) => `
@@ -134,8 +144,10 @@ window.changeMainImage = function(url, thumbEl) {
         mainImg.style.opacity = '1';
     }, 200);
 
-    document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
-    thumbEl.classList.add('active');
+    if (thumbEl) {
+        document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
+        thumbEl.classList.add('active');
+    }
 };
 
 window.changeQty = function(delta) {
@@ -305,6 +317,16 @@ window.selectVariantOption = function(attrName, value, btn) {
         const stock = varData?.stock ?? 0;
 
         document.getElementById('prod-price').innerText = `$${precio.toLocaleString('es-AR')}`;
+
+        // Swap main image if this variant has its own photo
+        if (varData?.imagenUrl) {
+            changeMainImage(varData.imagenUrl, null);
+            // Also mark the matching thumb as active if it exists
+            document.querySelectorAll('.thumb').forEach(t => {
+                t.classList.toggle('active', t.src === varData.imagenUrl || t.src.endsWith(varData.imagenUrl));
+            });
+        }
+
         const btn2 = document.getElementById('btn-add-to-cart-page');
         if (stock === 0) {
             btn2.innerText = 'SIN STOCK EN ESTA VARIANTE';

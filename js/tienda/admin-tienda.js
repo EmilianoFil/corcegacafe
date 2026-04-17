@@ -10,6 +10,77 @@ let productosData = [];
 let imagenesGaleria = []; // Para manejar las fotos extra en el formulario
 
 // ============================================
+// CROPPER LOGIC
+// ============================================
+let _cropperInstance = null;
+let _cropCallback = null;
+let _cropQueue = [];
+let _cropQueueIndex = 0;
+let _cropQueueDoneCallback = null;
+
+function openCropModal(file, callback) {
+    _cropCallback = callback;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = document.getElementById('crop-target-img');
+        if (!img) { callback(file); return; }
+        img.src = e.target.result;
+
+        if (_cropperInstance) { _cropperInstance.destroy(); _cropperInstance = null; }
+
+        const modal = document.getElementById('crop-modal');
+        modal.style.display = 'flex';
+
+        // Needs a tick so the image is visible in the DOM before Cropper init
+        setTimeout(() => {
+            _cropperInstance = new Cropper(img, {
+                aspectRatio: 1,
+                viewMode: 2,
+                dragMode: 'move',
+                autoCropArea: 1,
+                restore: false,
+                guides: false,
+                center: true,
+                highlight: false,
+                cropBoxMovable: false,
+                cropBoxResizable: false,
+                toggleDragModeOnDblclick: false,
+            });
+        }, 120);
+    };
+    reader.readAsDataURL(file);
+}
+
+export function confirmCrop() {
+    if (!_cropperInstance) return;
+    const btn = document.getElementById('btn-crop-confirm');
+    if (btn) { btn.disabled = true; btn.innerText = 'Procesando...'; }
+
+    _cropperInstance.getCroppedCanvas({ width: 800, height: 800 })
+        .toBlob((blob) => {
+            document.getElementById('crop-modal').style.display = 'none';
+            _cropperInstance.destroy();
+            _cropperInstance = null;
+            if (btn) { btn.disabled = false; btn.innerText = '✅ Usar esta imagen'; }
+            if (_cropCallback) { const cb = _cropCallback; _cropCallback = null; cb(blob); }
+        }, 'image/jpeg', 0.85);
+}
+
+export function cancelCrop() {
+    if (_cropperInstance) { _cropperInstance.destroy(); _cropperInstance = null; }
+    const modal = document.getElementById('crop-modal');
+    if (modal) modal.style.display = 'none';
+    _cropCallback = null;
+    _cropQueue = [];
+    _cropQueueIndex = 0;
+    // Reset file inputs so they can be used again
+    ['prod-imagen-file', 'prod-gallery-file'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+}
+
+// ============================================
 // UI FORMS
 // ============================================
 
@@ -66,66 +137,73 @@ export function ocultarFormularioProducto() {
     document.getElementById('form-producto').reset();
 }
 
-export async function handleProductImageUpload(input) {
+export function handleProductImageUpload(input) {
     const file = input.files[0];
     if (!file) return;
+    input.value = '';
 
-    const btn = document.getElementById('btn-select-prod-img');
-    const preview = document.getElementById('prod-imagen-preview');
-    const previewContainer = document.getElementById('prod-preview-container');
-
-    btn.disabled = true;
-    btn.innerHTML = "Subiendo... ⏳";
-
-    try {
-        const fileName = `productos/${Date.now()}_${file.name}`;
-        const storageRef = ref(storage, fileName);
-
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
-
-        document.getElementById('prod-imagen-url').value = url;
-        preview.src = url;
-        previewContainer.style.display = "block";
-        btn.innerHTML = "📸 ¡Cambiar Foto!";
-
-    } catch (err) {
-        console.error(err);
-        alert("Error al subir imagen");
-        btn.innerHTML = "📸 Seleccionar Foto Principal";
-    } finally {
-        btn.disabled = false;
-    }
+    openCropModal(file, async (blob) => {
+        const btn = document.getElementById('btn-select-prod-img');
+        const preview = document.getElementById('prod-imagen-preview');
+        const previewContainer = document.getElementById('prod-preview-container');
+        btn.disabled = true;
+        btn.innerHTML = "Subiendo... ⏳";
+        try {
+            const fileName = `productos/${Date.now()}_main.jpg`;
+            const storageRef = ref(storage, fileName);
+            await uploadBytes(storageRef, blob);
+            const url = await getDownloadURL(storageRef);
+            document.getElementById('prod-imagen-url').value = url;
+            preview.src = url;
+            previewContainer.style.display = "block";
+            btn.innerHTML = "📸 ¡Cambiar Foto!";
+        } catch (err) {
+            console.error(err);
+            alert("Error al subir imagen");
+            btn.innerHTML = "📸 Seleccionar Foto Principal";
+        } finally {
+            btn.disabled = false;
+        }
+    });
 }
 
-export async function agregarAFotosGaleria(input) {
-    const file = input.files[0];
-    if (!file) return;
+export function agregarAFotosGaleria(input) {
+    const files = Array.from(input.files);
+    if (!files.length) return;
+    input.value = '';
 
-    const btn = document.getElementById('btn-add-gallery');
     const status = document.getElementById('gallery-status');
+    const total = files.length;
+    let processed = 0;
 
-    btn.disabled = true;
-    status.innerText = "Subiendo... ⏳";
+    status.innerText = `0/${total} procesadas...`;
 
-    try {
-        const fileName = `productos/galeria/${Date.now()}_${file.name}`;
-        const storageRef = ref(storage, fileName);
-
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
-
-        imagenesGaleria.push(url);
-        renderGalleryPreviews();
-        status.innerText = "¡Agregada! ✅";
-
-    } catch (err) {
-        console.error(err);
-        status.innerText = "Error ❌";
-    } finally {
-        btn.disabled = false;
-        setTimeout(() => status.innerText = "", 2000);
+    function processNext() {
+        if (processed >= total) {
+            status.innerText = `✅ ${total} foto${total > 1 ? 's' : ''} agregada${total > 1 ? 's' : ''}!`;
+            setTimeout(() => status.innerText = '', 3000);
+            return;
+        }
+        const file = files[processed];
+        openCropModal(file, async (blob) => {
+            try {
+                const fileName = `productos/galeria/${Date.now()}_${processed}.jpg`;
+                const storageRef = ref(storage, fileName);
+                await uploadBytes(storageRef, blob);
+                const url = await getDownloadURL(storageRef);
+                imagenesGaleria.push(url);
+                renderGalleryPreviews();
+                processed++;
+                status.innerText = `${processed}/${total} procesadas...`;
+                processNext();
+            } catch (err) {
+                console.error(err);
+                status.innerText = `Error en foto ${processed + 1} ❌`;
+            }
+        });
     }
+
+    processNext();
 }
 
 function renderGalleryPreviews() {
@@ -975,15 +1053,33 @@ export function renderCombinacionesTable(existingData) {
     const tbody = document.getElementById('combinaciones-tbody');
     if (!tbody) return;
 
+    // Merge existingData into _variantesData so images are preserved
+    if (existingData) {
+        if (!window._variantesData) window._variantesData = {};
+        Object.entries(existingData).forEach(([k, v]) => {
+            if (!window._variantesData[k]) window._variantesData[k] = { ...v };
+            else if (v.imagenUrl && !window._variantesData[k].imagenUrl) {
+                window._variantesData[k].imagenUrl = v.imagenUrl;
+            }
+        });
+    }
+
     tbody.innerHTML = combos.map(combo => {
         const key = combo.join('|');
+        const safeKey = key.replace(/\|/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '');
         const label = atributos.map((a, i) => `${a.nombre}: ${combo[i]}`).join(' / ');
-        const existing = existingData?.[key] || {};
+        const existing = window._variantesData?.[key] || existingData?.[key] || {};
         const stockVal = existing.stock !== undefined ? existing.stock : '';
         const precioVal = existing.precio !== null && existing.precio !== undefined ? existing.precio : '';
+        const imgUrl = existing.imagenUrl || '';
+        const imgCell = imgUrl
+            ? `<img src="${imgUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;cursor:pointer;display:block;"
+                    onclick="document.getElementById('var-img-${safeKey}').click()" title="Cambiar foto">`
+            : `<button type="button" onclick="document.getElementById('var-img-${safeKey}').click()"
+                    style="background:#f0f4ff;border:1px dashed #aaa;border-radius:8px;padding:5px 8px;font-size:0.72rem;cursor:pointer;color:#666;white-space:nowrap;">+foto</button>`;
         return `
             <tr style="border-bottom:1px solid #f0f0f0;">
-                <td style="padding:10px 12px; font-weight:600; color:var(--secondary);">${label}</td>
+                <td style="padding:10px 12px; font-weight:600; color:var(--secondary); font-size:0.82rem;">${label}</td>
                 <td style="padding:10px 12px; text-align:center;">
                     <input type="number" min="0" value="${stockVal}" placeholder="0"
                         data-variant-key="${key}" data-field="stock"
@@ -993,6 +1089,12 @@ export function renderCombinacionesTable(existingData) {
                     <input type="number" min="0" value="${precioVal}" placeholder="Base"
                         data-variant-key="${key}" data-field="precio"
                         style="width:100px; border:1px solid #eee; border-radius:8px; padding:6px; text-align:center; font-size:0.85rem;">
+                </td>
+                <td style="padding:10px 12px; text-align:center;">
+                    <input type="file" id="var-img-${safeKey}" accept="image/*" style="display:none;"
+                        data-variant-key="${key}"
+                        onchange="window.tiendaAdmin.handleVariantImageUpload(this, '${key}')">
+                    ${imgCell}
                 </td>
             </tr>
         `;
@@ -1004,7 +1106,12 @@ export function collectVariantesData() {
     document.querySelectorAll('#combinaciones-tbody input[data-variant-key]').forEach(input => {
         const key = input.dataset.variantKey;
         const field = input.dataset.field;
-        if (!result[key]) result[key] = { stock: 0, precio: null };
+        if (!field) return; // skip file inputs
+        if (!result[key]) {
+            // Preserve imagenUrl from _variantesData
+            const saved = window._variantesData?.[key] || {};
+            result[key] = { stock: 0, precio: null, imagenUrl: saved.imagenUrl || null };
+        }
         if (field === 'stock') {
             result[key].stock = parseInt(input.value) || 0;
         } else if (field === 'precio') {
@@ -1012,6 +1119,47 @@ export function collectVariantesData() {
         }
     });
     return result;
+}
+
+export function handleVariantImageUpload(input, variantKey) {
+    const file = input.files[0];
+    if (!file) return;
+    input.value = '';
+
+    openCropModal(file, async (blob) => {
+        try {
+            const safeName = variantKey.replace(/\|/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '');
+            const fileName = `productos/variantes/${Date.now()}_${safeName}.jpg`;
+            const storageRef = ref(storage, fileName);
+            await uploadBytes(storageRef, blob);
+            const url = await getDownloadURL(storageRef);
+
+            // Store in _variantesData
+            if (!window._variantesData) window._variantesData = {};
+            if (!window._variantesData[variantKey]) window._variantesData[variantKey] = { stock: 0, precio: null };
+            window._variantesData[variantKey].imagenUrl = url;
+
+            // Update the cell preview: find by data-variant-key on the file input
+            const fileInput = document.querySelector(`#combinaciones-tbody input[type="file"][data-variant-key="${variantKey}"]`);
+            if (fileInput) {
+                const cell = fileInput.parentElement;
+                // Keep the file input, replace preview
+                const oldBtn = cell.querySelector('button');
+                const oldImg = cell.querySelector('img');
+                if (oldBtn) oldBtn.remove();
+                if (oldImg) oldImg.remove();
+                const newImg = document.createElement('img');
+                newImg.src = url;
+                newImg.style.cssText = 'width:40px;height:40px;object-fit:cover;border-radius:6px;cursor:pointer;display:block;';
+                newImg.title = 'Cambiar foto';
+                newImg.onclick = () => fileInput.click();
+                cell.appendChild(newImg);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error al subir la foto de la variante');
+        }
+    });
 }
 
 // Modal de stock + historial por variante (desde la tabla de productos)
