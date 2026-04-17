@@ -371,10 +371,19 @@ function updateCartUI() {
 
     if (!cartItemsList) return;
 
+    const checkoutBtn = document.getElementById('btn-go-to-checkout');
     if (cart.length === 0) {
         cartItemsList.innerHTML = `<div class="cart-empty"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío</p></div>`;
         cartTotal.innerText = "$0.00";
+        if (checkoutBtn) {
+            checkoutBtn.innerText = 'VER PRODUCTOS';
+            checkoutBtn.onclick = () => { window.location.href = 'tienda.html'; };
+        }
         return;
+    }
+    if (checkoutBtn) {
+        checkoutBtn.innerText = 'CONTINUAR COMPRA';
+        checkoutBtn.onclick = () => { window.location.href = 'checkout.html'; };
     }
 
     cartItemsList.innerHTML = cart.map((item, index) => `
