@@ -126,6 +126,7 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
     let maxDias = agendaConfig?.minAnticipacion || 0;
     let mensajeAgenda = null;
 
+    let anyRequiresAgenda = false;
     const productIds = [...new Set(cart.map(item => item.id).filter(Boolean))];
     if (productIds.length > 0) {
         try {
@@ -135,6 +136,7 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
                 const p = snap.data();
                 if (!p.requiereAgenda) continue;
 
+                anyRequiresAgenda = true;
                 let dias = p.diasAnticipacion || 0;
                 // Apply cutoff time: if now is past the cutoff hour, add +1 day
                 if (p.horarioCorte) {
@@ -152,6 +154,14 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
             console.error("Error fetching product agenda config:", err);
         }
     }
+
+    // If no product requires agenda, hide the calendar and exit
+    const scheduleGroup = document.getElementById('schedule-group');
+    if (!anyRequiresAgenda) {
+        if (scheduleGroup) scheduleGroup.style.display = 'none';
+        return;
+    }
+    if (scheduleGroup) scheduleGroup.style.display = 'block';
 
     // 2. Show/hide agenda message
     const msgEl = document.getElementById('agenda-mensaje');
