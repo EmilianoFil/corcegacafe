@@ -734,6 +734,22 @@ export async function loadConfigStore() {
                 const el = document.getElementById(`conf-day-${i}`);
                 if (el) el.checked = data.agenda?.diasSemana?.includes(i) ?? true;
             }
+
+            // Info & Redes
+            if (document.getElementById('conf-direccion'))
+                document.getElementById('conf-direccion').value = data.info?.direccion || '';
+            if (document.getElementById('conf-maps-url'))
+                document.getElementById('conf-maps-url').value = data.info?.googleMapsUrl || '';
+            if (document.getElementById('conf-whatsapp'))
+                document.getElementById('conf-whatsapp').value = data.info?.whatsapp || '';
+
+            const redes = data.redes || {};
+            ['instagram', 'facebook', 'tiktok', 'twitter'].forEach(red => {
+                const el = document.getElementById(`conf-red-${red}`);
+                const urlEl = document.getElementById(`conf-red-${red}-url`);
+                if (el) el.checked = redes[red]?.activo || false;
+                if (urlEl) urlEl.value = redes[red]?.url || '';
+            });
         }
     } catch (err) {
         console.error("Error loading config:", err);
@@ -777,6 +793,17 @@ export async function guardarConfigStore() {
             fechasBloqueadas: document.getElementById('conf-agenda-blocked').value.split(',').map(s => s.trim()).filter(s => s !== ""),
             diasSemana: diasSemana,
             pedidosMaximosDia: parseInt(document.getElementById('conf-pedidos-max')?.value) || 0,
+        },
+        info: {
+            direccion: document.getElementById('conf-direccion')?.value.trim() || '',
+            googleMapsUrl: document.getElementById('conf-maps-url')?.value.trim() || '',
+            whatsapp: document.getElementById('conf-whatsapp')?.value.trim() || '',
+        },
+        redes: {
+            instagram: { activo: document.getElementById('conf-red-instagram')?.checked || false, url: document.getElementById('conf-red-instagram-url')?.value.trim() || '' },
+            facebook:  { activo: document.getElementById('conf-red-facebook')?.checked  || false, url: document.getElementById('conf-red-facebook-url')?.value.trim()  || '' },
+            tiktok:    { activo: document.getElementById('conf-red-tiktok')?.checked    || false, url: document.getElementById('conf-red-tiktok-url')?.value.trim()    || '' },
+            twitter:   { activo: document.getElementById('conf-red-twitter')?.checked   || false, url: document.getElementById('conf-red-twitter-url')?.value.trim()   || '' },
         },
         actualizadoEn: serverTimestamp()
     };

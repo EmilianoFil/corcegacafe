@@ -1473,6 +1473,56 @@
                 </div>
             </div>
 
+            <!-- Info & Redes Sociales -->
+            <div class="card" style="margin-top:20px;">
+                <h3 style="margin-top:0; margin-bottom:20px; font-size:1.1rem;">🌐 Info & Redes Sociales</h3>
+
+                <div class="input-group">
+                    <label>Dirección del Local</label>
+                    <input type="text" id="conf-direccion" placeholder="Ej: Av. Córcega 4699, CABA">
+                </div>
+
+                <div class="input-group">
+                    <label>Link Google Maps</label>
+                    <input type="url" id="conf-maps-url" placeholder="https://maps.app.goo.gl/...">
+                </div>
+
+                <div class="input-group">
+                    <label>WhatsApp (solo números, sin +)</label>
+                    <input type="text" id="conf-whatsapp" placeholder="Ej: 5491122334455">
+                </div>
+
+                <p style="font-size:12px; font-weight:800; color:#aaa; text-transform:uppercase; letter-spacing:0.5px; margin:16px 0 10px;">Redes Sociales</p>
+
+                <!-- Instagram -->
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                    <label class="switch"><input type="checkbox" id="conf-red-instagram"><span class="slider round"></span></label>
+                    <i class="fa-brands fa-instagram" style="font-size:18px; color:#E1306C;"></i>
+                    <input type="url" id="conf-red-instagram-url" class="form-control" style="flex:1;" placeholder="https://instagram.com/...">
+                </div>
+
+                <!-- Facebook -->
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                    <label class="switch"><input type="checkbox" id="conf-red-facebook"><span class="slider round"></span></label>
+                    <i class="fa-brands fa-facebook" style="font-size:18px; color:#1877F2;"></i>
+                    <input type="url" id="conf-red-facebook-url" class="form-control" style="flex:1;" placeholder="https://facebook.com/...">
+                </div>
+
+                <!-- TikTok -->
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                    <label class="switch"><input type="checkbox" id="conf-red-tiktok"><span class="slider round"></span></label>
+                    <i class="fa-brands fa-tiktok" style="font-size:18px; color:#000;"></i>
+                    <input type="url" id="conf-red-tiktok-url" class="form-control" style="flex:1;" placeholder="https://tiktok.com/@...">
+                </div>
+
+                <!-- Twitter/X -->
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:4px;">
+                    <label class="switch"><input type="checkbox" id="conf-red-twitter"><span class="slider round"></span></label>
+                    <i class="fa-brands fa-x-twitter" style="font-size:18px; color:#000;"></i>
+                    <input type="url" id="conf-red-twitter-url" class="form-control" style="flex:1;" placeholder="https://x.com/...">
+                </div>
+            </div>
+
             <div style="margin-top: 40px; text-align: right;">
                 <button class="btn-primary" onclick="window.tiendaAdmin.guardarConfigStore()" style="width: auto; padding: 15px 50px; font-size: 1rem; height: auto;">
                     💾 Guardar Configuración
@@ -1672,7 +1722,7 @@
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
         import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
-        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=13';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=14';
         window.tiendaAdmin = tiendaAdmin;
 
         let adminData = null;
