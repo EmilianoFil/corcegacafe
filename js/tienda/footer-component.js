@@ -74,7 +74,7 @@ function renderFooter(config) {
         </div>
     </div>
     <div class="tienda-footer-bottom">
-        © ${year} Córcega Café &nbsp;·&nbsp; Hecho con <span style="color:var(--naranja-accent)">♥</span> por <a href="https://wa.me/5491136053892" target="_blank" rel="noopener">LENUAhub</a>
+        © ${year} Córcega Café &nbsp;·&nbsp; Hecho con <span style="color:#ed7053">♥</span> por <a href="https://wa.me/5491136053892" target="_blank" rel="noopener">LENUAhub</a>
     </div>`;
 }
 
@@ -92,7 +92,7 @@ function renderMinimalFooter() {
         </div>
     </div>
     <div class="tienda-footer-bottom">
-        © ${year} Córcega Café &nbsp;·&nbsp; Hecho con <span style="color:var(--naranja-accent)">♥</span> por <a href="https://wa.me/5491136053892" target="_blank" rel="noopener">LENUAhub</a>
+        © ${year} Córcega Café &nbsp;·&nbsp; Hecho con <span style="color:#ed7053">♥</span> por <a href="https://wa.me/5491136053892" target="_blank" rel="noopener">LENUAhub</a>
     </div>`;
 }
 
