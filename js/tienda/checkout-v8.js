@@ -251,7 +251,8 @@ async function handleOrderSubmission() {
 
     try {
         const total = cart.reduce((acc, item) => acc + (item.precio * item.qty), 0);
-        const sessionDni = localStorage.getItem('corcega_tienda_dni');
+        const rawDni = localStorage.getItem('corcega_tienda_dni');
+        const sessionDni = (rawDni && /^\d{7,8}$/.test(rawDni.trim())) ? rawDni.trim() : null;
         
         const orderData = {
             cliente: {

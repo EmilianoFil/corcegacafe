@@ -15,6 +15,23 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 const db = admin.firestore();
 
+// Verifica que el request tenga un token de admin válido
+const verificarAuthAdmin = async (req, res) => {
+  const authHeader = req.headers.authorization || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (!token) {
+    res.status(401).json({ error: "No autorizado." });
+    return false;
+  }
+  try {
+    await admin.auth().verifyIdToken(token);
+    return true;
+  } catch (e) {
+    res.status(403).json({ error: "Token inválido o expirado." });
+    return false;
+  }
+};
+
 // --- HELPERS VISUALES ---
 const renderStepperHtml = (estadoActual) => {
     const pasos = [
@@ -411,6 +428,7 @@ exports.enviarMailAnioNuevo = onRequest(
   { region: "us-central1", secrets: [emailUser, emailPass], timeoutSeconds: 540, memory: "512MiB" },
   (req, res) => {
     corsHandler(req, res, async () => {
+      if (!await verificarAuthAdmin(req, res)) return;
       const { destinatarios, esMasivo, dniPrueba } = req.body;
       const adminUser = "Admin_Panel";
 
@@ -677,6 +695,7 @@ exports.enviarMailAniversario = onRequest(
   { region: "us-central1", secrets: [emailUser, emailPass], timeoutSeconds: 540, memory: "512MiB" },
   (req, res) => {
     corsHandler(req, res, async () => {
+      if (!await verificarAuthAdmin(req, res)) return;
       const { dnisPrueba, esMasivo } = req.body;
       const adminUser = "Admin_Panel";
 
@@ -859,6 +878,7 @@ exports.enviarMailCampana = onRequest(
   { region: "us-central1", secrets: [emailUser, emailPass], timeoutSeconds: 540, memory: "512MiB" },
   (req, res) => {
     corsHandler(req, res, async () => {
+      if (!await verificarAuthAdmin(req, res)) return;
       const { asunto, cuerpo, imagenUrl, dnisPrueba, esMasivo, campanaId } = req.body;
       const adminUser = "Admin_Panel";
 
