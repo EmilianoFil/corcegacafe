@@ -170,6 +170,23 @@
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
+
+    <!-- Google Analytics GA4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-NXMC00DZ81');
+    </script>
+    <!-- Microsoft Clarity -->
+    <script type="text/javascript">
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "wd8ekvw8tt");
+    </script>
 </head>
 <body>
     <div class="success-card">
@@ -229,6 +246,26 @@
         if (!orderId) {
             window.location.href = 'tienda.html';
         } else {
+            // Fire GA4 purchase event — read cart before clearing it
+            try {
+                const savedCart = JSON.parse(localStorage.getItem('corcega_cart') || '[]');
+                if (savedCart.length > 0 && typeof gtag === 'function') {
+                    const total = savedCart.reduce((s, i) => s + (i.precio * i.qty), 0);
+                    gtag('event', 'purchase', {
+                        transaction_id: orderId,
+                        value: total,
+                        currency: 'ARS',
+                        items: savedCart.map(i => ({
+                            item_id: i.id,
+                            item_name: i.nombre,
+                            item_variant: i.variantLabel || undefined,
+                            price: i.precio,
+                            quantity: i.qty
+                        }))
+                    });
+                }
+            } catch(e) { console.warn('GA4 purchase error:', e); }
+
             // Ya aterrizamos en seguimiento, limpiamos el carrito local
             localStorage.removeItem('corcega_cart');
             

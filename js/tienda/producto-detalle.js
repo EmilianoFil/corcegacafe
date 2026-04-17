@@ -115,6 +115,15 @@ function renderProductDetail() {
         <img src="${img}" class="thumb ${i === 0 ? 'active' : ''}" onclick="changeMainImage('${img}', this)">
     `).join('');
 
+    // GA4: view_item
+    if (typeof gtag === 'function') {
+        gtag('event', 'view_item', {
+            currency: 'ARS',
+            value: p.precio,
+            items: [{ item_id: p.id, item_name: p.nombre, item_category: p.categoria || '', price: p.precio }]
+        });
+    }
+
     // Toggle Visibility
     document.getElementById('main-product-loader').style.display = 'none';
     document.getElementById('product-content').style.display = 'grid';
@@ -432,6 +441,14 @@ function addToCartFromPage() {
             imagenUrl: currentProduct.imagenUrl,
             qty: currentQty,
             stock: currentProduct.stock
+        });
+    }
+
+    if (typeof gtag === 'function') {
+        gtag('event', 'add_to_cart', {
+            currency: 'ARS',
+            value: currentProduct.precio * currentQty,
+            items: [{ item_id: currentProduct.id, item_name: currentProduct.nombre, item_category: currentProduct.categoria || '', price: currentProduct.precio, quantity: currentQty }]
         });
     }
 

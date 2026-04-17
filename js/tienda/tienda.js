@@ -147,6 +147,20 @@ function renderProducts() {
         `;
     }).join('');
 
+    // GA4: view_item_list
+    if (typeof gtag === 'function') {
+        gtag('event', 'view_item_list', {
+            item_list_name: activeCategory === 'todos' ? 'Todos' : activeCategory,
+            items: filtered.map((p, i) => ({
+                item_id: p.id,
+                item_name: p.nombre,
+                item_category: p.categoria || '',
+                price: p.precio,
+                index: i
+            }))
+        });
+    }
+
     // For cached images that fire onload synchronously (already complete)
     productsGrid.querySelectorAll('.card-carousel img.active').forEach(img => {
         if (img.complete && img.naturalHeight !== 0) {
@@ -182,6 +196,14 @@ window.addToCart = function(id) {
         existing.qty++;
     } else {
         cart.push({ ...p, qty: 1 });
+    }
+
+    if (typeof gtag === 'function') {
+        gtag('event', 'add_to_cart', {
+            currency: 'ARS',
+            value: p.precio,
+            items: [{ item_id: p.id, item_name: p.nombre, item_category: p.categoria || '', price: p.precio, quantity: 1 }]
+        });
     }
 
     saveAndRefresh();
@@ -348,8 +370,15 @@ window.vpmConfirm = function() {
         });
     }
 
-    document.getElementById('variant-picker-modal').style.display = 'none';
+    if (typeof gtag === 'function') {
+        gtag('event', 'add_to_cart', {
+            currency: 'ARS',
+            value: precio * _vpmQty,
+            items: [{ item_id: _vpmProduct.id, item_name: _vpmProduct.nombre, item_variant: label, item_category: _vpmProduct.categoria || '', price: precio, quantity: _vpmQty }]
+        });
+    }
     saveAndRefresh();
+    document.getElementById('variant-picker-modal').style.display = 'none';
     openCart();
 };
 

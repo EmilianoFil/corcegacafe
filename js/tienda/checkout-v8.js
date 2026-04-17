@@ -291,6 +291,16 @@ function autofillData(profile) {
 }
 
 function renderSummary() {
+    // GA4: begin_checkout
+    if (typeof gtag === 'function' && cart.length > 0) {
+        const total = cart.reduce((s, i) => s + (i.precio * i.qty), 0);
+        gtag('event', 'begin_checkout', {
+            currency: 'ARS',
+            value: total,
+            items: cart.map(i => ({ item_id: i.id, item_name: i.nombre, item_variant: i.variantLabel || undefined, price: i.precio, quantity: i.qty }))
+        });
+    }
+
     checkoutItems.innerHTML = cart.map(item => `
         <div class="order-summary-item">
             <span>
