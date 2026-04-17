@@ -198,20 +198,38 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
             },
             ...blockedDates
         ],
-        onDayCreate: pedidosMaximosDia > 0 ? function(dObj, dStr, fp, dayElem) {
+        onDayCreate: function(dObj, dStr, fp, dayElem) {
             const d = dayElem.dateObj;
+            d.setHours(0, 0, 0, 0);
+
+            // Skip: past or before minDate
+            if (d < minDate) return;
+            // Skip: day of week not in workingDays
+            if (!workingDays.includes(d.getDay())) return;
+            // Skip: explicitly blocked date
             const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-            const count = orderCountByDate[iso] || 0;
-            const ratio = count / pedidosMaximosDia;
-            if (ratio >= 1) {
-                dayElem.style.cssText += '; background:#ff6b6b !important; color:white !important; border-radius:5px;';
-                dayElem.classList.add('flatpickr-disabled');
-            } else if (ratio >= 0.7) {
-                dayElem.style.cssText += '; background:#fde68a !important; color:#78350f !important; border-radius:5px;';
-            } else {
-                dayElem.style.cssText += '; background:#d1fae5 !important; color:#065f46 !important; border-radius:5px;';
+            if (blockedDates.includes(iso)) return;
+
+            // Add a small colored dot below the day number
+            const dot = document.createElement('span');
+            dot.style.cssText = 'display:block; width:5px; height:5px; border-radius:50%; margin: 2px auto 0; flex-shrink:0;';
+
+            if (pedidosMaximosDia > 0) {
+                const count = orderCountByDate[iso] || 0;
+                const ratio = count / pedidosMaximosDia;
+                if (ratio >= 1) {
+                    dot.style.background = '#ef4444';
+                    dayElem.classList.add('flatpickr-disabled');
+                    dayElem.title = 'Día completo';
+                } else if (ratio >= 0.7) {
+                    dot.style.background = '#f59e0b';
+                    dayElem.title = `${pedidosMaximosDia - count} lugar${pedidosMaximosDia - count === 1 ? '' : 'es'} disponible${pedidosMaximosDia - count === 1 ? '' : 's'}`;
+                } else {
+                    dot.style.background = '#22c55e';
+                }
+                dayElem.appendChild(dot);
             }
-        } : undefined
+        }
     });
 }
 

@@ -165,6 +165,61 @@
         .checkout-container.ready #checkout-loader {
             display: none;
         }
+
+        /* Flatpickr custom styling */
+        .flatpickr-calendar {
+            font-family: var(--font-base) !important;
+            font-size: 13px !important;
+            box-shadow: 0 10px 40px rgba(1,50,63,0.12) !important;
+            border-radius: 16px !important;
+            border: none !important;
+            padding: 4px !important;
+        }
+        .flatpickr-months {
+            padding: 8px 4px 4px !important;
+        }
+        .flatpickr-month {
+            font-size: 14px !important;
+            height: 34px !important;
+        }
+        .flatpickr-current-month {
+            font-size: 14px !important;
+            font-weight: 700 !important;
+            padding-top: 4px !important;
+        }
+        .flatpickr-weekdays {
+            font-size: 11px !important;
+        }
+        .flatpickr-weekday {
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            color: #aaa !important;
+        }
+        .flatpickr-day {
+            font-size: 12px !important;
+            height: 36px !important;
+            line-height: 34px !important;
+            border-radius: 10px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            line-height: 1 !important;
+            padding-top: 6px !important;
+        }
+        .flatpickr-day.selected,
+        .flatpickr-day.selected:hover {
+            background: var(--naranja-accent) !important;
+            border-color: var(--naranja-accent) !important;
+        }
+        .flatpickr-day.today {
+            border-color: var(--naranja-accent) !important;
+        }
+        .flatpickr-day.flatpickr-disabled,
+        .flatpickr-day.flatpickr-disabled:hover {
+            color: #ddd !important;
+            text-decoration: none !important;
+        }
     </style>
 </head>
 <body>
