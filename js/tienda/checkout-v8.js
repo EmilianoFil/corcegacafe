@@ -1,7 +1,7 @@
 import { db, auth } from '../firebase-config.js';
 console.log("=== CHECKOUT V4 ACTIVE (NO ALERT) ===");
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { collection, addDoc, serverTimestamp, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 // --- STATE ---
 let cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
@@ -114,36 +114,114 @@ async function applyStoreConfig() {
         }
 
         // 4. Agenda
-        initAgendaPicker(config.agenda);
+        await initAgendaPicker(config.agenda, config.agenda?.pedidosMaximosDia || 0);
         
     } catch (err) {
         console.error("Error applying config:", err);
     }
 }
 
-function initAgendaPicker(agendaConfig) {
-    const minDays = agendaConfig?.minAnticipacion || 0;
+async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
+    // 1. Find the most restrictive agenda config across all cart products
+    let maxDias = agendaConfig?.minAnticipacion || 0;
+    let mensajeAgenda = null;
+
+    const productIds = [...new Set(cart.map(item => item.id).filter(Boolean))];
+    if (productIds.length > 0) {
+        try {
+            const snaps = await Promise.all(productIds.map(id => getDoc(doc(db, "productos", id))));
+            for (const snap of snaps) {
+                if (!snap.exists()) continue;
+                const p = snap.data();
+                if (!p.requiereAgenda) continue;
+
+                let dias = p.diasAnticipacion || 0;
+                // Apply cutoff time: if now is past the cutoff hour, add +1 day
+                if (p.horarioCorte) {
+                    const [hStr, mStr] = p.horarioCorte.split(':');
+                    const corte = new Date();
+                    corte.setHours(parseInt(hStr), parseInt(mStr), 0, 0);
+                    if (new Date() > corte) dias += 1;
+                }
+                if (dias > maxDias) {
+                    maxDias = dias;
+                    mensajeAgenda = p.mensajeAgenda || null;
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching product agenda config:", err);
+        }
+    }
+
+    // 2. Show/hide agenda message
+    const msgEl = document.getElementById('agenda-mensaje');
+    if (msgEl) {
+        msgEl.innerText = mensajeAgenda || '';
+        msgEl.style.display = mensajeAgenda ? 'block' : 'none';
+    }
+
+    // 3. Calculate min date
+    const minDate = new Date();
+    minDate.setHours(0, 0, 0, 0);
+    minDate.setDate(minDate.getDate() + maxDias);
+
     const blockedDates = agendaConfig?.fechasBloqueadas || [];
     const workingDays = agendaConfig?.diasSemana || [0, 1, 2, 3, 4, 5, 6];
 
-    const minDate = new Date();
-    // Ajuste por zona horaria local para evitar saltos raros
-    minDate.setHours(0,0,0,0);
-    minDate.setDate(minDate.getDate() + minDays);
+    // 4. Fetch order counts per day for calendar coloring
+    let orderCountByDate = {};
+    if (pedidosMaximosDia > 0) {
+        try {
+            const ordersSnap = await getDocs(collection(db, "ordenes"));
+            ordersSnap.docs.forEach(d => {
+                const data = d.data();
+                if (data.estado === 'cancelado') return;
+                const iso = data.fechaISO || parseHorarioToISO(data.horario);
+                if (iso) orderCountByDate[iso] = (orderCountByDate[iso] || 0) + 1;
+            });
+            // Show legend
+            const leyenda = document.getElementById('agenda-leyenda');
+            if (leyenda) leyenda.style.display = 'flex';
+        } catch (err) {
+            console.error("Error fetching order counts for calendar:", err);
+        }
+    }
 
+    // 5. Init flatpickr
     flatpickr("#order-schedule", {
         locale: "es",
         minDate: minDate,
         dateFormat: "l d/m/Y",
         disable: [
             function(date) {
-                // date.getDay() devuelve 0 para domingo, 1 para lunes, etc.
                 return !workingDays.includes(date.getDay());
             },
             ...blockedDates
         ],
-        // Si el primer día calculado está deshabilitado, flatpickr buscará el siguiente automáticamente al abrir
+        onDayCreate: pedidosMaximosDia > 0 ? function(dObj, dStr, fp, dayElem) {
+            const d = dayElem.dateObj;
+            const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            const count = orderCountByDate[iso] || 0;
+            const ratio = count / pedidosMaximosDia;
+            if (ratio >= 1) {
+                dayElem.style.cssText += '; background:#ff6b6b !important; color:white !important; border-radius:5px;';
+                dayElem.classList.add('flatpickr-disabled');
+            } else if (ratio >= 0.7) {
+                dayElem.style.cssText += '; background:#fde68a !important; color:#78350f !important; border-radius:5px;';
+            } else {
+                dayElem.style.cssText += '; background:#d1fae5 !important; color:#065f46 !important; border-radius:5px;';
+            }
+        } : undefined
     });
+}
+
+function parseHorarioToISO(horario) {
+    // Parses flatpickr format "Lunes 21/04/2025" → "2025-04-21"
+    if (!horario) return null;
+    const match = horario.match(/(\d{1,2})\/(\d{2})\/(\d{4})/);
+    if (!match) return null;
+    const [, day, month, year] = match;
+    return `${year}-${month}-${day.padStart(2, '0')}`;
 }
 
 function autofillData(profile) {
@@ -269,6 +347,7 @@ async function handleOrderSubmission() {
             total,
             metodoEntrega: deliveryMethod,
             horario,
+            fechaISO: parseHorarioToISO(horario),
             metodoPago,
             notas,
             estado: 'pendiente_pago',

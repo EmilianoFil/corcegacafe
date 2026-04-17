@@ -801,6 +801,13 @@
         .slider.round:before {
             border-radius: 50%;
         }
+
+        /* Product Form Tabs */
+        .prod-tabs-nav { display:flex; gap:4px; margin-bottom:20px; background:#f2f2f2; padding:4px; border-radius:12px; }
+        .prod-tab-btn { flex:1; padding:9px 12px; border:none; background:transparent; border-radius:9px; font-weight:700; font-size:0.78rem; cursor:pointer; color:#888; transition:all 0.2s; font-family:inherit; }
+        .prod-tab-btn.active { background:white; color:var(--secondary); box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+        .prod-tab-pane { display:none; }
+        .prod-tab-pane.active { display:block; }
     </style>
 </head>
 
@@ -1073,133 +1080,174 @@
                 <h4 id="form-producto-title" style="margin-top:0">Nuevo Producto</h4>
                 <form id="form-producto" onsubmit="window.tiendaAdmin.guardarProducto(event)">
                     <input type="hidden" id="prod-id">
-                    <div class="input-group">
-                        <label>Nombre del Producto</label>
-                        <input type="text" id="prod-nombre" required>
+
+                    <!-- Tab Nav -->
+                    <div class="prod-tabs-nav">
+                        <button type="button" class="prod-tab-btn active" onclick="window.tiendaAdmin.switchProductTab('general', this)">📦 General</button>
+                        <button type="button" class="prod-tab-btn" onclick="window.tiendaAdmin.switchProductTab('stock', this)">🗂️ Stock & Variantes</button>
+                        <button type="button" class="prod-tab-btn" onclick="window.tiendaAdmin.switchProductTab('parametria', this)">⚙️ Parametría</button>
                     </div>
-                    <div class="input-group">
-                        <label>Descripción Corta (Lista)</label>
-                        <textarea id="prod-descripcion" rows="2" placeholder="Ej: Notas de chocolate y avellanas..." required></textarea>
-                    </div>
-                    <div class="input-group">
-                        <label>Descripción Larga (Detalle del Producto)</label>
-                        <textarea id="prod-descripcion-larga" rows="5" placeholder="Historia del café, origen, proceso de tostado..."></textarea>
-                    </div>
-                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 0;">
+
+                    <!-- Tab: General -->
+                    <div class="prod-tab-pane active" id="tab-general">
                         <div class="input-group">
-                            <label>Precio ($)</label>
-                            <input type="number" id="prod-precio" required min="0">
+                            <label>Nombre del Producto</label>
+                            <input type="text" id="prod-nombre" required>
                         </div>
-                        <div class="input-group" id="stock-global-group">
-                            <label>Stock Disponible</label>
-                            <div style="display: flex; gap: 10px; align-items: center;">
-                                <input type="number" id="prod-stock" value="0" min="0" style="flex: 1;">
-                                <label style="display: flex; align-items: center; gap: 5px; margin-bottom: 0; white-space: nowrap; font-size: 0.8rem;">
-                                    <input type="checkbox" id="prod-stock-ilimitado" style="width: auto;" onchange="document.getElementById('prod-stock').disabled = this.checked"> ∞
-                                </label>
+                        <div class="input-group">
+                            <label>Descripción Corta (Lista)</label>
+                            <textarea id="prod-descripcion" rows="2" placeholder="Ej: Notas de chocolate y avellanas..." required></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Descripción Larga (Detalle del Producto)</label>
+                            <textarea id="prod-descripcion-larga" rows="5" placeholder="Historia del café, origen, proceso de tostado..."></textarea>
+                        </div>
+                        <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 0;">
+                            <div class="input-group">
+                                <label>Precio ($)</label>
+                                <input type="number" id="prod-precio" required min="0">
                             </div>
-                        </div>
-                        <div class="input-group" id="stock-variantes-group" style="display:none;">
-                            <label>Stock por Variante</label>
-                            <button type="button" onclick="window.tiendaAdmin.verStockVariantesForm()"
-                                style="background:#fdfcf7; border:1px solid var(--border); border-radius:10px; padding:10px 16px; font-size:0.85rem; font-weight:600; cursor:pointer; color:var(--secondary); display:flex; align-items:center; gap:8px; width:100%; transition:background 0.2s;"
-                                onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='#fdfcf7'">
-                                📊 Ver stock e historial por variante
-                            </button>
-                        </div>
-                        <div class="input-group">
-                            <label>Aviso de stock bajo <span style="font-weight:400; color:#aaa;">(0 = desactivado)</span></label>
-                            <input type="number" id="prod-aviso-stock" value="0" min="0" placeholder="Ej: 3">
-                            <small style="color:#aaa; font-size:0.72rem; margin-top:4px; display:block;">Cuando queden ≤ N unidades el cliente ve "¡Solo quedan X!"</small>
-                        </div>
-                    </div>
-                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 0;">
-                        <div class="input-group">
-                            <label>Categoría</label>
-                            <select id="prod-categoria">
-                                <option value="cafe">Cafetería</option>
-                                <option value="pasteleria">Pastelería</option>
-                                <option value="merchandising">Merchandising</option>
-                                <option value="otros">Otros</option>
-                            </select>
+                            <div class="input-group">
+                                <label>Categoría</label>
+                                <select id="prod-categoria">
+                                    <option value="cafe">Cafetería</option>
+                                    <option value="pasteleria">Pastelería</option>
+                                    <option value="merchandising">Merchandising</option>
+                                    <option value="otros">Otros</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="input-group" style="display: flex; align-items: center; gap: 10px;">
                             <input type="checkbox" id="prod-activo" checked style="width: auto;">
                             <label for="prod-activo" style="margin-bottom: 0;">Producto Activo (Visible)</label>
                         </div>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label>Imagen Principal (Portada)</label>
-                        <div style="display: flex; gap: 15px; align-items: center; background: #fdfcf7; padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
-                            <div style="flex: 1;">
-                                <input type="file" id="prod-imagen-file" accept="image/*" style="display: none;" onchange="window.tiendaAdmin.handleProductImageUpload(this)">
-                                <button type="button" class="btn-primary" onclick="document.getElementById('prod-imagen-file').click()" id="btn-select-prod-img" style="background: var(--secondary); margin-bottom: 0;">
-                                    📸 Seleccionar Foto Principal
-                                </button>
-                                <input type="hidden" id="prod-imagen-url">
-                            </div>
-                            <div id="prod-preview-container" style="display: none;">
-                                <img id="prod-imagen-preview" src="" style="height: 80px; width: 80px; object-fit: cover; border-radius: 12px;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="input-group">
-                        <label>Galería de Fotos Extra (Carrusel)</label>
-                        <div style="background: #fdfcf7; padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
-                            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                                <input type="file" id="prod-gallery-file" accept="image/*" multiple style="display: none;" onchange="window.tiendaAdmin.agregarAFotosGaleria(this)">
-                                <button type="button" class="btn-primary" onclick="document.getElementById('prod-gallery-file').click()" id="btn-add-gallery" style="background: var(--primary); margin: 0; font-size: 0.85rem;">
-                                    + Agregar Foto a la Galería
-                                </button>
-                                <p id="gallery-status" style="font-size: 0.75rem; margin: 0; align-self: center;"></p>
-                            </div>
-                            <div id="gallery-previews" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                <!-- Acá van las miniaturas de la galería -->
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- VARIANTES -->
-                    <div class="input-group" id="variantes-section">
-                        <label style="display:flex; align-items:center; gap:10px;">
-                            <input type="checkbox" id="prod-tiene-variantes" style="width:auto;"
-                                onchange="window.tiendaAdmin.toggleVariantesSection(this.checked)">
-                            <span>Este producto tiene variantes (colores, talles, etc.)</span>
-                        </label>
-
-                        <div id="variantes-editor" style="display:none; margin-top:15px; background:#fdfcf7; padding:20px; border-radius:16px; border:1px solid var(--border);">
-                            <p style="font-size:0.8rem; color:#666; margin:0 0 15px;">Definí los atributos (ej: "Color") y sus opciones (ej: Rojo, Azul). Luego generá las combinaciones para asignar stock y precio.</p>
-
-                            <div id="atributos-list" style="display:flex; flex-direction:column; gap:12px; margin-bottom:15px;"></div>
-
-                            <button type="button" onclick="window.tiendaAdmin.addAtributo()"
-                                style="background:var(--secondary); color:white; border:none; border-radius:10px; padding:8px 16px; font-size:0.8rem; font-weight:700; cursor:pointer;">
-                                + Agregar Atributo
-                            </button>
-
-                            <div id="combinaciones-section" style="display:none; margin-top:20px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                                    <p style="font-weight:700; margin:0; font-size:0.9rem;">Combinaciones</p>
-                                    <button type="button" onclick="window.tiendaAdmin.generarCombinaciones()"
-                                        style="background:var(--primary); color:white; border:none; border-radius:8px; padding:6px 14px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                                        🔄 Regenerar
+                        <div class="input-group">
+                            <label>Imagen Principal (Portada)</label>
+                            <div style="display: flex; gap: 15px; align-items: center; background: #fdfcf7; padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
+                                <div style="flex: 1;">
+                                    <input type="file" id="prod-imagen-file" accept="image/*" style="display: none;" onchange="window.tiendaAdmin.handleProductImageUpload(this)">
+                                    <button type="button" class="btn-primary" onclick="document.getElementById('prod-imagen-file').click()" id="btn-select-prod-img" style="background: var(--secondary); margin-bottom: 0;">
+                                        📸 Seleccionar Foto Principal
                                     </button>
+                                    <input type="hidden" id="prod-imagen-url">
                                 </div>
-                                <div id="combinaciones-table-wrapper" style="overflow-x:auto;">
-                                    <table style="width:100%; border-collapse:collapse; font-size:0.8rem;" id="combinaciones-table">
-                                        <thead>
-                                            <tr style="background:#f5f5f5;">
-                                                <th style="padding:8px 12px; text-align:left; border-radius:8px 0 0 0;">Combinación</th>
-                                                <th style="padding:8px 12px; text-align:center;">Stock</th>
-                                                <th style="padding:8px 12px; text-align:center;">Precio (vacío = precio base)</th>
-                                                <th style="padding:8px 12px; text-align:center; border-radius:0 8px 0 0;">Foto</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="combinaciones-tbody"></tbody>
-                                    </table>
+                                <div id="prod-preview-container" style="display: none;">
+                                    <img id="prod-imagen-preview" src="" style="height: 80px; width: 80px; object-fit: cover; border-radius: 12px;">
                                 </div>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Galería de Fotos Extra (Carrusel)</label>
+                            <div style="background: #fdfcf7; padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
+                                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                                    <input type="file" id="prod-gallery-file" accept="image/*" multiple style="display: none;" onchange="window.tiendaAdmin.agregarAFotosGaleria(this)">
+                                    <button type="button" class="btn-primary" onclick="document.getElementById('prod-gallery-file').click()" id="btn-add-gallery" style="background: var(--primary); margin: 0; font-size: 0.85rem;">
+                                        + Agregar Foto a la Galería
+                                    </button>
+                                    <p id="gallery-status" style="font-size: 0.75rem; margin: 0; align-self: center;"></p>
+                                </div>
+                                <div id="gallery-previews" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Stock & Variantes -->
+                    <div class="prod-tab-pane" id="tab-stock">
+                        <div class="stats-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 0;">
+                            <div class="input-group" id="stock-global-group">
+                                <label>Stock Disponible</label>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <input type="number" id="prod-stock" value="0" min="0" style="flex: 1;">
+                                    <label style="display: flex; align-items: center; gap: 5px; margin-bottom: 0; white-space: nowrap; font-size: 0.8rem;">
+                                        <input type="checkbox" id="prod-stock-ilimitado" style="width: auto;" onchange="document.getElementById('prod-stock').disabled = this.checked"> ∞
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="input-group" id="stock-variantes-group" style="display:none;">
+                                <label>Stock por Variante</label>
+                                <button type="button" onclick="window.tiendaAdmin.verStockVariantesForm()"
+                                    style="background:#fdfcf7; border:1px solid var(--border); border-radius:10px; padding:10px 16px; font-size:0.85rem; font-weight:600; cursor:pointer; color:var(--secondary); display:flex; align-items:center; gap:8px; width:100%; transition:background 0.2s;"
+                                    onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='#fdfcf7'">
+                                    📊 Ver stock e historial por variante
+                                </button>
+                            </div>
+                            <div class="input-group">
+                                <label>Aviso de stock bajo <span style="font-weight:400; color:#aaa;">(0 = desactivado)</span></label>
+                                <input type="number" id="prod-aviso-stock" value="0" min="0" placeholder="Ej: 3">
+                                <small style="color:#aaa; font-size:0.72rem; margin-top:4px; display:block;">Cuando queden ≤ N unidades el cliente ve "¡Solo quedan X!"</small>
+                            </div>
+                        </div>
+                        <!-- VARIANTES -->
+                        <div class="input-group" id="variantes-section" style="margin-top: 20px;">
+                            <label style="display:flex; align-items:center; gap:10px;">
+                                <input type="checkbox" id="prod-tiene-variantes" style="width:auto;"
+                                    onchange="window.tiendaAdmin.toggleVariantesSection(this.checked)">
+                                <span>Este producto tiene variantes (colores, talles, etc.)</span>
+                            </label>
+                            <div id="variantes-editor" style="display:none; margin-top:15px; background:#fdfcf7; padding:20px; border-radius:16px; border:1px solid var(--border);">
+                                <p style="font-size:0.8rem; color:#666; margin:0 0 15px;">Definí los atributos (ej: "Color") y sus opciones (ej: Rojo, Azul). Luego generá las combinaciones para asignar stock y precio.</p>
+                                <div id="atributos-list" style="display:flex; flex-direction:column; gap:12px; margin-bottom:15px;"></div>
+                                <button type="button" onclick="window.tiendaAdmin.addAtributo()"
+                                    style="background:var(--secondary); color:white; border:none; border-radius:10px; padding:8px 16px; font-size:0.8rem; font-weight:700; cursor:pointer;">
+                                    + Agregar Atributo
+                                </button>
+                                <div id="combinaciones-section" style="display:none; margin-top:20px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                        <p style="font-weight:700; margin:0; font-size:0.9rem;">Combinaciones</p>
+                                        <button type="button" onclick="window.tiendaAdmin.generarCombinaciones()"
+                                            style="background:var(--primary); color:white; border:none; border-radius:8px; padding:6px 14px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                                            🔄 Regenerar
+                                        </button>
+                                    </div>
+                                    <div id="combinaciones-table-wrapper" style="overflow-x:auto;">
+                                        <table style="width:100%; border-collapse:collapse; font-size:0.8rem;" id="combinaciones-table">
+                                            <thead>
+                                                <tr style="background:#f5f5f5;">
+                                                    <th style="padding:8px 12px; text-align:left; border-radius:8px 0 0 0;">Combinación</th>
+                                                    <th style="padding:8px 12px; text-align:center;">Stock</th>
+                                                    <th style="padding:8px 12px; text-align:center;">Precio (vacío = precio base)</th>
+                                                    <th style="padding:8px 12px; text-align:center; border-radius:0 8px 0 0;">Foto</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="combinaciones-tbody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Parametría -->
+                    <div class="prod-tab-pane" id="tab-parametria">
+                        <div style="background:#fdfcf7; padding:20px; border-radius:16px; border:1px solid var(--border);">
+                            <label style="display:flex; align-items:flex-start; gap:12px; cursor:pointer; margin-bottom:0;">
+                                <input type="checkbox" id="prod-requiere-agenda" style="width:auto; margin-top:3px;"
+                                    onchange="window.tiendaAdmin.toggleAgendaSection(this.checked)">
+                                <div>
+                                    <span style="font-weight:700; color:var(--secondary);">Este producto requiere agenda de entrega</span>
+                                    <small style="display:block; color:#999; margin-top:3px; font-weight:400;">El cliente deberá elegir un día en el calendario al hacer el pedido</small>
+                                </div>
+                            </label>
+                        </div>
+                        <div id="agenda-config-section" style="display:none; margin-top:15px; flex-direction:column; gap:15px;">
+                            <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div class="input-group" style="margin:0;">
+                                    <label>Días de anticipación requeridos</label>
+                                    <input type="number" id="prod-dias-anticipacion" min="0" value="0" placeholder="Ej: 2">
+                                    <small style="color:#aaa; font-size:0.72rem; margin-top:4px; display:block;">El primer día elegible será hoy + N días</small>
+                                </div>
+                                <div class="input-group" style="margin:0;">
+                                    <label>Horario de corte</label>
+                                    <input type="time" id="prod-horario-corte" value="14:00">
+                                    <small style="color:#aaa; font-size:0.72rem; margin-top:4px; display:block;">Si el pedido es después de esta hora, se suma +1 día automáticamente</small>
+                                </div>
+                            </div>
+                            <div class="input-group" style="margin:0;">
+                                <label>Mensaje para el cliente en el checkout <span style="font-weight:400; color:#aaa;">(opcional)</span></label>
+                                <textarea id="prod-mensaje-agenda" rows="3"
+                                    style="width:100%; border:1px solid #eee; border-radius:10px; padding:10px; font-family:inherit; font-size:0.85rem; resize:vertical;"
+                                    placeholder="Ej: ¡Las tortas se preparan frescas! Necesitamos al menos 2 días de anticipación 🎂"></textarea>
+                                <small style="color:#aaa; font-size:0.72rem; margin-top:4px; display:block;">Aparece como aviso destacado en el checkout, debajo del calendario</small>
                             </div>
                         </div>
                     </div>
@@ -1402,6 +1450,12 @@
                         <label>Fechas específicas deshabilitadas</label>
                         <textarea id="conf-agenda-blocked" rows="3" class="form-control" style="width:100%; border:1px solid #eee; border-radius:8px; font-size: 12px; margin-top: 5px; padding: 10px; font-family: inherit;" placeholder="YYYY-MM-DD, YYYY-MM-DD (separadas por coma)"></textarea>
                         <small style="color: var(--text-muted); font-size: 11px;">Ej: 2024-12-25, 2025-01-01 (Feriados)</small>
+                    </div>
+
+                    <div class="input-group" style="margin-top: 20px;">
+                        <label>Pedidos máximos por día <span style="font-weight:400; color:#aaa;">(0 = sin límite)</span></label>
+                        <input type="number" id="conf-pedidos-max" min="0" placeholder="Ej: 10">
+                        <small style="color: var(--text-muted); font-size: 11px;">El calendario mostrará los días en 🟢 disponible, 🟡 casi lleno (≥70%) o 🔴 completo.</small>
                     </div>
                 </div>
 
@@ -1618,7 +1672,7 @@
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
         import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
-        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=12';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=13';
         window.tiendaAdmin = tiendaAdmin;
 
         let adminData = null;

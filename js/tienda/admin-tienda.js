@@ -114,6 +114,21 @@ export async function mostrarFormularioProducto() {
     document.getElementById('prod-aviso-stock').value = 0;
     window._variantesAtributos = [];
 
+    // Reset agenda fields
+    if (document.getElementById('prod-requiere-agenda')) {
+        document.getElementById('prod-requiere-agenda').checked = false;
+        document.getElementById('agenda-config-section').style.display = 'none';
+        document.getElementById('prod-dias-anticipacion').value = 0;
+        document.getElementById('prod-horario-corte').value = '14:00';
+        document.getElementById('prod-mensaje-agenda').value = '';
+    }
+
+    // Reset to first tab
+    document.querySelectorAll('.prod-tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.prod-tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-general')?.classList.add('active');
+    document.querySelector('.prod-tab-btn')?.classList.add('active');
+
     // Scroll hacia el formulario
     document.getElementById('form-producto-container').scrollIntoView({ behavior: 'smooth' });
 }
@@ -307,6 +322,10 @@ export async function guardarProducto(e) {
         imagenes: imagenesGaleria,
         actualizadoEn: serverTimestamp(),
         avisoStock: parseInt(document.getElementById('prod-aviso-stock').value) || 0,
+        requiereAgenda: document.getElementById('prod-requiere-agenda')?.checked || false,
+        diasAnticipacion: parseInt(document.getElementById('prod-dias-anticipacion')?.value) || 0,
+        horarioCorte: document.getElementById('prod-horario-corte')?.value || null,
+        mensajeAgenda: document.getElementById('prod-mensaje-agenda')?.value.trim() || null,
         tieneVariantes: document.getElementById('prod-tiene-variantes').checked,
         atributosVariantes: document.getElementById('prod-tiene-variantes').checked
             ? (window._variantesAtributos || [])
@@ -398,6 +417,22 @@ export async function editarProducto(id) {
         combTbody.innerHTML = '';
         combSection.style.display = 'none';
     }
+
+    // Load agenda fields
+    if (document.getElementById('prod-requiere-agenda')) {
+        const req = p.requiereAgenda || false;
+        document.getElementById('prod-requiere-agenda').checked = req;
+        document.getElementById('agenda-config-section').style.display = req ? 'flex' : 'none';
+        document.getElementById('prod-dias-anticipacion').value = p.diasAnticipacion || 0;
+        document.getElementById('prod-horario-corte').value = p.horarioCorte || '14:00';
+        document.getElementById('prod-mensaje-agenda').value = p.mensajeAgenda || '';
+    }
+
+    // Switch to first tab
+    document.querySelectorAll('.prod-tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.prod-tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-general')?.classList.add('active');
+    document.querySelector('.prod-tab-btn')?.classList.add('active');
 
     document.getElementById('form-producto-container').scrollIntoView({ behavior: 'smooth' });
 }
@@ -692,7 +727,9 @@ export async function loadConfigStore() {
                 document.getElementById('conf-agenda-min').value = data.agenda?.minAnticipacion || 0;
             if (document.getElementById('conf-agenda-blocked'))
                 document.getElementById('conf-agenda-blocked').value = (data.agenda?.fechasBloqueadas || []).join(", ");
-            
+            if (document.getElementById('conf-pedidos-max'))
+                document.getElementById('conf-pedidos-max').value = data.agenda?.pedidosMaximosDia || 0;
+
             for (let i = 0; i <= 6; i++) {
                 const el = document.getElementById(`conf-day-${i}`);
                 if (el) el.checked = data.agenda?.diasSemana?.includes(i) ?? true;
@@ -738,7 +775,8 @@ export async function guardarConfigStore() {
         agenda: {
             minAnticipacion: parseInt(document.getElementById('conf-agenda-min').value) || 0,
             fechasBloqueadas: document.getElementById('conf-agenda-blocked').value.split(',').map(s => s.trim()).filter(s => s !== ""),
-            diasSemana: diasSemana
+            diasSemana: diasSemana,
+            pedidosMaximosDia: parseInt(document.getElementById('conf-pedidos-max')?.value) || 0,
         },
         actualizadoEn: serverTimestamp()
     };
@@ -1250,6 +1288,19 @@ export async function verStockVariantesProd(id, nombre) {
         </div>
     `;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// Tab switching for product form
+export function switchProductTab(tabName, btn) {
+    document.querySelectorAll('.prod-tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.prod-tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`tab-${tabName}`)?.classList.add('active');
+    if (btn) btn.classList.add('active');
+}
+
+export function toggleAgendaSection(checked) {
+    const section = document.getElementById('agenda-config-section');
+    if (section) section.style.display = checked ? 'flex' : 'none';
 }
 
 // Botón del formulario: muestra stock actual de la variante que se está editando

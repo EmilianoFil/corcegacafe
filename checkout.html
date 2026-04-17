@@ -249,6 +249,12 @@
             <div class="form-group">
                 <label>¿Para cuándo lo querés? (Habilitados según agenda)</label>
                 <input type="text" id="order-schedule" class="form-control" placeholder="Elegí un día disponible..." readonly>
+                <div id="agenda-mensaje" style="display:none; margin-top:10px; padding:12px 16px; background:linear-gradient(135deg, #fff8e1, #fff3cd); border-left:4px solid #f59e0b; border-radius:10px; font-size:13px; color:#78350f; font-weight:500; line-height:1.5;"></div>
+                <div id="agenda-leyenda" style="display:none; margin-top:8px; gap:12px; font-size:11px; color:#888;">
+                    <span>🟢 Disponible</span>
+                    <span>🟡 Casi lleno</span>
+                    <span>🔴 Completo</span>
+                </div>
             </div>
         </div>
 
@@ -276,6 +282,6 @@
 
     <!-- Scripts -->
     <script type="module" src="js/tienda/header-component.js?v=1.0"></script>
-    <script type="module" src="js/tienda/checkout-v8.js"></script>
+    <script type="module" src="js/tienda/checkout-v8.js?v=2.0"></script>
 </body>
 </html>
