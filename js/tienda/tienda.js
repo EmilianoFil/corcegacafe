@@ -399,6 +399,14 @@ window.vpmSelectOption = function(attrName, value, btn) {
         if (ilimitado) {
             stockEl.innerText = '';
             stockEl.style.color = '#aaa';
+        } else if (inCart > 0 && stock === 0) {
+            // User has all remaining units in their own cart
+            stockEl.innerHTML = `🛒 Ya tenés <strong>${inCart}</strong> reservado${inCart > 1 ? 's' : ''} en tu carrito`;
+            stockEl.style.color = '#22c55e';
+        } else if (inCart > 0 && stock > 0) {
+            // User has some in cart, show remaining
+            stockEl.innerHTML = `🛒 Tenés <strong>${inCart}</strong> en el carrito · queda${stock > 1 ? 'n' : ''} <strong>${stock}</strong> más`;
+            stockEl.style.color = '#f59e0b';
         } else if (stock === 0) {
             stockEl.innerText = '⚠️ Sin stock';
             stockEl.style.color = 'var(--error, #e74c3c)';
