@@ -142,6 +142,12 @@ window.addToCart = function(id) {
     const p = products.find(item => item.id === id);
     if (!p) return;
 
+    // If product has variants, open the variant picker modal
+    if (p.tieneVariantes && p.atributosVariantes?.length) {
+        openVariantPicker(p);
+        return;
+    }
+
     // Validación de Stock
     if (p.stockIlimitado !== true) {
         const stockDisponible = p.stock || 0;
@@ -159,6 +165,130 @@ window.addToCart = function(id) {
         cart.push({ ...p, qty: 1 });
     }
 
+    saveAndRefresh();
+    openCart();
+};
+
+// --- VARIANT PICKER ---
+let _vpmProduct = null;
+let _vpmSelections = {};
+let _vpmQty = 1;
+
+function openVariantPicker(p) {
+    _vpmProduct = p;
+    _vpmSelections = {};
+    _vpmQty = 1;
+
+    document.getElementById('vpm-nombre').innerText = p.nombre;
+    document.getElementById('vpm-img').src = p.imagenUrl || 'https://placehold.co/60x60';
+    document.getElementById('vpm-precio-display').innerText = `$${p.precio.toLocaleString('es-AR')}`;
+    document.getElementById('vpm-qty').innerText = '1';
+    document.getElementById('vpm-stock-display').innerText = '';
+
+    const attrContainer = document.getElementById('vpm-atributos');
+    attrContainer.innerHTML = p.atributosVariantes.map(attr => `
+        <div>
+            <p style="font-weight:700; font-size:0.85rem; margin:0 0 8px; color:var(--panel-oscuro);">${attr.nombre}</p>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                ${attr.opciones.map(op => `
+                    <button type="button" class="vpm-option-btn"
+                        data-attr="${attr.nombre}" data-val="${op}"
+                        onclick="window.vpmSelectOption('${attr.nombre}', '${op}', this)"
+                        style="padding:8px 16px; border:2px solid #eee; border-radius:10px; background:white; cursor:pointer; font-size:0.85rem; font-weight:600; transition:all 0.15s; color:var(--panel-oscuro);">
+                        ${op}
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+
+    document.getElementById('variant-picker-modal').style.display = 'flex';
+}
+
+window.vpmSelectOption = function(attrName, value, btn) {
+    _vpmSelections[attrName] = value;
+
+    // Update button styles for this attribute
+    document.querySelectorAll(`[data-attr="${attrName}"]`).forEach(b => {
+        b.style.borderColor = '#eee';
+        b.style.background = 'white';
+        b.style.color = 'var(--panel-oscuro)';
+    });
+    btn.style.borderColor = 'var(--naranja-accent)';
+    btn.style.background = 'rgba(237,112,83,0.08)';
+    btn.style.color = 'var(--naranja-accent)';
+
+    // Update price and stock display if all selected
+    if (!_vpmProduct) return;
+    const allSelected = _vpmProduct.atributosVariantes.every(a => _vpmSelections[a.nombre]);
+    if (allSelected) {
+        const key = _vpmProduct.atributosVariantes.map(a => _vpmSelections[a.nombre]).join('|');
+        const varData = _vpmProduct.variantes?.[key];
+        const precio = varData?.precio ?? _vpmProduct.precio;
+        const stock = varData?.stock ?? 0;
+        document.getElementById('vpm-precio-display').innerText = `$${precio.toLocaleString('es-AR')}`;
+        document.getElementById('vpm-stock-display').innerText = stock > 0 ? `${stock} disponibles` : '⚠️ Sin stock';
+        document.getElementById('vpm-add-btn').disabled = stock === 0;
+        document.getElementById('vpm-add-btn').style.background = stock === 0 ? '#ccc' : 'var(--panel-oscuro)';
+        _vpmQty = 1;
+        document.getElementById('vpm-qty').innerText = '1';
+    }
+};
+
+window.vpmAdjustQty = function(delta) {
+    if (!_vpmProduct) return;
+    const allSelected = _vpmProduct.atributosVariantes.every(a => _vpmSelections[a.nombre]);
+    if (!allSelected) return;
+    const key = _vpmProduct.atributosVariantes.map(a => _vpmSelections[a.nombre]).join('|');
+    const varData = _vpmProduct.variantes?.[key];
+    const stock = varData?.stock ?? 0;
+    _vpmQty = Math.min(Math.max(1, _vpmQty + delta), stock);
+    document.getElementById('vpm-qty').innerText = _vpmQty;
+};
+
+window.vpmConfirm = function() {
+    if (!_vpmProduct) return;
+    const allSelected = _vpmProduct.atributosVariantes.every(a => _vpmSelections[a.nombre]);
+    if (!allSelected) {
+        alert('Por favor seleccioná todas las opciones antes de agregar.');
+        return;
+    }
+    const key = _vpmProduct.atributosVariantes.map(a => _vpmSelections[a.nombre]).join('|');
+    const varData = _vpmProduct.variantes?.[key];
+    const precio = varData?.precio ?? _vpmProduct.precio;
+    const stock = varData?.stock ?? 0;
+    const label = _vpmProduct.atributosVariantes.map(a => `${a.nombre}: ${_vpmSelections[a.nombre]}`).join(' / ');
+
+    if (stock === 0) {
+        alert('Esta combinación no tiene stock disponible.');
+        return;
+    }
+
+    // Check existing in cart (same product + same variant)
+    const cartKey = `${_vpmProduct.id}__${key}`;
+    const existing = cart.find(item => item._cartKey === cartKey);
+    if (existing) {
+        if (existing.qty + _vpmQty > stock) {
+            alert(`Solo quedan ${stock} unidades de esta variante.`);
+            return;
+        }
+        existing.qty += _vpmQty;
+    } else {
+        cart.push({
+            _cartKey: cartKey,
+            id: _vpmProduct.id,
+            nombre: _vpmProduct.nombre,
+            precio: precio,
+            imagenUrl: _vpmProduct.imagenUrl,
+            qty: _vpmQty,
+            stock: stock,
+            stockIlimitado: false,
+            variantKey: key,
+            variantLabel: label
+        });
+    }
+
+    document.getElementById('variant-picker-modal').style.display = 'none';
     saveAndRefresh();
     openCart();
 };
@@ -192,6 +322,7 @@ function updateCartUI() {
             <img src="${item.imagenUrl || 'https://placehold.co/100x100'}" alt="${item.nombre}" class="cart-item-img">
             <div class="cart-item-info">
                 <div class="cart-item-title">${item.nombre}</div>
+                ${item.variantLabel ? `<div style="font-size:0.72rem; color:var(--naranja-accent); font-weight:600; margin:2px 0;">${item.variantLabel}</div>` : ''}
                 <div class="cart-item-price">$${item.precio.toLocaleString('es-AR')}</div>
                 <div class="cart-item-controls">
                     <button class="qty-btn" onclick="updateQty(${index}, -1)"><i class="fas fa-minus"></i></button>
@@ -212,7 +343,7 @@ window.updateQty = function(index, delta) {
     if (delta > 0 && item.stockIlimitado !== true) {
         const stockDisponible = item.stock || 0;
         if (item.qty >= stockDisponible) {
-            alert(`¡Lo sentimos! Solo quedan ${stockDisponible} unidades de este producto.`);
+            alert(`¡Lo sentimos! Solo quedan ${stockDisponible} unidades disponibles.`);
             return;
         }
     }

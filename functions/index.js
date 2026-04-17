@@ -1202,19 +1202,35 @@ exports.onOrderCreated = onDocumentCreated({
         for (const item of orderData.items) {
             const productRef = db.collection("productos").doc(item.id);
             const productDoc = await productRef.get();
-            
+
             if (productDoc.exists) {
                 const pData = productDoc.data();
-                // Solo descontamos si NO es ilimitado
-                if (pData.stockIlimitado !== true) {
+
+                if (pData.tieneVariantes && item.variantKey) {
+                    // Descontar stock de la variante específica
+                    const varData = pData.variantes?.[item.variantKey] || {};
+                    const currentStock = varData.stock || 0;
+                    const newStock = Math.max(0, currentStock - item.qty);
+                    batch.update(productRef, {
+                        [`variantes.${item.variantKey}.stock`]: newStock,
+                        actualizadoEn: admin.firestore.FieldValue.serverTimestamp()
+                    });
+                    const movimientoRef = productRef.collection("movimientos_stock").doc();
+                    batch.set(movimientoRef, {
+                        cantidad: item.qty,
+                        tipo: 'salida_venta',
+                        motivo: `Pedido #${orderNumber} (${orderId}) - Variante: ${item.variantKey}`,
+                        timestamp: admin.firestore.FieldValue.serverTimestamp()
+                    });
+                    logger.info(`Stock variante ${item.variantKey} actualizado: ${currentStock} -> ${newStock}`);
+                } else if (pData.stockIlimitado !== true) {
+                    // Stock global (sin variantes)
                     const currentStock = pData.stock || 0;
                     const newStock = Math.max(0, currentStock - item.qty);
-                    batch.update(productRef, { 
+                    batch.update(productRef, {
                         stock: newStock,
                         actualizadoEn: admin.firestore.FieldValue.serverTimestamp()
                     });
-                    
-                    // Registrar movimiento de stock en subcolección
                     const movimientoRef = productRef.collection("movimientos_stock").doc();
                     batch.set(movimientoRef, {
                         cantidad: item.qty,
@@ -1222,7 +1238,6 @@ exports.onOrderCreated = onDocumentCreated({
                         motivo: `Pedido #${orderNumber} (${orderId})`,
                         timestamp: admin.firestore.FieldValue.serverTimestamp()
                     });
-
                     logger.info(`Stock actualizado para ${item.nombre}: ${currentStock} -> ${newStock}`);
                 }
             }

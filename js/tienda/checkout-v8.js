@@ -187,7 +187,10 @@ function autofillData(profile) {
 function renderSummary() {
     checkoutItems.innerHTML = cart.map(item => `
         <div class="order-summary-item">
-            <span><span class="order-item-qty">${item.qty}x</span> ${item.nombre}</span>
+            <span>
+                <span class="order-item-qty">${item.qty}x</span> ${item.nombre}
+                ${item.variantLabel ? `<br><span style="font-size:0.72rem; color:var(--naranja-accent); font-weight:600;">${item.variantLabel}</span>` : ''}
+            </span>
             <span>$${(item.precio * item.qty).toLocaleString('es-AR')}</span>
         </div>
     `).join('');

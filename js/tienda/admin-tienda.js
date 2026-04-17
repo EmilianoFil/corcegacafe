@@ -31,7 +31,15 @@ export async function mostrarFormularioProducto() {
     
     document.getElementById('prod-stock').disabled = false;
     document.getElementById('prod-stock-ilimitado').checked = false;
-    
+
+    // Reset Variantes
+    document.getElementById('prod-tiene-variantes').checked = false;
+    document.getElementById('variantes-editor').style.display = 'none';
+    document.getElementById('combinaciones-section').style.display = 'none';
+    document.getElementById('atributos-list').innerHTML = '';
+    document.getElementById('combinaciones-tbody').innerHTML = '';
+    window._variantesAtributos = [];
+
     // Scroll hacia el formulario
     document.getElementById('form-producto-container').scrollIntoView({ behavior: 'smooth' });
 }
@@ -207,7 +215,14 @@ export async function guardarProducto(e) {
         activo: document.getElementById('prod-activo').checked,
         imagenUrl: document.getElementById('prod-imagen-url').value,
         imagenes: imagenesGaleria,
-        actualizadoEn: serverTimestamp()
+        actualizadoEn: serverTimestamp(),
+        tieneVariantes: document.getElementById('prod-tiene-variantes').checked,
+        atributosVariantes: document.getElementById('prod-tiene-variantes').checked
+            ? (window._variantesAtributos || [])
+            : [],
+        variantes: document.getElementById('prod-tiene-variantes').checked
+            ? collectVariantesData()
+            : {},
     };
 
     btn.disabled = true;
@@ -227,6 +242,8 @@ export async function guardarProducto(e) {
             await registrarMovimientoStock(docRef.id, productData.stock, 'entrada', 'Stock inicial al crear producto');
         }
         ocultarFormularioProducto();
+        window._variantesAtributos = [];
+        window._variantesData = {};
         loadProductosTable();
         alert("¡Producto guardado!");
     } catch (err) {
@@ -265,6 +282,28 @@ export async function editarProducto(id) {
 
     imagenesGaleria = p.imagenes || [];
     renderGalleryPreviews();
+
+    // Cargar variantes si tiene
+    const tienVarCheck = document.getElementById('prod-tiene-variantes');
+    const varEditor = document.getElementById('variantes-editor');
+    const combSection = document.getElementById('combinaciones-section');
+    const atribList = document.getElementById('atributos-list');
+    const combTbody = document.getElementById('combinaciones-tbody');
+
+    tienVarCheck.checked = p.tieneVariantes || false;
+    varEditor.style.display = p.tieneVariantes ? 'block' : 'none';
+    window._variantesAtributos = p.atributosVariantes ? JSON.parse(JSON.stringify(p.atributosVariantes)) : [];
+    window._variantesData = p.variantes ? { ...p.variantes } : {};
+
+    if (p.tieneVariantes && p.atributosVariantes?.length) {
+        renderAtributosList();
+        renderCombinacionesTable(p.variantes || {});
+        combSection.style.display = 'block';
+    } else {
+        atribList.innerHTML = '';
+        combTbody.innerHTML = '';
+        combSection.style.display = 'none';
+    }
 
     document.getElementById('form-producto-container').scrollIntoView({ behavior: 'smooth' });
 }
@@ -447,7 +486,10 @@ export async function verDetalleOrden(id) {
                         <p style="font-weight:700; margin-bottom:10px;">Productos:</p>
                         ${orden.items.map(i => `
                             <div style="display:flex; justify-content:space-between; font-size:0.9rem; padding:8px 0; border-bottom:1px solid #f9f9f9;">
-                                <span>${i.qty}x ${i.nombre}</span>
+                                <span>
+                                    ${i.qty}x ${i.nombre}
+                                    ${i.variantLabel ? `<br><span style="font-size:0.75rem; color:var(--primary); font-weight:600;">${i.variantLabel}</span>` : ''}
+                                </span>
                                 <span style="font-weight:700;">$${(i.precio * i.qty).toLocaleString('es-AR')}</span>
                             </div>
                         `).join('')}
@@ -817,4 +859,139 @@ function getOrderStatusColor(status) {
 export function changeMonth(delta) {
     currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta);
     renderCalendar();
+}
+
+// ============================================
+// VARIANTS MANAGEMENT
+// ============================================
+
+export function toggleVariantesSection(checked) {
+    document.getElementById('variantes-editor').style.display = checked ? 'block' : 'none';
+    if (checked && (!window._variantesAtributos || window._variantesAtributos.length === 0)) {
+        window._variantesAtributos = [];
+        window._variantesData = {};
+        addAtributo(); // Start with one attribute
+    }
+}
+
+export function addAtributo() {
+    if (!window._variantesAtributos) window._variantesAtributos = [];
+    window._variantesAtributos.push({ nombre: '', opciones: [] });
+    renderAtributosList();
+}
+
+export function removeAtributo(index) {
+    window._variantesAtributos.splice(index, 1);
+    renderAtributosList();
+    if (window._variantesAtributos.length === 0) {
+        document.getElementById('combinaciones-section').style.display = 'none';
+    }
+}
+
+export function renderAtributosList() {
+    const container = document.getElementById('atributos-list');
+    container.innerHTML = (window._variantesAtributos || []).map((attr, index) => `
+        <div style="background:white; padding:15px; border-radius:12px; border:1px solid #eee; display:flex; gap:10px; align-items:flex-start;">
+            <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+                <input type="text" placeholder="Nombre del atributo (ej: Color, Talle)"
+                    value="${attr.nombre}"
+                    onchange="window.tiendaAdmin.updateAtributoNombre(${index}, this.value)"
+                    style="border:1px solid #eee; border-radius:8px; padding:8px 12px; font-size:0.85rem; font-family:inherit;">
+                <input type="text" placeholder="Opciones separadas por coma (ej: Rojo, Azul, Verde)"
+                    value="${attr.opciones.join(', ')}"
+                    onchange="window.tiendaAdmin.updateAtributoOpciones(${index}, this.value)"
+                    style="border:1px solid #eee; border-radius:8px; padding:8px 12px; font-size:0.85rem; font-family:inherit;">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:5px;">
+                <button type="button" onclick="window.tiendaAdmin.generarCombinaciones()"
+                    style="background:var(--primary); color:white; border:none; border-radius:8px; padding:8px 12px; font-size:0.75rem; font-weight:700; cursor:pointer; white-space:nowrap;">
+                    ✓ Generar
+                </button>
+                <button type="button" onclick="window.tiendaAdmin.removeAtributo(${index})"
+                    style="background:#ffebeb; color:var(--error); border:none; border-radius:8px; padding:8px 12px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                    × Quitar
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+export function updateAtributoNombre(index, value) {
+    if (!window._variantesAtributos) return;
+    window._variantesAtributos[index].nombre = value.trim();
+}
+
+export function updateAtributoOpciones(index, value) {
+    if (!window._variantesAtributos) return;
+    window._variantesAtributos[index].opciones = value.split(',').map(s => s.trim()).filter(s => s);
+}
+
+export function generarCombinaciones() {
+    const atributos = window._variantesAtributos || [];
+    if (atributos.length === 0 || atributos.some(a => !a.nombre || a.opciones.length === 0)) {
+        alert("Completá el nombre y al menos una opción por atributo antes de generar.");
+        return;
+    }
+
+    // Generate all combinations (cartesian product)
+    const existingData = window._variantesData || {};
+    const combos = atributos.reduce((acc, attr) => {
+        if (acc.length === 0) return attr.opciones.map(o => [o]);
+        return acc.flatMap(combo => attr.opciones.map(o => [...combo, o]));
+    }, []);
+
+    window._combosKeys = combos.map(c => c.join('|'));
+    renderCombinacionesTable(existingData);
+    document.getElementById('combinaciones-section').style.display = 'block';
+}
+
+export function renderCombinacionesTable(existingData) {
+    const atributos = window._variantesAtributos || [];
+    if (atributos.length === 0) return;
+
+    const combos = atributos.reduce((acc, attr) => {
+        if (acc.length === 0) return attr.opciones.map(o => [o]);
+        return acc.flatMap(combo => attr.opciones.map(o => [...combo, o]));
+    }, []);
+
+    const tbody = document.getElementById('combinaciones-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = combos.map(combo => {
+        const key = combo.join('|');
+        const label = atributos.map((a, i) => `${a.nombre}: ${combo[i]}`).join(' / ');
+        const existing = existingData?.[key] || {};
+        const stockVal = existing.stock !== undefined ? existing.stock : '';
+        const precioVal = existing.precio !== null && existing.precio !== undefined ? existing.precio : '';
+        return `
+            <tr style="border-bottom:1px solid #f0f0f0;">
+                <td style="padding:10px 12px; font-weight:600; color:var(--secondary);">${label}</td>
+                <td style="padding:10px 12px; text-align:center;">
+                    <input type="number" min="0" value="${stockVal}" placeholder="0"
+                        data-variant-key="${key}" data-field="stock"
+                        style="width:70px; border:1px solid #eee; border-radius:8px; padding:6px; text-align:center; font-size:0.85rem;">
+                </td>
+                <td style="padding:10px 12px; text-align:center;">
+                    <input type="number" min="0" value="${precioVal}" placeholder="Base"
+                        data-variant-key="${key}" data-field="precio"
+                        style="width:100px; border:1px solid #eee; border-radius:8px; padding:6px; text-align:center; font-size:0.85rem;">
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+export function collectVariantesData() {
+    const result = {};
+    document.querySelectorAll('#combinaciones-tbody input[data-variant-key]').forEach(input => {
+        const key = input.dataset.variantKey;
+        const field = input.dataset.field;
+        if (!result[key]) result[key] = { stock: 0, precio: null };
+        if (field === 'stock') {
+            result[key].stock = parseInt(input.value) || 0;
+        } else if (field === 'precio') {
+            result[key].precio = input.value.trim() !== '' ? parseFloat(input.value) : null;
+        }
+    });
+    return result;
 }

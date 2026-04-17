@@ -6,6 +6,7 @@ import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase
 let currentProduct = null;
 let currentQty = 1;
 let cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
+let selectedVariants = {};
 
 // --- ELEMENTS ---
 const cartDrawer = document.getElementById('cart-drawer');
@@ -110,6 +111,9 @@ function renderProductDetail() {
 
     // Button Logic
     document.getElementById('btn-add-to-cart-page').onclick = () => addToCartFromPage();
+
+    // Variantes
+    renderVariantSelectors();
 }
 
 // Interactivity
@@ -173,6 +177,7 @@ function updateCartUI() {
             <img src="${item.imagenUrl || 'https://placehold.co/100x100'}" alt="${item.nombre}" class="cart-item-img">
             <div class="cart-item-info">
                 <div class="cart-item-title">${item.nombre}</div>
+                ${item.variantLabel ? `<div style="font-size:0.72rem; color:var(--naranja-accent); font-weight:600; margin:2px 0;">${item.variantLabel}</div>` : ''}
                 <div class="cart-item-price">$${item.precio.toLocaleString('es-AR')}</div>
                 <div class="cart-item-controls">
                     <button class="qty-btn" onclick="updateQty(${index}, -1)"><i class="fas fa-minus"></i></button>
@@ -212,9 +217,121 @@ function saveAndRefresh() {
     updateCartUI();
 }
 
+function renderVariantSelectors() {
+    const p = currentProduct;
+    const section = document.getElementById('prod-variantes-section');
+    const list = document.getElementById('prod-variantes-list');
+    if (!section || !list) return;
+
+    if (!p.tieneVariantes || !p.atributosVariantes?.length) {
+        section.style.display = 'none';
+        return;
+    }
+
+    selectedVariants = {};
+    section.style.display = 'block';
+
+    list.innerHTML = p.atributosVariantes.map(attr => `
+        <div>
+            <p style="font-weight:700; font-size:0.8rem; margin:0 0 8px; color:var(--panel-oscuro); text-transform:uppercase; letter-spacing:0.5px;">${attr.nombre}</p>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                ${attr.opciones.map(op => `
+                    <button type="button"
+                        data-attr="${attr.nombre}" data-val="${op}"
+                        onclick="selectVariantOption('${attr.nombre}', '${op}', this)"
+                        style="padding:8px 18px; border:2px solid #eee; border-radius:10px; background:white; cursor:pointer; font-size:0.85rem; font-weight:600; transition:all 0.15s; color:var(--panel-oscuro);">
+                        ${op}
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+window.selectVariantOption = function(attrName, value, btn) {
+    selectedVariants[attrName] = value;
+
+    document.querySelectorAll(`[data-attr="${attrName}"]`).forEach(b => {
+        b.style.borderColor = '#eee';
+        b.style.background = 'white';
+        b.style.color = 'var(--panel-oscuro)';
+    });
+    btn.style.borderColor = 'var(--naranja-accent)';
+    btn.style.background = 'rgba(237,112,83,0.08)';
+    btn.style.color = 'var(--naranja-accent)';
+
+    // Update price & stock if all selected
+    const p = currentProduct;
+    const allSelected = p.atributosVariantes.every(a => selectedVariants[a.nombre]);
+    if (allSelected) {
+        const key = p.atributosVariantes.map(a => selectedVariants[a.nombre]).join('|');
+        const varData = p.variantes?.[key];
+        const precio = varData?.precio ?? p.precio;
+        const stock = varData?.stock ?? 0;
+
+        document.getElementById('prod-price').innerText = `$${precio.toLocaleString('es-AR')}`;
+        const btn2 = document.getElementById('btn-add-to-cart-page');
+        if (stock === 0) {
+            btn2.innerText = 'SIN STOCK EN ESTA VARIANTE';
+            btn2.disabled = true;
+            btn2.style.background = '#ccc';
+        } else {
+            btn2.innerHTML = '<i class="fas fa-shopping-cart"></i> AGREGAR AL CARRITO';
+            btn2.disabled = false;
+            btn2.style.background = '';
+        }
+        currentQty = 1;
+        document.getElementById('prod-qty').innerText = '1';
+    }
+};
+
 function addToCartFromPage() {
     if (!currentProduct) return;
+    const p = currentProduct;
 
+    if (p.tieneVariantes && p.atributosVariantes?.length) {
+        const allSelected = p.atributosVariantes.every(a => selectedVariants[a.nombre]);
+        if (!allSelected) {
+            alert('Por favor seleccioná todas las opciones antes de agregar.');
+            return;
+        }
+        const key = p.atributosVariantes.map(a => selectedVariants[a.nombre]).join('|');
+        const varData = p.variantes?.[key];
+        const precio = varData?.precio ?? p.precio;
+        const stock = varData?.stock ?? 0;
+        const label = p.atributosVariantes.map(a => `${a.nombre}: ${selectedVariants[a.nombre]}`).join(' / ');
+
+        if (stock === 0) { alert('Sin stock en esta variante.'); return; }
+
+        const cartKey = `${p.id}__${key}`;
+        const existing = cart.find(item => item._cartKey === cartKey);
+        if (existing) {
+            if (existing.qty + currentQty > stock) {
+                alert(`Solo quedan ${stock} unidades de esta variante.`);
+                return;
+            }
+            existing.qty += currentQty;
+        } else {
+            cart.push({
+                _cartKey: cartKey,
+                id: p.id,
+                nombre: p.nombre,
+                precio: precio,
+                imagenUrl: p.imagenUrl,
+                qty: currentQty,
+                stock: stock,
+                stockIlimitado: false,
+                variantKey: key,
+                variantLabel: label
+            });
+        }
+
+        saveAndRefresh();
+        openCart();
+        return;
+    }
+
+    // No variants - original logic
     if (currentProduct.stock > 0) {
         const inCart = (cart.find(item => item.id === currentProduct.id)?.qty || 0);
         if (inCart + currentQty > currentProduct.stock) {
