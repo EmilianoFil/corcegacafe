@@ -140,5 +140,34 @@
         </div>
     </div>
 
+<!-- Modal: Selector de Variantes -->
+<div id="variant-picker-modal" class="modal-overlay" style="display:none; align-items:flex-end; justify-content:center;">
+    <div style="background:white; border-radius:24px 24px 0 0; padding:30px; width:100%; max-width:480px; max-height:90vh; overflow-y:auto; box-shadow:0 -10px 40px rgba(0,0,0,0.15);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 id="vpm-nombre" style="margin:0; font-size:1.2rem; color:var(--panel-oscuro); font-family:var(--font-display);">Producto</h3>
+            <button onclick="document.getElementById('variant-picker-modal').style.display='none'" style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:#999; line-height:1;">×</button>
+        </div>
+        <div style="display:flex; gap:12px; margin-bottom:20px; align-items:center;">
+            <img id="vpm-img" src="" style="width:60px; height:60px; border-radius:12px; object-fit:cover;">
+            <div>
+                <div id="vpm-precio-display" style="font-size:1.3rem; font-weight:800; color:var(--naranja-accent);"></div>
+                <div id="vpm-stock-display" style="font-size:0.75rem; color:#999; margin-top:2px;"></div>
+            </div>
+        </div>
+        <div id="vpm-atributos" style="display:flex; flex-direction:column; gap:18px; margin-bottom:24px;"></div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <div style="display:flex; align-items:center; background:#f7f8fa; border-radius:10px; padding:2px;">
+                <button onclick="window.vpmAdjustQty(-1)" style="width:34px; height:34px; border:none; background:white; border-radius:8px; cursor:pointer; font-size:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">−</button>
+                <span id="vpm-qty" style="width:34px; text-align:center; font-weight:700;">1</span>
+                <button onclick="window.vpmAdjustQty(1)" style="width:34px; height:34px; border:none; background:white; border-radius:8px; cursor:pointer; font-size:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">+</button>
+            </div>
+            <button id="vpm-add-btn" onclick="window.vpmConfirm()"
+                style="flex:1; height:40px; background:var(--panel-oscuro); color:white; border:none; border-radius:10px; font-weight:700; font-size:0.85rem; cursor:pointer; transition:all 0.2s; letter-spacing:0.5px;">
+                AGREGAR AL CARRITO
+            </button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
