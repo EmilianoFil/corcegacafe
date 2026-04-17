@@ -129,29 +129,30 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
     let anyRequiresAgenda = false;
     const productIds = [...new Set(cart.map(item => item.id).filter(Boolean))];
     if (productIds.length > 0) {
-        try {
-            const snaps = await Promise.all(productIds.map(id => getDoc(doc(db, "productos", id))));
-            for (const snap of snaps) {
-                if (!snap.exists()) continue;
-                const p = snap.data();
-                if (!p.requiereAgenda) continue;
-
-                anyRequiresAgenda = true;
-                let dias = p.diasAnticipacion || 0;
-                // Apply cutoff time: if now is past the cutoff hour, add +1 day
-                if (p.horarioCorte) {
-                    const [hStr, mStr] = p.horarioCorte.split(':');
-                    const corte = new Date();
-                    corte.setHours(parseInt(hStr), parseInt(mStr), 0, 0);
-                    if (new Date() > corte) dias += 1;
-                }
-                // Update max days (most restrictive wins)
-                if (dias > maxDias) maxDias = dias;
-                // Collect the first mensaje from any agenda product that has one
-                if (p.mensajeAgenda && !mensajeAgenda) mensajeAgenda = p.mensajeAgenda;
+        const results = await Promise.allSettled(productIds.map(id => getDoc(doc(db, "productos", id))));
+        for (const result of results) {
+            if (result.status !== 'fulfilled') {
+                console.warn("No se pudo leer producto para agenda:", result.reason);
+                continue;
             }
-        } catch (err) {
-            console.error("Error fetching product agenda config:", err);
+            const snap = result.value;
+            if (!snap.exists()) continue;
+            const p = snap.data();
+            if (!p.requiereAgenda) continue;
+
+            anyRequiresAgenda = true;
+            let dias = p.diasAnticipacion || 0;
+            // Apply cutoff time: if now is past the cutoff hour, add +1 day
+            if (p.horarioCorte) {
+                const [hStr, mStr] = p.horarioCorte.split(':');
+                const corte = new Date();
+                corte.setHours(parseInt(hStr), parseInt(mStr), 0, 0);
+                if (new Date() > corte) dias += 1;
+            }
+            // Update max days (most restrictive wins)
+            if (dias > maxDias) maxDias = dias;
+            // Collect the first mensaje from any agenda product that has one
+            if (p.mensajeAgenda && !mensajeAgenda) mensajeAgenda = p.mensajeAgenda;
         }
     }
 
