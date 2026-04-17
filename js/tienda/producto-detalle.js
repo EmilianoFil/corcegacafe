@@ -137,8 +137,9 @@ function renderProductDetail() {
     if (!p.tieneVariantes) {
         const stockInfo = document.getElementById('prod-stock-info');
         if (stockInfo && !p.stockIlimitado) {
-            const stock = p.stock || 0;
-            showStockInfo(stockInfo, stock, p.avisoStock);
+            const inCart = cart.find(item => item.id === p.id)?.qty || 0;
+            const stock = Math.max(0, (p.stock || 0) - inCart);
+            showStockInfo(stockInfo, stock, p.avisoStock, inCart);
         }
     }
 
@@ -373,9 +374,17 @@ function saveAndRefresh() {
     updateCartUI();
 }
 
-function showStockInfo(el, stock, avisoStock) {
+function showStockInfo(el, stock, avisoStock, inCart = 0) {
     el.style.display = 'block';
-    if (stock === 0) {
+    if (inCart > 0 && stock === 0) {
+        el.innerHTML = `🛒 Ya tenés <strong>${inCart}</strong> reservado${inCart > 1 ? 's' : ''} en tu carrito`;
+        el.style.background = '#f0fff4';
+        el.style.color = '#22c55e';
+    } else if (inCart > 0 && stock > 0) {
+        el.innerHTML = `🛒 Tenés <strong>${inCart}</strong> en el carrito · queda${stock > 1 ? 'n' : ''} <strong>${stock}</strong> más`;
+        el.style.background = '#fff8e1';
+        el.style.color = '#f59e0b';
+    } else if (stock === 0) {
         el.innerText = 'Sin stock disponible';
         el.style.background = '#fff0f0';
         el.style.color = '#e74c3c';
@@ -449,7 +458,11 @@ window.selectVariantOption = function(attrName, value, btn) {
         const key = p.atributosVariantes.map(a => selectedVariants[a.nombre]).join('|');
         const varData = p.variantes?.[key];
         const precio = varData?.precio ?? p.precio;
-        const stock = varData?.stock ?? 0;
+        const rawStock = varData?.stock ?? 0;
+        const ilimitadoVar = varData?.stockIlimitado ?? false;
+        const cartKeyVar = `${p.id}__${key}`;
+        const inCartVar = cart.find(item => item._cartKey === cartKeyVar)?.qty || 0;
+        const stock = ilimitadoVar ? rawStock : Math.max(0, rawStock - inCartVar);
 
         document.getElementById('prod-price').innerText = `$${precio.toLocaleString('es-AR')}`;
 
@@ -463,7 +476,7 @@ window.selectVariantOption = function(attrName, value, btn) {
         }
 
         const btn2 = document.getElementById('btn-add-to-cart-page');
-        if (stock === 0) {
+        if (!ilimitadoVar && stock === 0) {
             btn2.innerText = 'SIN STOCK EN ESTA VARIANTE';
             btn2.disabled = true;
             btn2.style.background = '#ccc';
@@ -477,7 +490,7 @@ window.selectVariantOption = function(attrName, value, btn) {
 
         // Stock info con aviso
         const stockInfo = document.getElementById('prod-stock-info');
-        if (stockInfo) showStockInfo(stockInfo, stock, p.avisoStock);
+        if (stockInfo) showStockInfo(stockInfo, stock, p.avisoStock, ilimitadoVar ? 0 : inCartVar);
     }
 };
 
