@@ -1,5 +1,5 @@
 # Contexto de Sesión — Córcega Café Tienda
-> Generado al final de la sesión para continuar sin romper nada.
+> Actualizado al final de la sesión. Leer ANTES de tocar cualquier cosa.
 
 ## Stack
 - **Frontend**: HTML + CSS + vanilla JS (ES Modules)
@@ -10,24 +10,24 @@
 
 ---
 
-## Estructura de archivos clave
+## Versiones actuales de archivos (MUY IMPORTANTE para cache bust)
 
 ```
 corcegacafe/
-├── tienda.html               # Grilla de productos
-├── producto.html             # Detalle de producto
-├── checkout.html             # Checkout (Flatpickr, agenda)
-├── success.html              # Confirmación de pedido
-├── admin-new.html            # Panel admin (admin-tienda.js?v=14)
-├── css/tienda/tienda.css     # Todos los estilos tienda
+├── tienda.html               # tienda.css?v=2.0 | tienda.js?v=1.9 | footer-component.js?v=1.2
+├── producto.html             # tienda.css?v=2.0 | producto-detalle.js?v=1.5 | footer-component.js?v=1.2
+├── checkout.html             # tienda.css?v=2.0 | checkout-v8.js?v=2.1 | footer-component.js?v=1.2
+├── success.html              # tienda.css?v=2.0 | footer-component.js?v=1.2
+├── admin-new.html            # admin-tienda.js?v=14
+├── css/tienda/tienda.css     # v=2.0 — incluye estilos footer + media queries mobile
 └── js/tienda/
-    ├── tienda.js             # ?v=1.9  — grilla, carrito, picker variantes
-    ├── producto-detalle.js   # ?v=1.5  — página de producto
-    ├── checkout-v8.js        # ?v=2.1  — checkout, agenda, MP
-    ├── admin-tienda.js       # ?v=14   — panel admin
-    ├── header-component.js   # ?v=1.0  — header compartido
-    ├── footer-component.js   # ?v=1.2  — footer compartido (nuevo)
-    ├── cart-reservas.js      # (sin versión) — sistema de reservas Firestore
+    ├── tienda.js             # grilla, carrito, picker variantes, reservas, timer
+    ├── producto-detalle.js   # página de producto, stock contextual
+    ├── checkout-v8.js        # checkout, agenda/flatpickr, MP
+    ├── admin-tienda.js       # panel admin
+    ├── header-component.js   # header compartido (todas las páginas tienda)
+    ├── footer-component.js   # footer compartido (todas las páginas tienda)
+    ├── cart-reservas.js      # sistema de reservas Firestore (sin versión en HTML)
     └── firebase-config.js    # Config Firebase
 ```
 
@@ -62,9 +62,9 @@ corcegacafe/
   info: { direccion: string, googleMapsUrl: string, whatsapp: string },
   redes: {
     instagram: { activo: bool, url: string },
-    facebook: { activo: bool, url: string },
-    tiktok: { activo: bool, url: string },
-    twitter: { activo: bool, url: string }
+    facebook:  { activo: bool, url: string },
+    tiktok:    { activo: bool, url: string },
+    twitter:   { activo: bool, url: string }
   }
 }
 ```
@@ -105,7 +105,7 @@ corcegacafe/
 
 ---
 
-## Lo que se implementó en esta sesión
+## Todo lo implementado (sesión completa)
 
 ### 1. GA4 + Microsoft Clarity
 - Snippets en los 4 HTML de tienda
@@ -121,35 +121,47 @@ corcegacafe/
 - `collectVariantesData()` incluye `stockIlimitado` al guardar
 
 ### 3. Sistema de reservas Firestore (`cart-reservas.js`)
-- `getSessionId()` — UUID por browser en localStorage
-- `writeReserva(productId, variantKey, qty, nombre)` — crea/actualiza reserva con `expiresAt = now + 10min`
+- `getSessionId()` — UUID por browser en `localStorage('corcega_session_id')`
+- `writeReserva(productId, variantKey, qty, nombre)` — upsert con `expiresAt = now + 10min`
 - `deleteReserva()` / `deleteAllSessionReservas()`
 - `fetchReservedByOthers()` — retorna mapa `{productId_variantKey: qty}` de reservas activas de OTRAS sesiones
-- tienda.js: descuenta reservas ajenas del stock visible en la grilla
-- Carrito muestra countdown `⏱ M:SS` por item con stock limitado
-- Al expirar: item eliminado del carrito + toast rojo + deleteReserva
-- checkout-v8.js: `deleteAllSessionReservas()` al confirmar el pedido
+- tienda.js: descuenta reservas ajenas del stock visible en la grilla al cargar productos
+- Carrito muestra countdown `⏱ M:SS` (naranja) por item con stock limitado; rojo al < 2min
+- Al expirar: item eliminado del carrito + toast rojo + `deleteReserva`
+- checkout-v8.js: `deleteAllSessionReservas()` al confirmar el pedido (antes del redirect)
 
 ### 4. Mensajes contextuales de stock
 - En tu sesión con X en carrito y Y disponible:
-  - Si `inCart > 0 && stock > 0` → "🛒 Tenés **X** en el carrito · quedan **Y** más"
-  - Si `inCart > 0 && stock === 0` → "🛒 Ya tenés **X** reservados en tu carrito"
-- Implementado en tienda.js (picker) y producto-detalle.js (`showStockInfo` con param `inCart`)
-- Qty picker (`changeQty`, `vpmAdjustQty`) también capea en `stock - inCart`
+  - `inCart > 0 && stock > 0` → "🛒 Tenés **X** en el carrito · quedan **Y** más" (naranja)
+  - `inCart > 0 && stock === 0` → "🛒 Ya tenés **X** reservados en tu carrito" (verde)
+  - `inCart === 0 && stock bajo` → "⚡ ¡Solo quedan **X**, no te quedes sin el tuyo!" (naranja)
+  - `inCart === 0 && sin stock` → "⚠️ Sin stock" (rojo)
+- Implementado en `tienda.js` (picker modal `vpmSelectOption`) y `producto-detalle.js` (`showStockInfo(el, stock, avisoStock, inCart)`)
+- Qty picker (`changeQty`, `vpmAdjustQty`) capea en `rawStock - reservedByOthers - inCart`
 
-### 5. Fix agenda checkout
-- Cambiado `Promise.all` → `Promise.allSettled` para que un producto faltante no cancele toda la verificación de agenda
+### 5. Fix agenda checkout (`checkout-v8.js`)
+- `Promise.all` → `Promise.allSettled` al fetchear productos para chequeo de agenda
+- Así un producto faltante/fallido no cancela la verificación de los demás
 
-### 6. Footer component
-- **Archivo**: `js/tienda/footer-component.js`
-- Lee `configuracion/tienda` de Firestore
-- Muestra: brand (CóRCEGA / REBELDÍA CAFETERA), dirección + link Google Maps, iconos de redes activas
-- Bottom strip: `© año Córcega Café · Hecho con ♥ por LENUAhub`
+### 6. Footer component (`footer-component.js`)
+- Lee `configuracion/tienda` de Firestore (`info` y `redes`)
+- Muestra: brand, dirección + link Google Maps, iconos sociales activos (Instagram, Facebook, TikTok, X, WhatsApp)
+- Bottom strip: `© año Córcega Café · Hecho con ♥ (naranja #ed7053) por LENUAhub`
 - Link LENUAhub → `https://wa.me/5491136053892`
 - Fallback minimal si falla Firestore
-- Agregado a los 4 HTML de tienda (`?v=1.2`)
-- Admin panel: sección "🌐 Info & Redes Sociales" con campos `conf-direccion`, `conf-maps-url`, `conf-whatsapp`, toggles + URL para instagram/facebook/tiktok/twitter
-- `loadConfigStore` y `guardarConfigStore` en admin-tienda.js ya guardan/cargan estos campos
+- Agregado a los 4 HTML de tienda con `?v=1.2`
+- Admin panel: sección "🌐 Info & Redes Sociales" — `conf-direccion`, `conf-maps-url`, `conf-whatsapp`, toggles + URL para cada red
+- `loadConfigStore` y `guardarConfigStore` en admin-tienda.js guardan/cargan estos campos
+
+### 7. Mobile header fix
+- `@media (max-width: 600px)` en tienda.css:
+  - `#header-user-greeting { display: none !important }` — oculta "¡HOLA, EMILIANO!" en mobile
+  - Header: 70px alto, padding 16px, logo 36px, gap 14px entre acciones
+  - Brand: font-size reducido
+- **NO afecta desktop** (solo ≤ 600px)
+
+### 8. Sincronización CSS
+- Todos los HTML ahora en `tienda.css?v=2.0` (antes cada uno tenía versión distinta → footer roto en success.html)
 
 ---
 
@@ -201,10 +213,10 @@ service cloud.firestore {
 
 ## Cosas pendientes / próximas sesiones
 
-1. **Admin — tabla de variantes**: falta poder ordenar las columnas, y mejorar UX del ∞ checkbox visualmente cuando está activado (el input se ve grisáceo pero podría mostrar "∞" como texto)
-2. **Cleanup de reservas expiradas**: actualmente las reservas viejas quedan en Firestore hasta que el mismo cliente las expire. Considerar una Cloud Function que limpie `reservas` con `expiresAt < now` periódicamente.
-3. **Test con Mercado Pago en producción**: cambiar Access Token de test a producción en la Cloud Function `crearPreferenciaMp` cuando sea momento de salir.
-4. **Footer — dirección en admin**: recordar cargar desde admin la dirección y el link de Maps: `https://maps.app.goo.gl/NRASkkE1AAD4FY3c7`
+1. **Cleanup de reservas expiradas en Firestore**: las reservas viejas quedan en la colección hasta que el mismo cliente las expire client-side. Considerar una Cloud Function con `pubsub` schedule que borre docs con `expiresAt < now`.
+2. **Test MP en producción**: cambiar Access Token de test → producción en la Cloud Function `crearPreferenciaMp` cuando salgan al aire.
+3. **Admin — UX ∞ en variantes**: cuando el checkbox ∞ está activo, el input de stock se ve grisáceo. Mejorar visualmente (mostrar texto "∞" en lugar del input).
+4. **Limpiar footer en el index**: el footer del index (`index.html`) es diferente (marca de LENUAhub hardcodeada). Si quieren unificarlo, usar el mismo `footer-component.js`.
 
 ---
 
@@ -218,10 +230,18 @@ cd /Users/emi/CorcegaProject/corcegacafe && git log --oneline -10
 git add -A && git commit -m "mensaje" && git push origin main
 ```
 
-## Notas para no romper nada
+---
 
-- **Versiones de scripts**: si modificás un JS, bumpeá el `?v=X` en el HTML correspondiente para forzar cache bust
-- **cart-reservas.js** es importado por tienda.js, producto-detalle.js y checkout-v8.js — cualquier cambio ahí afecta los tres
-- **admin-tienda.js** usa `export function` y se importa en admin-new.html como `window.tiendaAdmin` — las funciones nuevas deben exportarse Y agregarse al objeto `window.tiendaAdmin` al final del archivo
-- El carrito se guarda en `localStorage` como `corcega_cart` — estructura: `[{ id, nombre, precio, qty, stock, stockIlimitado, imagenUrl, variantKey?, variantLabel?, _cartKey?, reservadoEn? }]`
-- `corcega_session_id` en localStorage = UUID para el sistema de reservas
+## Notas críticas para no romper nada
+
+- **Versiones de scripts/CSS**: si modificás un JS o CSS, bumpeá el `?v=X` en TODOS los HTML que lo usan. Todos los HTML deben tener la misma versión de `tienda.css` (actualmente `v=2.0`).
+- **cart-reservas.js** es importado por `tienda.js`, `producto-detalle.js` y `checkout-v8.js` — cualquier cambio ahí afecta los tres simultáneamente.
+- **admin-tienda.js** usa `export function` y se importa en `admin-new.html` como `window.tiendaAdmin` — las funciones nuevas deben exportarse Y agregarse al objeto `window.tiendaAdmin` al final del archivo.
+- **Cart localStorage** key: `corcega_cart` — estructura de cada item:
+  ```javascript
+  { id, nombre, precio, qty, stock, stockIlimitado, imagenUrl,
+    variantKey?, variantLabel?, _cartKey?, reservadoEn? }
+  ```
+- **Session ID**: `localStorage('corcega_session_id')` = UUID para el sistema de reservas. No borrarlo manualmente.
+- **Media query mobile**: está en `tienda.css` al final, `@media (max-width: 600px)`. Solo afecta tienda pages, no admin.
+- **Footer corazón**: color hardcodeado `#ed7053` (no usar `var(--naranja-accent)` que no resuelve bien en ese contexto).
