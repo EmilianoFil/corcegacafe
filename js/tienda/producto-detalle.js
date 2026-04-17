@@ -112,6 +112,15 @@ function renderProductDetail() {
     // Button Logic
     document.getElementById('btn-add-to-cart-page').onclick = () => addToCartFromPage();
 
+    // Stock info para productos sin variantes
+    if (!p.tieneVariantes) {
+        const stockInfo = document.getElementById('prod-stock-info');
+        if (stockInfo && !p.stockIlimitado) {
+            const stock = p.stock || 0;
+            showStockInfo(stockInfo, stock, p.avisoStock);
+        }
+    }
+
     // Variantes
     renderVariantSelectors();
 }
@@ -217,6 +226,23 @@ function saveAndRefresh() {
     updateCartUI();
 }
 
+function showStockInfo(el, stock, avisoStock) {
+    el.style.display = 'block';
+    if (stock === 0) {
+        el.innerText = 'Sin stock disponible';
+        el.style.background = '#fff0f0';
+        el.style.color = '#e74c3c';
+    } else if (avisoStock && stock <= avisoStock) {
+        el.innerHTML = `⚡ ¡Solo quedan <strong>${stock}</strong>, no te quedes sin el tuyo!`;
+        el.style.background = '#fff8e1';
+        el.style.color = '#e65100';
+    } else {
+        el.innerText = `${stock} disponibles`;
+        el.style.background = '#f0fdf4';
+        el.style.color = '#16a34a';
+    }
+}
+
 function renderVariantSelectors() {
     const p = currentProduct;
     const section = document.getElementById('prod-variantes-section');
@@ -231,18 +257,27 @@ function renderVariantSelectors() {
     selectedVariants = {};
     section.style.display = 'block';
 
-    list.innerHTML = p.atributosVariantes.map(attr => `
+    list.innerHTML = p.atributosVariantes.map((attr, attrIdx) => `
         <div>
             <p style="font-weight:700; font-size:0.8rem; margin:0 0 8px; color:var(--panel-oscuro); text-transform:uppercase; letter-spacing:0.5px;">${attr.nombre}</p>
             <div style="display:flex; flex-wrap:wrap; gap:8px;">
-                ${attr.opciones.map(op => `
-                    <button type="button"
-                        data-attr="${attr.nombre}" data-val="${op}"
-                        onclick="selectVariantOption('${attr.nombre}', '${op}', this)"
-                        style="padding:8px 18px; border:2px solid #eee; border-radius:10px; background:white; cursor:pointer; font-size:0.85rem; font-weight:600; transition:all 0.15s; color:var(--panel-oscuro);">
-                        ${op}
-                    </button>
-                `).join('')}
+                ${attr.opciones.map(op => {
+                    const hasStock = Object.entries(p.variantes || {}).some(([key, v]) => {
+                        const parts = key.split('|');
+                        return parts[attrIdx] === op && (v.stock || 0) > 0;
+                    });
+                    return hasStock
+                        ? `<button type="button"
+                                data-attr="${attr.nombre}" data-val="${op}"
+                                onclick="selectVariantOption('${attr.nombre}', '${op}', this)"
+                                style="padding:8px 18px; border:2px solid #eee; border-radius:10px; background:white; cursor:pointer; font-size:0.85rem; font-weight:600; transition:all 0.15s; color:var(--panel-oscuro);">
+                                ${op}
+                           </button>`
+                        : `<button type="button" disabled
+                                style="padding:8px 18px; border:2px solid #f0f0f0; border-radius:10px; background:#fafafa; cursor:not-allowed; font-size:0.85rem; font-weight:600; color:#ccc; text-decoration:line-through;">
+                                ${op}
+                           </button>`;
+                }).join('')}
             </div>
         </div>
     `).join('');
@@ -282,6 +317,10 @@ window.selectVariantOption = function(attrName, value, btn) {
         }
         currentQty = 1;
         document.getElementById('prod-qty').innerText = '1';
+
+        // Stock info con aviso
+        const stockInfo = document.getElementById('prod-stock-info');
+        if (stockInfo) showStockInfo(stockInfo, stock, p.avisoStock);
     }
 };
 

@@ -128,6 +128,10 @@ function renderProducts() {
                             <img src="${img}" class="${i === 0 ? 'active' : ''}" alt="${p.nombre}">
                         `).join('')}
                     </div>
+                    ${imagenes.length > 1 ? `
+                        <button class="card-carousel-btn prev" onclick="event.stopPropagation(); window.moveGridCarousel('${p.id}', -1)">&#8249;</button>
+                        <button class="card-carousel-btn next" onclick="event.stopPropagation(); window.moveGridCarousel('${p.id}', 1)">&#8250;</button>
+                    ` : ''}
                 </div>
                 <div class="product-info" onclick="window.location.href='producto.html?id=${p.id}'">
                     <h3 class="product-title">${p.nombre}</h3>
@@ -244,7 +248,17 @@ window.vpmSelectOption = function(attrName, value, btn) {
         const precio = varData?.precio ?? _vpmProduct.precio;
         const stock = varData?.stock ?? 0;
         document.getElementById('vpm-precio-display').innerText = `$${precio.toLocaleString('es-AR')}`;
-        document.getElementById('vpm-stock-display').innerText = stock > 0 ? `${stock} disponibles` : '⚠️ Sin stock';
+        const stockEl = document.getElementById('vpm-stock-display');
+        if (stock === 0) {
+            stockEl.innerText = '⚠️ Sin stock';
+            stockEl.style.color = 'var(--error, #e74c3c)';
+        } else if (_vpmProduct.avisoStock && stock <= _vpmProduct.avisoStock) {
+            stockEl.innerHTML = `⚡ ¡Solo quedan <strong>${stock}</strong>, no te quedes sin el tuyo!`;
+            stockEl.style.color = '#e65100';
+        } else {
+            stockEl.innerText = `${stock} disponibles`;
+            stockEl.style.color = '#999';
+        }
         document.getElementById('vpm-add-btn').disabled = stock === 0;
         document.getElementById('vpm-add-btn').style.background = stock === 0 ? '#ccc' : 'var(--panel-oscuro)';
         _vpmQty = 1;
