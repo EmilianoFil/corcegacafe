@@ -1832,9 +1832,10 @@
             btn.innerHTML = "⏳ Enviando prueba...";
 
             try {
+                const token = await auth.currentUser.getIdToken();
                 const res = await fetch('https://enviarmailcampana-ioo4dzpz2a-uc.a.run.app', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ asunto, cuerpo, imagenUrl, dnisPrueba: [dni], campanaId })
                 });
                 if (res.ok) alert("✅ ¡Mail de prueba enviado correctamente!");
@@ -1904,9 +1905,10 @@
             activarMonitorCampana(campanaId);
 
             try {
+                const token = await auth.currentUser.getIdToken();
                 const res = await fetch('https://enviarmailcampana-ioo4dzpz2a-uc.a.run.app', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ asunto, cuerpo, imagenUrl, esMasivo: true, campanaId })
                 });
 
