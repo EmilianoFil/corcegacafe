@@ -40,6 +40,7 @@ export async function mostrarFormularioProducto() {
     document.getElementById('combinaciones-tbody').innerHTML = '';
     document.getElementById('stock-global-group').style.display = 'block';
     document.getElementById('stock-variantes-group').style.display = 'none';
+    document.getElementById('prod-aviso-stock').value = 0;
     window._variantesAtributos = [];
 
     // Scroll hacia el formulario
@@ -227,6 +228,7 @@ export async function guardarProducto(e) {
         imagenUrl: document.getElementById('prod-imagen-url').value,
         imagenes: imagenesGaleria,
         actualizadoEn: serverTimestamp(),
+        avisoStock: parseInt(document.getElementById('prod-aviso-stock').value) || 0,
         tieneVariantes: document.getElementById('prod-tiene-variantes').checked,
         atributosVariantes: document.getElementById('prod-tiene-variantes').checked
             ? (window._variantesAtributos || [])
@@ -281,6 +283,7 @@ export async function editarProducto(id) {
     document.getElementById('prod-precio').value = p.precio;
     document.getElementById('prod-stock').value = p.stock || 0;
     document.getElementById('prod-stock-ilimitado').checked = p.stockIlimitado || false;
+    document.getElementById('prod-aviso-stock').value = p.avisoStock || 0;
     document.getElementById('prod-stock').disabled = p.stockIlimitado || false;
     document.getElementById('prod-categoria').value = p.categoria || '';
     document.getElementById('prod-activo').checked = p.activo !== false;

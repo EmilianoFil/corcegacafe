@@ -1083,7 +1083,7 @@
                         <label>Descripción Larga (Detalle del Producto)</label>
                         <textarea id="prod-descripcion-larga" rows="5" placeholder="Historia del café, origen, proceso de tostado..."></textarea>
                     </div>
-                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 0;">
+                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 0;">
                         <div class="input-group">
                             <label>Precio ($)</label>
                             <input type="number" id="prod-precio" required min="0">
@@ -1104,6 +1104,11 @@
                                 onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='#fdfcf7'">
                                 📊 Ver stock e historial por variante
                             </button>
+                        </div>
+                        <div class="input-group">
+                            <label>Aviso de stock bajo <span style="font-weight:400; color:#aaa;">(0 = desactivado)</span></label>
+                            <input type="number" id="prod-aviso-stock" value="0" min="0" placeholder="Ej: 3">
+                            <small style="color:#aaa; font-size:0.72rem; margin-top:4px; display:block;">Cuando queden ≤ N unidades el cliente ve "¡Solo quedan X!"</small>
                         </div>
                     </div>
                     <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 0;">
