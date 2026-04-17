@@ -674,17 +674,17 @@ header {
 
 .tienda-footer-bottom {
   background: rgba(0,0,0,0.25);
-  color: rgba(255,255,255,0.45);
-  font-size: 11px;
+  color: rgba(255,255,255,0.75);
+  font-size: 12px;
   text-align: center;
   padding: 14px 20px;
   letter-spacing: 0.5px;
 }
 
 .tienda-footer-bottom a {
-  color: rgba(255,255,255,0.6);
+  color: white;
   text-decoration: none;
-  font-weight: 700;
+  font-weight: 800;
   transition: color 0.2s;
 }
 
