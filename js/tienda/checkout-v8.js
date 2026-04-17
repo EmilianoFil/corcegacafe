@@ -143,10 +143,10 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
                     corte.setHours(parseInt(hStr), parseInt(mStr), 0, 0);
                     if (new Date() > corte) dias += 1;
                 }
-                if (dias > maxDias) {
-                    maxDias = dias;
-                    mensajeAgenda = p.mensajeAgenda || null;
-                }
+                // Update max days (most restrictive wins)
+                if (dias > maxDias) maxDias = dias;
+                // Collect the first mensaje from any agenda product that has one
+                if (p.mensajeAgenda && !mensajeAgenda) mensajeAgenda = p.mensajeAgenda;
             }
         } catch (err) {
             console.error("Error fetching product agenda config:", err);
