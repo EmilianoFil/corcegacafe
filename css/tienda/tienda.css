@@ -211,6 +211,17 @@ header {
     position: relative;
     aspect-ratio: 1/1;
     overflow: hidden;
+    background: linear-gradient(90deg, #f0f0ee 25%, #e8e8e5 50%, #f0f0ee 75%);
+    background-size: 200% 100%;
+    animation: imgSkeleton 1.4s ease-in-out infinite;
+}
+.product-img-container.img-loaded {
+    background: none;
+    animation: none;
+}
+@keyframes imgSkeleton {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
 
 .product-img-container img {
@@ -234,7 +245,8 @@ header {
     opacity: 0;
     transition: opacity 0.35s ease;
 }
-.card-carousel img.active { opacity: 1; }
+.card-carousel img.active { opacity: 0; transition: opacity 0.4s ease; }
+.card-carousel img.active.img-loaded { opacity: 1; }
 
 .card-carousel-btn {
     position: absolute;

@@ -125,7 +125,7 @@ function renderProducts() {
                     ${isAgotado ? '<div class="badge-agotado">AGOTADO</div>' : ''}
                     <div class="card-carousel" id="carousel-${p.id}">
                         ${imagenes.map((img, i) => `
-                            <img src="${img}" class="${i === 0 ? 'active' : ''}" alt="${p.nombre}">
+                            <img src="${img}" class="${i === 0 ? 'active' : ''}" alt="${p.nombre}" onload="this.classList.add('img-loaded'); if(${i===0}) this.closest('.product-img-container')?.classList.add('img-loaded');">
                         `).join('')}
                     </div>
                     ${imagenes.length > 1 ? `
@@ -146,6 +146,14 @@ function renderProducts() {
             </div>
         `;
     }).join('');
+
+    // For cached images that fire onload synchronously (already complete)
+    productsGrid.querySelectorAll('.card-carousel img.active').forEach(img => {
+        if (img.complete && img.naturalHeight !== 0) {
+            img.classList.add('img-loaded');
+            img.closest('.product-img-container')?.classList.add('img-loaded');
+        }
+    });
 }
 
 // --- CART INTERACTIVITY ---
@@ -248,6 +256,20 @@ window.vpmSelectOption = function(attrName, value, btn) {
         const precio = varData?.precio ?? _vpmProduct.precio;
         const stock = varData?.stock ?? 0;
         document.getElementById('vpm-precio-display').innerText = `$${precio.toLocaleString('es-AR')}`;
+
+        // Swap picker image if variant has its own photo
+        if (varData?.imagenUrl) {
+            const pickerImg = document.getElementById('vpm-img');
+            if (pickerImg) {
+                pickerImg.style.opacity = '0';
+                pickerImg.style.transition = 'opacity 0.2s';
+                setTimeout(() => {
+                    pickerImg.src = varData.imagenUrl;
+                    pickerImg.style.opacity = '1';
+                }, 180);
+            }
+        }
+
         const stockEl = document.getElementById('vpm-stock-display');
         if (stock === 0) {
             stockEl.innerText = '⚠️ Sin stock';
@@ -438,10 +460,15 @@ window.moveGridCarousel = function(id, delta) {
     if (!container) return;
     const imgs = container.querySelectorAll('img');
     let activeIdx = Array.from(imgs).findIndex(img => img.classList.contains('active'));
-    
+
     imgs[activeIdx].classList.remove('active');
     activeIdx = (activeIdx + delta + imgs.length) % imgs.length;
-    imgs[activeIdx].classList.add('active');
+    const nextImg = imgs[activeIdx];
+    nextImg.classList.add('active');
+    // If already loaded, ensure img-loaded class is present so the image is visible
+    if (nextImg.complete && nextImg.naturalHeight !== 0) {
+        nextImg.classList.add('img-loaded');
+    }
 };
 
 init();
