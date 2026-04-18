@@ -93,7 +93,11 @@ async function applyStoreConfig() {
         if (transferEnabled) paymentOptionsHTML += `<option value="transferencia">Transferencia Bancaria</option>`;
         if (cashEnabled) paymentOptionsHTML += `<option value="efectivo">Efectivo / En Local</option>`;
 
-        if (paymentMethod) paymentMethod.innerHTML = paymentOptionsHTML;
+        if (paymentMethod) {
+            paymentMethod.innerHTML = paymentOptionsHTML;
+            // Texto inicial del botón según método por defecto
+            updateFinalizarBtnLabel(paymentMethod.value);
+        }
 
         // 3. Info de pagos
         if (config.pagos?.transferencia?.info) {
@@ -340,10 +344,21 @@ function setupEventListeners() {
 
         if (transferInfo) transferInfo.style.display = (val === 'transferencia') ? 'block' : 'none';
         if (cInfo) cInfo.style.display = (val === 'efectivo') ? 'block' : 'none';
+        updateFinalizarBtnLabel(val);
     };
 
     // Final Action
     btnFinalizar.onclick = handleOrderSubmission;
+}
+
+function updateFinalizarBtnLabel(metodoPago) {
+    if (!btnFinalizar || btnFinalizar.disabled) return;
+    if (metodoPago === 'mercadopago') {
+        btnFinalizar.innerText = 'PAGAR CON MERCADO PAGO';
+    } else {
+        // transferencia o efectivo
+        btnFinalizar.innerText = 'GENERAR PEDIDO';
+    }
 }
 
 async function handleOrderSubmission() {
@@ -439,7 +454,7 @@ async function handleOrderSubmission() {
         console.error(err);
         alert("Hubo un error al procesar tu pedido. Por favor intentá de nuevo.");
         btnFinalizar.disabled = false;
-        btnFinalizar.innerText = "CONFIRMAR Y PAGAR";
+        updateFinalizarBtnLabel(paymentMethod?.value);
     }
 }
 
