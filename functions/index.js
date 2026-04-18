@@ -1317,15 +1317,11 @@ exports.onOrderCreated = onDocumentCreated({
 
     const mailOptions = {
         from: `Córcega Café <${emailUser.value()}>`,
-        to: "emilianofilgueira@gmail.com",
+        to: orderData.cliente.email,
+        bcc: "emilianofilgueira@gmail.com",
         subject: `🐎 ¡Pedido Recibido! #${orderNumber}`,
         html: `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
-            <!-- DEBUG BANNER -->
-            <div style="background:#fff4f4; border:1px solid #ffcccc; padding:10px; border-radius:10px; margin-bottom:20px; font-size:11px; color:#c00; font-weight:bold;">
-              🛠️ MODO PRUEBA: Este mail hubiese sido enviado a: ${orderData.cliente.email}
-            </div>
-
             <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:140px; margin-bottom:30px;">
             
             <h2 style="color:#d86634; margin:0 0 10px 0; font-size:24px;">¡Gracias por tu compra!</h2>
@@ -1441,15 +1437,11 @@ exports.onOrderUpdated = onDocumentUpdated(
 
       const mailOptions = {
         from: `Córcega Café <${emailUser.value()}>`,
-        to: "emilianofilgueira@gmail.com",
+        to: afterData.cliente.email,
+        bcc: "emilianofilgueira@gmail.com",
         subject: subject,
         html: `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
-            <!-- DEBUG BANNER -->
-            <div style="background:#fff4f4; border:1px solid #ffcccc; padding:10px; border-radius:10px; margin-bottom:20px; font-size:11px; color:#c00; font-weight:bold;">
-              🛠️ MODO PRUEBA: Este mail hubiese sido enviado a: ${afterData.cliente.email}
-            </div>
-
             <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:140px; margin-bottom:30px;">
             
             <h2 style="color:${color}; margin:0 0 10px 0; font-size:24px;">${statusMsg}</h2>
