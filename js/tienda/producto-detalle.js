@@ -1,29 +1,18 @@
-import { db, auth } from '../firebase-config.js';
-import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { db } from '../firebase-config.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { writeReserva, deleteReserva, CART_TIMEOUT_MS } from './cart-reservas.js';
+import { writeReserva } from './cart-reservas.js';
+import { cart, initCart, openCart, closeCart, saveAndRefresh, updateCartUI } from './cart-component.js';
 
 // --- STATE ---
 let currentProduct = null;
 let currentQty = 1;
-let cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
 let selectedVariants = {};
-let cartTimerInterval = null;
-
-// --- ELEMENTS ---
-const cartDrawer = document.getElementById('cart-drawer');
-const cartOverlay = document.getElementById('cart-overlay');
-const cartItemsList = document.getElementById('cart-items-list');
-const cartTotal = document.getElementById('cart-total');
-const getCartBadges = () => document.querySelectorAll('.cart-count, .cart-count-badge, #cart-badge');
 
 // --- ACTIONS ---
 window.tienda = {
     toggleCart: () => {
-        if (!cartDrawer) return;
-        cartDrawer.classList.toggle('active');
-        cartOverlay.classList.toggle('active');
-        document.body.style.overflow = cartDrawer.classList.contains('active') ? 'hidden' : 'auto';
+        if (document.getElementById('cart-drawer')?.classList.contains('active')) closeCart();
+        else openCart();
     }
 };
 
@@ -37,7 +26,7 @@ async function init() {
         return;
     }
 
-    setupCartEvents();
+    initCart();
     await loadProductData(productId);
     updateCartUI();
 }
@@ -243,181 +232,6 @@ window.changeQty = function(delta) {
     currentQty = Math.min(maxQty, Math.max(1, currentQty + delta));
     document.getElementById('prod-qty').innerText = currentQty;
 };
-
-// --- TOAST ---
-function showToast(msg, type = 'warning') {
-    const toast = document.createElement('div');
-    toast.style.cssText = `position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:${type === 'warning' ? '#f59e0b' : '#ef4444'}; color:white; padding:12px 20px; border-radius:12px; font-size:13px; font-weight:700; z-index:9999; box-shadow:0 4px 20px rgba(0,0,0,0.2); animation: fadeIn 0.3s ease;`;
-    toast.innerText = msg;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
-}
-
-// --- CART TIMER ---
-function startCartTimer() {
-    if (cartTimerInterval) clearInterval(cartTimerInterval);
-
-    cartTimerInterval = setInterval(() => {
-        const countdowns = document.querySelectorAll('.reserva-countdown');
-        if (countdowns.length === 0) return;
-
-        const now = Date.now();
-        let needsRefresh = false;
-
-        countdowns.forEach(el => {
-            const expires = parseInt(el.dataset.expires, 10);
-            const remaining = expires - now;
-
-            if (remaining <= 0) {
-                const cartKey = el.dataset.cartKey;
-                const idx = cart.findIndex(item => {
-                    const key = item._cartKey || `${item.id}__base`;
-                    return key === cartKey;
-                });
-                if (idx !== -1) {
-                    const item = cart[idx];
-                    cart.splice(idx, 1);
-                    try { deleteReserva(item.id, item.variantKey || null); } catch(e) { console.warn('deleteReserva error:', e); }
-                    showToast(`⏰ "${item.nombre}" fue eliminado del carrito por inactividad.`, 'error');
-                    needsRefresh = true;
-                }
-            } else {
-                const totalSecs = Math.ceil(remaining / 1000);
-                const mins = Math.floor(totalSecs / 60);
-                const secs = totalSecs % 60;
-                const timeStr = `⏱ ${mins}:${String(secs).padStart(2, '0')}`;
-                el.innerText = timeStr;
-
-                if (remaining <= 2 * 60 * 1000) {
-                    el.style.color = '#ef4444';
-                    el.style.fontWeight = '800';
-                } else {
-                    el.style.color = '#f59e0b';
-                    el.style.fontWeight = '700';
-                }
-            }
-        });
-
-        if (needsRefresh) {
-            saveAndRefresh();
-        }
-    }, 1000);
-}
-
-// --- CART CORE LOGIC ---
-function setupCartEvents() {
-    document.getElementById('btn-open-cart')?.addEventListener('click', openCart);
-    document.getElementById('cart-btn-header')?.addEventListener('click', openCart);
-    document.getElementById('btn-close-cart')?.addEventListener('click', closeCart);
-    cartOverlay?.addEventListener('click', closeCart);
-    document.getElementById('btn-keep-shopping')?.addEventListener('click', closeCart);
-    document.getElementById('btn-go-to-checkout')?.addEventListener('click', () => {
-        if (cart.length === 0) { window.location.href = 'tienda.html'; return; }
-        window.location.href = 'checkout.html';
-    });
-}
-
-function openCart() {
-    cartDrawer.classList.add('active');
-    cartOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeCart() {
-    cartDrawer.classList.remove('active');
-    cartOverlay.classList.remove('active');
-    document.body.style.overflow = 'auto';
-}
-
-function updateCartUI() {
-    const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
-    const badges = getCartBadges();
-    badges.forEach(b => {
-        b.innerText = totalItems;
-        b.style.display = totalItems > 0 ? 'flex' : 'none';
-        if (totalItems > 0) b.style.setProperty('display', 'flex', 'important');
-    });
-
-    const checkoutBtn     = document.getElementById('btn-go-to-checkout');
-    const keepShoppingBtn = document.getElementById('btn-keep-shopping');
-    if (cart.length === 0) {
-        cartItemsList.innerHTML = `<div class="cart-empty"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío</p></div>`;
-        cartTotal.innerText = "$0.00";
-        if (checkoutBtn)     { checkoutBtn.innerText = 'VER PRODUCTOS'; }
-        if (keepShoppingBtn) { keepShoppingBtn.style.display = 'none'; }
-        return;
-    }
-    if (checkoutBtn)     { checkoutBtn.innerText = 'IR A PAGAR'; }
-    if (keepShoppingBtn) { keepShoppingBtn.style.display = 'block'; }
-
-    cartItemsList.innerHTML = cart.map((item, index) => {
-        const cartKey = item._cartKey || `${item.id}__base`;
-        const countdownHtml = (!item.stockIlimitado && item.reservadoEn) ? `
-            <div class="reserva-countdown"
-                 data-expires="${item.reservadoEn + CART_TIMEOUT_MS}"
-                 data-cart-key="${cartKey}"
-                 style="font-size:11px; font-weight:700; margin-top:3px; color:#f59e0b;">
-            </div>
-        ` : '';
-        return `
-        <div class="cart-item">
-            <img src="${item.imagenUrl || 'https://placehold.co/100x100'}" alt="${item.nombre}" class="cart-item-img">
-            <div class="cart-item-info">
-                <div class="cart-item-title">${item.nombre}</div>
-                ${item.variantLabel ? `<div style="font-size:0.72rem; color:var(--naranja-accent); font-weight:600; margin:2px 0;">${item.variantLabel}</div>` : ''}
-                <div class="cart-item-price">$${item.precio.toLocaleString('es-AR')}</div>
-                ${countdownHtml}
-                <div class="cart-item-controls">
-                    <button class="qty-btn" onclick="updateQty(${index}, -1)"><i class="fas fa-minus"></i></button>
-                    <span>${item.qty}</span>
-                    <button class="qty-btn" onclick="updateQty(${index}, 1)"><i class="fas fa-plus"></i></button>
-                </div>
-            </div>
-            <button class="btn-remove-item" onclick="removeItem(${index})" style="background:none; border:none; color:#ff4d4d; cursor:pointer;"><i class="fas fa-trash"></i></button>
-        </div>
-        `;
-    }).join('');
-
-    const total = cart.reduce((sum, item) => sum + (item.precio * item.qty), 0);
-    cartTotal.innerText = `$${total.toLocaleString('es-AR')}`;
-
-    startCartTimer();
-}
-
-window.updateQty = function (index, delta) {
-    const item = cart[index];
-    if (delta > 0 && item.stockIlimitado !== true && item.stock > 0 && item.qty >= item.stock) {
-        alert(`¡Lo sentimos! Solo quedan ${item.stock} unidades de este producto.`);
-        return;
-    }
-
-    item.qty += delta;
-    if (item.qty < 1) {
-        if (item.stockIlimitado !== true) {
-            try { deleteReserva(item.id, item.variantKey || null); } catch(e) { console.warn('deleteReserva error:', e); }
-        }
-        cart.splice(index, 1);
-    } else {
-        if (item.stockIlimitado !== true) {
-            try { writeReserva(item.id, item.variantKey || null, item.qty, item.nombre); } catch(e) { console.warn('writeReserva error:', e); }
-        }
-    }
-    saveAndRefresh();
-};
-
-window.removeItem = function(index) {
-    const item = cart[index];
-    if (item.stockIlimitado !== true) {
-        try { deleteReserva(item.id, item.variantKey || null); } catch(e) { console.warn('deleteReserva error:', e); }
-    }
-    cart.splice(index, 1);
-    saveAndRefresh();
-};
-
-function saveAndRefresh() {
-    localStorage.setItem('corcega_cart', JSON.stringify(cart));
-    updateCartUI();
-}
 
 function showStockInfo(el, stock, avisoStock, inCart = 0) {
     el.style.display = 'block';
