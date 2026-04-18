@@ -420,7 +420,7 @@ function renderVariantSelectors() {
                 ${attr.opciones.map(op => {
                     const hasStock = Object.entries(p.variantes || {}).some(([key, v]) => {
                         const parts = key.split('|');
-                        return parts[attrIdx] === op && (v.stock || 0) > 0;
+                        return parts[attrIdx] === op && (v.stockIlimitado || (v.stock || 0) > 0);
                     });
                     return hasStock
                         ? `<button type="button"
