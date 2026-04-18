@@ -455,6 +455,23 @@ header {
 
 .btn-checkout:hover { background: var(--naranja-oscuro); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(237, 112, 83, 0.2); }
 
+.btn-keep-shopping {
+    width: 100%;
+    background: transparent;
+    color: var(--panel-oscuro);
+    border: 2px solid var(--panel-oscuro);
+    border-radius: 16px;
+    padding: 14px 20px;
+    font-weight: 800;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 10px;
+}
+.btn-keep-shopping:hover { background: var(--panel-oscuro); color: white; }
+
 /* CATEGORIES */
 .categories-container {
     display: flex;

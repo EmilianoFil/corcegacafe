@@ -184,6 +184,9 @@ function renderProducts() {
             img.closest('.product-img-container')?.classList.add('img-loaded');
         }
     });
+
+    // Swipe táctil en carruseles de la grilla
+    setupSwipeOnCarousels();
 }
 
 // --- TOAST ---
@@ -527,20 +530,17 @@ function updateCartUI() {
 
     if (!cartItemsList) return;
 
-    const checkoutBtn = document.getElementById('btn-go-to-checkout');
+    const checkoutBtn    = document.getElementById('btn-go-to-checkout');
+    const keepShoppingBtn = document.getElementById('btn-keep-shopping');
     if (cart.length === 0) {
         cartItemsList.innerHTML = `<div class="cart-empty"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío</p></div>`;
         cartTotal.innerText = "$0.00";
-        if (checkoutBtn) {
-            checkoutBtn.innerText = 'VER PRODUCTOS';
-            checkoutBtn.onclick = () => { window.location.href = 'tienda.html'; };
-        }
+        if (checkoutBtn)    { checkoutBtn.innerText = 'VER PRODUCTOS'; }
+        if (keepShoppingBtn) { keepShoppingBtn.style.display = 'none'; }
         return;
     }
-    if (checkoutBtn) {
-        checkoutBtn.innerText = 'CONTINUAR COMPRA';
-        checkoutBtn.onclick = () => { window.location.href = 'checkout.html'; };
-    }
+    if (checkoutBtn)    { checkoutBtn.innerText = 'IR A PAGAR'; }
+    if (keepShoppingBtn) { keepShoppingBtn.style.display = 'block'; }
 
     cartItemsList.innerHTML = cart.map((item, index) => {
         const cartKey = item._cartKey || `${item.id}__base`;
@@ -613,16 +613,30 @@ function setupCartEvents() {
     document.getElementById('btn-open-cart')?.addEventListener('click', openCart);
     document.getElementById('btn-close-cart')?.addEventListener('click', closeCart);
     cartOverlay?.addEventListener('click', closeCart);
+
+    // "Seguir comprando" — cierra el carrito
+    document.getElementById('btn-keep-shopping')?.addEventListener('click', closeCart);
+
+    // "IR A PAGAR" — muestra modal si no está logueado
     document.getElementById('btn-go-to-checkout')?.addEventListener('click', () => {
-        // Si ya está logueado, vamos directo al checkout
+        // Carrito vacío → ir a la tienda
+        if (cart.length === 0) {
+            window.location.href = 'tienda.html';
+            return;
+        }
+        // Logueado → checkout directo
         if (userIsLogged) {
             window.location.href = 'checkout.html';
             return;
         }
-
+        // No logueado → mostrar modal de opciones
         const checkoutModal = document.getElementById('checkout-modal');
         if (checkoutModal) {
             checkoutModal.style.display = 'flex';
+            // Fix ghost-click en mobile: deshabilitar puntero 400ms para que el
+            // tap que abrió este botón no dispare el primer botón del modal.
+            checkoutModal.style.pointerEvents = 'none';
+            setTimeout(() => { checkoutModal.style.pointerEvents = ''; }, 400);
         } else {
             window.location.href = 'checkout.html';
         }
@@ -650,6 +664,48 @@ function closeCart() {
     cartDrawer?.classList.remove('active');
     cartOverlay?.classList.remove('active');
     document.body.style.overflow = 'auto';
+}
+
+// Touch swipe en carruseles de la grilla
+function setupSwipeOnCarousels() {
+    productsGrid.querySelectorAll('.card-carousel').forEach(carousel => {
+        // Evitar doble-bind si ya se inicializó
+        if (carousel.dataset.swipeInit) return;
+        carousel.dataset.swipeInit = '1';
+
+        let startX = 0;
+        let startY = 0;
+        let swipeOccurred = false;
+
+        carousel.addEventListener('touchstart', e => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            swipeOccurred = false;
+        }, { passive: true });
+
+        carousel.addEventListener('touchmove', e => {
+            const dx = Math.abs(e.touches[0].clientX - startX);
+            const dy = Math.abs(e.touches[0].clientY - startY);
+            // Solo swipe horizontal pronunciado
+            if (dx > dy && dx > 12) swipeOccurred = true;
+        }, { passive: true });
+
+        carousel.addEventListener('touchend', e => {
+            if (!swipeOccurred) return;
+            const dx = e.changedTouches[0].clientX - startX;
+            if (Math.abs(dx) < 40) return;
+            const id = carousel.id.replace('carousel-', '');
+            window.moveGridCarousel(id, dx < 0 ? 1 : -1);
+            // Bloquear el click sintético para no navegar al producto al swipear
+            carousel.closest('.product-img-container')?.addEventListener('click', blockOnce, true);
+        });
+    });
+}
+
+function blockOnce(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    e.currentTarget.removeEventListener('click', blockOnce, true);
 }
 
 // Carousel Nav in Grid

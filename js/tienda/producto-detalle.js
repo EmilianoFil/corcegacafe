@@ -117,6 +117,9 @@ function renderProductDetail() {
         <img src="${img}" class="thumb ${i === 0 ? 'active' : ''}" onclick="changeMainImage('${img}', this)">
     `).join('');
 
+    // Swipe táctil en imagen principal (cicla por la galería)
+    setupMainImageSwipe(imagenes);
+
     // GA4: view_item
     if (typeof gtag === 'function') {
         gtag('event', 'view_item', {
@@ -145,6 +148,49 @@ function renderProductDetail() {
 
     // Variantes
     renderVariantSelectors();
+}
+
+// Swipe táctil en la imagen principal del detalle de producto
+function setupMainImageSwipe(imagenes) {
+    if (!imagenes || imagenes.length <= 1) return;
+    const wrapper = document.querySelector('.main-image-wrapper');
+    if (!wrapper) return;
+    // Evitar doble-bind
+    if (wrapper.dataset.swipeInit) return;
+    wrapper.dataset.swipeInit = '1';
+
+    let startX = 0;
+    let startY = 0;
+    let swipeOccurred = false;
+
+    wrapper.addEventListener('touchstart', e => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        swipeOccurred = false;
+    }, { passive: true });
+
+    wrapper.addEventListener('touchmove', e => {
+        const dx = Math.abs(e.touches[0].clientX - startX);
+        const dy = Math.abs(e.touches[0].clientY - startY);
+        if (dx > dy && dx > 12) swipeOccurred = true;
+    }, { passive: true });
+
+    wrapper.addEventListener('touchend', e => {
+        if (!swipeOccurred) return;
+        const dx = e.changedTouches[0].clientX - startX;
+        if (Math.abs(dx) < 40) return;
+
+        // Encontrar la imagen activa y moverse al siguiente/anterior
+        const thumbs = document.querySelectorAll('#gallery-thumbs-list .thumb');
+        const activeIdx = Array.from(thumbs).findIndex(t => t.classList.contains('active'));
+        const next = dx < 0
+            ? (activeIdx + 1) % imagenes.length
+            : (activeIdx - 1 + imagenes.length) % imagenes.length;
+
+        if (thumbs[next]) {
+            window.changeMainImage(imagenes[next], thumbs[next]);
+        }
+    });
 }
 
 // Interactivity
