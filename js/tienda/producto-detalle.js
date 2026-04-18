@@ -490,7 +490,13 @@ window.selectVariantOption = function(attrName, value, btn) {
 
         // Stock info con aviso
         const stockInfo = document.getElementById('prod-stock-info');
-        if (stockInfo) showStockInfo(stockInfo, stock, p.avisoStock, ilimitadoVar ? 0 : inCartVar);
+        if (stockInfo) {
+            if (ilimitadoVar) {
+                stockInfo.style.display = 'none';
+            } else {
+                showStockInfo(stockInfo, stock, p.avisoStock, inCartVar);
+            }
+        }
     }
 };
 
