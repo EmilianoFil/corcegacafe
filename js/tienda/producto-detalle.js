@@ -310,7 +310,9 @@ function setupCartEvents() {
     document.getElementById('cart-btn-header')?.addEventListener('click', openCart);
     document.getElementById('btn-close-cart')?.addEventListener('click', closeCart);
     cartOverlay?.addEventListener('click', closeCart);
+    document.getElementById('btn-keep-shopping')?.addEventListener('click', closeCart);
     document.getElementById('btn-go-to-checkout')?.addEventListener('click', () => {
+        if (cart.length === 0) { window.location.href = 'tienda.html'; return; }
         window.location.href = 'checkout.html';
     });
 }
@@ -336,20 +338,17 @@ function updateCartUI() {
         if (totalItems > 0) b.style.setProperty('display', 'flex', 'important');
     });
 
-    const checkoutBtn = document.getElementById('btn-go-to-checkout');
+    const checkoutBtn     = document.getElementById('btn-go-to-checkout');
+    const keepShoppingBtn = document.getElementById('btn-keep-shopping');
     if (cart.length === 0) {
         cartItemsList.innerHTML = `<div class="cart-empty"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío</p></div>`;
         cartTotal.innerText = "$0.00";
-        if (checkoutBtn) {
-            checkoutBtn.innerText = 'VER PRODUCTOS';
-            checkoutBtn.onclick = () => { window.location.href = 'tienda.html'; };
-        }
+        if (checkoutBtn)     { checkoutBtn.innerText = 'VER PRODUCTOS'; }
+        if (keepShoppingBtn) { keepShoppingBtn.style.display = 'none'; }
         return;
     }
-    if (checkoutBtn) {
-        checkoutBtn.innerText = 'CONTINUAR COMPRA';
-        checkoutBtn.onclick = () => { window.location.href = 'checkout.html'; };
-    }
+    if (checkoutBtn)     { checkoutBtn.innerText = 'IR A PAGAR'; }
+    if (keepShoppingBtn) { keepShoppingBtn.style.display = 'block'; }
 
     cartItemsList.innerHTML = cart.map((item, index) => {
         const cartKey = item._cartKey || `${item.id}__base`;
