@@ -63,9 +63,12 @@
 
   <script type="module">
     import { app, db } from './js/firebase-config.js';
+    import { requireAdmin } from './js/admin-guard.js';
     import {
       doc, getDoc, addDoc, collection, updateDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    requireAdmin(() => { /* acceso permitido */ });
 
     const params = new URLSearchParams(window.location.search);
     const dni = params.get("dni");

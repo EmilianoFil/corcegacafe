@@ -653,7 +653,7 @@
 
     <!-- Firebase Config & Scripts -->
     <script type="module">
-        import { auth, onAuthStateChanged } from './js/firebase-auth.js';
+        import { requireAdmin } from './js/admin-guard.js';
         import { db } from './js/firebase-config.js';
         import {
             collection, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc,
@@ -663,13 +663,9 @@
 
         let adminUser = null;
 
-        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                window.location.href = "login.html";
-            } else {
-                adminUser = user;
-                loadBadgesList();
-            }
+        requireAdmin((user) => {
+            adminUser = user;
+            loadBadgesList();
         });
 
         // Tabs Logic

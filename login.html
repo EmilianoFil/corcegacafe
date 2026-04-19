@@ -101,7 +101,17 @@
 
       try {
         await setPersistence(auth, browserLocalPersistence);
-        await signInWithEmailAndPassword(auth, usuario, clave);
+        const cred = await signInWithEmailAndPassword(auth, usuario, clave);
+        const user = cred.user;
+
+        // Verificar que sea admin (igual que el path de Google)
+        const adminSnap = await getDoc(doc(db, "admins", user.uid));
+        if (!adminsAutorizados.includes(user.email) && !adminSnap.exists()) {
+            await auth.signOut();
+            document.getElementById("loader").style.display = "none";
+            document.getElementById("noAdminMsg").style.display = "block";
+            return;
+        }
 
         localStorage.setItem("admin", "true");
         localStorage.setItem("usuario", usuario);
@@ -114,11 +124,9 @@
           timestamp: new Date()
         });
 
-        //AGREGO PARA GA
         if (typeof gtag === 'function') {
           gtag('event', 'admin_login');
         }
-        //AGREGO PARA GA - FIN
 
         loginExitoso(usuario);
       } catch (error) {
