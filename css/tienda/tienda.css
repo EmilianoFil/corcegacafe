@@ -81,25 +81,12 @@
   box-sizing: border-box;
 }
 
-html {
-    overscroll-behavior-y: none; /* evita bounce de iOS al llegar al fondo */
-}
-
 body {
     background-color: var(--bg-color);
     margin: 0;
     font-family: var(--font-base);
     color: var(--panel-oscuro);
     overflow-x: hidden;
-    padding-top: 100px;   /* compensa el header fijo (100px desktop) */
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Footer siempre al fondo */
-#main-footer {
-    margin-top: auto;
 }
 
 /* Background image */
@@ -116,10 +103,8 @@ body::before {
 }
 
 .top-bar {
-    position: fixed;  /* fixed > sticky: confiable en todos los dispositivos */
+    position: sticky;
     top: 0;
-    left: 0;
-    right: 0;
     width: 100%;
     z-index: 2000;
     background: white;
@@ -726,10 +711,6 @@ header {
 
 /* ===== MOBILE HEADER ===== */
 @media (max-width: 600px) {
-    body {
-        padding-top: 70px !important; /* header mobile = 70px */
-    }
-
     header {
         padding: 0 16px !important;
         height: 70px !important;
