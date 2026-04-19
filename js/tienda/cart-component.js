@@ -94,10 +94,12 @@ function _setupEvents() {
     });
 
     document.getElementById('modal-btn-login')?.addEventListener('click', () => {
-        window.location.href = 'login.html?redirect=checkout.html';
+        sessionStorage.setItem('redirectAfterLogin', 'checkout.html');
+        window.location.href = 'tienda-cuenta.html';
     });
     document.getElementById('modal-btn-register')?.addEventListener('click', () => {
-        window.location.href = 'registro.html?redirect=checkout.html';
+        sessionStorage.setItem('redirectAfterLogin', 'checkout.html');
+        window.location.href = 'tienda-cuenta.html#register';
     });
     document.getElementById('modal-btn-guest')?.addEventListener('click', () => {
         window.location.href = 'checkout.html';
