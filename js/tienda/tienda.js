@@ -30,6 +30,12 @@ window.tienda = {
 // --- INITIALIZATION ---
 async function init() {
     initCart();
+
+    // Leer filtro de categoría desde URL (ej: tienda.html?cat=cafeteria)
+    const urlParams = new URLSearchParams(window.location.search);
+    const catFromUrl = urlParams.get('cat');
+    if (catFromUrl) activeCategory = catFromUrl;
+
     await Promise.all([
         fetchCategories(),
         fetchProducts(),
@@ -37,16 +43,14 @@ async function init() {
     ]);
     renderCategories();
     renderProducts();
-    _syncMobileMenuCategories();
-}
 
-// Populate the mobile hamburger menu with real categories from Firestore
-function _syncMobileMenuCategories() {
-    if (typeof window.populateMobileMenuCategories !== 'function') return;
-    const allCats = [{ id: 'todos', nombre: 'Todos los productos' }, ...categories];
-    window.populateMobileMenuCategories(allCats, (catId) => {
-        window.tienda.setCategory(catId);
-    });
+    // Si hay categoría en la URL, marcar chip activo en el menú mobile
+    if (catFromUrl) {
+        const list = document.getElementById('mobile-categories-list');
+        list?.querySelectorAll('.mobile-menu-subitem').forEach(btn => {
+            btn.classList.toggle('active-cat', btn.dataset.cat === catFromUrl);
+        });
+    }
 }
 
 // --- DATA FETCHING ---
