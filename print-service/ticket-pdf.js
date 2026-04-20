@@ -1,22 +1,15 @@
 'use strict';
 
 /**
- * ticket-pdf.js — Genera un PDF del ticket y lo abre en el visor del sistema.
- * Usa las mismas funciones de formato que ticket.js pero renderiza en PDF.
+ * ticket-pdf.js — Genera un HTML del ticket y lo abre en el browser.
+ * Sin dependencias de pdfkit ni archivos .afm — funciona dentro del exe.
  */
 
-const PDFDocument = require('pdfkit');
-const QRCode      = require('qrcode');
-const fs          = require('fs');
-const path        = require('path');
-const os          = require('os');
-const { exec }    = require('child_process');
-
-// 80mm de ancho en puntos PDF (1mm = 2.8346pt)
-const W     = 226;   // ancho total
-const ML    = 14;    // margen izquierdo
-const MR    = 14;    // margen derecho
-const TW    = W - ML - MR;  // ancho de texto
+const QRCode   = require('qrcode');
+const fs       = require('fs');
+const path     = require('path');
+const os       = require('os');
+const { exec } = require('child_process');
 
 function formatFechaHora(ts) {
     if (!ts) return '—';
@@ -28,144 +21,144 @@ function formatFechaHora(ts) {
     });
 }
 
-function labelPago(m) {
-    return { mercadopago: 'Mercado Pago', transferencia: 'Transferencia', efectivo: 'Efectivo' }[m] || m || '';
-}
-
 async function generarYAbrirPDF(pedido, id) {
     const p   = pedido;
     const uid = id.slice(-8).toUpperCase();
     const qrUrl = `https://corcegacafe.com.ar/seguimiento.html?id=${id}`;
 
-    // ── Generar imagen QR ────────────────────────────────────────────────────
-    const qrBuffer = await QRCode.toBuffer(qrUrl, { width: 120, margin: 1 });
+    // QR como data URL (no necesita archivos externos)
+    const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 180, margin: 1 });
 
-    // ── Crear documento PDF ──────────────────────────────────────────────────
-    // Altura estimada generosa; pdfkit no corta páginas en un receipt
-    const doc = new PDFDocument({
-        size:     [W, 900],
-        margins:  { top: 0, bottom: 0, left: 0, right: 0 },
-        autoFirstPage: true,
-        compress: true,
-    });
-
-    const chunks = [];
-    doc.on('data', c => chunks.push(c));
-
-    let y = 12;
-
-    const FONT_NORMAL = 'Courier';
-    const FONT_BOLD   = 'Courier-Bold';
-    const SZ_NORMAL   = 8;
-    const SZ_BIG      = 11;
-    const LINE_H      = 12;
-
-    function texto(txt, opts = {}) {
-        const { bold, center, size, color } = opts;
-        doc.font(bold ? FONT_BOLD : FONT_NORMAL)
-           .fontSize(size || SZ_NORMAL)
-           .fillColor(color || '#000000');
-
-        if (center) {
-            doc.text(txt, ML, y, { width: TW, align: 'center' });
-        } else {
-            doc.text(txt, ML, y, { width: TW });
-        }
-        y += (size || SZ_NORMAL) + (LINE_H - SZ_NORMAL) + (opts.extraGap || 0);
-    }
-
-    function linea() {
-        doc.moveTo(ML, y).lineTo(W - MR, y).stroke('#cccccc');
-        y += 7;
-    }
-
-    function espacio(n = 1) { y += LINE_H * n; }
-
-    function fila(izq, der, bold) {
-        doc.font(bold ? FONT_BOLD : FONT_NORMAL).fontSize(SZ_NORMAL).fillColor('#000');
-        const derW = doc.widthOfString(der) + 2;
-        doc.text(izq, ML, y, { width: TW - derW, ellipsis: true });
-        doc.text(der, W - MR - derW, y, { width: derW, align: 'right' });
-        y += LINE_H;
-    }
-
-    // ── HEADER ───────────────────────────────────────────────────────────────
-    espacio(0.5);
-    texto('Córcega Café | TIENDA ONLINE', { bold: true, center: true, size: SZ_BIG });
-    espacio(0.5);
-
-    // ── FECHA ────────────────────────────────────────────────────────────────
-    texto(formatFechaHora(p.timestamp), { center: true });
-    espacio();
-
-    // ── CLIENTE ──────────────────────────────────────────────────────────────
-    texto(`Cliente: ${p.cliente?.nombre || '—'}`);
-    texto(`Mail:    ${p.cliente?.email || '—'}`);
-    if (p.cliente?.dni) texto(`DNI:     ${p.cliente.dni}`);
-    texto(`Fecha de entrega: ${p.horario || 'A confirmar'}`);
-    espacio();
-
-    // ── ITEMS ─────────────────────────────────────────────────────────────────
-    texto('Pedido', { bold: true });
-    linea();
-
-    for (const item of (p.items || [])) {
-        fila(`${item.qty}x ${item.nombre}`, `$${((item.precio||0)*(item.qty||1)).toLocaleString('es-AR')}`);
-        if (item.variantLabel) {
-            texto(`   ${item.variantLabel}`, { color: '#888' });
-            y -= 4;
-        }
-    }
-
-    espacio(0.5);
-    fila('Total:', `$${(p.total||0).toLocaleString('es-AR')}`, true);
-    espacio();
-
-    // ── COMPROBANTE MP ────────────────────────────────────────────────────────
-    linea();
-    espacio(0.5);
+    // Comprobante de pago
     const mpId = p.mp_payment_id || p.pagoId;
+    let pagoHtml = '';
     if (mpId) {
-        texto(`Nro comprobante MP: ${mpId}`, { bold: true });
+        pagoHtml = `<div class="bold">Nro comprobante MP: ${mpId}</div>`;
     } else if (p.metodoPago === 'transferencia') {
-        texto('Pago: Transferencia bancaria');
+        pagoHtml = `<div>Pago: Transferencia bancaria</div>`;
     } else if (p.metodoPago === 'efectivo') {
-        texto('Pago: Efectivo en local');
+        pagoHtml = `<div>Pago: Efectivo en local</div>`;
     } else {
-        texto('Comprobante MP: pendiente', { color: '#888' });
+        pagoHtml = `<div class="muted">Comprobante MP: pendiente</div>`;
     }
-    espacio();
 
-    // ── QR ───────────────────────────────────────────────────────────────────
-    linea();
-    espacio(0.5);
-    texto('Seguimiento de tu pedido:', { center: true });
-    espacio(0.3);
+    // Items
+    const itemsHtml = (p.items || []).map(item => {
+        const subtotal = ((item.precio || 0) * (item.qty || 1)).toLocaleString('es-AR');
+        const variante = item.variantLabel ? `<div class="variante">${item.variantLabel}</div>` : '';
+        return `
+        <div class="fila">
+            <span>${item.qty || 1}x ${item.nombre}</span>
+            <span>$${subtotal}</span>
+        </div>
+        ${variante}`;
+    }).join('');
 
-    const qrSize = 90;
-    doc.image(qrBuffer, (W - qrSize) / 2, y, { width: qrSize, height: qrSize });
-    y += qrSize + 8;
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Ticket #${uid}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    background: #f5f5f5;
+    display: flex;
+    justify-content: center;
+    padding: 30px 10px;
+  }
+  .ticket {
+    background: white;
+    width: 300px;
+    padding: 18px 16px;
+    border-radius: 6px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  }
+  .header {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+  .center { text-align: center; }
+  .muted { color: #888; }
+  .bold { font-weight: bold; }
+  .linea {
+    border: none;
+    border-top: 1px dashed #ccc;
+    margin: 10px 0;
+  }
+  .fila {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3px;
+  }
+  .fila.total {
+    font-weight: bold;
+    font-size: 14px;
+    margin-top: 6px;
+  }
+  .variante {
+    color: #888;
+    font-size: 11px;
+    margin-left: 14px;
+    margin-bottom: 3px;
+  }
+  .qr-wrap {
+    text-align: center;
+    margin: 10px 0 6px;
+  }
+  .qr-wrap img { width: 130px; height: 130px; }
+  .uid {
+    text-align: center;
+    font-weight: bold;
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+  .espacio { margin-bottom: 8px; }
+  @media print {
+    body { background: white; padding: 0; }
+    .ticket { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="ticket">
+  <div class="header">Córcega Café | TIENDA ONLINE</div>
+  <div class="center muted espacio">${formatFechaHora(p.timestamp)}</div>
 
-    texto(`#${uid}`, { center: true, bold: true });
-    espacio();
+  <div>Cliente: ${p.cliente?.nombre || '—'}</div>
+  <div>Mail:    ${p.cliente?.email || '—'}</div>
+  ${p.cliente?.dni ? `<div>DNI:     ${p.cliente.dni}</div>` : ''}
+  <div class="espacio">Entrega: ${p.horario || 'A confirmar'}</div>
 
-    // ── Cortar PDF a la altura real ──────────────────────────────────────────
-    const finalH = y + 12;
-    doc.page.height = finalH;  // ajustar altura a contenido real
+  <div class="bold">Pedido</div>
+  <hr class="linea">
 
-    doc.end();
+  ${itemsHtml}
 
-    // ── Guardar y abrir ──────────────────────────────────────────────────────
-    const tmpPath = path.join(os.tmpdir(), `corcega_ticket_${uid}.pdf`);
-    await new Promise((resolve, reject) => {
-        const ws = fs.createWriteStream(tmpPath);
-        ws.write(Buffer.concat(chunks));
-        ws.end();
-        ws.on('finish', resolve);
-        ws.on('error', reject);
-    });
+  <div class="fila total">
+    <span>Total:</span>
+    <span>$${(p.total || 0).toLocaleString('es-AR')}</span>
+  </div>
 
-    // Abrir en el visor de PDF del sistema (Windows: start, Mac: open)
+  <hr class="linea">
+  ${pagoHtml}
+  <hr class="linea">
+
+  <div class="center muted espacio">Seguimiento de tu pedido:</div>
+  <div class="qr-wrap"><img src="${qrDataUrl}" alt="QR"></div>
+  <div class="uid">#${uid}</div>
+</div>
+</body>
+</html>`;
+
+    // Guardar en carpeta temporal y abrir en el browser
+    const tmpPath = path.join(os.tmpdir(), `corcega_ticket_${uid}.html`);
+    fs.writeFileSync(tmpPath, html, 'utf8');
+
     const cmd = process.platform === 'win32'
         ? `start "" "${tmpPath}"`
         : `open "${tmpPath}"`;
