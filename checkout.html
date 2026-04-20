@@ -33,21 +33,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <style>
-        /* Flex layout solo en esta página para que el footer quede al pie */
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            min-height: 100dvh; /* soporte moderno */
-        }
-        .top-bar { flex-shrink: 0; }
-        footer   { flex-shrink: 0; margin-top: auto; }
-
-        /* Suprimir el margin-top interno del footer para que no flote */
-        footer .tienda-footer-main { margin-top: 0 !important; }
-
         .checkout-container {
-            flex: 1 1 auto; /* crece Y puede achicarse */
             max-width: 600px;
             margin: 20px auto 40px;
             padding: 20px;
