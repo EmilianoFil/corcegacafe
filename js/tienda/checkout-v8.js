@@ -406,6 +406,7 @@ async function handleOrderSubmission() {
             metodoPago,
             notas,
             estado: 'pendiente_pago',
+            impreso: false,
             timestamp: serverTimestamp()
         };
 

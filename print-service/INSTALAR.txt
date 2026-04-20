@@ -1,0 +1,77 @@
+═══════════════════════════════════════════════════════════
+  SERVICIO DE IMPRESION — CORCEGA CAFE
+  Instala esto en la PC del local (Windows)
+═══════════════════════════════════════════════════════════
+
+PASO 1 — Instalar Node.js (una sola vez)
+─────────────────────────────────────────
+  1. Ir a: https://nodejs.org
+  2. Descargar la version LTS (boton verde grande)
+  3. Instalar con todas las opciones por defecto
+  4. Reiniciar la PC
+
+PASO 2 — Bajar el serviceAccountKey.json (una sola vez)
+────────────────────────────────────────────────────────
+  1. Ir a: https://console.firebase.google.com
+  2. Proyecto: corcega-loyalty-club
+  3. Configuracion del proyecto (engranaje) → Cuentas de servicio
+  4. Click en "Generar nueva clave privada"
+  5. Guardar el archivo descargado COMO:
+         print-service\serviceAccountKey.json
+     (en esta misma carpeta donde esta este archivo)
+
+PASO 3 — Verificar nombre de la impresora
+──────────────────────────────────────────
+  1. Panel de Control → Dispositivos e Impresoras
+  2. Ver el nombre exacto de la RPT006 (ej: "RPT006" o "Xprinter XP-T58K")
+  3. Si el nombre es diferente, abrir config.json y cambiarlo:
+         "nombreImpresora": "EL_NOMBRE_EXACTO"
+
+PASO 4 — Instalar dependencias (una sola vez)
+─────────────────────────────────────────────
+  1. Abrir cmd en esta carpeta
+     (shift + clic derecho en la carpeta → "Abrir ventana de comandos aqui")
+  2. Ejecutar:
+         npm install
+
+PASO 5 — Probar que funciona
+──────────────────────────────
+  Doble clic en:  iniciar.bat
+
+  Deberia aparecer una ventana con:
+     ================================================
+       Servicio de Impresion — Corcega Cafe
+       Impresora: RPT006
+     ================================================
+     Escuchando Firestore...
+
+  Ahora cambia el estado de un pedido a "Pagado" en el
+  admin y deberia imprimirse automaticamente.
+
+PASO 6 — Instalarlo para que arranque solo con la PC
+──────────────────────────────────────────────────────
+  Doble clic en:  instalar-inicio-windows.bat
+
+  Listo. Cada vez que se encienda la PC el servicio
+  arrancara automaticamente en segundo plano.
+
+─────────────────────────────────────────────────────────
+  LOGS
+─────────────────────────────────────────────────────────
+  Todo queda registrado en:  imprimir.log
+  Revisar si hay algun error de impresion.
+
+  Ejemplos de lineas de log:
+    [20/04/2026 13:31:00] NUEVO Pedido #AB12CD34 — Juan
+    [20/04/2026 13:31:01] OK   Pedido #AB12CD34 — Juan — $1200
+    [20/04/2026 13:35:00] WARN [1/5] Impresora no disponible
+    [20/04/2026 13:35:15] WARN [2/5] Reintentando en 15s...
+
+─────────────────────────────────────────────────────────
+  CASO: la impresora estaba apagada
+─────────────────────────────────────────────────────────
+  Si habia pedidos pagados mientras la impresora estaba
+  apagada, al encender la PC (o reiniciar el servicio)
+  se imprimiran automaticamente todos los pendientes.
+
+═══════════════════════════════════════════════════════════

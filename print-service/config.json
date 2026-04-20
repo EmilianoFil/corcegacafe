@@ -1,0 +1,7 @@
+{
+  "nombreImpresora": "RPT006",
+  "anchoCaracteres": 48,
+  "reintentos": 5,
+  "delayReintentoMs": 15000,
+  "projectId": "corcega-loyalty-club"
+}
