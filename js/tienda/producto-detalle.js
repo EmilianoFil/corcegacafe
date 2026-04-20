@@ -272,6 +272,15 @@ function renderVariantSelectors() {
     selectedVariants = {};
     section.style.display = 'block';
 
+    // Deshabilitar el botón hasta que el cliente elija TODAS las opciones
+    const addBtn = document.getElementById('btn-add-to-cart-page');
+    if (addBtn) {
+        addBtn.disabled = true;
+        addBtn.style.background = '#bbb';
+        addBtn.style.cursor = 'not-allowed';
+        addBtn.innerHTML = '<i class="fas fa-hand-pointer"></i> Elegí las opciones';
+    }
+
     list.innerHTML = p.atributosVariantes.map((attr, attrIdx) => `
         <div>
             <p style="font-weight:700; font-size:0.8rem; margin:0 0 8px; color:var(--panel-oscuro); text-transform:uppercase; letter-spacing:0.5px;">${attr.nombre}</p>

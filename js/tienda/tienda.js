@@ -258,6 +258,14 @@ function openVariantPicker(p) {
     document.getElementById('vpm-qty').innerText = '1';
     document.getElementById('vpm-stock-display').innerText = '';
 
+    // Deshabilitar "Agregar" hasta que estén seleccionadas todas las variantes
+    const vpmBtn = document.getElementById('vpm-add-btn');
+    if (vpmBtn) {
+        vpmBtn.disabled = true;
+        vpmBtn.style.background = '#bbb';
+        vpmBtn.innerText = 'Elegí las opciones';
+    }
+
     const attrContainer = document.getElementById('vpm-atributos');
     attrContainer.innerHTML = p.atributosVariantes.map((attr, attrIdx) => `
         <div>
