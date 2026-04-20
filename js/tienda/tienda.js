@@ -17,6 +17,13 @@ window.tienda = {
     toggleCart: () => {
         if (document.getElementById('cart-drawer')?.classList.contains('active')) closeCart();
         else openCart();
+    },
+    setCategory: (catId) => {
+        activeCategory = catId;
+        document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+        document.querySelector(`.category-chip[data-cat="${catId}"]`)?.classList.add('active');
+        renderProducts();
+        document.getElementById('products-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 };
 
@@ -30,6 +37,16 @@ async function init() {
     ]);
     renderCategories();
     renderProducts();
+    _syncMobileMenuCategories();
+}
+
+// Populate the mobile hamburger menu with real categories from Firestore
+function _syncMobileMenuCategories() {
+    if (typeof window.populateMobileMenuCategories !== 'function') return;
+    const allCats = [{ id: 'todos', nombre: 'Todos los productos' }, ...categories];
+    window.populateMobileMenuCategories(allCats, (catId) => {
+        window.tienda.setCategory(catId);
+    });
 }
 
 // --- DATA FETCHING ---

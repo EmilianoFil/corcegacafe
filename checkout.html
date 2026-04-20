@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <link rel="stylesheet" href="css/tienda/tienda.css?v=2.2">
+    <link rel="stylesheet" href="css/tienda/tienda.css?v=2.3">
 
     <!-- Google Analytics GA4 -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
@@ -33,9 +33,19 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <style>
+        /* Flex layout solo en esta página para que el footer quede al pie */
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100dvh;
+        }
+        .top-bar { flex-shrink: 0; }
+        footer   { flex-shrink: 0; }
+
         .checkout-container {
+            flex: 1 0 auto;
             max-width: 600px;
-            margin: 20px auto 40px; /* Reducido drásticamente porque el header ya ocupa espacio */
+            margin: 20px auto 40px;
             padding: 20px;
             animation: fadeIn 0.5s ease;
         }
@@ -353,7 +363,7 @@
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="js/tienda/header-component.js?v=1.1"></script>
+    <script type="module" src="js/tienda/header-component.js?v=1.2"></script>
     <script type="module" src="js/tienda/checkout-v8.js?v=2.2"></script>
     <footer id="main-footer"></footer>
     <script type="module" src="js/tienda/footer-component.js?v=1.2"></script>

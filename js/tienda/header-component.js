@@ -1,7 +1,7 @@
 /**
- * Componente Header para Tienda Córcega — v1.1
- * Agrega menú hamburguesa en mobile (≤600px).
- * Desktop: sin cambios respecto a v1.0.
+ * Componente Header para Tienda Córcega — v1.2
+ * Mobile: hamburguesa a la IZQUIERDA, logo+brand al CENTRO, carrito a la DERECHA.
+ * Menú desliza desde la IZQUIERDA. "Productos" expandible con filtros de categoría.
  */
 import { auth, db } from '../firebase-config.js';
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -15,21 +15,34 @@ export function initHeader() {
     const titleLines = customTitle.includes('<br>') ? customTitle.split('<br>') : [customTitle, ''];
 
     // ── Estructura del header ──────────────────────────────────────────
+    // Desktop: logo izquierda | brand centro | user+cart derecha
+    // Mobile:  hamburguesa izquierda | logo+brand centro | cart derecha
     headerElement.innerHTML = `
         <div class="header-left">
-            <a href="tienda.html">
+            <!-- Desktop: logo -->
+            <a href="tienda.html" id="header-logo-link">
                 <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="mini-logo logo-tienda">
             </a>
+            <!-- Mobile: hamburguesa (CSS lo muestra/oculta) -->
+            <button class="header-hamburger" id="header-hamburger" aria-label="Menú" aria-expanded="false">
+                <span></span><span></span><span></span>
+            </button>
         </div>
         <div class="header-center">
-            <div class="brand">
-                <span class="brand-top">${titleLines[0]}</span>
-                <span class="brand-bottom">${titleLines[1]}</span>
+            <div class="header-center-inner">
+                <!-- Mobile: logo aparece junto al brand (CSS lo muestra) -->
+                <a href="tienda.html" class="center-logo-wrap" id="header-center-logo" aria-label="Inicio">
+                    <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="mini-logo">
+                </a>
+                <div class="brand">
+                    <span class="brand-top">${titleLines[0]}</span>
+                    <span class="brand-bottom">${titleLines[1]}</span>
+                </div>
             </div>
         </div>
         <div class="header-right">
             <div class="header-actions">
-                <!-- Ícono usuario — visible en desktop, oculto en mobile -->
+                <!-- Ícono usuario — visible en desktop, oculto en mobile (está en el menú) -->
                 <a href="tienda-cuenta.html" title="Mi Cuenta" id="user-link" style="display:flex; align-items:center; text-decoration:none; color: var(--panel-oscuro);">
                     <span id="header-user-greeting" style="font-family: var(--font-sync); font-size: 9px; margin-right: 10px; color: var(--panel-oscuro); display: none;"></span>
                     <i class="fas fa-user-circle" style="font-size: 24px;"></i>
@@ -39,12 +52,6 @@ export function initHeader() {
                     <i class="fas fa-shopping-bag"></i>
                     <span class="cart-count" id="cart-count">0</span>
                 </div>
-                <!-- Hamburguesa — solo visible en mobile via CSS -->
-                <button class="header-hamburger" id="header-hamburger" aria-label="Menú" aria-expanded="false">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
             </div>
         </div>
     `;
@@ -67,13 +74,28 @@ export function initHeader() {
 
                 <!-- Navegación -->
                 <nav class="mobile-menu-nav">
-                    <a href="tienda.html" class="mobile-menu-item">
-                        <i class="fas fa-store"></i> Tienda
-                    </a>
+
+                    <!-- Productos expandible con categorías -->
+                    <button class="mobile-menu-item mobile-menu-expand-btn" id="mobile-products-toggle" type="button">
+                        <i class="fas fa-th-large"></i>
+                        <span>Productos</span>
+                        <i class="fas fa-chevron-down mobile-chevron" id="mobile-products-chevron"></i>
+                    </button>
+                    <div class="mobile-menu-submenu" id="mobile-categories-list">
+                        <!-- Populated by tienda.js or fallback below -->
+                        <a class="mobile-menu-subitem" href="tienda.html">
+                            Ver todos los productos
+                        </a>
+                    </div>
+
+                    <div class="mobile-menu-divider"></div>
+
                     <a href="tienda-cuenta.html" class="mobile-menu-item" id="mobile-mi-cuenta">
                         <i class="fas fa-user-circle"></i> Mi Cuenta
                     </a>
+
                     <div class="mobile-menu-divider"></div>
+
                     <a href="#" class="mobile-menu-item danger" id="mobile-logout-btn" style="display:none;">
                         <i class="fas fa-sign-out-alt"></i> Cerrar sesión
                     </a>
@@ -97,12 +119,10 @@ export function initHeader() {
                 if (snap.exists()) nombre = snap.data().nombre.split(' ')[0];
                 const nombreUpper = nombre.toUpperCase();
 
-                // Desktop greeting
                 if (userGreeting) {
                     userGreeting.innerText = `¡HOLA, ${nombreUpper}!`;
                     userGreeting.style.display = 'block';
                 }
-                // Mobile greeting
                 if (mobileGreeting) {
                     mobileGreeting.innerText = `¡HOLA, ${nombreUpper}!`;
                     mobileGreeting.style.display = 'block';
@@ -113,9 +133,9 @@ export function initHeader() {
                 console.error("Error en header auth:", e);
             }
         } else {
-            if (userGreeting)   userGreeting.style.display = 'none';
-            if (mobileGreeting) mobileGreeting.style.display = 'none';
-            if (mobileUserSub)  mobileUserSub.innerText = 'Tu cuenta';
+            if (userGreeting)    userGreeting.style.display = 'none';
+            if (mobileGreeting)  mobileGreeting.style.display = 'none';
+            if (mobileUserSub)   mobileUserSub.innerText = 'Tu cuenta';
             if (mobileLogoutBtn) mobileLogoutBtn.style.display = 'none';
         }
     });
@@ -129,11 +149,11 @@ export function initHeader() {
         };
     }
 
-    // ── Hamburguesa: abrir / cerrar ────────────────────────────────────
-    const hamburger = document.getElementById('header-hamburger');
-    const overlay   = document.getElementById('mobile-menu-overlay');
+    // ── Abrir / cerrar menú ────────────────────────────────────────────
+    const hamburger  = document.getElementById('header-hamburger');
+    const overlay    = document.getElementById('mobile-menu-overlay');
     const mobileMenu = document.getElementById('mobile-menu');
-    const closeBtn  = document.getElementById('mobile-menu-close');
+    const closeBtn   = document.getElementById('mobile-menu-close');
 
     function openMenu() {
         mobileMenu?.classList.add('open');
@@ -157,12 +177,52 @@ export function initHeader() {
     overlay?.addEventListener('click', closeMenu);
     closeBtn?.addEventListener('click', closeMenu);
 
-    // Cerrar con Escape
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeMenu();
     });
 
-    // Cerrar al navegar (tap en un link)
+    // ── "Productos" expandible ─────────────────────────────────────────
+    const productsToggle   = document.getElementById('mobile-products-toggle');
+    const categoriesList   = document.getElementById('mobile-categories-list');
+    const productChevron   = document.getElementById('mobile-products-chevron');
+
+    productsToggle?.addEventListener('click', () => {
+        const isOpen = categoriesList?.classList.contains('open');
+        if (isOpen) {
+            categoriesList.classList.remove('open');
+            productChevron?.classList.remove('open');
+        } else {
+            categoriesList.classList.add('open');
+            productChevron?.classList.add('open');
+        }
+    });
+
+    // Exponer función para que tienda.js llene las categorías
+    // Signature: populateMobileMenuCategories(cats, onSelectCallback)
+    // cats: [{ id, nombre }, ...]
+    // onSelectCallback(catId): called when user taps a category
+    window.populateMobileMenuCategories = function(cats, onSelect) {
+        const list = document.getElementById('mobile-categories-list');
+        if (!list) return;
+
+        list.innerHTML = cats.map(cat => `
+            <button class="mobile-menu-subitem" data-cat="${cat.id}" type="button">
+                ${cat.nombre}
+            </button>
+        `).join('');
+
+        list.querySelectorAll('.mobile-menu-subitem').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Mark active
+                list.querySelectorAll('.mobile-menu-subitem').forEach(b => b.classList.remove('active-cat'));
+                btn.classList.add('active-cat');
+                if (onSelect) onSelect(btn.dataset.cat);
+                closeMenu();
+            });
+        });
+    };
+
+    // Cerrar menú al hacer tap en un link de nav (excepto el botón de toggle)
     mobileMenu?.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', closeMenu);
     });
