@@ -2,3 +2,5 @@ node_modules/
 serviceAccountKey.json
 imprimir.log
 imprimir.log.old
+corcega-print.exe
+package-lock.json

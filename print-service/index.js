@@ -57,7 +57,7 @@ if (!IP || IP.includes('XXX')) {
 }
 
 admin.initializeApp({
-    credential: admin.credential.cert(require(KEY_PATH)),
+    credential: admin.credential.cert(JSON.parse(fs.readFileSync(KEY_PATH, 'utf8'))),
     projectId:  config.projectId
 });
 
