@@ -12,9 +12,16 @@ const admin = require('firebase-admin');
 
 const { generarYAbrirPDF } = require('./ticket-pdf.js');
 
+// ─── DIRECTORIO REAL (funciona tanto con "node index-pdf.js" como con el .exe)
+// process.pkg se define cuando corre como ejecutable pkg
+const BASE_DIR = process.pkg
+    ? path.dirname(process.execPath)   // junto al .exe
+    : __dirname;                        // junto al .js
+
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
-const config   = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
-const LOG_FILE = path.join(__dirname, 'imprimir-pdf.log');
+const CFG_PATH = path.join(BASE_DIR, 'config.json');
+const KEY_PATH = path.join(BASE_DIR, 'serviceAccountKey.json');
+const LOG_FILE = path.join(BASE_DIR, 'imprimir-pdf.log');
 
 function log(msg) {
     const ts   = new Date().toLocaleString('es-AR', { hour12: false });
@@ -23,23 +30,43 @@ function log(msg) {
     try { fs.appendFileSync(LOG_FILE, line + '\n'); } catch (_) {}
 }
 
-// ─── FIREBASE ────────────────────────────────────────────────────────────────
-const KEY_PATH = path.join(__dirname, 'serviceAccountKey.json');
+// Verificar archivos necesarios
+if (!fs.existsSync(CFG_PATH)) {
+    console.error(`\nERROR: no se encuentra config.json en:\n  ${CFG_PATH}\n`);
+    console.error('Asegurate de que config.json esté en la misma carpeta que el .exe\n');
+    waitAndExit();
+}
 if (!fs.existsSync(KEY_PATH)) {
-    console.error('\nERROR: falta serviceAccountKey.json — ver INSTALAR.txt\n');
-    process.exit(1);
+    console.error(`\nERROR: no se encuentra serviceAccountKey.json en:\n  ${KEY_PATH}\n`);
+    console.error('Descargalo desde Firebase Console → Cuentas de servicio\n');
+    waitAndExit();
 }
 
-admin.initializeApp({
-    credential: admin.credential.cert(JSON.parse(fs.readFileSync(KEY_PATH, 'utf8'))),
-    projectId:  config.projectId
-});
+function waitAndExit() {
+    console.error('\nPresioná ENTER para cerrar...');
+    process.stdin.resume();
+    process.stdin.once('data', () => process.exit(1));
+}
+
+const config = JSON.parse(fs.readFileSync(CFG_PATH, 'utf8'));
+
+// ─── FIREBASE ────────────────────────────────────────────────────────────────
+try {
+    admin.initializeApp({
+        credential: admin.credential.cert(JSON.parse(fs.readFileSync(KEY_PATH, 'utf8'))),
+        projectId:  config.projectId
+    });
+} catch (e) {
+    console.error(`\nERROR al inicializar Firebase: ${e.message}`);
+    console.error('Verificá que serviceAccountKey.json sea válido.\n');
+    waitAndExit();
+}
 
 const db = admin.firestore();
 
-// ─── RETRY WRAPPER ───────────────────────────────────────────────────────────
+// ─── RETRY ───────────────────────────────────────────────────────────────────
 const enProceso = new Set();
-const MAX_REINT = config.reintentos      || 5;
+const MAX_REINT = config.reintentos       || 5;
 const DELAY     = config.delayReintentoMs || 15000;
 
 async function procesarConReintentos(snap) {
@@ -50,7 +77,7 @@ async function procesarConReintentos(snap) {
         try {
             const pdfPath = await generarYAbrirPDF(snap.data(), id);
             await db.collection('ordenes').doc(id).update({ impreso: true });
-            log(`OK   #${uid} → PDF abierto: ${pdfPath}`);
+            log(`OK   #${uid} → ${pdfPath}`);
             return;
         } catch (err) {
             log(`WARN [${i}/${MAX_REINT}] #${uid}: ${err.message}`);
@@ -61,20 +88,23 @@ async function procesarConReintentos(snap) {
 }
 
 // ─── LISTENER ────────────────────────────────────────────────────────────────
+// Escucha TODOS los pagados y filtra en JS (cubre órdenes sin campo "impreso")
 function iniciarListener() {
-    log('Escuchando Firestore (modo PDF)...');
+    log('Escuchando pedidos pagados...');
 
     db.collection('ordenes')
-      .where('estado',  '==', 'pagado')
-      .where('impreso', '==', false)
+      .where('estado', '==', 'pagado')
       .onSnapshot(
         (snap) => {
             snap.docChanges().forEach((change) => {
                 if (change.type !== 'added') return;
+                const data = change.doc.data();
+                if (data.impreso === true) return;   // ya impreso, ignorar
+
                 const id = change.doc.id;
                 if (enProceso.has(id)) return;
                 enProceso.add(id);
-                log(`NUEVO #${id.slice(-8).toUpperCase()} — ${change.doc.data().cliente?.nombre || '?'}`);
+                log(`NUEVO #${id.slice(-8).toUpperCase()} — ${data.cliente?.nombre || '?'}`);
                 procesarConReintentos(change.doc).finally(() => enProceso.delete(id));
             });
         },
@@ -86,10 +116,14 @@ function iniciarListener() {
 }
 
 // ─── ARRANQUE ────────────────────────────────────────────────────────────────
-log('='.repeat(48));
-log('  Córcega Café — Servicio de Impresión (PDF)');
-log(`  Modo: PDF visual — sin impresora`);
-log('='.repeat(48));
+console.log('');
+console.log('================================================');
+console.log('  Corcega Cafe — Servicio de Impresion (PDF)');
+console.log('================================================');
+console.log('');
+console.log('  Esta ventana tiene que quedar ABIERTA.');
+console.log('  Cuando llega un pedido pagado, se abre el PDF.');
+console.log('');
 
 iniciarListener();
 
