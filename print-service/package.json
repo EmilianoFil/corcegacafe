@@ -4,19 +4,25 @@
   "description": "Servicio de impresión automática para Córcega Café",
   "main": "index.js",
   "scripts": {
-    "start":   "node index.js",
-    "preview": "node preview.js",
-    "build":   "pkg index.js --targets node18-win-x64 --output corcega-print.exe --compress GZip"
+    "start":     "node index.js",
+    "start-pdf": "node index-pdf.js",
+    "preview":   "node preview.js",
+    "build":     "pkg index.js     --targets node18-win-x64 --output corcega-print.exe     --compress GZip",
+    "build-pdf": "pkg index-pdf.js --targets node18-win-x64 --output corcega-print-pdf.exe --compress GZip"
   },
   "pkg": {
     "assets": [
       "config.json",
       "ticket.js",
-      "escpos.js"
+      "ticket-pdf.js",
+      "escpos.js",
+      "node_modules/pdfkit/js/data/**"
     ]
   },
   "dependencies": {
-    "firebase-admin": "^12.0.0"
+    "firebase-admin": "^12.0.0",
+    "pdfkit": "^0.18.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "pkg": "^5.8.1"

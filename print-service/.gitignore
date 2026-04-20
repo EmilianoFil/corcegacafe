@@ -3,4 +3,5 @@ serviceAccountKey.json
 imprimir.log
 imprimir.log.old
 corcega-print.exe
+corcega-print-pdf.exe
 package-lock.json
