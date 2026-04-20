@@ -125,6 +125,7 @@ async function procesarConReintentos(snap) {
             return;
         } catch (err) {
             log(`WARN [${i}/${MAX_REINT}] #${uid}: ${err.message}`);
+            log(`     Stack: ${(err.stack || '').split('\n')[1] || ''}`);
             colaUpsert(id, { estado: 'error', detalle: err.message });
             if (i < MAX_REINT) await new Promise(r => setTimeout(r, DELAY));
         }
@@ -350,12 +351,16 @@ const server = http.createServer(async (req, res) => {
         const id = reprMatch[1];
         try {
             const snap = await db.collection('ordenes').doc(id).get();
-            if (!snap.exists()) throw new Error('Pedido no encontrado');
+            if (!snap.exists) throw new Error('Pedido no encontrado en Firestore');
             colaUpsert(id, { estado: 'procesando', detalle: 'reimprimiendo...' });
-            procesarConReintentos(snap).catch(e => log(`Reprint error: ${e.message}`));
+            procesarConReintentos(snap).catch(e => {
+                log(`Reprint error #${id.slice(-8).toUpperCase()}: ${e.message}`);
+                colaUpsert(id, { estado: 'error', detalle: e.message });
+            });
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true }));
         } catch (e) {
+            log(`ERR reprint ${id}: ${e.message}`);
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: false, error: e.message }));
         }
