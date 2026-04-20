@@ -6,9 +6,11 @@
   "scripts": {
     "start":     "node index.js",
     "start-pdf": "node index-pdf.js",
+    "start-ui":  "node index-ui.js",
     "preview":   "node preview.js",
     "build":     "pkg index.js     --targets node18-win-x64 --output corcega-print.exe     --compress GZip",
-    "build-pdf": "pkg index-pdf.js --targets node18-win-x64 --output corcega-print-pdf.exe --compress GZip"
+    "build-pdf": "pkg index-pdf.js --targets node18-win-x64 --output corcega-print-pdf.exe --compress GZip",
+    "build-ui":  "pkg index-ui.js  --targets node18-win-x64 --output corcega-print-ui.exe  --compress GZip"
   },
   "pkg": {
     "assets": [
@@ -16,6 +18,7 @@
       "ticket.js",
       "ticket-pdf.js",
       "escpos.js",
+      "index-ui.js",
       "node_modules/pdfkit/js/data/**"
     ]
   },

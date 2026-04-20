@@ -4,4 +4,5 @@ imprimir.log
 imprimir.log.old
 corcega-print.exe
 corcega-print-pdf.exe
+corcega-print-ui.exe
 package-lock.json
