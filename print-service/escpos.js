@@ -35,7 +35,7 @@ function norm(str) {
  */
 function qrCodeBuffer(url, size) {
     size = size || 6;
-    const data = Buffer.from(url, 'ascii');
+    const data = Buffer.from(url, 'latin1');
     const len  = data.length + 3;
     const pL   = len & 0xFF;
     const pH   = (len >> 8) & 0xFF;
@@ -62,7 +62,7 @@ function EscposBuilder(ancho) {
     ancho = ancho || ANCHO_DEFAULT;
     const parts = [CMD.INIT];
     const push = (...bufs) => bufs.forEach(b => parts.push(b));
-    const txt  = (s) => push(Buffer.from(norm(s || ''), 'ascii'));
+    const txt  = (s) => push(Buffer.from(norm(s || ''), 'latin1'));
     const nl   = ()  => push(CMD.LF);
 
     return {
