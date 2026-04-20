@@ -371,8 +371,10 @@ window.vpmSelectOption = function(attrName, value, btn) {
             stockEl.style.color = '#999';
         }
         const sinStock = !ilimitado && stock === 0;
-        document.getElementById('vpm-add-btn').disabled = sinStock;
-        document.getElementById('vpm-add-btn').style.background = sinStock ? '#ccc' : 'var(--panel-oscuro)';
+        const btn = document.getElementById('vpm-add-btn');
+        btn.disabled = sinStock;
+        btn.style.background = sinStock ? '#ccc' : 'var(--panel-oscuro)';
+        btn.innerText = sinStock ? 'Sin stock' : 'Agregar al carrito';
         _vpmQty = 1;
         document.getElementById('vpm-qty').innerText = '1';
     }
