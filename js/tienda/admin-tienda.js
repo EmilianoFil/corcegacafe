@@ -123,6 +123,9 @@ export async function mostrarFormularioProducto() {
         document.getElementById('prod-mensaje-agenda').value = '';
     }
 
+    // Reset relacionados
+    window._productosRelacionados = [];
+
     // Reset to first tab
     document.querySelectorAll('.prod-tab-pane').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.prod-tab-btn').forEach(b => b.classList.remove('active'));
@@ -333,6 +336,7 @@ export async function guardarProducto(e) {
         variantes: document.getElementById('prod-tiene-variantes').checked
             ? collectVariantesData()
             : {},
+        productosRelacionados: window._productosRelacionados || [],
     };
 
     btn.disabled = true;
@@ -427,6 +431,11 @@ export async function editarProducto(id) {
         document.getElementById('prod-horario-corte').value = p.horarioCorte || '14:00';
         document.getElementById('prod-mensaje-agenda').value = p.mensajeAgenda || '';
     }
+
+    // Cargar relacionados existentes
+    window._productosRelacionados = Array.isArray(p.productosRelacionados)
+        ? [...p.productosRelacionados]
+        : [];
 
     // Switch to first tab
     document.querySelectorAll('.prod-tab-pane').forEach(p => p.classList.remove('active'));
@@ -1335,6 +1344,60 @@ export function switchProductTab(tabName, btn) {
     document.querySelectorAll('.prod-tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(`tab-${tabName}`)?.classList.add('active');
     if (btn) btn.classList.add('active');
+
+    // Renderizar picker al entrar al tab de relacionados (lazy)
+    if (tabName === 'relacionados') {
+        renderRelacionadosPicker(window._productosRelacionados || []);
+    }
+}
+
+// ── Relacionados ──────────────────────────────────────────────────────────────
+
+export function renderRelacionadosPicker(selectedIds) {
+    const picker  = document.getElementById('relacionados-picker');
+    const counter = document.getElementById('relacionados-count');
+    if (!picker) return;
+
+    const currentId = document.getElementById('prod-id').value;
+    const available = productosData.filter(p => p.id !== currentId && p.activo !== false);
+
+    if (counter) counter.innerText = `${selectedIds.length} / 3 seleccionados`;
+
+    if (available.length === 0) {
+        picker.innerHTML = `<p style="color:#aaa; font-style:italic; font-size:0.85rem; grid-column:1/-1;">No hay otros productos disponibles.</p>`;
+        return;
+    }
+
+    picker.innerHTML = available.map(p => {
+        const sel = selectedIds.includes(p.id);
+        return `
+        <div onclick="window.tiendaAdmin.toggleRelacionado('${p.id}')"
+             style="cursor:pointer; border-radius:12px; border:2px solid ${sel ? 'var(--primary)' : 'var(--border)'};
+                    background:${sel ? 'var(--primary-light)' : 'white'}; overflow:hidden; position:relative; transition:border-color 0.15s, background 0.15s;">
+            ${sel ? `<div style="position:absolute; top:6px; right:6px; background:var(--primary); color:white; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; z-index:2; pointer-events:none;">✓</div>` : ''}
+            <img src="${p.imagenUrl || 'https://placehold.co/120x120/fdfcf7/ccc?text=📦'}"
+                 style="width:100%; aspect-ratio:1/1; object-fit:cover; display:block;">
+            <div style="padding:8px 10px;">
+                <p style="margin:0; font-size:0.73rem; font-weight:700; color:var(--secondary); line-height:1.2; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${p.nombre}</p>
+                <p style="margin:3px 0 0; font-size:0.7rem; color:var(--primary); font-weight:700;">$${p.precio.toLocaleString('es-AR')}</p>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+export function toggleRelacionado(id) {
+    if (!window._productosRelacionados) window._productosRelacionados = [];
+    const idx = window._productosRelacionados.indexOf(id);
+    if (idx > -1) {
+        window._productosRelacionados.splice(idx, 1);
+    } else {
+        if (window._productosRelacionados.length >= 3) {
+            alert('Podés elegir hasta 3 productos relacionados.');
+            return;
+        }
+        window._productosRelacionados.push(id);
+    }
+    renderRelacionadosPicker(window._productosRelacionados);
 }
 
 export function toggleAgendaSection(checked) {

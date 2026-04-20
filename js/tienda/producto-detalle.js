@@ -1,5 +1,5 @@
 import { db } from '../firebase-config.js';
-import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { doc, getDoc, getDocs, collection, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { writeReserva } from './cart-reservas.js';
 import { cart, initCart, openCart, closeCart, saveAndRefresh, updateCartUI } from './cart-component.js';
 
@@ -44,8 +44,50 @@ async function loadProductData(id) {
 
         currentProduct = { id: snap.id, ...snap.data() };
         renderProductDetail();
+
+        // Cargar productos relacionados (si tiene)
+        if (currentProduct.productosRelacionados?.length > 0) {
+            loadRelatedProducts(currentProduct.productosRelacionados, currentProduct.id);
+        }
     } catch (err) {
         console.error("Error loading product:", err);
+    }
+}
+
+async function loadRelatedProducts(ids, currentId) {
+    try {
+        const validIds = ids.filter(id => id && id !== currentId).slice(0, 3);
+        if (validIds.length === 0) return;
+
+        const snaps = await Promise.all(validIds.map(id => getDoc(doc(db, "productos", id))));
+        const related = snaps
+            .filter(s => s.exists() && s.data().activo !== false)
+            .map(s => ({ id: s.id, ...s.data() }));
+
+        if (related.length === 0) return;
+
+        const section = document.getElementById('related-products-section');
+        const grid    = document.getElementById('related-products-grid');
+        if (!section || !grid) return;
+
+        grid.innerHTML = related.map(p => `
+            <a href="producto.html?id=${p.id}" class="related-card">
+                <div class="related-card-img">
+                    <img src="${p.imagenUrl || 'https://placehold.co/400x400/fdfcf7/01323f?text=Córcega'}"
+                         alt="${p.nombre}"
+                         loading="lazy">
+                </div>
+                <div class="related-card-info">
+                    <span class="related-card-cat">${p.categoria || ''}</span>
+                    <span class="related-card-name">${p.nombre}</span>
+                    <span class="related-card-price">$${p.precio.toLocaleString('es-AR')}</span>
+                </div>
+            </a>
+        `).join('');
+
+        section.style.display = 'block';
+    } catch (err) {
+        console.warn("loadRelatedProducts error:", err);
     }
 }
 

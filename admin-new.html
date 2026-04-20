@@ -1086,6 +1086,7 @@
                         <button type="button" class="prod-tab-btn active" onclick="window.tiendaAdmin.switchProductTab('general', this)">📦 General</button>
                         <button type="button" class="prod-tab-btn" onclick="window.tiendaAdmin.switchProductTab('stock', this)">🗂️ Stock & Variantes</button>
                         <button type="button" class="prod-tab-btn" onclick="window.tiendaAdmin.switchProductTab('parametria', this)">⚙️ Parametría</button>
+                        <button type="button" class="prod-tab-btn" onclick="window.tiendaAdmin.switchProductTab('relacionados', this)">🔗 Relacionados</button>
                     </div>
 
                     <!-- Tab: General -->
@@ -1250,6 +1251,17 @@
                                 <small style="color:#aaa; font-size:0.72rem; margin-top:4px; display:block;">Aparece como aviso destacado en el checkout, debajo del calendario</small>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Tab: Relacionados -->
+                    <div class="prod-tab-pane" id="tab-relacionados">
+                        <p style="font-size:0.85rem; color:#666; margin:0 0 16px; line-height:1.5;">
+                            Elegí hasta <strong>3 productos</strong> para mostrar como sugeridos en la página de detalle de este producto.
+                        </p>
+                        <div id="relacionados-picker" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap:10px; max-height:420px; overflow-y:auto; padding-right:4px;">
+                            <p style="color:#aaa; font-style:italic; font-size:0.85rem; grid-column:1/-1;">Cargando productos...</p>
+                        </div>
+                        <p id="relacionados-count" style="font-size:0.8rem; color:#aaa; margin-top:12px; text-align:right; font-weight:600;">0 / 3 seleccionados</p>
                     </div>
 
                     <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -1723,7 +1735,7 @@
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
         import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
-        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=14';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=15';
         window.tiendaAdmin = tiendaAdmin;
 
         let adminData = null;
