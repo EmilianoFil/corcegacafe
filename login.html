@@ -51,7 +51,17 @@
     const googleProvider = new GoogleAuthProvider();
 
     // EMAILS AUTORIZADOS (Master)
-    const adminsAutorizados = ['emilianofilgueira@gmail.com'];
+    const adminsAutorizados = ['emilianofilgueira@gmail.com', 'lemacafesrl@gmail.com'];
+
+    // Verifica si un user tiene permisos admin (igual que admin-guard.js)
+    async function esAdmin(user) {
+        if (adminsAutorizados.includes(user.email)) return true;
+        const [adminsSnap, adminSnap] = await Promise.all([
+            getDoc(doc(db, 'admins', user.uid)),
+            getDoc(doc(db, 'admin', user.uid))
+        ]);
+        return adminsSnap.exists() || adminSnap.exists();
+    }
 
     // Manejo Google Login
     document.getElementById("btnGoogle").onclick = async () => {
@@ -64,10 +74,7 @@
             const res = await signInWithPopup(auth, googleProvider);
             const user = res.user;
 
-            // Verificamos si es admin en Firestore (fallback) o si está en la lista master
-            const adminSnap = await getDoc(doc(db, "admins", user.uid));
-            
-            if (adminsAutorizados.includes(user.email) || adminSnap.exists()) {
+            if (await esAdmin(user)) {
                 loginExitoso(user.email);
             } else {
                 auth.signOut();
@@ -104,9 +111,8 @@
         const cred = await signInWithEmailAndPassword(auth, usuario, clave);
         const user = cred.user;
 
-        // Verificar que sea admin (igual que el path de Google)
-        const adminSnap = await getDoc(doc(db, "admins", user.uid));
-        if (!adminsAutorizados.includes(user.email) && !adminSnap.exists()) {
+        // Verificar que sea admin (igual que admin-guard.js)
+        if (!(await esAdmin(user))) {
             await auth.signOut();
             document.getElementById("loader").style.display = "none";
             document.getElementById("noAdminMsg").style.display = "block";
