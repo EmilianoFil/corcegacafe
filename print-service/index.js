@@ -1,279 +1,155 @@
 'use strict';
 
 /**
- * Servicio de impresión automática — Córcega Café
+ * Córcega Café — Servicio de Impresión Automática
  * ─────────────────────────────────────────────────
- * Escucha Firestore en tiempo real y manda a imprimir
- * cada pedido que pasa a estado "pagado".
+ * Escucha Firestore y manda a imprimir cada pedido que
+ * pasa a estado "pagado". Al arrancar también imprime
+ * todo lo pendiente (pedidos mientras la impresora estaba apagada).
  *
- * Al arrancar también imprime todo lo pendiente,
- * resolviendo el caso "la impresora estaba apagada".
+ * Sin dependencias nativas: usa TCP directo al puerto 9100 (ESC/POS estándar).
  */
 
-const admin  = require('firebase-admin');
-const { ThermalPrinter, PrinterTypes, CharacterSet } = require('node-thermal-printer');
+const net    = require('net');
 const fs     = require('fs');
 const path   = require('path');
+const admin  = require('firebase-admin');
+
+const { EscposBuilder } = require('./escpos.js');
+const { generarTicket } = require('./ticket.js');
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
-const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
+const CFG_PATH = path.join(__dirname, 'config.json');
+const config   = JSON.parse(fs.readFileSync(CFG_PATH, 'utf8'));
 
-const LOG_FILE     = path.join(__dirname, 'imprimir.log');
-const MAX_LOG_MB   = 5;       // rotar si supera 5 MB
-const ANCHO        = config.anchoCaracteres || 48;
+const ANCHO    = config.anchoCaracteres  || 48;
+const IP       = config.printerIp;
+const PUERTO   = config.printerPort      || 9100;
+const MAX_REINT = config.reintentos      || 5;
+const DELAY    = config.delayReintentoMs || 15000;
 
 // ─── LOGGER ──────────────────────────────────────────────────────────────────
+const LOG_FILE = path.join(__dirname, 'imprimir.log');
+
 function log(msg) {
     const ts   = new Date().toLocaleString('es-AR', { hour12: false });
     const line = `[${ts}] ${msg}`;
     console.log(line);
     try {
-        // Rotar log si es muy grande
-        if (fs.existsSync(LOG_FILE)) {
-            const { size } = fs.statSync(LOG_FILE);
-            if (size > MAX_LOG_MB * 1024 * 1024) {
-                fs.renameSync(LOG_FILE, LOG_FILE + '.old');
-            }
+        if (fs.existsSync(LOG_FILE) && fs.statSync(LOG_FILE).size > 5 * 1024 * 1024) {
+            fs.renameSync(LOG_FILE, LOG_FILE + '.old');
         }
         fs.appendFileSync(LOG_FILE, line + '\n');
-    } catch (_) { /* si falla el log, no rompemos todo */ }
+    } catch (_) {}
 }
 
-// ─── FIREBASE ADMIN ──────────────────────────────────────────────────────────
-const keyPath = path.join(__dirname, 'serviceAccountKey.json');
-if (!fs.existsSync(keyPath)) {
-    console.error('');
-    console.error('ERROR: falta el archivo serviceAccountKey.json');
-    console.error('Descargalo desde Firebase Console:');
-    console.error('  Configuracion del proyecto → Cuentas de servicio → Generar nueva clave privada');
-    console.error('Guardalo como: print-service/serviceAccountKey.json');
-    console.error('');
+// ─── FIREBASE ────────────────────────────────────────────────────────────────
+const KEY_PATH = path.join(__dirname, 'serviceAccountKey.json');
+if (!fs.existsSync(KEY_PATH)) {
+    console.error('\nERROR: falta serviceAccountKey.json');
+    console.error('Ver INSTALAR.txt para descargarlo desde Firebase Console.\n');
+    process.exit(1);
+}
+if (!IP || IP.includes('XXX')) {
+    console.error('\nERROR: configurá la IP de la impresora en config.json');
+    console.error('  "printerIp": "192.168.1.XXX"  ← cambiar por la IP real\n');
     process.exit(1);
 }
 
 admin.initializeApp({
-    credential: admin.credential.cert(require(keyPath)),
-    projectId: config.projectId
+    credential: admin.credential.cert(require(KEY_PATH)),
+    projectId:  config.projectId
 });
 
 const db = admin.firestore();
 
-// ─── FORMATO TICKET ──────────────────────────────────────────────────────────
+// ─── IMPRIMIR VÍA TCP ────────────────────────────────────────────────────────
+function enviarTCP(buffer) {
+    return new Promise((resolve, reject) => {
+        const socket = new net.Socket();
+        socket.setTimeout(10000);
 
-function formatearFecha(ts) {
-    if (!ts) return '';
-    const d = ts.toDate ? ts.toDate() : new Date(ts._seconds * 1000);
-    return d.toLocaleString('es-AR', {
-        day:    '2-digit',
-        month:  '2-digit',
-        year:   'numeric',
-        hour:   '2-digit',
-        minute: '2-digit',
-        hour12: false
+        socket.connect(PUERTO, IP, () => {
+            socket.write(buffer, () => {
+                socket.end();
+                resolve();
+            });
+        });
+
+        socket.on('timeout', () => { socket.destroy(); reject(new Error('TCP timeout')); });
+        socket.on('error',   (err) => reject(err));
     });
 }
 
-/** Genera una línea con texto izquierda + precio derecha */
-function lineaConPrecio(izq, der, ancho) {
-    const max   = ancho - der.length - 1;
-    const texto = izq.length > max ? izq.slice(0, max - 1) + '.' : izq;
-    const pad   = ancho - texto.length - der.length;
-    return texto + ' '.repeat(Math.max(1, pad)) + der;
-}
-
-function normalizarTexto(str) {
-    // Reemplaza caracteres que la impresora puede no soportar
-    return (str || '')
-        .replace(/[áàä]/gi, 'a')
-        .replace(/[éèë]/gi, 'e')
-        .replace(/[íìï]/gi, 'i')
-        .replace(/[óòö]/gi, 'o')
-        .replace(/[úùü]/gi, 'u')
-        .replace(/[ñ]/gi, 'n')
-        .replace(/[¿¡]/g, '');
-}
-
+// ─── GENERAR + ENVIAR TICKET ─────────────────────────────────────────────────
 async function imprimirPedido(snap) {
-    const p  = snap.data();
-    const id = snap.id;
-
-    const printer = new ThermalPrinter({
-        type:                   PrinterTypes.EPSON,
-        interface:              `printer:${config.nombreImpresora}`,
-        characterSet:           CharacterSet.PC437_USA,
-        removeSpecialCharacters: true,
-        lineCharacter:          '-',
-        width:                  ANCHO,
-        options: { timeout: 15000 }
-    });
-
-    // ── Verificar que la impresora esté lista ────────────────────────────────
-    const online = await printer.isPrinterConnected().catch(() => false);
-    if (!online) throw new Error(`Impresora "${config.nombreImpresora}" no disponible`);
-
-    // ── HEADER ───────────────────────────────────────────────────────────────
-    printer.alignCenter();
-    printer.setTextDoubleHeight();
-    printer.bold(true);
-    printer.println('CORCEGA CAFE');
-    printer.bold(false);
-    printer.setTextNormal();
-    printer.println('Rebeldia Cafetera');
-    printer.drawLine();
-
-    // ── ID + FECHA ────────────────────────────────────────────────────────────
-    printer.println(`Pedido: #${id.slice(-8).toUpperCase()}`);
-    printer.println(formatearFecha(p.timestamp));
-    printer.drawLine();
-
-    // ── ITEMS ─────────────────────────────────────────────────────────────────
-    printer.alignLeft();
-    printer.bold(true);
-    printer.println('ITEMS:');
-    printer.bold(false);
-
-    for (const item of (p.items || [])) {
-        const nombre = normalizarTexto(`${item.qty}x ${item.nombre}`);
-        const precio = `$${((item.precio || 0) * (item.qty || 1)).toLocaleString('es-AR')}`;
-        printer.println(lineaConPrecio(nombre, precio, ANCHO));
-        if (item.variantLabel) {
-            printer.println(`   ${normalizarTexto(item.variantLabel)}`);
-        }
-    }
-
-    // ── TOTAL ─────────────────────────────────────────────────────────────────
-    printer.drawLine();
-    printer.bold(true);
-    printer.println(lineaConPrecio('TOTAL:', `$${(p.total || 0).toLocaleString('es-AR')}`, ANCHO));
-    printer.bold(false);
-    printer.drawLine();
-
-    // ── ENTREGA ───────────────────────────────────────────────────────────────
-    printer.alignCenter();
-    printer.bold(true);
-    printer.println(p.metodoEntrega === 'delivery' ? '[ ENVIO A DOMICILIO ]' : '[ RETIRO EN LOCAL ]');
-    printer.bold(false);
-    printer.alignLeft();
-
-    if (p.metodoEntrega === 'delivery' && p.cliente?.direccion) {
-        printer.println(`Dir: ${normalizarTexto(p.cliente.direccion)}`);
-    }
-    if (p.horario) {
-        printer.println(`Horario: ${normalizarTexto(p.horario)}`);
-    }
-
-    printer.drawLine();
-
-    // ── CLIENTE ───────────────────────────────────────────────────────────────
-    if (p.cliente?.nombre)    printer.println(`Cliente: ${normalizarTexto(p.cliente.nombre)}`);
-    if (p.cliente?.whatsapp)  printer.println(`WA: ${p.cliente.whatsapp}`);
-
-    const metodoPagoLabel = {
-        mercadopago:  'Mercado Pago',
-        transferencia: 'Transferencia',
-        efectivo:      'Efectivo'
-    }[p.metodoPago] || (p.metodoPago || '');
-    printer.println(`Pago: ${metodoPagoLabel}`);
-
-    // ── NOTAS ─────────────────────────────────────────────────────────────────
-    if (p.notas && p.notas.trim()) {
-        printer.drawLine();
-        printer.bold(true);
-        printer.println('NOTAS:');
-        printer.bold(false);
-        // Wrap largo a múltiples líneas
-        const nota = normalizarTexto(p.notas.trim());
-        for (let i = 0; i < nota.length; i += ANCHO) {
-            printer.println(nota.slice(i, i + ANCHO));
-        }
-    }
-
-    // ── FOOTER ────────────────────────────────────────────────────────────────
-    printer.drawLine();
-    printer.alignCenter();
-    printer.println('Gracias!');
-    printer.println('corcegacafe.com.ar');
-    printer.newLine();
-    printer.cut();
-
-    await printer.execute();
-    log(`OK  Pedido #${id.slice(-8).toUpperCase()} — ${normalizarTexto(p.cliente?.nombre || '?')} — $${p.total}`);
+    const b = EscposBuilder(ANCHO);
+    generarTicket(snap.data(), snap.id, b);
+    await enviarTCP(b.build());
 }
 
 // ─── RETRY WRAPPER ───────────────────────────────────────────────────────────
 const enProceso = new Set();
 
 async function imprimirConReintentos(snap) {
-    const id  = snap.id;
-    const max = config.reintentos || 5;
+    const id    = snap.id;
+    const uid   = id.slice(-8).toUpperCase();
 
-    for (let i = 1; i <= max; i++) {
+    for (let i = 1; i <= MAX_REINT; i++) {
         try {
             await imprimirPedido(snap);
-
-            // Marcar como impreso en Firestore
             await db.collection('ordenes').doc(id).update({ impreso: true });
-            return; // ✅ éxito
-
+            log(`OK   #${uid} — ${snap.data().cliente?.nombre || '?'} — $${snap.data().total}`);
+            return;
         } catch (err) {
-            log(`WARN [${i}/${max}] Pedido #${id.slice(-8).toUpperCase()}: ${err.message}`);
-            if (i < max) {
-                log(`     Reintentando en ${config.delayReintentoMs / 1000}s...`);
-                await sleep(config.delayReintentoMs || 15000);
+            log(`WARN [${i}/${MAX_REINT}] #${uid}: ${err.message}`);
+            if (i < MAX_REINT) {
+                log(`     Reintentando en ${DELAY / 1000}s...`);
+                await sleep(DELAY);
             }
         }
     }
 
-    log(`ERR  Pedido #${id.slice(-8).toUpperCase()} no impreso tras ${max} intentos. Quedara pendiente.`);
-    // NO marcamos impreso:true → al reiniciar el servicio lo reintentará
+    log(`ERR  #${uid} no se pudo imprimir tras ${MAX_REINT} intentos. Quedará pendiente.`);
+    // NO marcamos impreso:true → al reiniciar el servicio reintentará
 }
 
-// ─── LISTENER ────────────────────────────────────────────────────────────────
+// ─── LISTENER FIRESTORE ──────────────────────────────────────────────────────
 function iniciarListener() {
     log('Escuchando Firestore...');
 
-    const query = db.collection('ordenes')
-        .where('estado',  '==', 'pagado')
-        .where('impreso', '==', false);
-
-    query.onSnapshot(
+    db.collection('ordenes')
+      .where('estado',  '==', 'pagado')
+      .where('impreso', '==', false)
+      .onSnapshot(
         (snap) => {
             snap.docChanges().forEach((change) => {
-                if (change.type === 'added') {
-                    const id = change.doc.id;
-                    if (enProceso.has(id)) return;
-                    enProceso.add(id);
+                if (change.type !== 'added') return;
+                const id = change.doc.id;
+                if (enProceso.has(id)) return;
+                enProceso.add(id);
 
-                    const nombre = normalizarTexto(change.doc.data().cliente?.nombre || '?');
-                    log(`NUEVO Pedido #${id.slice(-8).toUpperCase()} — ${nombre}`);
-
-                    imprimirConReintentos(change.doc).finally(() => enProceso.delete(id));
-                }
+                const nombre = change.doc.data().cliente?.nombre || '?';
+                log(`NUEVO #${id.slice(-8).toUpperCase()} — ${nombre}`);
+                imprimirConReintentos(change.doc).finally(() => enProceso.delete(id));
             });
         },
         (err) => {
-            log(`ERR  Listener caido: ${err.message}. Reconectando en 30s...`);
+            log(`ERR  Listener caído: ${err.message}. Reconectando en 30s...`);
             setTimeout(iniciarListener, 30000);
         }
     );
 }
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ─── ARRANQUE ────────────────────────────────────────────────────────────────
 log('='.repeat(48));
-log('  Servicio de Impresion — Corcega Cafe');
-log(`  Impresora: ${config.nombreImpresora}`);
+log('  Córcega Café — Servicio de Impresión');
+log(`  Impresora: ${config.nombreImpresora} @ ${IP}:${PUERTO}`);
 log('='.repeat(48));
 
 iniciarListener();
 
-// Mantener el proceso vivo
-process.on('uncaughtException', (err) => {
-    log(`ERR  Excepcion no capturada: ${err.message}`);
-});
-process.on('unhandledRejection', (reason) => {
-    log(`ERR  Promesa rechazada: ${reason}`);
-});
+process.on('uncaughtException',  err => log(`ERR  ${err.message}`));
+process.on('unhandledRejection', r   => log(`ERR  ${r}`));

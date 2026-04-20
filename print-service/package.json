@@ -1,15 +1,25 @@
 {
   "name": "corcega-print-service",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Servicio de impresión automática para Córcega Café",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "install-service": "node install-service.js"
+    "start":   "node index.js",
+    "preview": "node preview.js",
+    "build":   "pkg index.js --targets node18-win-x64 --output corcega-print.exe --compress GZip"
+  },
+  "pkg": {
+    "assets": [
+      "config.json",
+      "ticket.js",
+      "escpos.js"
+    ]
   },
   "dependencies": {
-    "firebase-admin": "^12.0.0",
-    "node-thermal-printer": "^4.3.2"
+    "firebase-admin": "^12.0.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
   },
   "engines": {
     "node": ">=18.0.0"

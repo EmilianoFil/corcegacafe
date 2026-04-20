@@ -1,5 +1,7 @@
 {
-  "nombreImpresora": "RPT006",
+  "nombreImpresora": "CAFÉ",
+  "printerIp": "192.168.1.XXX",
+  "printerPort": 9100,
   "anchoCaracteres": 48,
   "reintentos": 5,
   "delayReintentoMs": 15000,

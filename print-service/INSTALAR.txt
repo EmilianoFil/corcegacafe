@@ -1,77 +1,84 @@
 ═══════════════════════════════════════════════════════════
-  SERVICIO DE IMPRESION — CORCEGA CAFE
-  Instala esto en la PC del local (Windows)
+  SERVICIO DE IMPRESIÓN — CÓRCEGA CAFÉ
 ═══════════════════════════════════════════════════════════
 
-PASO 1 — Instalar Node.js (una sola vez)
-─────────────────────────────────────────
-  1. Ir a: https://nodejs.org
-  2. Descargar la version LTS (boton verde grande)
-  3. Instalar con todas las opciones por defecto
-  4. Reiniciar la PC
+OPCIÓN A — Ejecutable .exe (recomendada, sin instalar Node)
+───────────────────────────────────────────────────────────
+Necesitás generar el .exe UNA SOLA VEZ desde cualquier PC:
 
-PASO 2 — Bajar el serviceAccountKey.json (una sola vez)
-────────────────────────────────────────────────────────
-  1. Ir a: https://console.firebase.google.com
-  2. Proyecto: corcega-loyalty-club
-  3. Configuracion del proyecto (engranaje) → Cuentas de servicio
-  4. Click en "Generar nueva clave privada"
-  5. Guardar el archivo descargado COMO:
-         print-service\serviceAccountKey.json
-     (en esta misma carpeta donde esta este archivo)
-
-PASO 3 — Verificar nombre de la impresora
-──────────────────────────────────────────
-  1. Panel de Control → Dispositivos e Impresoras
-  2. Ver el nombre exacto de la RPT006 (ej: "RPT006" o "Xprinter XP-T58K")
-  3. Si el nombre es diferente, abrir config.json y cambiarlo:
-         "nombreImpresora": "EL_NOMBRE_EXACTO"
-
-PASO 4 — Instalar dependencias (una sola vez)
-─────────────────────────────────────────────
-  1. Abrir cmd en esta carpeta
-     (shift + clic derecho en la carpeta → "Abrir ventana de comandos aqui")
-  2. Ejecutar:
+  1. Tener Node.js instalado (nodejs.org)
+  2. En esta carpeta:
          npm install
+         npm run build
+  3. Esto genera:  corcega-print.exe
 
-PASO 5 — Probar que funciona
-──────────────────────────────
-  Doble clic en:  iniciar.bat
+  Ese .exe copiarlo a la PC del local junto con:
+    ├── corcega-print.exe   ← el ejecutable
+    ├── config.json         ← configuración
+    └── serviceAccountKey.json  ← credenciales Firebase
 
-  Deberia aparecer una ventana con:
-     ================================================
-       Servicio de Impresion — Corcega Cafe
-       Impresora: RPT006
-     ================================================
-     Escuchando Firestore...
+  Doble clic en corcega-print.exe para iniciar.
 
-  Ahora cambia el estado de un pedido a "Pagado" en el
-  admin y deberia imprimirse automaticamente.
 
-PASO 6 — Instalarlo para que arranque solo con la PC
-──────────────────────────────────────────────────────
+OPCIÓN B — Con Node.js instalado (más simple para desarrollo)
+──────────────────────────────────────────────────────────────
+  1. npm install
+  2. Doble clic en: iniciar.bat
+
+
+═══════════════════════════════════════════════════════════
+CONFIGURACIÓN (config.json)
+═══════════════════════════════════════════════════════════
+
+  "printerIp": "192.168.1.XXX"   ← IP de la impresora en la red
+
+  Para encontrar la IP de la RPT006:
+    • Imprimir la página de auto-test: mantener botón FEED
+      al encender la impresora. Imprime su IP.
+    • O revisar en el router (192.168.1.1 o similar)
+      la lista de dispositivos conectados.
+
+
+═══════════════════════════════════════════════════════════
+DESCARGAR serviceAccountKey.json (una sola vez)
+═══════════════════════════════════════════════════════════
+  1. https://console.firebase.google.com
+  2. Proyecto: corcega-loyalty-club
+  3. Engranaje → Configuración del proyecto
+  4. Cuentas de servicio → Generar nueva clave privada
+  5. Guardar como: serviceAccountKey.json (en esta carpeta)
+
+
+═══════════════════════════════════════════════════════════
+ARRANQUE AUTOMÁTICO EN WINDOWS
+═══════════════════════════════════════════════════════════
   Doble clic en:  instalar-inicio-windows.bat
 
-  Listo. Cada vez que se encienda la PC el servicio
-  arrancara automaticamente en segundo plano.
+  El servicio/exe arrancará solo cada vez que se encienda la PC.
 
-─────────────────────────────────────────────────────────
-  LOGS
-─────────────────────────────────────────────────────────
-  Todo queda registrado en:  imprimir.log
-  Revisar si hay algun error de impresion.
+  Para desinstalar:  desinstalar-inicio-windows.bat
 
-  Ejemplos de lineas de log:
-    [20/04/2026 13:31:00] NUEVO Pedido #AB12CD34 — Juan
-    [20/04/2026 13:31:01] OK   Pedido #AB12CD34 — Juan — $1200
-    [20/04/2026 13:35:00] WARN [1/5] Impresora no disponible
-    [20/04/2026 13:35:15] WARN [2/5] Reintentando en 15s...
 
-─────────────────────────────────────────────────────────
-  CASO: la impresora estaba apagada
-─────────────────────────────────────────────────────────
-  Si habia pedidos pagados mientras la impresora estaba
-  apagada, al encender la PC (o reiniciar el servicio)
-  se imprimiran automaticamente todos los pendientes.
+═══════════════════════════════════════════════════════════
+PREVIEW EN MAC (ver el ticket sin impresora)
+═══════════════════════════════════════════════════════════
+  npm install
+  npm run preview
+
+  Muestra en consola exactamente cómo se ve el ticket.
+  Para cambiar el diseño: editá ticket.js y volvé a correr.
+
+
+═══════════════════════════════════════════════════════════
+LOGS
+═══════════════════════════════════════════════════════════
+  Todo queda registrado en: imprimir.log
+
+  OK   #AB12CD34 — Juan — $7700       ← impresión exitosa
+  WARN [1/5] TCP timeout               ← impresora no responde
+  ERR  #AB12CD34 no se pudo imprimir   ← falló todos los reintentos
+
+  Si quedaron pedidos sin imprimir (ERR), al reiniciar el
+  servicio los reintenta automáticamente.
 
 ═══════════════════════════════════════════════════════════
