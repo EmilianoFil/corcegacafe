@@ -19,7 +19,9 @@
       "ticket-pdf.js",
       "escpos.js",
       "index-ui.js",
-      "node_modules/pdfkit/js/data/**"
+      "node_modules/pdfkit/js/data/**",
+      "node_modules/pdfkit/js/data/*.afm",
+      "node_modules/pdfkit/js/data/*.icc"
     ]
   },
   "dependencies": {
