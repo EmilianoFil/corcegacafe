@@ -336,6 +336,36 @@ header {
 
 .btn-add-cart:hover { background: var(--naranja-accent); }
 
+/* Ícono carrito + plus (estilo ML) */
+.cart-plus-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.cart-plus-icon .fa-shopping-cart {
+    font-size: 16px;
+}
+.cart-plus-icon .fa-plus {
+    font-size: 8px;
+    font-weight: 900;
+    position: absolute;
+    top: -4px;
+    right: -5px;
+    background: var(--naranja-accent);
+    border-radius: 50%;
+    width: 11px;
+    height: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.btn-add-cart:hover .cart-plus-icon .fa-plus {
+    background: white;
+    color: var(--naranja-accent);
+}
+
 /* CART DRAWER */
 .cart-drawer {
     position: fixed;

@@ -160,7 +160,10 @@ function renderProducts() {
                     <div class="product-footer">
                         <span class="product-price">$${p.precio.toLocaleString('es-AR')}</span>
                         <button class="btn-add-cart" onclick="event.stopPropagation(); window.addToCart('${p.id}')" ${isAgotado ? 'disabled' : ''}>
-                            <i class="fas fa-${isAgotado ? 'times' : 'plus'}"></i>
+                            ${isAgotado
+                                ? '<i class="fas fa-times"></i>'
+                                : '<span class="cart-plus-icon"><i class="fas fa-shopping-cart"></i><i class="fas fa-plus"></i></span>'
+                            }
                         </button>
                     </div>
                 </div>
@@ -263,7 +266,7 @@ function openVariantPicker(p) {
     if (vpmBtn) {
         vpmBtn.disabled = true;
         vpmBtn.style.background = '#bbb';
-        vpmBtn.innerText = 'Elegí las opciones';
+        vpmBtn.innerHTML = '<i class="fas fa-hand-point-up"></i> Elegí las opciones';
     }
 
     const attrContainer = document.getElementById('vpm-atributos');
@@ -374,7 +377,9 @@ window.vpmSelectOption = function(attrName, value, btn) {
         const btn = document.getElementById('vpm-add-btn');
         btn.disabled = sinStock;
         btn.style.background = sinStock ? '#ccc' : 'var(--panel-oscuro)';
-        btn.innerText = sinStock ? 'Sin stock' : 'Agregar al carrito';
+        btn.innerHTML = sinStock
+            ? '<i class="fas fa-times"></i> Sin stock'
+            : '<i class="fas fa-shopping-cart"></i> AGREGAR AL CARRITO';
         _vpmQty = 1;
         document.getElementById('vpm-qty').innerText = '1';
     }
