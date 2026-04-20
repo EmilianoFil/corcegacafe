@@ -237,11 +237,21 @@
     <script type="module">
         import { db, auth } from './js/firebase-config.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-        import { doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        import { doc, onSnapshot, updateDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const orderId = urlParams.get('orderId');
-        const mpStatus = urlParams.get('status');
+        const urlParams  = new URLSearchParams(window.location.search);
+        const orderId    = urlParams.get('orderId');
+        const mpStatus   = urlParams.get('status');
+        const mpPaymentId = urlParams.get('payment_id') || urlParams.get('collection_id');
+
+        // Guardar el ID de pago de MP en Firestore (llega en la URL de redirect)
+        if (orderId && mpPaymentId && mpStatus === 'approved') {
+            updateDoc(doc(db, 'ordenes', orderId), {
+                mp_payment_id: mpPaymentId,
+                estado: 'pagado',
+                impreso: false
+            }).catch(() => {/* sin permisos de escritura pública, el webhook de MP lo hace */});
+        }
 
         if (!orderId) {
             window.location.href = 'tienda.html';

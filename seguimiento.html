@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Seguimiento de Pedido — Córcega Café</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Playfair+Display:wght@700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/tienda/tienda.css?v=2.5">
+    <style>
+        .seg-wrap {
+            max-width: 480px;
+            margin: 30px auto 60px;
+            padding: 0 20px;
+        }
+
+        /* ── Card principal ── */
+        .seg-card {
+            background: white;
+            border-radius: 28px;
+            padding: 32px 28px;
+            box-shadow: 0 15px 50px rgba(1,50,63,0.08);
+            animation: fadeUp 0.4s ease;
+        }
+        @keyframes fadeUp {
+            from { opacity:0; transform:translateY(12px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        .seg-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        .seg-logo-text { font-family: var(--font-sync); font-size: 16px; color: var(--panel-oscuro); font-weight: 700; }
+        .seg-logo-sub  { font-size: 9px; letter-spacing: 2px; color: var(--texto-muted); text-transform: uppercase; }
+
+        .seg-order-id {
+            display: inline-block;
+            background: rgba(237,112,83,0.1);
+            color: var(--naranja-accent);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            padding: 5px 14px;
+            border-radius: 50px;
+            margin-bottom: 22px;
+        }
+
+        /* ── Stepper ── */
+        .stepper { display: flex; flex-direction: column; gap: 0; margin: 24px 0; }
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            position: relative;
+            padding-bottom: 20px;
+        }
+        .step:last-child { padding-bottom: 0; }
+        .step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 32px;
+            width: 2px;
+            bottom: 0;
+            background: #eee;
+        }
+        .step.done::after,
+        .step.active::after { background: var(--naranja-accent); opacity: 0.3; }
+
+        .step-icon {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            border-radius: 50%;
+            background: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            color: #bbb;
+            z-index: 1;
+            transition: all 0.3s;
+        }
+        .step.done   .step-icon { background: var(--naranja-accent); color: white; }
+        .step.active .step-icon { background: var(--panel-oscuro); color: white; box-shadow: 0 4px 12px rgba(1,50,63,0.25); }
+
+        .step-info { padding-top: 4px; }
+        .step-label { font-size: 14px; font-weight: 600; color: #ccc; transition: color 0.3s; }
+        .step.done   .step-label { color: var(--texto-muted); }
+        .step.active .step-label { color: var(--panel-oscuro); font-weight: 800; }
+        .step-sub { font-size: 11px; color: #bbb; margin-top: 2px; }
+        .step.active .step-sub { color: var(--naranja-accent); }
+
+        /* ── Info del pedido ── */
+        .seg-info-block {
+            background: #fdfcf7;
+            border-radius: 14px;
+            padding: 16px;
+            margin: 20px 0;
+            font-size: 13px;
+            line-height: 1.8;
+            color: var(--panel-oscuro);
+        }
+        .seg-info-row { display: flex; justify-content: space-between; }
+        .seg-info-label { color: var(--texto-muted); font-weight: 600; }
+        .seg-total { font-size: 18px; font-weight: 800; color: var(--naranja-accent); margin-top: 8px; }
+
+        /* ── Botones ── */
+        .btn-seg-primary {
+            width: 100%;
+            padding: 15px;
+            background: var(--panel-oscuro);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn-seg-primary:hover { background: var(--naranja-accent); transform: translateY(-1px); }
+
+        .btn-seg-outline {
+            width: 100%;
+            padding: 13px;
+            background: white;
+            color: var(--panel-oscuro);
+            border: 2px solid #e8e4db;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        /* ── Admin panel ── */
+        .admin-panel {
+            margin-top: 24px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f0f7ff, #e8f4ff);
+            border: 1px solid rgba(59,130,246,0.2);
+            border-radius: 16px;
+        }
+        .admin-panel h4 {
+            margin: 0 0 14px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #3b82f6;
+            font-weight: 800;
+        }
+        .admin-select {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid #e8e4db;
+            background: white;
+            font-family: var(--font-base);
+            font-size: 14px;
+            margin-bottom: 12px;
+            color: var(--panel-oscuro);
+        }
+        .btn-admin-save {
+            width: 100%;
+            padding: 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .btn-admin-save:hover { background: #2563eb; }
+        .btn-admin-save:disabled { background: #93c5fd; cursor: not-allowed; }
+
+        /* ── Entregado ── */
+        .entregado-view { text-align: center; padding: 10px 0 20px; }
+        .entregado-view .check-big {
+            width: 70px; height: 70px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 30px; color: white;
+            margin: 0 auto 20px;
+            box-shadow: 0 10px 25px rgba(34,197,94,0.3);
+        }
+        .entregado-view h2 { font-family: var(--font-display); font-size: 26px; color: var(--panel-oscuro); margin-bottom: 8px; }
+        .entregado-view p  { color: var(--texto-muted); font-size: 14px; }
+
+        /* ── Login prompt ── */
+        .login-prompt {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--texto-muted);
+        }
+        .login-prompt a { color: var(--naranja-accent); font-weight: 700; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <header id="main-header" data-title="SEGUIMIENTO<br>DE PEDIDO"></header>
+    </div>
+
+    <div class="seg-wrap">
+        <!-- Loader -->
+        <div id="seg-loader" class="corcega-loader-container" style="padding: 80px 20px;">
+            <div class="corcega-spinner"><i class="fas fa-circle-notch fa-spin"></i></div>
+            <p class="corcega-loader-text">Buscando tu pedido...</p>
+        </div>
+
+        <!-- Contenido principal (oculto hasta cargar) -->
+        <div id="seg-content" style="display:none;">
+
+            <!-- Card con estado -->
+            <div class="seg-card" id="seg-main-card">
+                <div class="seg-logo">
+                    <div>
+                        <div class="seg-logo-text">CÓRCEGA</div>
+                        <div class="seg-logo-sub">Rebeldía Cafetera</div>
+                    </div>
+                </div>
+
+                <div id="seg-order-badge" class="seg-order-id">PEDIDO #——</div>
+
+                <!-- Vista Entregado (oculta por defecto) -->
+                <div class="entregado-view" id="entregado-view" style="display:none;">
+                    <div class="check-big"><i class="fas fa-check"></i></div>
+                    <h2>¡Pedido entregado!</h2>
+                    <p>Gracias por elegirnos.<br>¡Esperamos verte pronto!</p>
+                </div>
+
+                <!-- Stepper (visible mientras no está entregado) -->
+                <div class="stepper" id="seg-stepper">
+                    <div class="step" id="st-recibido">
+                        <div class="step-icon"><i class="fas fa-receipt"></i></div>
+                        <div class="step-info">
+                            <div class="step-label">Pedido recibido</div>
+                            <div class="step-sub"></div>
+                        </div>
+                    </div>
+                    <div class="step" id="st-pago">
+                        <div class="step-icon"><i class="fas fa-credit-card"></i></div>
+                        <div class="step-info">
+                            <div class="step-label">Pago confirmado</div>
+                            <div class="step-sub"></div>
+                        </div>
+                    </div>
+                    <div class="step" id="st-preparacion">
+                        <div class="step-icon"><i class="fas fa-mug-hot"></i></div>
+                        <div class="step-info">
+                            <div class="step-label">En preparación</div>
+                            <div class="step-sub"></div>
+                        </div>
+                    </div>
+                    <div class="step" id="st-listo">
+                        <div class="step-icon"><i class="fas fa-hand-holding-heart"></i></div>
+                        <div class="step-info">
+                            <div class="step-label">Listo para retirar / En camino</div>
+                            <div class="step-sub"></div>
+                        </div>
+                    </div>
+                    <div class="step" id="st-entregado">
+                        <div class="step-icon"><i class="fas fa-flag-checkered"></i></div>
+                        <div class="step-info">
+                            <div class="step-label">Entregado</div>
+                            <div class="step-sub"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumen del pedido -->
+                <div class="seg-info-block" id="seg-info-block" style="display:none;">
+                    <div id="seg-items-list"></div>
+                    <div class="seg-total" id="seg-total"></div>
+                </div>
+
+                <!-- Botones cliente -->
+                <div id="seg-actions" style="margin-top:20px;"></div>
+
+                <!-- Panel admin (oculto hasta verificar) -->
+                <div class="admin-panel" id="admin-panel" style="display:none;">
+                    <h4><i class="fas fa-lock" style="margin-right:6px;"></i> Panel Admin</h4>
+                    <select id="admin-estado-select" class="admin-select">
+                        <option value="pagado">Pagado</option>
+                        <option value="en_preparacion">En preparación</option>
+                        <option value="listo">Listo para retirar / En camino</option>
+                        <option value="entregado">Entregado ✓</option>
+                        <option value="cancelado">Cancelado</option>
+                    </select>
+                    <button class="btn-admin-save" id="btn-admin-guardar">
+                        <i class="fas fa-save"></i> Guardar estado
+                    </button>
+                </div>
+
+                <!-- Login para admin -->
+                <div class="login-prompt" id="login-prompt" style="display:none;">
+                    <a href="login.html">Iniciar sesión como admin →</a>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Error -->
+        <div id="seg-error" style="display:none; text-align:center; padding:60px 20px; color:var(--texto-muted);">
+            <i class="fas fa-search" style="font-size:40px; margin-bottom:20px; opacity:0.3;"></i>
+            <p>No encontramos ese pedido.</p>
+            <button onclick="window.location.href='tienda.html'" class="btn-seg-primary" style="margin-top:20px; max-width:200px;">Ir a la tienda</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db, auth } from './js/firebase-config.js';
+        import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+        import { doc, onSnapshot, updateDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+        // ── Leer ID de la URL ─────────────────────────────────────────────────
+        const orderId = new URLSearchParams(window.location.search).get('id');
+
+        if (!orderId) {
+            window.location.href = 'tienda.html';
+        }
+
+        // ── Admin emails (igual que admin-guard.js) ───────────────────────────
+        const ADMIN_EMAILS = ['emilianofilgueira@gmail.com', 'lemacafesrl@gmail.com'];
+
+        async function esAdmin(user) {
+            if (!user) return false;
+            if (ADMIN_EMAILS.includes(user.email)) return true;
+            const [a, b] = await Promise.all([
+                getDoc(doc(db, 'admins', user.uid)),
+                getDoc(doc(db, 'admin',  user.uid))
+            ]);
+            return a.exists() || b.exists();
+        }
+
+        // ── Estados y su índice ───────────────────────────────────────────────
+        const ESTADOS = ['pagado', 'en_preparacion', 'listo', 'entregado'];
+
+        function estadoIdx(e) { return ESTADOS.indexOf(e); }
+
+        function renderStepper(order) {
+            const estado = order.estado;
+            const idx    = estadoIdx(estado);
+            const ids    = ['st-pago', 'st-preparacion', 'st-listo', 'st-entregado'];
+
+            // Recibido siempre activo
+            document.getElementById('st-recibido').classList.add('done');
+
+            ids.forEach((id, i) => {
+                const el = document.getElementById(id);
+                el.classList.remove('done', 'active');
+                if (i < idx)       el.classList.add('done');
+                else if (i === idx) el.classList.add('active');
+            });
+
+            // Sub-texto del paso activo
+            const subs = {
+                pagado:          'Pago verificado ✨',
+                en_preparacion:  'Estamos preparando tu pedido',
+                listo:           order.metodoEntrega === 'delivery' ? 'En camino 🛵' : 'Podés pasar a retirarlo',
+                entregado:       '¡Listo!'
+            };
+            const activeEl = document.getElementById(ids[idx]);
+            if (activeEl) activeEl.querySelector('.step-sub').innerText = subs[estado] || '';
+        }
+
+        function renderInfoBlock(order) {
+            const block = document.getElementById('seg-info-block');
+            const list  = document.getElementById('seg-items-list');
+            list.innerHTML = (order.items || []).map(i =>
+                `<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                    <span>${i.qty}x ${i.nombre}${i.variantLabel ? ` <span style="color:var(--naranja-accent);font-size:11px;">(${i.variantLabel})</span>` : ''}</span>
+                    <span>$${((i.precio||0)*(i.qty||1)).toLocaleString('es-AR')}</span>
+                </div>`
+            ).join('');
+            document.getElementById('seg-total').innerText = `Total: $${(order.total||0).toLocaleString('es-AR')}`;
+            block.style.display = 'block';
+        }
+
+        function renderPage(order, isAdmin) {
+            const estado = order.estado;
+
+            document.getElementById('seg-loader').style.display  = 'none';
+            document.getElementById('seg-content').style.display = 'block';
+            document.getElementById('seg-order-badge').innerText = `PEDIDO #${orderId.slice(-8).toUpperCase()}`;
+
+            if (estado === 'entregado') {
+                // Vista de entregado
+                document.getElementById('seg-stepper').style.display   = 'none';
+                document.getElementById('entregado-view').style.display = 'block';
+                document.getElementById('seg-actions').innerHTML =
+                    `<button onclick="window.location.href='tienda.html'" class="btn-seg-primary">Seguir comprando</button>`;
+            } else {
+                // Vista de stepper
+                renderStepper(order);
+                renderInfoBlock(order);
+
+                // Botón para abrir WhatsApp si hay duda
+                const wa = `https://wa.me/5491136053892?text=${encodeURIComponent('Hola! Consulta sobre mi pedido #' + orderId.slice(-8).toUpperCase())}`;
+                document.getElementById('seg-actions').innerHTML =
+                    `<a href="${wa}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;
+                     width:100%;padding:13px;background:#25d366;color:white;border-radius:14px;
+                     font-weight:700;font-size:13px;text-decoration:none;margin-top:8px;">
+                        <i class="fab fa-whatsapp"></i> Consultar por WhatsApp
+                    </a>`;
+            }
+
+            // Panel admin
+            if (isAdmin) {
+                const panel = document.getElementById('admin-panel');
+                const sel   = document.getElementById('admin-estado-select');
+                panel.style.display = 'block';
+                sel.value = estado;
+
+                document.getElementById('btn-admin-guardar').onclick = async () => {
+                    const btn      = document.getElementById('btn-admin-guardar');
+                    const nuevoEst = sel.value;
+                    btn.disabled   = true;
+                    btn.innerHTML  = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+                    try {
+                        await updateDoc(doc(db, 'ordenes', orderId), { estado: nuevoEst });
+                        btn.innerHTML = '<i class="fas fa-check"></i> Guardado';
+                        setTimeout(() => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Guardar estado'; }, 2000);
+                    } catch (e) {
+                        btn.disabled  = false;
+                        btn.innerHTML = 'Error — reintentar';
+                    }
+                };
+            } else if (estado !== 'entregado') {
+                document.getElementById('login-prompt').style.display = 'block';
+            }
+        }
+
+        // ── Cargar y escuchar ─────────────────────────────────────────────────
+        async function init() {
+            // 1. Verificar si es admin
+            const adminCheck = new Promise(resolve => {
+                onAuthStateChanged(auth, async user => resolve(await esAdmin(user)));
+            });
+
+            // 2. Intentar lectura directa (funciona si las reglas lo permiten)
+            try {
+                const snap = await getDoc(doc(db, 'ordenes', orderId));
+                if (!snap.exists()) throw new Error('not found');
+
+                const isAdmin = await adminCheck;
+                renderPage(snap.data(), isAdmin);
+
+                // Escuchar cambios en tiempo real
+                onSnapshot(doc(db, 'ordenes', orderId), (s) => {
+                    if (s.exists()) renderPage(s.data(), isAdmin);
+                }, () => {/* sin permisos para realtime, ok */});
+
+            } catch (e) {
+                // Fallback: Cloud Function pública
+                try {
+                    const res = await fetch('https://getpublicorder-ioo4dzpz2a-uc.a.run.app', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId })
+                    });
+                    if (!res.ok) throw new Error('not found');
+                    const order = await res.json();
+                    const isAdmin = await adminCheck;
+                    renderPage(order, isAdmin);
+                } catch {
+                    document.getElementById('seg-loader').style.display = 'none';
+                    document.getElementById('seg-error').style.display  = 'block';
+                }
+            }
+        }
+
+        init();
+    </script>
+
+    <script type="module" src="js/tienda/header-component.js?v=1.3"></script>
+    <footer id="main-footer"></footer>
+    <script type="module" src="js/tienda/footer-component.js?v=1.2"></script>
+</body>
+</html>

@@ -1,24 +1,11 @@
 'use strict';
 
-/**
- * ticket.js — Define QUÉ se imprime y cómo se ve el ticket.
- * Editá este archivo para cambiar el diseño del comprobante.
- *
- * Funciones disponibles del builder (b):
- *   b.centro(texto)       — texto centrado
- *   b.izquierda(texto)    — texto alineado a la izquierda
- *   b.bold(texto)         — texto en negrita
- *   b.bigBold(texto)      — texto grande + negrita (doble altura)
- *   b.linea()             — línea divisoria ─────────────────
- *   b.espacio()           — línea en blanco
- *   b.fila(izq, der)      — texto izquierda + precio a la derecha
- *   b.cortar()            — corte de papel (siempre al final)
- */
-
 const { norm } = require('./escpos.js');
 
-function formatearFecha(ts) {
-    if (!ts) return '';
+const BASE_URL = 'https://corcegacafe.com.ar/seguimiento.html';
+
+function formatFechaHora(ts) {
+    if (!ts) return '—';
     const d = ts._seconds ? new Date(ts._seconds * 1000)
                            : (ts.toDate ? ts.toDate() : new Date(ts));
     return d.toLocaleString('es-AR', {
@@ -27,33 +14,39 @@ function formatearFecha(ts) {
     });
 }
 
-function labelPago(metodo) {
-    return { mercadopago: 'Mercado Pago', transferencia: 'Transferencia', efectivo: 'Efectivo' }[metodo] || metodo || '';
-}
-
 /**
  * Genera el ticket de un pedido.
  * @param {object} pedido  — datos del doc de Firestore
  * @param {string} id      — ID del documento
- * @param {object} b       — builder (escpos o consoleBuilder)
+ * @param {object} b       — builder (EscposBuilder o ConsoleBuilder)
  */
 function generarTicket(pedido, id, b) {
-    const p    = pedido;
-    const uid  = id.slice(-8).toUpperCase();
+    const p   = pedido;
+    const uid = id.slice(-8).toUpperCase();
+    const qrUrl = `${BASE_URL}?id=${id}`;
 
-    // ── CABECERA ─────────────────────────────────────────────────────────────
+    // ── CABECERA ──────────────────────────────────────────────────────────────
     b.espacio();
-    b.bigBold('CORCEGA CAFE');
-    b.centro('Rebeldia Cafetera');
-    b.linea();
+    b.bigBold('Corcega Cafe | TIENDA ONLINE');
+    b.espacio();
 
-    // ── NÚMERO Y FECHA ────────────────────────────────────────────────────────
-    b.centro(`# ${uid}`);
-    b.centro(formatearFecha(p.timestamp));
-    b.linea();
+    // ── FECHA/HORA DEL PEDIDO ────────────────────────────────────────────────
+    b.centro(formatFechaHora(p.timestamp));
+    b.espacio();
+
+    // ── DATOS DEL CLIENTE ────────────────────────────────────────────────────
+    b.izquierda(`Cliente: ${norm(p.cliente?.nombre || '—')}`);
+    b.izquierda(`Mail:    ${p.cliente?.email || '—'}`);
+    if (p.cliente?.dni) {
+        b.izquierda(`DNI:     ${p.cliente.dni}`);
+    }
+    b.izquierda(`Fecha de entrega solicitada: ${norm(p.horario || 'A confirmar')}`);
+    b.espacio();
 
     // ── ITEMS ─────────────────────────────────────────────────────────────────
-    b.bold('ITEMS:');
+    b.bold('Pedido');
+    b.linea();
+
     for (const item of (p.items || [])) {
         const nombre = norm(`${item.qty}x ${item.nombre}`);
         const precio = `$${((item.precio || 0) * (item.qty || 1)).toLocaleString('es-AR')}`;
@@ -63,39 +56,34 @@ function generarTicket(pedido, id, b) {
         }
     }
 
-    // ── TOTAL ─────────────────────────────────────────────────────────────────
-    b.linea();
-    b.fila('TOTAL:', `$${(p.total || 0).toLocaleString('es-AR')}`, true /* bold */);
-    b.linea();
-
-    // ── ENTREGA ───────────────────────────────────────────────────────────────
-    const esDelivery = p.metodoEntrega === 'delivery';
-    b.bold(esDelivery ? '[ ENVIO A DOMICILIO ]' : '[ RETIRO EN LOCAL ]');
-    if (esDelivery && p.cliente?.direccion) {
-        b.izquierda(`Dir: ${norm(p.cliente.direccion)}`);
-    }
-    if (p.horario) {
-        b.izquierda(`Horario: ${norm(p.horario)}`);
-    }
-    b.linea();
-
-    // ── CLIENTE ───────────────────────────────────────────────────────────────
-    if (p.cliente?.nombre)   b.izquierda(`Cliente: ${norm(p.cliente.nombre)}`);
-    if (p.cliente?.whatsapp) b.izquierda(`WA: ${p.cliente.whatsapp}`);
-    b.izquierda(`Pago: ${labelPago(p.metodoPago)}`);
-
-    // ── NOTAS ─────────────────────────────────────────────────────────────────
-    if (p.notas?.trim()) {
-        b.linea();
-        b.bold('NOTAS:');
-        b.izquierda(norm(p.notas.trim()));
-    }
-
-    // ── PIE ───────────────────────────────────────────────────────────────────
-    b.linea();
-    b.centro('Gracias!');
-    b.centro('corcegacafe.com.ar');
     b.espacio();
+    b.fila('Total:', `$${(p.total || 0).toLocaleString('es-AR')}`, true /* bold */);
+    b.espacio();
+
+    // ── COMPROBANTE MP ────────────────────────────────────────────────────────
+    b.linea();
+    b.espacio();
+    const mpId = p.mp_payment_id || p.pagoId || null;
+    if (mpId) {
+        b.bold(`Nro comprobante MP: ${mpId}`);
+    } else if (p.metodoPago === 'transferencia') {
+        b.izquierda('Pago: Transferencia bancaria');
+    } else if (p.metodoPago === 'efectivo') {
+        b.izquierda('Pago: Efectivo en local');
+    } else {
+        b.izquierda('Comprobante MP: pendiente de confirmacion');
+    }
+    b.espacio();
+
+    // ── QR DE SEGUIMIENTO ────────────────────────────────────────────────────
+    b.linea();
+    b.espacio();
+    b.centro('Seguimiento de tu pedido:');
+    b.qr(qrUrl);
+    b.espacio();
+    b.centro(`#${uid}`);
+    b.espacio();
+
     b.cortar();
 }
 
