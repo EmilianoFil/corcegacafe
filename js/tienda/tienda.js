@@ -229,8 +229,8 @@ window.addToCart = function(id) {
 
     const existing = cart.find(item => item.id === id);
     if (maxUnidadesPorPedido > 0 && p.requiereAgenda) {
-        const currentQty = existing?.qty || 0;
-        if (currentQty >= maxUnidadesPorPedido) {
+        const totalAgenda = cart.filter(i => i.requiereAgenda !== false).reduce((s, i) => s + i.qty, 0);
+        if (totalAgenda + 1 > maxUnidadesPorPedido) {
             showToast(`Máximo ${maxUnidadesPorPedido} unidades por pedido. Para cantidades mayores, ¡escribinos!`, 'warning');
             return;
         }
@@ -443,8 +443,8 @@ window.vpmConfirm = function() {
     const cartKey = `${_vpmProduct.id}__${key}`;
     const existing = cart.find(item => item._cartKey === cartKey);
     if (maxUnidadesPorPedido > 0 && _vpmProduct.requiereAgenda) {
-        const currentQty = existing?.qty || 0;
-        if (currentQty + _vpmQty > maxUnidadesPorPedido) {
+        const totalAgenda = cart.filter(i => i.requiereAgenda !== false).reduce((s, i) => s + i.qty, 0);
+        if (totalAgenda + _vpmQty > maxUnidadesPorPedido) {
             showToast(`Máximo ${maxUnidadesPorPedido} unidades por pedido. Para cantidades mayores, ¡escribinos!`, 'warning');
             return;
         }
