@@ -457,7 +457,12 @@ async function fetchOrders(dni, email) {
         ordersList.innerHTML = orders.map(order => {
             const date = order.timestamp ? order.timestamp.toDate().toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
             const statusLabel = formatStatus(order.estado);
-            const itemsSummary = order.items.map(item => `${item.qty}x ${item.nombre}`).join(', ');
+
+            const itemsHTML = (order.items || []).map(item => `
+                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; font-size:13px; gap:10px;">
+                    <span><span style="font-weight:700; color:var(--naranja-oscuro);">${item.qty}x</span> ${item.nombre}${item.variantLabel ? `<br><span style="font-size:10px; color:#aaa;">${item.variantLabel}</span>` : ''}</span>
+                    <span style="font-weight:600; white-space:nowrap;">$${((item.precio || 0) * (item.qty || 1)).toLocaleString('es-AR')}</span>
+                </div>`).join('');
 
             return `
                 <div class="order-card">
@@ -468,18 +473,21 @@ async function fetchOrders(dni, email) {
                         </div>
                         <span class="order-status status-${order.estado || 'pendiente_pago'}">${statusLabel}</span>
                     </div>
-                    
-                    <div style="font-size: 11px; font-weight: 500; color: var(--texto-muted); display:flex; flex-direction:column; gap:4px; margin-top:5px; margin-bottom:10px;">
+
+                    <div style="font-size: 11px; font-weight: 500; color: var(--texto-muted); display:flex; flex-direction:column; gap:4px; margin-top:5px; margin-bottom:12px;">
                         <span>Pedido el ${date}</span>
                         ${order.horario ? `<span style="color:var(--naranja-oscuro); font-weight:700; font-size:12px;"><i class="fas fa-calendar-day" style="margin-right:4px;"></i> Para retirar el ${order.horario}</span>` : ''}
                     </div>
 
-                    <div class="order-items-summary">
-                        ${itemsSummary}
+                    <div style="border-top:1px dashed #eee; padding-top:12px; margin-bottom:10px;">
+                        ${itemsHTML}
+                        <div style="display:flex; justify-content:space-between; border-top:1px dashed #eee; margin-top:8px; padding-top:8px; font-weight:800; font-size:15px;">
+                            <span>Total</span>
+                            <span>$${(order.total || 0).toLocaleString('es-AR')}</span>
+                        </div>
                     </div>
 
-                    <div class="order-footer">
-                        <span class="order-total">$${order.total.toLocaleString('es-AR')}</span>
+                    <div class="order-footer" style="justify-content:flex-end;">
                         <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
                             ${order.estado === 'pendiente_pago' 
                                 ? (order.metodoPago === 'transferencia' 

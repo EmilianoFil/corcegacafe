@@ -200,7 +200,10 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
                 const data = d.data();
                 if (data.estado === 'cancelado') return;
                 const iso = data.fechaISO || parseHorarioToISO(data.horario);
-                if (iso) orderCountByDate[iso] = (orderCountByDate[iso] || 0) + 1;
+                if (iso) {
+                    const totalItems = (data.items || []).reduce((s, it) => s + (it.qty || 1), 0);
+                    orderCountByDate[iso] = (orderCountByDate[iso] || 0) + totalItems;
+                }
             });
             // Show legend
             const leyenda = document.getElementById('agenda-leyenda');
