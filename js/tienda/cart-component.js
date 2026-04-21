@@ -227,9 +227,12 @@ export function saveAndRefresh() {
 window.updateQty = function(index, delta) {
     const item = cart[index];
     if (delta > 0) {
-        if (_maxUnidadesPorPedido > 0 && item.requiereAgenda && item.qty >= _maxUnidadesPorPedido) {
-            showToast(`Máximo ${_maxUnidadesPorPedido} unidades por pedido. Para cantidades mayores, ¡escribinos!`, 'warning');
-            return;
+        if (_maxUnidadesPorPedido > 0 && item.requiereAgenda) {
+            const totalAgenda = cart.filter(i => i.requiereAgenda).reduce((s, i) => s + i.qty, 0);
+            if (totalAgenda + delta > _maxUnidadesPorPedido) {
+                showToast(`Máximo ${_maxUnidadesPorPedido} unidades por pedido (entre todos los productos con fecha). Para cantidades mayores, ¡escribinos!`, 'warning');
+                return;
+            }
         }
         if (item.stockIlimitado !== true) {
             const stockDisponible = item.stock || 0;
