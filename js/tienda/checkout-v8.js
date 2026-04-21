@@ -1,6 +1,6 @@
 import { db, auth } from '../firebase-config.js';
 console.log("=== CHECKOUT V4 ACTIVE (NO ALERT) ===");
-import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { deleteAllSessionReservas } from './cart-reservas.js';
 
@@ -8,6 +8,7 @@ import { deleteAllSessionReservas } from './cart-reservas.js';
 let cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
 let deliveryMethod = 'pickup';
 let userProfile = null;
+let processing = false;
 
 // --- ELEMENTS ---
 const checkoutItems = document.getElementById('checkout-items');
@@ -31,12 +32,16 @@ function init() {
 
     // 2. Auth Listener (Autofill) - Esto suele ser lo que más tarda
     onAuthStateChanged(auth, async (user) => {
+        const loginBtn = document.getElementById('btn-login-google');
         try {
             if (user) {
+                if (loginBtn) loginBtn.style.display = 'none';
                 const snap = await getDoc(doc(db, "usuarios_tienda", user.uid));
                 if (snap.exists()) {
                     userProfile = snap.data();
                     autofillData(userProfile);
+                } else {
+                    validateForm();
                 }
             }
         } catch (err) {
@@ -259,9 +264,9 @@ function parseHorarioToISO(horario) {
 }
 
 function autofillData(profile) {
-    if (profile.nombre) document.getElementById('client-name').value = profile.nombre;
+    if (profile.nombre)   document.getElementById('client-name').value  = profile.nombre;
     if (profile.whatsapp) document.getElementById('client-phone').value = profile.whatsapp;
-    if (profile.dni) document.getElementById('client-dni').value = profile.dni;
+    if (profile.dni)      document.getElementById('client-dni').value   = profile.dni;
     
     // Si ya tenemos el mail del perfil, lo bloqueamos pero lo dejamos visible
     if (profile.email || auth.currentUser?.email) {
@@ -272,6 +277,8 @@ function autofillData(profile) {
         emailInput.style.color = "#888";
         emailInput.style.cursor = "not-allowed";
     }
+
+    validateForm();
 
     // Si tiene direcciones, agregar un selector opcional
     if (profile.direcciones && profile.direcciones.length > 0) {
@@ -328,12 +335,8 @@ function setupEventListeners() {
             methodCards.forEach(c => c.classList.remove('active'));
             card.classList.add('active');
             deliveryMethod = card.dataset.method;
-            
-            if (deliveryMethod === 'delivery') {
-                deliveryGroup.style.display = 'block';
-            } else {
-                deliveryGroup.style.display = 'none';
-            }
+            deliveryGroup.style.display = (deliveryMethod === 'delivery') ? 'block' : 'none';
+            validateForm();
         };
     });
 
@@ -341,24 +344,46 @@ function setupEventListeners() {
     paymentMethod.onchange = (e) => {
         const val = e.target.value;
         const cInfo = document.getElementById('cash-info');
-
         if (transferInfo) transferInfo.style.display = (val === 'transferencia') ? 'block' : 'none';
         if (cInfo) cInfo.style.display = (val === 'efectivo') ? 'block' : 'none';
         updateFinalizarBtnLabel(val);
     };
 
+    // Input listeners para validación en tiempo real
+    ['client-name', 'client-email', 'client-phone', 'client-dni', 'client-address'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', validateForm);
+    });
+    document.getElementById('order-schedule')?.addEventListener('change', validateForm);
+
     // Final Action
     btnFinalizar.onclick = handleOrderSubmission;
+
+    validateForm();
 }
 
 function updateFinalizarBtnLabel(metodoPago) {
-    if (!btnFinalizar || btnFinalizar.disabled) return;
-    if (metodoPago === 'mercadopago') {
-        btnFinalizar.innerText = 'PAGAR CON MERCADO PAGO';
-    } else {
-        // transferencia o efectivo
-        btnFinalizar.innerText = 'GENERAR PEDIDO';
+    if (!btnFinalizar || processing) return;
+    btnFinalizar.textContent = metodoPago === 'mercadopago' ? 'PAGAR CON MERCADO PAGO' : 'GENERAR PEDIDO';
+}
+
+function validateForm() {
+    const nombre   = document.getElementById('client-name')?.value.trim();
+    const email    = document.getElementById('client-email')?.value.trim();
+    const whatsapp = document.getElementById('client-phone')?.value.trim();
+    const dni      = document.getElementById('client-dni')?.value.trim();
+    const scheduleGroup = document.getElementById('schedule-group');
+    const scheduleVisible = scheduleGroup && scheduleGroup.style.display !== 'none';
+    const horario  = document.getElementById('order-schedule')?.value;
+
+    let valid = !!(nombre && email && whatsapp && dni);
+    if (scheduleVisible && !horario) valid = false;
+    if (deliveryMethod === 'delivery') {
+        const direccion = document.getElementById('client-address')?.value.trim();
+        if (!direccion) valid = false;
     }
+
+    btnFinalizar.disabled = !valid;
+    if (valid) updateFinalizarBtnLabel(paymentMethod?.value);
 }
 
 async function handleOrderSubmission() {
@@ -382,6 +407,7 @@ async function handleOrderSubmission() {
         return;
     }
 
+    processing = true;
     btnFinalizar.disabled = true;
     btnFinalizar.innerText = "Procesando pedido... ⏳";
 
@@ -395,7 +421,7 @@ async function handleOrderSubmission() {
                 nombre,
                 email,
                 whatsapp,
-                dni: sessionDni || null,
+                dni: dni || sessionDni || null,
                 direccion: deliveryMethod === 'delivery' ? direccion : 'Retiro en local'
             },
             items: cart,
@@ -454,9 +480,21 @@ async function handleOrderSubmission() {
     } catch (err) {
         console.error(err);
         alert("Hubo un error al procesar tu pedido. Por favor intentá de nuevo.");
-        btnFinalizar.disabled = false;
-        updateFinalizarBtnLabel(paymentMethod?.value);
+        processing = false;
+        validateForm();
     }
 }
+
+async function loginConGoogle() {
+    try {
+        await signInWithPopup(auth, new GoogleAuthProvider());
+        // onAuthStateChanged se encarga del autofill y ocultar el botón
+    } catch (err) {
+        if (err.code !== 'auth/popup-closed-by-user') {
+            console.error('Error al iniciar sesión:', err);
+        }
+    }
+}
+window.loginConGoogle = loginConGoogle;
 
 init();

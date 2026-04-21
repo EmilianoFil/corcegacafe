@@ -237,6 +237,10 @@
             color: #ddd !important;
             text-decoration: none !important;
         }
+        .btn-checkout:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -273,7 +277,12 @@
 
         <!-- Datos del Cliente -->
         <div class="checkout-section">
-            <h3><i class="fas fa-user-edit"></i> Tus Datos</h3>
+            <h3 style="justify-content: space-between; flex-wrap: wrap;">
+                <span style="display:flex; align-items:center; gap:10px;"><i class="fas fa-user-edit"></i> Tus Datos</span>
+                <button id="btn-login-google" onclick="window.loginConGoogle()" style="font-size:12px; padding:6px 14px; border-radius:20px; border:1.5px solid var(--naranja-accent); background:white; cursor:pointer; font-weight:700; color:var(--naranja-oscuro); display:flex; align-items:center; gap:6px; font-family:var(--font-base);">
+                    <i class="fab fa-google"></i> Iniciar sesión
+                </button>
+            </h3>
             <div class="form-group">
                 <label for="client-name">Nombre Completo</label>
                 <input type="text" id="client-name" class="form-control" placeholder="Ej: Emiliano López" required>
@@ -287,9 +296,8 @@
                 <input type="tel" id="client-phone" class="form-control" placeholder="Ej: 1122334455" required>
             </div>
             <div class="form-group">
-                <label for="client-dni">DNI (Para sumar puntos y ver historial)</label>
-                <input type="number" id="client-dni" class="form-control" placeholder="Ej: 35123456">
-                <small style="color:var(--texto-muted); font-size:11px;">* Si no tenés cuenta, podés dejarlo vacío.</small>
+                <label for="client-dni">DNI</label>
+                <input type="number" id="client-dni" class="form-control" placeholder="Ej: 35123456" required>
             </div>
             <div class="form-group">
                 <label for="client-note">Notas adicionales (opcional)</label>
@@ -346,10 +354,11 @@
                 <p style="margin-bottom:0"><i>* Una vez realizado el pedido, deberás enviar el comprobante por WhatsApp.</i></p>
             </div>
 
-            <button class="btn-checkout" id="btn-finalizar-pedido" style="margin-top:20px">
-                GATILLAR PEDIDO 🚀
+            <button class="btn-checkout" id="btn-finalizar-pedido" style="margin-top:20px" disabled>
+                PAGAR CON MERCADO PAGO
             </button>
         </div>
+    </div>
     </div>
 
     <!-- Scripts -->
