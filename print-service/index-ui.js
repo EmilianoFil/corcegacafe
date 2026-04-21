@@ -236,17 +236,51 @@ const HTML = `<!DOCTYPE html>
 <script>
 const modoLabel = { pdf: '📄 Modo PDF', printer: '🖨 Impresora térmica' };
 let colaData = [];
+let idsSeen = new Set();
+let primerasCarga = true;
+
+function chime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [[660, 0], [880, 0.18], [1100, 0.36]].forEach(([freq, when]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.28, ctx.currentTime + when);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + when + 0.7);
+      osc.start(ctx.currentTime + when);
+      osc.stop(ctx.currentTime + when + 0.7);
+    });
+  } catch(e) {}
+}
 
 function ts(iso) {
   if (!iso) return '';
   const d = new Date(iso);
-  return d.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+  return d.toLocaleString('es-AR', {
+    day:'2-digit', month:'2-digit', year:'numeric',
+    hour:'2-digit', minute:'2-digit', hour12: false
+  });
 }
 
 function renderCola(cola) {
+  // Detectar pedidos nuevos (procesando) que no habíamos visto antes
+  if (!primerasCarga) {
+    cola.forEach(i => {
+      if (i.estado === 'procesando' && !idsSeen.has(i.id)) chime();
+    });
+  }
+  cola.forEach(i => idsSeen.add(i.id));
+  primerasCarga = false;
+
   colaData = cola;
   const pendientes = cola.filter(i => i.estado === 'procesando' || i.estado === 'error');
-  const impresos   = cola.filter(i => i.estado === 'impreso');
+  // Impresos ordenados más reciente primero
+  const impresos = cola
+    .filter(i => i.estado === 'impreso')
+    .sort((a, b) => new Date(b.ts) - new Date(a.ts));
 
   const icons = { procesando: '⏳', impreso: '✅', error: '❌' };
 
@@ -258,7 +292,7 @@ function renderCola(cola) {
       <div class="card-icon icon-\${item.estado}">\${icons[item.estado] || '?'}</div>
       <div class="card-info">
         <div class="card-title">#\${item.uid} — \${item.nombre}</div>
-        <div class="card-sub">Horario pedido: \${ts(item.ts)}\${item.estado==='impreso'&&item.detalle?' · impreso: '+item.detalle:''}</div>
+        <div class="card-sub">Fecha/hora pedido: \${ts(item.ts)}\${item.estado==='impreso'&&item.detalle?' · impreso: '+item.detalle:''}</div>
         \${det}
       </div>
       <div class="card-total">$\${(item.total||0).toLocaleString('es-AR')}</div>
