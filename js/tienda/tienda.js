@@ -1,5 +1,5 @@
 import { db } from '../firebase-config.js';
-import { collection, getDocs, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { collection, getDocs, getDoc, doc, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { fetchReservedByOthers, getSessionId, writeReserva } from './cart-reservas.js';
 import { cart, initCart, openCart, closeCart, saveAndRefresh, showToast } from './cart-component.js';
 
@@ -8,6 +8,7 @@ let products = [];
 let categories = [];
 let activeCategory = 'todos';
 let reservedByOthers = {};
+let maxUnidadesPorPedido = 0;
 
 // --- ELEMENTS ---
 const productsGrid = document.getElementById('products-container');
@@ -39,7 +40,10 @@ async function init() {
     await Promise.all([
         fetchCategories(),
         fetchProducts(),
-        fetchReservedByOthers().then(map => { reservedByOthers = map; }).catch(err => { console.warn('fetchReservedByOthers error:', err); })
+        fetchReservedByOthers().then(map => { reservedByOthers = map; }).catch(err => { console.warn('fetchReservedByOthers error:', err); }),
+        getDoc(doc(db, "configuracion", "tienda")).then(snap => {
+            if (snap.exists()) maxUnidadesPorPedido = snap.data().agenda?.pedidosMaximosDia || 0;
+        }).catch(() => {})
     ]);
     renderCategories();
     renderProducts();
@@ -221,6 +225,13 @@ window.addToCart = function(id) {
     }
 
     const existing = cart.find(item => item.id === id);
+    if (maxUnidadesPorPedido > 0) {
+        const currentQty = existing?.qty || 0;
+        if (currentQty >= maxUnidadesPorPedido) {
+            showToast(`Máximo ${maxUnidadesPorPedido} unidades por pedido. Para cantidades mayores, ¡escribinos!`, 'warning');
+            return;
+        }
+    }
     if (existing) {
         existing.qty++;
         if (p.stockIlimitado !== true) {
@@ -428,6 +439,13 @@ window.vpmConfirm = function() {
     // Check existing in cart (same product + same variant)
     const cartKey = `${_vpmProduct.id}__${key}`;
     const existing = cart.find(item => item._cartKey === cartKey);
+    if (maxUnidadesPorPedido > 0) {
+        const currentQty = existing?.qty || 0;
+        if (currentQty + _vpmQty > maxUnidadesPorPedido) {
+            showToast(`Máximo ${maxUnidadesPorPedido} unidades por pedido. Para cantidades mayores, ¡escribinos!`, 'warning');
+            return;
+        }
+    }
     if (existing) {
         if (!ilimitado && existing.qty + _vpmQty > stock) {
             alert(`Solo quedan ${stock} unidades de esta variante.`);
