@@ -22,7 +22,7 @@ function formatFechaHora(ts) {
  */
 function generarTicket(pedido, id, b) {
     const p   = pedido;
-    const uid = id.slice(-8).toUpperCase();
+    const uid = p.orderNumber || id.slice(-8).toUpperCase();
     const qrUrl = `${BASE_URL}?id=${id}`;
 
     // ── CABECERA ──────────────────────────────────────────────────────────────

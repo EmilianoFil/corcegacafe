@@ -23,7 +23,7 @@ function formatFechaHora(ts) {
 
 async function generarYAbrirPDF(pedido, id) {
     const p   = pedido;
-    const uid = id.slice(-8).toUpperCase();
+    const uid = p.orderNumber || id.slice(-8).toUpperCase();
     const qrUrl = `https://corcegacafe.com.ar/seguimiento.html?id=${id}`;
 
     // QR como data URL (no necesita archivos externos)

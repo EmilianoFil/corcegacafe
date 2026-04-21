@@ -551,7 +551,7 @@ export async function loadOrdenesTable(filtro = 'todos') {
             return `
                 <tr style="background-color: ${rowBg} !important;">
                     <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03) !important; vertical-align: middle; background-color: ${rowBg} !important;">
-                        <span style="font-weight:800; color:var(--panel-oscuro); font-family:monospace; font-size:13px;">#${o.id.substring(0,8).toUpperCase()}</span>
+                        <span style="font-weight:800; color:var(--panel-oscuro); font-family:monospace; font-size:13px;">#${o.orderNumber || o.id.substring(0,8).toUpperCase()}</span>
                     </td>
                     <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03) !important; font-size:12px; color:#666; vertical-align: middle; background-color: ${rowBg} !important;">
                         ${date}
