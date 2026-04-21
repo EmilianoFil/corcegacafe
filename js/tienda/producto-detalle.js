@@ -259,7 +259,7 @@ window.changeQty = function(delta) {
     if (delta > 0) {
         const maxUnidades = getMaxUnidadesPorPedido();
         if (maxUnidades > 0 && p?.requiereAgenda) {
-            const totalAgenda = cart.filter(i => i.requiereAgenda).reduce((s, i) => s + i.qty, 0);
+            const totalAgenda = cart.filter(i => i.requiereAgenda !== false).reduce((s, i) => s + i.qty, 0);
             if (totalAgenda + currentQty + delta > maxUnidades) {
                 showToast(`Máximo ${maxUnidades} unidades con fecha por pedido. Para más, ¡escribinos!`, 'warning');
                 return;
@@ -431,7 +431,7 @@ function addToCartFromPage() {
 
     const maxUnidades = getMaxUnidadesPorPedido();
     if (maxUnidades > 0 && p.requiereAgenda) {
-        const totalAgenda = cart.filter(i => i.requiereAgenda).reduce((s, i) => s + i.qty, 0);
+        const totalAgenda = cart.filter(i => i.requiereAgenda !== false).reduce((s, i) => s + i.qty, 0);
         if (totalAgenda + currentQty > maxUnidades) {
             showToast(`Máximo ${maxUnidades} unidades con fecha por pedido (entre todos los productos). Para más, ¡escribinos!`, 'warning');
             return;

@@ -1,5 +1,6 @@
-import { auth } from '../firebase-config.js';
+import { auth, db } from '../firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { writeReserva, deleteReserva, CART_TIMEOUT_MS } from './cart-reservas.js';
 
 // --- STATE ---
@@ -9,6 +10,11 @@ let cartTimerInterval = null;
 let _maxUnidadesPorPedido = 0;
 export function setMaxUnidadesPorPedido(n) { _maxUnidadesPorPedido = n; }
 export function getMaxUnidadesPorPedido() { return _maxUnidadesPorPedido; }
+
+// Carga pedidosMaximosDia al iniciar el módulo, disponible en cualquier página que use el carrito
+getDoc(doc(db, 'configuracion', 'tienda'))
+    .then(snap => { if (snap.exists()) _maxUnidadesPorPedido = snap.data().agenda?.pedidosMaximosDia || 0; })
+    .catch(() => {});
 
 // --- ELEMENTS (set after inject) ---
 let cartDrawer = null;
@@ -229,7 +235,8 @@ window.updateQty = function(index, delta) {
     const item = cart[index];
     if (delta > 0) {
         if (_maxUnidadesPorPedido > 0 && item.requiereAgenda) {
-            const totalAgenda = cart.filter(i => i.requiereAgenda).reduce((s, i) => s + i.qty, 0);
+            // requiereAgenda === undefined en items legacy (sin el campo) — los sumamos igual para no dejar escapar el límite
+            const totalAgenda = cart.filter(i => i.requiereAgenda !== false).reduce((s, i) => s + i.qty, 0);
             if (totalAgenda + delta > _maxUnidadesPorPedido) {
                 showToast(`Máximo ${_maxUnidadesPorPedido} unidades por pedido (entre todos los productos con fecha). Para cantidades mayores, ¡escribinos!`, 'warning');
                 return;
