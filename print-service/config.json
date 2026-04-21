@@ -1,8 +1,9 @@
 {
-  "nombreImpresora": "CAFÉ",
-  "printerIp": "192.168.1.XXX",
+  "nombreImpresora": "TICKET",
+  "printerIp": "192.168.1.1",
   "printerPort": 9100,
   "anchoCaracteres": 48,
+  "modo": "windows",
   "reintentos": 5,
   "delayReintentoMs": 15000,
   "projectId": "corcega-loyalty-club"

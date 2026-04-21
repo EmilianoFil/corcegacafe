@@ -76,11 +76,90 @@ function broadcast(data) {
     for (const res of sseClients) { try { res.write(msg); } catch (_) {} }
 }
 
+// ─── WINDOWS SPOOLER ─────────────────────────────────────────────────────────
+// Sends raw ESC/POS bytes to a Windows printer by its registered name.
+// Uses PowerShell + P/Invoke into winspool.Drv so no native addons are needed.
+function imprimirWindows(buffer, nombreImpresora) {
+    const os           = require('os');
+    const { execFile } = require('child_process');
+    const tmpFile      = path.join(os.tmpdir(), `corcega_${Date.now()}.bin`);
+    fs.writeFileSync(tmpFile, buffer);
+
+    const psName = nombreImpresora.replace(/'/g, "''");
+    const psPath = tmpFile.replace(/'/g, "''");
+
+    const ps = `Add-Type -Language CSharp -TypeDefinition @'
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
+public class RawPrint {
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    public class DocInfo {
+        [MarshalAs(UnmanagedType.LPStr)] public string pDocName;
+        [MarshalAs(UnmanagedType.LPStr)] public string pOutputFile;
+        [MarshalAs(UnmanagedType.LPStr)] public string pDataType;
+    }
+    [DllImport("winspool.Drv", EntryPoint = "OpenPrinterA",    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    public static extern bool OpenPrinter(string n, out IntPtr h, IntPtr p);
+    [DllImport("winspool.Drv", EntryPoint = "ClosePrinter",    CallingConvention = CallingConvention.StdCall)]
+    public static extern bool ClosePrinter(IntPtr h);
+    [DllImport("winspool.Drv", EntryPoint = "StartDocPrinterA", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    public static extern bool StartDocPrinter(IntPtr h, int lv, [In, MarshalAs(UnmanagedType.LPStruct)] DocInfo di);
+    [DllImport("winspool.Drv", EntryPoint = "EndDocPrinter",   CallingConvention = CallingConvention.StdCall)]
+    public static extern bool EndDocPrinter(IntPtr h);
+    [DllImport("winspool.Drv", EntryPoint = "StartPagePrinter", CallingConvention = CallingConvention.StdCall)]
+    public static extern bool StartPagePrinter(IntPtr h);
+    [DllImport("winspool.Drv", EntryPoint = "EndPagePrinter",  CallingConvention = CallingConvention.StdCall)]
+    public static extern bool EndPagePrinter(IntPtr h);
+    [DllImport("winspool.Drv", EntryPoint = "WritePrinter",    CallingConvention = CallingConvention.StdCall)]
+    public static extern bool WritePrinter(IntPtr h, IntPtr b, int n, out int w);
+    public static void Send(string printer, string file) {
+        IntPtr hPrinter;
+        if (!OpenPrinter(printer, out hPrinter, IntPtr.Zero))
+            throw new Exception("OpenPrinter failed: " + printer);
+        var di = new DocInfo { pDocName = "Ticket", pOutputFile = null, pDataType = "RAW" };
+        if (!StartDocPrinter(hPrinter, 1, di)) { ClosePrinter(hPrinter); throw new Exception("StartDocPrinter failed"); }
+        StartPagePrinter(hPrinter);
+        byte[] data = File.ReadAllBytes(file);
+        IntPtr ptr = Marshal.AllocCoTaskMem(data.Length);
+        Marshal.Copy(data, 0, ptr, data.Length);
+        int written;
+        WritePrinter(hPrinter, ptr, data.Length, out written);
+        Marshal.FreeCoTaskMem(ptr);
+        EndPagePrinter(hPrinter);
+        EndDocPrinter(hPrinter);
+        ClosePrinter(hPrinter);
+    }
+}
+'@
+[RawPrint]::Send('${psName}', '${psPath}')`;
+
+    return new Promise((resolve, reject) => {
+        execFile('powershell.exe',
+            ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', ps],
+            { windowsHide: true, timeout: 20000 },
+            (err, _stdout, stderr) => {
+                try { fs.unlinkSync(tmpFile); } catch (_) {}
+                if (err) reject(new Error((stderr || err.message).trim()));
+                else resolve();
+            }
+        );
+    });
+}
+
 // ─── IMPRIMIR ─────────────────────────────────────────────────────────────────
 async function ejecutarImpresion(snap) {
     if (MODO === 'pdf') {
         const { generarYAbrirPDF } = require('./ticket-pdf.js');
         await generarYAbrirPDF(snap.data(), snap.id);
+    } else if (MODO === 'windows') {
+        const { EscposBuilder } = require('./escpos.js');
+        const { generarTicket }  = require('./ticket.js');
+        const ANCHO  = config.anchoCaracteres || 48;
+        const NOMBRE = config.nombreImpresora || 'TICKET';
+        const b      = EscposBuilder(ANCHO);
+        generarTicket(snap.data(), snap.id, b);
+        await imprimirWindows(b.build(), NOMBRE);
     } else {
         const net = require('net');
         const { EscposBuilder } = require('./escpos.js');
@@ -234,7 +313,7 @@ const HTML = `<!DOCTYPE html>
   <div id="lista-impresos"><div class="empty">Aún no hay pedidos impresos.</div></div>
 </main>
 <script>
-const modoLabel = { pdf: '📄 Modo PDF', printer: '🖨 Impresora térmica' };
+const modoLabel = { pdf: '📄 Modo PDF', printer: '🖨 Impresora térmica', windows: '🖨 Impresora Windows' };
 let colaData = [];
 let idsSeen = new Set();
 let primerasCarga = true;
@@ -409,7 +488,7 @@ server.listen(PORT, '127.0.0.1', () => {
     console.log('');
     console.log('================================================');
     console.log(`  Corcega Cafe — Servicio de Impresion`);
-    console.log(`  Modo: ${MODO === 'pdf' ? 'PDF (prueba)' : 'Impresora termica'}`);
+    console.log(`  Modo: ${MODO === 'pdf' ? 'PDF (prueba)' : MODO === 'windows' ? 'Impresora Windows (spooler)' : 'Impresora termica TCP/IP'}`);
     console.log('================================================');
     console.log('');
     console.log(`  Abriendo http://localhost:${PORT} ...`);
