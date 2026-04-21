@@ -225,6 +225,12 @@ async function showProfile(user) {
 
     fetchOrders(dni, user.email);
     loadAddresses(user.uid);
+
+    // Hash routing: tienda-cuenta.html#datos → abre ese tab
+    const hash = window.location.hash.replace('#', '');
+    if (['pedidos', 'datos', 'direcciones'].includes(hash)) {
+        window.showTab(hash);
+    }
 }
 
 function updateCartBadge() {

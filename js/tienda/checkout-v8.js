@@ -45,7 +45,7 @@ function init() {
                     const loginBtn = document.getElementById('btn-login-toggle');
                     if (loginBtn) {
                         loginBtn.innerHTML = '<i class="fas fa-edit"></i> Editar mis datos';
-                        loginBtn.onclick = () => window.location.href = 'tienda-cuenta.html';
+                        loginBtn.onclick = () => window.location.href = 'tienda-cuenta.html#datos';
                     }
                     validateForm();
                 }
@@ -199,14 +199,20 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
     let orderCountByDate = {};
     if (pedidosMaximosDia > 0) {
         try {
+            // Solo contar ítems de productos que requieren agenda
+            const agendaSnap = await getDocs(query(collection(db, 'productos'), where('requiereAgenda', '==', true)));
+            const agendaIds = new Set(agendaSnap.docs.map(d => d.id));
+
             const ordersSnap = await getDocs(collection(db, "ordenes"));
             ordersSnap.docs.forEach(d => {
                 const data = d.data();
                 if (data.estado === 'cancelado') return;
                 const iso = data.fechaISO || parseHorarioToISO(data.horario);
                 if (iso) {
-                    const totalItems = (data.items || []).reduce((s, it) => s + (it.qty || 1), 0);
-                    orderCountByDate[iso] = (orderCountByDate[iso] || 0) + totalItems;
+                    const totalItems = (data.items || [])
+                        .filter(it => agendaIds.has(it.id))
+                        .reduce((s, it) => s + (it.qty || 1), 0);
+                    if (totalItems > 0) orderCountByDate[iso] = (orderCountByDate[iso] || 0) + totalItems;
                 }
             });
             // Show legend
@@ -292,7 +298,7 @@ function autofillData(profile) {
     const loginBtn = document.getElementById('btn-login-toggle');
     if (loginBtn) {
         loginBtn.innerHTML = '<i class="fas fa-edit"></i> Editar mis datos';
-        loginBtn.onclick = () => window.location.href = 'tienda-cuenta.html';
+        loginBtn.onclick = () => window.location.href = 'tienda-cuenta.html#datos';
         loginBtn.style.display = 'flex';
     }
     const loginModal = document.getElementById('login-mini-modal');
