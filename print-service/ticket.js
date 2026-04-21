@@ -35,16 +35,20 @@ function generarTicket(pedido, id, b) {
     b.espacio();
 
     // ── DATOS DEL CLIENTE ────────────────────────────────────────────────────
-    b.izquierda(`Cliente: ${norm(p.cliente?.nombre || '—')}`);
-    b.izquierda(`Mail:    ${p.cliente?.email || '—'}`);
+    b.boldLeft('Cliente:', norm(p.cliente?.nombre || '—'));
+    b.boldLeft('Mail:', p.cliente?.email || '—');
+    b.boldLeft('Celular:', p.cliente?.whatsapp || '—');
     if (p.cliente?.dni) {
-        b.izquierda(`DNI:     ${p.cliente.dni}`);
+        b.boldLeft('DNI:', p.cliente.dni);
     }
-    b.izquierda(`Fecha de entrega solicitada: ${norm(p.horario || 'A confirmar')}`);
+    b.boldLeft('Entrega:', norm(p.horario || 'A confirmar'));
+    if (p.notas) {
+        b.boldLeft('Nota:', norm(p.notas));
+    }
     b.espacio();
 
     // ── ITEMS ─────────────────────────────────────────────────────────────────
-    b.bold('Pedido');
+    b.bold(`Pedido #${uid}`);
     b.linea();
 
     for (const item of (p.items || [])) {

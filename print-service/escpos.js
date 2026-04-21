@@ -68,6 +68,7 @@ function EscposBuilder(ancho) {
     return {
         centro(s)        { push(CMD.ALIGN_C); txt(s); nl(); },
         izquierda(s)     { push(CMD.ALIGN_L); txt(s); nl(); },
+        boldLeft(label, value) { push(CMD.ALIGN_L, CMD.BOLD_ON); txt(label + ' '); push(CMD.BOLD_OFF); txt(value); nl(); },
         bold(s)          { push(CMD.ALIGN_L, CMD.BOLD_ON); txt(s); push(CMD.BOLD_OFF); nl(); },
         bigBold(s)       { push(CMD.ALIGN_C, CMD.DBLH_ON, CMD.BOLD_ON); txt(s); push(CMD.BOLD_OFF, CMD.DBLH_OFF); nl(); },
         linea()          { push(CMD.ALIGN_L); txt('-'.repeat(ancho)); nl(); },
@@ -96,6 +97,7 @@ function ConsoleBuilder(ancho) {
     return {
         centro(s)        { lines.push(n(s).padStart(Math.floor((ancho + n(s).length) / 2)).padEnd(ancho)); },
         izquierda(s)     { lines.push(n(s)); },
+        boldLeft(label, value) { lines.push(`**${n(label)}** ${n(value)}`); },
         bold(s)          { lines.push(`** ${n(s)} **`); },
         bigBold(s)       { lines.push(`>>> ${n(s).toUpperCase()} <<<`); },
         linea()          { lines.push('─'.repeat(ancho)); },
