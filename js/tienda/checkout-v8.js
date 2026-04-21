@@ -143,6 +143,7 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
     let mensajeAgenda = null;
 
     let anyRequiresAgenda = false;
+    const agendaCartIds = new Set(); // product IDs in cart that require agenda
     const productIds = [...new Set(cart.map(item => item.id).filter(Boolean))];
     if (productIds.length > 0) {
         const results = await Promise.allSettled(productIds.map(id => getDoc(doc(db, "productos", id))));
@@ -157,6 +158,7 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
             if (!p.requiereAgenda) continue;
 
             anyRequiresAgenda = true;
+            agendaCartIds.add(snap.id);
             let dias = p.diasAnticipacion || 0;
             // Apply cutoff time: if now is past the cutoff hour, add +1 day
             if (p.horarioCorte) {
@@ -204,9 +206,9 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
             const agendaSnap = await getDocs(query(collection(db, 'productos'), where('requiereAgenda', '==', true)));
             const agendaIds = new Set(agendaSnap.docs.map(d => d.id));
 
-            // Cuántos ítems de agenda trae el carrito actual
+            // Cuántos ítems de agenda trae el carrito actual (usa agendaCartIds del step 1)
             cartAgendaQty = cart
-                .filter(it => agendaIds.has(it.id))
+                .filter(it => agendaCartIds.has(it.id))
                 .reduce((s, it) => s + (it.qty || 1), 0);
 
             const ordersSnap = await getDocs(collection(db, "ordenes"));
