@@ -279,10 +279,23 @@
         <div class="checkout-section">
             <h3 style="justify-content: space-between; flex-wrap: wrap;">
                 <span style="display:flex; align-items:center; gap:10px;"><i class="fas fa-user-edit"></i> Tus Datos</span>
-                <button id="btn-login-google" onclick="window.loginConGoogle()" style="font-size:12px; padding:6px 14px; border-radius:20px; border:1.5px solid var(--naranja-accent); background:white; cursor:pointer; font-weight:700; color:var(--naranja-oscuro); display:flex; align-items:center; gap:6px; font-family:var(--font-base);">
-                    <i class="fab fa-google"></i> Iniciar sesión
+                <button id="btn-login-toggle" onclick="window.toggleLoginModal()" style="font-size:12px; padding:6px 14px; border-radius:20px; border:1.5px solid var(--naranja-accent); background:white; cursor:pointer; font-weight:700; color:var(--naranja-oscuro); display:flex; align-items:center; gap:6px; font-family:var(--font-base);">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar sesión
                 </button>
             </h3>
+            <!-- Mini login modal -->
+            <div id="login-mini-modal" style="display:none; background:#fdfcf7; border:1px solid #e8e4db; border-radius:16px; padding:18px; margin-bottom:16px;">
+                <div class="form-group" style="margin-bottom:10px;">
+                    <input type="email" id="co-login-email" class="form-control" placeholder="Email" style="font-size:14px;">
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                    <input type="password" id="co-login-pass" class="form-control" placeholder="Contraseña" style="font-size:14px;">
+                </div>
+                <button onclick="window.loginConEmail()" style="width:100%; padding:12px; border-radius:12px; border:none; background:var(--naranja-accent); color:white; font-weight:800; font-size:13px; cursor:pointer; margin-bottom:10px;">ENTRAR</button>
+                <div style="text-align:center; font-size:11px; color:#aaa; margin-bottom:10px;">— o —</div>
+                <button onclick="window.loginConGoogle()" style="width:100%; padding:11px; border-radius:12px; border:1.5px solid #e8e4db; background:white; font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;"><i class="fab fa-google" style="color:#ea4335;"></i> Continuar con Google</button>
+                <div style="text-align:right; margin-top:8px;"><button onclick="document.getElementById('login-mini-modal').style.display='none'" style="border:none; background:none; font-size:11px; color:#aaa; cursor:pointer; font-family:var(--font-base);">Cancelar</button></div>
+            </div>
             <div class="form-group">
                 <label for="client-name">Nombre Completo</label>
                 <input type="text" id="client-name" class="form-control" placeholder="Ej: Emiliano López" required>
@@ -293,7 +306,8 @@
             </div>
             <div class="form-group">
                 <label for="client-phone">WhatsApp</label>
-                <input type="tel" id="client-phone" class="form-control" placeholder="Ej: 1122334455" required>
+                <input type="tel" id="client-phone" class="form-control" placeholder="Ej: 1133334444" required maxlength="10">
+                <small style="color:var(--texto-muted); font-size:11px;">Cod. área sin 0 + número. Ej: 1133334444</small>
             </div>
             <div class="form-group">
                 <label for="client-dni">DNI</label>

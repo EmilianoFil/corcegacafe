@@ -369,7 +369,8 @@
             </div>
             <div class="form-group">
                 <label>WhatsApp</label>
-                <input type="tel" id="reg-tel" class="form-control" placeholder="Cod. área + número">
+                <input type="tel" id="reg-tel" class="form-control" placeholder="Ej: 1133334444" maxlength="10">
+                <small style="color:#aaa; font-size:11px;">Cod. área sin 0 + número. Ej: 1133334444</small>
             </div>
             <div class="form-group">
                 <label>Contraseña</label>
@@ -442,9 +443,14 @@
                     <label>Nombre Completo</label>
                     <input type="text" id="user-name-input" class="form-control" placeholder="Ej: Emiliano López">
                 </div>
+                <div class="form-group" id="datos-dni-group" style="display:none;">
+                    <label>DNI <span style="font-size:10px; color:#22c55e; font-weight:700; margin-left:4px;">● Vinculado a cafecitos</span></label>
+                    <input type="text" id="user-dni-display" class="form-control" readonly style="background:#f0f0f0; color:#888; cursor:not-allowed;">
+                </div>
                 <div class="form-group">
                     <label>Teléfono / WhatsApp</label>
-                    <input type="tel" id="user-tel-input" class="form-control" placeholder="Ejem: 1122334455">
+                    <input type="tel" id="user-tel-input" class="form-control" placeholder="Ej: 1133334444" maxlength="10">
+                    <small style="color:#aaa; font-size:11px;">Cod. área sin 0 + número. Ej: 1133334444</small>
                 </div>
                 <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                     <div style="flex:1;">

@@ -1,6 +1,6 @@
 import { db, auth } from '../firebase-config.js';
 console.log("=== CHECKOUT V4 ACTIVE (NO ALERT) ===");
-import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { deleteAllSessionReservas } from './cart-reservas.js';
 
@@ -32,10 +32,12 @@ function init() {
 
     // 2. Auth Listener (Autofill) - Esto suele ser lo que más tarda
     onAuthStateChanged(auth, async (user) => {
-        const loginBtn = document.getElementById('btn-login-google');
+        const loginBtn   = document.getElementById('btn-login-toggle');
+        const loginModal = document.getElementById('login-mini-modal');
         try {
             if (user) {
-                if (loginBtn) loginBtn.style.display = 'none';
+                if (loginBtn)   loginBtn.style.display   = 'none';
+                if (loginModal) loginModal.style.display = 'none';
                 const snap = await getDoc(doc(db, "usuarios_tienda", user.uid));
                 if (snap.exists()) {
                     userProfile = snap.data();
@@ -485,10 +487,15 @@ async function handleOrderSubmission() {
     }
 }
 
+function toggleLoginModal() {
+    const modal = document.getElementById('login-mini-modal');
+    if (modal) modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+}
+window.toggleLoginModal = toggleLoginModal;
+
 async function loginConGoogle() {
     try {
         await signInWithPopup(auth, new GoogleAuthProvider());
-        // onAuthStateChanged se encarga del autofill y ocultar el botón
     } catch (err) {
         if (err.code !== 'auth/popup-closed-by-user') {
             console.error('Error al iniciar sesión:', err);
@@ -496,5 +503,18 @@ async function loginConGoogle() {
     }
 }
 window.loginConGoogle = loginConGoogle;
+
+async function loginConEmail() {
+    const email = document.getElementById('co-login-email').value.trim();
+    const pass  = document.getElementById('co-login-pass').value;
+    if (!email || !pass) return alert('Completá email y clave.');
+    try {
+        await signInWithEmailAndPassword(auth, email, pass);
+    } catch (err) {
+        alert(['auth/wrong-password','auth/user-not-found','auth/invalid-credential'].includes(err.code)
+            ? 'Email o clave incorrectos.' : 'Error al iniciar sesión.');
+    }
+}
+window.loginConEmail = loginConEmail;
 
 init();

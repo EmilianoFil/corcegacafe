@@ -208,6 +208,18 @@ async function showProfile(user) {
     // Populate fields
     if (document.getElementById('user-name-input')) document.getElementById('user-name-input').value = nombreActual;
     if (document.getElementById('user-tel-input')) document.getElementById('user-tel-input').value = whatsapp;
+
+    // DNI — read-only si está vinculado a cafecitos
+    const dniGroup   = document.getElementById('datos-dni-group');
+    const dniDisplay = document.getElementById('user-dni-display');
+    if (dniGroup && dniDisplay) {
+        if (dni) {
+            dniDisplay.value = dni;
+            dniGroup.style.display = 'block';
+        } else {
+            dniGroup.style.display = 'none';
+        }
+    }
     if (document.getElementById('user-nac-dia')) document.getElementById('user-nac-dia').value = diaRec;
     if (document.getElementById('user-nac-mes')) document.getElementById('user-nac-mes').value = mesRec;
 
@@ -452,7 +464,7 @@ async function fetchOrders(dni, email) {
                     <div class="order-header">
                         <div style="display:flex; flex-direction:column; gap:2px;">
                             <span style="font-size: 10px; font-weight: 700; opacity: 0.5;">ORDEN</span>
-                            <span style="font-weight: 800; font-family: var(--font-base); font-size: 15px;">#${order.id.substring(0,8).toUpperCase()}</span>
+                            <span style="font-weight: 800; font-family: var(--font-base); font-size: 15px;">#${order.orderNumber || order.id.substring(0,8).toUpperCase()}</span>
                         </div>
                         <span class="order-status status-${order.estado || 'pendiente_pago'}">${statusLabel}</span>
                     </div>
@@ -471,7 +483,7 @@ async function fetchOrders(dni, email) {
                         <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
                             ${order.estado === 'pendiente_pago' 
                                 ? (order.metodoPago === 'transferencia' 
-                                    ? `<a href="https://wa.me/5491136053892?text=${encodeURIComponent('Hola Córcega! Adjunto comprobante del pedido #' + order.id.substring(0,8))}" target="_blank" style="background:#25d366; border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:5px;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:12px; height:12px;"> COMPROBANTE</a>
+                                    ? `<a href="https://wa.me/5491136053892?text=${encodeURIComponent('Hola Córcega! Adjunto comprobante del pedido #' + (order.orderNumber || order.id.substring(0,8).toUpperCase()))}" target="_blank" style="background:#25d366; border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:5px;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:12px; height:12px;"> COMPROBANTE</a>
                                        <button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer;">PAGAR CON MP</button>`
                                     : `<button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer;">PAGAR CON MERCADOPAGO</button>`)
                                 : ''}
