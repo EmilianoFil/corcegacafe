@@ -45,14 +45,16 @@ if (!fs.existsSync(KEY_PATH)) {
     waitAndExit(); return;
 }
 
-const config   = JSON.parse(fs.readFileSync(CFG_PATH, 'utf8'));
-const ANCHO    = config.anchoCaracteres  || 48;
-const IP       = config.printerIp;
-const PUERTO   = config.printerPort      || 9100;
+const config    = JSON.parse(fs.readFileSync(CFG_PATH, 'utf8'));
+const MODO      = config.modo            || 'printer';
+const ANCHO     = config.anchoCaracteres || 48;
+const IP        = config.printerIp;
+const PUERTO    = config.printerPort     || 9100;
+const NOMBRE    = config.nombreImpresora || 'TICKET';
 const MAX_REINT = config.reintentos      || 5;
-const DELAY    = config.delayReintentoMs || 15000;
+const DELAY     = config.delayReintentoMs || 15000;
 
-if (!IP || IP.includes('XXX')) {
+if (MODO !== 'windows' && (!IP || IP.includes('XXX'))) {
     console.error('\nERROR: configura la IP de la impresora en config.json');
     console.error('  "printerIp": "192.168.1.XXX"  <- cambiar por la IP real\n');
     waitAndExit(); return;
@@ -81,10 +83,85 @@ function enviarTCP(buffer) {
     });
 }
 
+// ─── WINDOWS SPOOLER ─────────────────────────────────────────────────────────
+// Sends raw ESC/POS bytes to a Windows printer by its registered name.
+// Uses PowerShell + P/Invoke into winspool.Drv so no native addons are needed.
+function imprimirWindows(buffer, nombreImpresora) {
+    const os           = require('os');
+    const { execFile } = require('child_process');
+    const tmpFile      = path.join(os.tmpdir(), `corcega_${Date.now()}.bin`);
+    fs.writeFileSync(tmpFile, buffer);
+
+    const psName = nombreImpresora.replace(/'/g, "''");
+    const psPath = tmpFile.replace(/'/g, "''");
+
+    const ps = `Add-Type -Language CSharp -TypeDefinition @'
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
+public class RawPrint {
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    public class DocInfo {
+        [MarshalAs(UnmanagedType.LPStr)] public string pDocName;
+        [MarshalAs(UnmanagedType.LPStr)] public string pOutputFile;
+        [MarshalAs(UnmanagedType.LPStr)] public string pDataType;
+    }
+    [DllImport("winspool.Drv", EntryPoint = "OpenPrinterA",    CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    public static extern bool OpenPrinter(string n, out IntPtr h, IntPtr p);
+    [DllImport("winspool.Drv", EntryPoint = "ClosePrinter",    CallingConvention = CallingConvention.StdCall)]
+    public static extern bool ClosePrinter(IntPtr h);
+    [DllImport("winspool.Drv", EntryPoint = "StartDocPrinterA", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    public static extern bool StartDocPrinter(IntPtr h, int lv, [In, MarshalAs(UnmanagedType.LPStruct)] DocInfo di);
+    [DllImport("winspool.Drv", EntryPoint = "EndDocPrinter",   CallingConvention = CallingConvention.StdCall)]
+    public static extern bool EndDocPrinter(IntPtr h);
+    [DllImport("winspool.Drv", EntryPoint = "StartPagePrinter", CallingConvention = CallingConvention.StdCall)]
+    public static extern bool StartPagePrinter(IntPtr h);
+    [DllImport("winspool.Drv", EntryPoint = "EndPagePrinter",  CallingConvention = CallingConvention.StdCall)]
+    public static extern bool EndPagePrinter(IntPtr h);
+    [DllImport("winspool.Drv", EntryPoint = "WritePrinter",    CallingConvention = CallingConvention.StdCall)]
+    public static extern bool WritePrinter(IntPtr h, IntPtr b, int n, out int w);
+    public static void Send(string printer, string file) {
+        IntPtr hPrinter;
+        if (!OpenPrinter(printer, out hPrinter, IntPtr.Zero))
+            throw new Exception("OpenPrinter failed: " + printer);
+        var di = new DocInfo { pDocName = "Ticket", pOutputFile = null, pDataType = "RAW" };
+        if (!StartDocPrinter(hPrinter, 1, di)) { ClosePrinter(hPrinter); throw new Exception("StartDocPrinter failed"); }
+        StartPagePrinter(hPrinter);
+        byte[] data = File.ReadAllBytes(file);
+        IntPtr ptr = Marshal.AllocCoTaskMem(data.Length);
+        Marshal.Copy(data, 0, ptr, data.Length);
+        int written;
+        WritePrinter(hPrinter, ptr, data.Length, out written);
+        Marshal.FreeCoTaskMem(ptr);
+        EndPagePrinter(hPrinter);
+        EndDocPrinter(hPrinter);
+        ClosePrinter(hPrinter);
+    }
+}
+'@
+[RawPrint]::Send('${psName}', '${psPath}')`;
+
+    return new Promise((resolve, reject) => {
+        execFile('powershell.exe',
+            ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', ps],
+            { windowsHide: true, timeout: 20000 },
+            (err, _stdout, stderr) => {
+                try { fs.unlinkSync(tmpFile); } catch (_) {}
+                if (err) reject(new Error((stderr || err.message).trim()));
+                else resolve();
+            }
+        );
+    });
+}
+
 async function imprimirPedido(snap) {
     const b = EscposBuilder(ANCHO);
     generarTicket(snap.data(), snap.id, b);
-    await enviarTCP(b.build());
+    if (MODO === 'windows') {
+        await imprimirWindows(b.build(), NOMBRE);
+    } else {
+        await enviarTCP(b.build());
+    }
 }
 
 // ─── RETRY ───────────────────────────────────────────────────────────────────
@@ -142,7 +219,9 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 console.log('');
 console.log('================================================');
 console.log('  Corcega Cafe — Servicio de Impresion');
-console.log(`  Impresora: ${config.nombreImpresora} @ ${IP}:${PUERTO}`);
+console.log(MODO === 'windows'
+    ? `  Impresora: ${NOMBRE} (Windows spooler)`
+    : `  Impresora: ${NOMBRE} @ ${IP}:${PUERTO}`);
 console.log('================================================');
 console.log('');
 console.log('  Esta ventana tiene que quedar ABIERTA.');
