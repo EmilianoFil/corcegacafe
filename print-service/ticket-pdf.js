@@ -117,6 +117,8 @@ async function generarYAbrirPDF(pedido, id) {
     font-size: 12px;
     letter-spacing: 2px;
   }
+  .campo { margin-bottom: 3px; }
+  .campo b { font-weight: bold; }
   .espacio { margin-bottom: 8px; }
   @media print {
     body { background: white; padding: 0; }
@@ -129,12 +131,14 @@ async function generarYAbrirPDF(pedido, id) {
   <div class="header">Córcega Café | TIENDA ONLINE</div>
   <div class="center muted espacio">${formatFechaHora(p.timestamp)}</div>
 
-  <div>Cliente: ${p.cliente?.nombre || '—'}</div>
-  <div>Mail:    ${p.cliente?.email || '—'}</div>
-  ${p.cliente?.dni ? `<div>DNI:     ${p.cliente.dni}</div>` : ''}
-  <div class="espacio">Entrega: ${p.horario || 'A confirmar'}</div>
+  <div class="campo"><b>Cliente:</b> ${p.cliente?.nombre || '—'}</div>
+  <div class="campo"><b>Mail:</b> ${p.cliente?.email || '—'}</div>
+  ${p.cliente?.whatsapp ? `<div class="campo"><b>Celular:</b> ${p.cliente.whatsapp}</div>` : ''}
+  ${p.cliente?.dni ? `<div class="campo"><b>DNI:</b> ${p.cliente.dni}</div>` : ''}
+  <div class="campo"><b>Entrega:</b> ${p.horario || 'A confirmar'}</div>
+  ${p.notas ? `<div class="campo espacio"><b>Nota:</b> ${p.notas}</div>` : '<div class="espacio"></div>'}
 
-  <div class="bold">Pedido</div>
+  <div class="bold">Pedido #${uid}</div>
   <hr class="linea">
 
   ${itemsHtml}
