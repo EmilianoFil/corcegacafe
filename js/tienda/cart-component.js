@@ -6,6 +6,8 @@ import { writeReserva, deleteReserva, CART_TIMEOUT_MS } from './cart-reservas.js
 const cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
 let userIsLogged = false;
 let cartTimerInterval = null;
+let _maxUnidadesPorPedido = 0;
+export function setMaxUnidadesPorPedido(n) { _maxUnidadesPorPedido = n; }
 
 // --- ELEMENTS (set after inject) ---
 let cartDrawer = null;
@@ -224,11 +226,17 @@ export function saveAndRefresh() {
 // --- WINDOW HANDLERS ---
 window.updateQty = function(index, delta) {
     const item = cart[index];
-    if (delta > 0 && item.stockIlimitado !== true) {
-        const stockDisponible = item.stock || 0;
-        if (item.qty >= stockDisponible) {
-            alert(`¡Lo sentimos! Solo quedan ${stockDisponible} unidades disponibles.`);
+    if (delta > 0) {
+        if (_maxUnidadesPorPedido > 0 && item.requiereAgenda && item.qty >= _maxUnidadesPorPedido) {
+            showToast(`Máximo ${_maxUnidadesPorPedido} unidades por pedido. Para cantidades mayores, ¡escribinos!`, 'warning');
             return;
+        }
+        if (item.stockIlimitado !== true) {
+            const stockDisponible = item.stock || 0;
+            if (item.qty >= stockDisponible) {
+                alert(`¡Lo sentimos! Solo quedan ${stockDisponible} unidades disponibles.`);
+                return;
+            }
         }
     }
     item.qty += delta;

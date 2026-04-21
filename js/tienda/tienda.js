@@ -1,7 +1,7 @@
 import { db } from '../firebase-config.js';
 import { collection, getDocs, getDoc, doc, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { fetchReservedByOthers, getSessionId, writeReserva } from './cart-reservas.js';
-import { cart, initCart, openCart, closeCart, saveAndRefresh, showToast } from './cart-component.js';
+import { cart, initCart, openCart, closeCart, saveAndRefresh, showToast, setMaxUnidadesPorPedido } from './cart-component.js';
 
 // --- STATE ---
 let products = [];
@@ -42,7 +42,10 @@ async function init() {
         fetchProducts(),
         fetchReservedByOthers().then(map => { reservedByOthers = map; }).catch(err => { console.warn('fetchReservedByOthers error:', err); }),
         getDoc(doc(db, "configuracion", "tienda")).then(snap => {
-            if (snap.exists()) maxUnidadesPorPedido = snap.data().agenda?.pedidosMaximosDia || 0;
+            if (snap.exists()) {
+                maxUnidadesPorPedido = snap.data().agenda?.pedidosMaximosDia || 0;
+                setMaxUnidadesPorPedido(maxUnidadesPorPedido);
+            }
         }).catch(() => {})
     ]);
     renderCategories();
