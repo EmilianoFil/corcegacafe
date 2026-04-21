@@ -32,17 +32,21 @@ function init() {
 
     // 2. Auth Listener (Autofill) - Esto suele ser lo que más tarda
     onAuthStateChanged(auth, async (user) => {
-        const loginBtn   = document.getElementById('btn-login-toggle');
         const loginModal = document.getElementById('login-mini-modal');
         try {
             if (user) {
-                if (loginBtn)   loginBtn.style.display   = 'none';
                 if (loginModal) loginModal.style.display = 'none';
                 const snap = await getDoc(doc(db, "usuarios_tienda", user.uid));
                 if (snap.exists()) {
                     userProfile = snap.data();
                     autofillData(userProfile);
                 } else {
+                    // Logueado pero sin perfil: cambiar botón a "Editar mis datos"
+                    const loginBtn = document.getElementById('btn-login-toggle');
+                    if (loginBtn) {
+                        loginBtn.innerHTML = '<i class="fas fa-edit"></i> Editar mis datos';
+                        loginBtn.onclick = () => window.location.href = 'tienda-cuenta.html';
+                    }
                     validateForm();
                 }
             }
@@ -268,20 +272,31 @@ function parseHorarioToISO(horario) {
     return `${year}-${month}-${day.padStart(2, '0')}`;
 }
 
+function lockField(id, value) {
+    const el = document.getElementById(id);
+    if (!el || !value) return;
+    el.value = value;
+    el.readOnly = true;
+    el.style.background = '#f0f0f0';
+    el.style.color = '#888';
+    el.style.cursor = 'not-allowed';
+}
+
 function autofillData(profile) {
-    if (profile.nombre)   document.getElementById('client-name').value  = profile.nombre;
-    if (profile.whatsapp) document.getElementById('client-phone').value = profile.whatsapp;
-    if (profile.dni)      document.getElementById('client-dni').value   = profile.dni;
-    
-    // Si ya tenemos el mail del perfil, lo bloqueamos pero lo dejamos visible
-    if (profile.email || auth.currentUser?.email) {
-        const emailInput = document.getElementById('client-email');
-        emailInput.value = profile.email || auth.currentUser.email;
-        emailInput.readOnly = true;
-        emailInput.style.background = "#f0f0f0";
-        emailInput.style.color = "#888";
-        emailInput.style.cursor = "not-allowed";
+    lockField('client-name',  profile.nombre);
+    lockField('client-phone', profile.whatsapp);
+    lockField('client-dni',   profile.dni);
+    lockField('client-email', profile.email || auth.currentUser?.email);
+
+    // Transformar botón login → "Editar mis datos"
+    const loginBtn = document.getElementById('btn-login-toggle');
+    if (loginBtn) {
+        loginBtn.innerHTML = '<i class="fas fa-edit"></i> Editar mis datos';
+        loginBtn.onclick = () => window.location.href = 'tienda-cuenta.html';
+        loginBtn.style.display = 'flex';
     }
+    const loginModal = document.getElementById('login-mini-modal');
+    if (loginModal) loginModal.style.display = 'none';
 
     validateForm();
 
