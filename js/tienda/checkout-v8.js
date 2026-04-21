@@ -197,11 +197,17 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
 
     // 4. Fetch order counts per day for calendar coloring
     let orderCountByDate = {};
+    let cartAgendaQty = 0;
     if (pedidosMaximosDia > 0) {
         try {
             // Solo contar ítems de productos que requieren agenda
             const agendaSnap = await getDocs(query(collection(db, 'productos'), where('requiereAgenda', '==', true)));
             const agendaIds = new Set(agendaSnap.docs.map(d => d.id));
+
+            // Cuántos ítems de agenda trae el carrito actual
+            cartAgendaQty = cart
+                .filter(it => agendaIds.has(it.id))
+                .reduce((s, it) => s + (it.qty || 1), 0);
 
             const ordersSnap = await getDocs(collection(db, "ordenes"));
             ordersSnap.docs.forEach(d => {
@@ -252,14 +258,18 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
 
             if (pedidosMaximosDia > 0) {
                 const count = orderCountByDate[iso] || 0;
-                const ratio = count / pedidosMaximosDia;
+                const effective = count + cartAgendaQty;
+                const ratio = effective / pedidosMaximosDia;
                 if (ratio >= 1) {
                     dot.style.background = '#ef4444';
                     dayElem.classList.add('flatpickr-disabled');
-                    dayElem.title = 'Día completo';
+                    dayElem.title = cartAgendaQty > 0
+                        ? `Tu carrito tiene ${cartAgendaQty} producto${cartAgendaQty === 1 ? '' : 's'} con agenda y este día no tiene lugar`
+                        : 'Día completo';
                 } else if (ratio >= 0.7) {
+                    const remaining = pedidosMaximosDia - effective;
                     dot.style.background = '#f59e0b';
-                    dayElem.title = `${pedidosMaximosDia - count} lugar${pedidosMaximosDia - count === 1 ? '' : 'es'} disponible${pedidosMaximosDia - count === 1 ? '' : 's'}`;
+                    dayElem.title = `${remaining} lugar${remaining === 1 ? '' : 'es'} disponible${remaining === 1 ? '' : 's'}`;
                 } else {
                     dot.style.background = '#22c55e';
                 }
