@@ -138,7 +138,7 @@ async function generarYAbrirPDF(pedido, id) {
   <div class="campo"><b>Entrega:</b> ${p.horario || 'A confirmar'}</div>
   ${p.notas ? `<div class="campo espacio"><b>Nota:</b> ${p.notas}</div>` : '<div class="espacio"></div>'}
 
-  <div class="bold">Pedido #${uid}</div>
+  <div class="bold" style="margin-top:10px;">Pedido #${uid}</div>
   <hr class="linea">
 
   ${itemsHtml}
