@@ -8,6 +8,7 @@ let userIsLogged = false;
 let cartTimerInterval = null;
 let _maxUnidadesPorPedido = 0;
 export function setMaxUnidadesPorPedido(n) { _maxUnidadesPorPedido = n; }
+export function getMaxUnidadesPorPedido() { return _maxUnidadesPorPedido; }
 
 // --- ELEMENTS (set after inject) ---
 let cartDrawer = null;

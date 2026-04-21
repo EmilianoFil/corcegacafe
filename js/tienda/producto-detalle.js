@@ -1,7 +1,7 @@
 import { db } from '../firebase-config.js';
 import { doc, getDoc, getDocs, collection, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { writeReserva } from './cart-reservas.js';
-import { cart, initCart, openCart, closeCart, saveAndRefresh, updateCartUI } from './cart-component.js';
+import { cart, initCart, openCart, closeCart, saveAndRefresh, updateCartUI, showToast, setMaxUnidadesPorPedido, getMaxUnidadesPorPedido } from './cart-component.js';
 
 // --- STATE ---
 let currentProduct = null;
@@ -27,6 +27,9 @@ async function init() {
     }
 
     initCart();
+    getDoc(doc(db, 'configuracion', 'tienda')).then(snap => {
+        if (snap.exists()) setMaxUnidadesPorPedido(snap.data().agenda?.pedidosMaximosDia || 0);
+    }).catch(() => {});
     await loadProductData(productId);
     updateCartUI();
 }
@@ -252,6 +255,18 @@ window.changeMainImage = function(url, thumbEl) {
 
 window.changeQty = function(delta) {
     const p = currentProduct;
+
+    if (delta > 0) {
+        const maxUnidades = getMaxUnidadesPorPedido();
+        if (maxUnidades > 0 && p?.requiereAgenda) {
+            const totalAgenda = cart.filter(i => i.requiereAgenda).reduce((s, i) => s + i.qty, 0);
+            if (totalAgenda + currentQty + delta > maxUnidades) {
+                showToast(`Máximo ${maxUnidades} unidades con fecha por pedido. Para más, ¡escribinos!`, 'warning');
+                return;
+            }
+        }
+    }
+
     let maxQty = Infinity;
 
     if (p) {
@@ -414,6 +429,15 @@ function addToCartFromPage() {
     if (!currentProduct) return;
     const p = currentProduct;
 
+    const maxUnidades = getMaxUnidadesPorPedido();
+    if (maxUnidades > 0 && p.requiereAgenda) {
+        const totalAgenda = cart.filter(i => i.requiereAgenda).reduce((s, i) => s + i.qty, 0);
+        if (totalAgenda + currentQty > maxUnidades) {
+            showToast(`Máximo ${maxUnidades} unidades con fecha por pedido (entre todos los productos). Para más, ¡escribinos!`, 'warning');
+            return;
+        }
+    }
+
     if (p.tieneVariantes && p.atributosVariantes?.length) {
         const allSelected = p.atributosVariantes.every(a => selectedVariants[a.nombre]);
         if (!allSelected) {
@@ -452,6 +476,7 @@ function addToCartFromPage() {
                 stockIlimitado: ilimitado,
                 variantKey: key,
                 variantLabel: label,
+                requiereAgenda: p.requiereAgenda || false,
                 reservadoEn: Date.now()
             });
             if (!ilimitado) {
@@ -488,6 +513,7 @@ function addToCartFromPage() {
             qty: currentQty,
             stock: currentProduct.stock,
             stockIlimitado: currentProduct.stockIlimitado,
+            requiereAgenda: currentProduct.requiereAgenda || false,
             reservadoEn: Date.now()
         });
         if (currentProduct.stockIlimitado !== true) {
