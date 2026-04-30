@@ -5,6 +5,8 @@
 import { db } from '../firebase-config.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
+const FILGUEIRA_LOGO = `<a href="https://filgueira.dev" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;vertical-align:middle;opacity:1;transition:opacity .2s" onmouseover="this.style.opacity='.65'" onmouseout="this.style.opacity='1'"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 100" height="14" aria-label="Filgueira.dev"><polygon points="45,5 84,27.5 84,72.5 45,95 6,72.5 6,27.5" fill="#D94040"/><text x="45" y="70" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="54" font-weight="900" fill="white">F</text><text x="100" y="76" font-family="Arial,Helvetica,sans-serif" font-size="66" font-weight="700"><tspan fill="#1a1a1a">Filgueira</tspan><tspan fill="#D94040">.dev</tspan></text></svg></a>`;
+
 const SOCIAL_ICONS = {
     instagram: 'fa-brands fa-instagram',
     facebook:  'fa-brands fa-facebook',
@@ -74,7 +76,7 @@ function renderFooter(config) {
         </div>
     </div>
     <div class="tienda-footer-bottom">
-        © ${year} Córcega Café &nbsp;·&nbsp; Hecho con <span style="color:#ed7053">♥</span> por <a href="https://wa.me/5491136053892" target="_blank" rel="noopener">LENUAhub</a>
+        © ${year} Córcega Café &nbsp;·&nbsp; Hecho con <span style="color:#ed7053">♥</span> por ${FILGUEIRA_LOGO}
     </div>`;
 }
 
@@ -92,7 +94,7 @@ function renderMinimalFooter() {
         </div>
     </div>
     <div class="tienda-footer-bottom">
-        © ${year} Córcega Café &nbsp;·&nbsp; Hecho con <span style="color:#ed7053">♥</span> por <a href="https://wa.me/5491136053892" target="_blank" rel="noopener">LENUAhub</a>
+        © ${year} Córcega Café &nbsp;·&nbsp; Hecho con <span style="color:#ed7053">♥</span> por ${FILGUEIRA_LOGO}
     </div>`;
 }
 
