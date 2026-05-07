@@ -171,7 +171,7 @@ function renderProducts() {
                 <div class="product-info" onclick="window.location.href='producto.html?id=${p.id}'">
                     <h3 class="product-title">
                         ${p.nombre}
-                        ${p.retiroInmediato ? `<span class="badge-retiro" data-tip="${(p.textoRetiroInmediato || 'Disponible poco tiempo después de tu compra.').replace(/"/g, '&quot;')}">⚡</span>` : ''}
+                        ${p.retiroInmediato ? `<span class="badge-retiro" onmouseenter="window._showRetiroTip(event,'${(p.textoRetiroInmediato || 'Disponible poco tiempo después de tu compra.').replace(/'/g, '&#39;')}')" onmouseleave="window._hideRetiroTip()">⚡ Retiro rápido</span>` : ''}
                     </h3>
                     <p class="product-desc">${p.descripcion || ''}</p>
                     <div class="product-footer">
@@ -560,6 +560,26 @@ window.moveGridCarousel = function(id, delta) {
 };
 
 init();
+
+// --- RETIRO TOOLTIP ---
+(function() {
+    const tip = document.createElement('div');
+    tip.id = 'retiro-tooltip-global';
+    document.body.appendChild(tip);
+    window._showRetiroTip = function(e, texto) {
+        tip.textContent = texto;
+        tip.style.opacity = '1';
+        const r = e.target.getBoundingClientRect();
+        tip.style.left = (r.left + r.width / 2 - tip.offsetWidth / 2) + 'px';
+        tip.style.top = (r.top - tip.offsetHeight - 6 + window.scrollY) + 'px';
+        // reposicionar después de conocer el ancho real
+        requestAnimationFrame(() => {
+            tip.style.left = (r.left + r.width / 2 - tip.offsetWidth / 2) + 'px';
+            tip.style.top = (r.top - tip.offsetHeight - 6) + 'px';
+        });
+    };
+    window._hideRetiroTip = function() { tip.style.opacity = '0'; };
+})();
 
 // Admin preview: si el usuario logueado es admin, re-carga los productos incluyendo inactivos
 onAuthStateChanged(auth, async (user) => {
