@@ -41,7 +41,7 @@ async function init() {
 
     // Admin preview: validar antes del fetch para que el primer query ya traiga inactivos
     if (urlParams.get('adminPreview') === '1') {
-        const ADMIN_EMAILS = ['emilianofilgueira@gmail.com'];
+        const ADMIN_EMAILS = ['emilianofilgueira@gmail.com', 'lemacafesrl@gmail.com'];
         await new Promise(resolve => {
             const unsub = onAuthStateChanged(auth, async (user) => {
                 unsub();

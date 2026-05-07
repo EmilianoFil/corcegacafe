@@ -10,7 +10,7 @@ import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10
 const db = getFirestore();
 
 // Lista maestra de emails autorizados como admin
-export const ADMIN_EMAILS = ['emilianofilgueira@gmail.com'];
+export const ADMIN_EMAILS = ['emilianofilgueira@gmail.com', 'lemacafesrl@gmail.com'];
 
 /**
  * Llama a onAuthStateChanged, verifica permisos de admin y ejecuta el callback
