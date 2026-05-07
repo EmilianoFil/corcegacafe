@@ -202,6 +202,9 @@ export function updateCartUI() {
         const countdownHtml = (!item.stockIlimitado && item.reservadoEn) ? `
             <div class="reserva-countdown" data-expires="${item.reservadoEn + CART_TIMEOUT_MS}" data-cart-key="${cartKey}" style="font-size:11px;font-weight:700;margin-top:3px;color:#f59e0b;"></div>
         ` : '';
+        const masInfoHtml = (item.masInfo?.activo && item.masInfo?.texto)
+            ? `<div style="font-size:0.72rem;color:#666;margin:4px 0 2px;line-height:1.4;background:#f8f6f2;border-radius:6px;padding:5px 8px;">${item.masInfo.texto}</div>`
+            : '';
         return `
         <div class="cart-item">
             <img src="${item.imagenUrl || 'https://placehold.co/100x100'}" alt="${item.nombre}" class="cart-item-img">
@@ -209,6 +212,7 @@ export function updateCartUI() {
                 <div class="cart-item-title">${item.nombre}</div>
                 ${item.variantLabel ? `<div style="font-size:0.72rem;color:var(--naranja-accent);font-weight:600;margin:2px 0;">${item.variantLabel}</div>` : ''}
                 <div class="cart-item-price">$${item.precio.toLocaleString('es-AR')}</div>
+                ${masInfoHtml}
                 ${countdownHtml}
                 <div class="cart-item-controls">
                     <button class="qty-btn" onclick="updateQty(${index}, -1)"><i class="fas fa-minus"></i></button>

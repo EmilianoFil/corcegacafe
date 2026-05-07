@@ -163,6 +163,53 @@ function renderProductDetail() {
         });
     }
 
+    // "Más info" button + modal
+    const masInfoContainer = document.getElementById('prod-masinfo-container');
+    if (masInfoContainer) {
+        if (p.masInfo?.activo && p.masInfo?.texto) {
+            masInfoContainer.innerHTML = `
+                <button onclick="window._openMasInfoModal()" style="background:none;border:2px solid var(--naranja-accent,#d86634);color:var(--naranja-accent,#d86634);border-radius:20px;padding:6px 18px;font-size:0.82rem;font-weight:700;cursor:pointer;margin-top:10px;">
+                    ℹ️ Más info
+                </button>`;
+            masInfoContainer.style.display = 'block';
+        } else {
+            masInfoContainer.style.display = 'none';
+        }
+    }
+    window._openMasInfoModal = function() {
+        let modal = document.getElementById('masinfo-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'masinfo-modal';
+            modal.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);padding:20px;';
+            modal.innerHTML = `
+                <div style="background:white;border-radius:20px;padding:28px 24px;max-width:420px;width:100%;position:relative;box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+                    <button onclick="document.getElementById('masinfo-modal').style.display='none'"
+                        style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;">✕</button>
+                    <h3 style="font-size:1rem;font-weight:800;color:var(--secondary,#01323f);margin:0 0 14px;">ℹ️ Más información</h3>
+                    <p id="masinfo-modal-text" style="font-size:0.9rem;color:#444;line-height:1.6;white-space:pre-wrap;margin:0;"></p>
+                </div>`;
+            document.body.appendChild(modal);
+            modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
+        }
+        document.getElementById('masinfo-modal-text').textContent = p.masInfo?.texto || '';
+        modal.style.display = 'flex';
+    };
+
+    // Texto de entrega (retiroInmediato / tiempoMinimo)
+    const entregaInfo = document.getElementById('prod-entrega-info');
+    if (entregaInfo) {
+        if (p.retiroInmediato && p.textoRetiroInmediato) {
+            entregaInfo.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px;background:#e8f9ee;color:#1a6b3a;border-radius:20px;padding:5px 14px;font-size:0.8rem;font-weight:700;">⚡ ${p.textoRetiroInmediato}</span>`;
+            entregaInfo.style.display = 'block';
+        } else if (p.tiempoMinimo && p.textoTiempoMinimo) {
+            entregaInfo.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px;background:#fff8e6;color:#7a5800;border-radius:20px;padding:5px 14px;font-size:0.8rem;font-weight:700;">🕐 ${p.textoTiempoMinimo}</span>`;
+            entregaInfo.style.display = 'block';
+        } else {
+            entregaInfo.style.display = 'none';
+        }
+    }
+
     // Toggle Visibility
     document.getElementById('main-product-loader').style.display = 'none';
     document.getElementById('product-content').style.display = 'grid';
@@ -477,6 +524,7 @@ function addToCartFromPage() {
                 variantKey: key,
                 variantLabel: label,
                 requiereAgenda: p.requiereAgenda || false,
+                masInfo: p.masInfo?.activo ? p.masInfo : null,
                 reservadoEn: Date.now()
             });
             if (!ilimitado) {
@@ -514,6 +562,7 @@ function addToCartFromPage() {
             stock: currentProduct.stock,
             stockIlimitado: currentProduct.stockIlimitado,
             requiereAgenda: currentProduct.requiereAgenda || false,
+            masInfo: currentProduct.masInfo?.activo ? currentProduct.masInfo : null,
             reservadoEn: Date.now()
         });
         if (currentProduct.stockIlimitado !== true) {

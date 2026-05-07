@@ -114,13 +114,30 @@ export async function mostrarFormularioProducto() {
     document.getElementById('prod-aviso-stock').value = 0;
     window._variantesAtributos = [];
 
-    // Reset agenda fields
+    // Reset masInfo fields
+    if (document.getElementById('prod-tiene-masinfo')) {
+        document.getElementById('prod-tiene-masinfo').checked = false;
+        document.getElementById('masinfo-config-section').style.display = 'none';
+        document.getElementById('prod-masinfo-texto').value = '';
+    }
+
+    // Reset parametría fields
     if (document.getElementById('prod-requiere-agenda')) {
         document.getElementById('prod-requiere-agenda').checked = false;
         document.getElementById('agenda-config-section').style.display = 'none';
         document.getElementById('prod-dias-anticipacion').value = 0;
         document.getElementById('prod-horario-corte').value = '14:00';
         document.getElementById('prod-mensaje-agenda').value = '';
+    }
+    if (document.getElementById('prod-retiro-inmediato')) {
+        document.getElementById('prod-retiro-inmediato').checked = false;
+        document.getElementById('retiro-config-section').style.display = 'none';
+        document.getElementById('prod-texto-retiro').value = 'Disponible poco tiempo después de tu compra.';
+    }
+    if (document.getElementById('prod-tiempo-minimo')) {
+        document.getElementById('prod-tiempo-minimo').checked = false;
+        document.getElementById('tiempo-minimo-config-section').style.display = 'none';
+        document.getElementById('prod-texto-tiempo-minimo').value = '';
     }
 
     // Reset relacionados
@@ -325,10 +342,18 @@ export async function guardarProducto(e) {
         imagenes: imagenesGaleria,
         actualizadoEn: serverTimestamp(),
         avisoStock: parseInt(document.getElementById('prod-aviso-stock').value) || 0,
+        masInfo: {
+            activo: document.getElementById('prod-tiene-masinfo')?.checked || false,
+            texto: document.getElementById('prod-masinfo-texto')?.value.trim() || '',
+        },
         requiereAgenda: document.getElementById('prod-requiere-agenda')?.checked || false,
         diasAnticipacion: parseInt(document.getElementById('prod-dias-anticipacion')?.value) || 0,
         horarioCorte: document.getElementById('prod-horario-corte')?.value || null,
         mensajeAgenda: document.getElementById('prod-mensaje-agenda')?.value.trim() || null,
+        retiroInmediato: document.getElementById('prod-retiro-inmediato')?.checked || false,
+        textoRetiroInmediato: document.getElementById('prod-texto-retiro')?.value.trim() || 'Disponible poco tiempo después de tu compra.',
+        tiempoMinimo: document.getElementById('prod-tiempo-minimo')?.checked || false,
+        textoTiempoMinimo: document.getElementById('prod-texto-tiempo-minimo')?.value.trim() || '',
         tieneVariantes: document.getElementById('prod-tiene-variantes').checked,
         atributosVariantes: document.getElementById('prod-tiene-variantes').checked
             ? (window._variantesAtributos || [])
@@ -422,7 +447,15 @@ export async function editarProducto(id) {
         combSection.style.display = 'none';
     }
 
-    // Load agenda fields
+    // Load masInfo fields
+    if (document.getElementById('prod-tiene-masinfo')) {
+        const masInfo = p.masInfo || {};
+        document.getElementById('prod-tiene-masinfo').checked = masInfo.activo || false;
+        document.getElementById('masinfo-config-section').style.display = masInfo.activo ? 'block' : 'none';
+        document.getElementById('prod-masinfo-texto').value = masInfo.texto || '';
+    }
+
+    // Load parametría fields (agenda / retiro / tiempoMinimo)
     if (document.getElementById('prod-requiere-agenda')) {
         const req = p.requiereAgenda || false;
         document.getElementById('prod-requiere-agenda').checked = req;
@@ -430,6 +463,18 @@ export async function editarProducto(id) {
         document.getElementById('prod-dias-anticipacion').value = p.diasAnticipacion || 0;
         document.getElementById('prod-horario-corte').value = p.horarioCorte || '14:00';
         document.getElementById('prod-mensaje-agenda').value = p.mensajeAgenda || '';
+    }
+    if (document.getElementById('prod-retiro-inmediato')) {
+        const ret = p.retiroInmediato || false;
+        document.getElementById('prod-retiro-inmediato').checked = ret;
+        document.getElementById('retiro-config-section').style.display = ret ? 'block' : 'none';
+        document.getElementById('prod-texto-retiro').value = p.textoRetiroInmediato || 'Disponible poco tiempo después de tu compra.';
+    }
+    if (document.getElementById('prod-tiempo-minimo')) {
+        const tm = p.tiempoMinimo || false;
+        document.getElementById('prod-tiempo-minimo').checked = tm;
+        document.getElementById('tiempo-minimo-config-section').style.display = tm ? 'block' : 'none';
+        document.getElementById('prod-texto-tiempo-minimo').value = p.textoTiempoMinimo || '';
     }
 
     // Cargar relacionados existentes
@@ -1400,9 +1445,40 @@ export function toggleRelacionado(id) {
     renderRelacionadosPicker(window._productosRelacionados);
 }
 
+export function toggleMasInfoSection(checked) {
+    const section = document.getElementById('masinfo-config-section');
+    if (section) section.style.display = checked ? 'block' : 'none';
+}
+
 export function toggleAgendaSection(checked) {
     const section = document.getElementById('agenda-config-section');
     if (section) section.style.display = checked ? 'flex' : 'none';
+}
+
+// Maneja exclusión mutua entre las tres opciones de parametría
+export function onParametriaChange(tipo, checked) {
+    if (checked) {
+        // Desmarcar las otras dos y ocultar sus secciones
+        const others = { agenda: ['prod-retiro-inmediato', 'prod-tiempo-minimo'], retiro: ['prod-requiere-agenda', 'prod-tiempo-minimo'], tiempoMinimo: ['prod-requiere-agenda', 'prod-retiro-inmediato'] };
+        const secciones = { 'prod-requiere-agenda': 'agenda-config-section', 'prod-retiro-inmediato': 'retiro-config-section', 'prod-tiempo-minimo': 'tiempo-minimo-config-section' };
+        (others[tipo] || []).forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.checked = false;
+            const secId = secciones[id];
+            if (secId) { const sec = document.getElementById(secId); if (sec) sec.style.display = 'none'; }
+        });
+    }
+    // Mostrar/ocultar la sección del tipo activado
+    if (tipo === 'agenda') {
+        const section = document.getElementById('agenda-config-section');
+        if (section) section.style.display = checked ? 'flex' : 'none';
+    } else if (tipo === 'retiro') {
+        const section = document.getElementById('retiro-config-section');
+        if (section) section.style.display = checked ? 'block' : 'none';
+    } else if (tipo === 'tiempoMinimo') {
+        const section = document.getElementById('tiempo-minimo-config-section');
+        if (section) section.style.display = checked ? 'block' : 'none';
+    }
 }
 
 // Botón del formulario: muestra stock actual de la variante que se está editando

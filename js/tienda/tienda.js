@@ -1,5 +1,7 @@
 import { db } from '../firebase-config.js';
 import { collection, getDocs, getDoc, doc, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { auth } from '../firebase-config.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { fetchReservedByOthers, getSessionId, writeReserva } from './cart-reservas.js';
 import { cart, initCart, openCart, closeCart, saveAndRefresh, showToast, setMaxUnidadesPorPedido } from './cart-component.js';
 
@@ -9,6 +11,7 @@ let categories = [];
 let activeCategory = 'todos';
 let reservedByOthers = {};
 let maxUnidadesPorPedido = 0;
+let isAdminPreview = false;
 
 // --- ELEMENTS ---
 const productsGrid = document.getElementById('products-container');
@@ -74,7 +77,9 @@ async function fetchCategories() {
 async function fetchProducts() {
     try {
         const productsRef = collection(db, "productos");
-        const q = query(productsRef, where("activo", "==", true), orderBy("creadoEn", "desc"));
+        const q = isAdminPreview
+            ? query(productsRef, orderBy("creadoEn", "desc"))
+            : query(productsRef, where("activo", "==", true), orderBy("creadoEn", "desc"));
         const snap = await getDocs(q);
         products = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (err) {
@@ -147,9 +152,11 @@ function renderProducts() {
             }
         }
 
+        const inactivo = p.activo === false;
         return `
-            <div class="product-card ${isAgotado ? 'agotado' : ''}" data-id="${p.id}" style="animation-delay: ${index * 0.05}s">
+            <div class="product-card ${isAgotado ? 'agotado' : ''}" data-id="${p.id}" style="animation-delay: ${index * 0.05}s${inactivo ? '; opacity:0.55; outline:2px dashed #f59e0b; outline-offset:2px;' : ''}">
                 <div class="product-img-container" onclick="window.location.href='producto.html?id=${p.id}'">
+                    ${inactivo ? '<div style="position:absolute;top:8px;left:8px;z-index:5;background:#f59e0b;color:white;font-size:0.65rem;font-weight:800;padding:3px 8px;border-radius:20px;letter-spacing:0.05em;">INACTIVO</div>' : ''}
                     ${isAgotado ? '<div class="badge-agotado">AGOTADO</div>' : ''}
                     <div class="card-carousel" id="carousel-${p.id}">
                         ${imagenes.map((img, i) => `
@@ -550,3 +557,21 @@ window.moveGridCarousel = function(id, delta) {
 };
 
 init();
+
+// Admin preview: si el usuario logueado es admin, re-carga los productos incluyendo inactivos
+onAuthStateChanged(auth, async (user) => {
+    if (!user) return;
+    try {
+        const snap = await getDoc(doc(db, 'admins', user.uid));
+        if (!snap.exists()) return;
+        // Es admin → modo preview
+        isAdminPreview = true;
+        await fetchProducts();
+        renderProducts();
+        // Banner
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:8000;background:#f59e0b;color:white;text-align:center;padding:8px 16px;font-size:0.82rem;font-weight:700;letter-spacing:0.02em;';
+        banner.innerHTML = '👁️ Modo preview admin — estás viendo todos los productos, incluidos los <span style="text-decoration:underline">inactivos</span>.';
+        document.body.appendChild(banner);
+    } catch(e) { /* usuario no admin, sin acción */ }
+});

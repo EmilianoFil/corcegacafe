@@ -1103,6 +1103,22 @@
                             <label>Descripción Larga (Detalle del Producto)</label>
                             <textarea id="prod-descripcion-larga" rows="5" placeholder="Historia del café, origen, proceso de tostado..."></textarea>
                         </div>
+                        <div class="input-group" style="background:#fdfcf7; padding:16px; border-radius:14px; border:1px solid var(--border);">
+                            <label style="display:flex; align-items:flex-start; gap:12px; cursor:pointer; margin-bottom:0;">
+                                <input type="checkbox" id="prod-tiene-masinfo" style="width:auto; margin-top:3px;"
+                                    onchange="window.tiendaAdmin.toggleMasInfoSection(this.checked)">
+                                <div>
+                                    <span style="font-weight:700; color:var(--secondary);">Tiene información adicional ("Más info")</span>
+                                    <small style="display:block; color:#999; margin-top:3px; font-weight:400;">El cliente verá un botón "Más info" en la página del producto y en el carrito aparece el texto directamente</small>
+                                </div>
+                            </label>
+                            <div id="masinfo-config-section" style="display:none; margin-top:14px;">
+                                <textarea id="prod-masinfo-texto" rows="4"
+                                    style="width:100%; border:1px solid #eee; border-radius:10px; padding:10px; font-family:inherit; font-size:0.85rem; resize:vertical; box-sizing:border-box;"
+                                    placeholder="Ej: Este café es de origen único, cultivado en las laderas del Huila..."></textarea>
+                                <small style="color:#aaa; font-size:0.72rem; margin-top:4px; display:block;">También aparece en el mail de confirmación del pedido.</small>
+                            </div>
+                        </div>
                         <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 0;">
                             <div class="input-group">
                                 <label>Precio ($)</label>
@@ -1220,17 +1236,20 @@
 
                     <!-- Tab: Parametría -->
                     <div class="prod-tab-pane" id="tab-parametria">
-                        <div style="background:#fdfcf7; padding:20px; border-radius:16px; border:1px solid var(--border);">
+                        <p style="font-size:0.8rem; color:#aaa; margin:0 0 14px; font-style:italic;">Solo podés activar una opción a la vez.</p>
+
+                        <!-- Opción 1: Agenda de entrega -->
+                        <div style="background:#fdfcf7; padding:20px; border-radius:16px; border:1px solid var(--border); margin-bottom:12px;">
                             <label style="display:flex; align-items:flex-start; gap:12px; cursor:pointer; margin-bottom:0;">
                                 <input type="checkbox" id="prod-requiere-agenda" style="width:auto; margin-top:3px;"
-                                    onchange="window.tiendaAdmin.toggleAgendaSection(this.checked)">
+                                    onchange="window.tiendaAdmin.onParametriaChange('agenda', this.checked)">
                                 <div>
                                     <span style="font-weight:700; color:var(--secondary);">Este producto requiere agenda de entrega</span>
                                     <small style="display:block; color:#999; margin-top:3px; font-weight:400;">El cliente deberá elegir un día en el calendario al hacer el pedido</small>
                                 </div>
                             </label>
                         </div>
-                        <div id="agenda-config-section" style="display:none; margin-top:15px; flex-direction:column; gap:15px;">
+                        <div id="agenda-config-section" style="display:none; margin-top:-4px; margin-bottom:12px; padding:16px 20px; background:#f5f9ff; border-radius:0 0 14px 14px; border:1px solid #d0e3ff; border-top:none; flex-direction:column; gap:15px;">
                             <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
                                 <div class="input-group" style="margin:0;">
                                     <label>Días de anticipación requeridos</label>
@@ -1249,6 +1268,48 @@
                                     style="width:100%; border:1px solid #eee; border-radius:10px; padding:10px; font-family:inherit; font-size:0.85rem; resize:vertical;"
                                     placeholder="Ej: ¡Las tortas se preparan frescas! Necesitamos al menos 2 días de anticipación 🎂"></textarea>
                                 <small style="color:#aaa; font-size:0.72rem; margin-top:4px; display:block;">Aparece como aviso destacado en el checkout, debajo del calendario</small>
+                            </div>
+                        </div>
+
+                        <!-- Opción 2: Retiro inmediato -->
+                        <div style="background:#fdfcf7; padding:20px; border-radius:16px; border:1px solid var(--border); margin-bottom:12px;">
+                            <label style="display:flex; align-items:flex-start; gap:12px; cursor:pointer; margin-bottom:0;">
+                                <input type="checkbox" id="prod-retiro-inmediato" style="width:auto; margin-top:3px;"
+                                    onchange="window.tiendaAdmin.onParametriaChange('retiro', this.checked)">
+                                <div>
+                                    <span style="font-weight:700; color:var(--secondary);">Retiro inmediato</span>
+                                    <small style="display:block; color:#999; margin-top:3px; font-weight:400;">Se muestra una leyenda de disponibilidad rápida al cliente</small>
+                                </div>
+                            </label>
+                        </div>
+                        <div id="retiro-config-section" style="display:none; margin-top:-4px; margin-bottom:12px; padding:16px 20px; background:#f5fff8; border-radius:0 0 14px 14px; border:1px solid #b2e8c4; border-top:none;">
+                            <div class="input-group" style="margin:0;">
+                                <label>Texto que verá el cliente</label>
+                                <input type="text" id="prod-texto-retiro"
+                                    value="Disponible poco tiempo después de tu compra."
+                                    placeholder="Disponible poco tiempo después de tu compra.">
+                                <small style="color:#aaa; font-size:0.72rem; margin-top:4px; display:block;">Aparece en la página del producto y en el checkout.</small>
+                            </div>
+                        </div>
+
+                        <!-- Opción 3: Tiempo mínimo de entrega -->
+                        <div style="background:#fdfcf7; padding:20px; border-radius:16px; border:1px solid var(--border);">
+                            <label style="display:flex; align-items:flex-start; gap:12px; cursor:pointer; margin-bottom:0;">
+                                <input type="checkbox" id="prod-tiempo-minimo" style="width:auto; margin-top:3px;"
+                                    onchange="window.tiendaAdmin.onParametriaChange('tiempoMinimo', this.checked)">
+                                <div>
+                                    <span style="font-weight:700; color:var(--secondary);">Tiempo mínimo de entrega</span>
+                                    <small style="display:block; color:#999; margin-top:3px; font-weight:400;">Mostrá un aviso con el tiempo estimado de preparación o entrega</small>
+                                </div>
+                            </label>
+                        </div>
+                        <div id="tiempo-minimo-config-section" style="display:none; margin-top:-4px; padding:16px 20px; background:#fffbf0; border-radius:0 0 14px 14px; border:1px solid #f0e0a0; border-top:none;">
+                            <div class="input-group" style="margin:0;">
+                                <label>Texto que verá el cliente</label>
+                                <input type="text" id="prod-texto-tiempo-minimo"
+                                    value=""
+                                    placeholder="Ej: Tiempo de entrega: 3 a 5 días hábiles.">
+                                <small style="color:#aaa; font-size:0.72rem; margin-top:4px; display:block;">Aparece en la página del producto y en el checkout.</small>
                             </div>
                         </div>
                     </div>

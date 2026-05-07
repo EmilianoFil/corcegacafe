@@ -1258,16 +1258,22 @@ exports.onOrderCreated = onDocumentCreated({
     logger.info(`Orden #${orderNumber} inicializada.`);
 
     // 3. Preparar Detalle de Pedido para el Mail
-    const itemsHtml = orderData.items.map(item => `
+    const itemsHtml = orderData.items.map(item => {
+        const masInfoRow = (item.masInfo?.activo && item.masInfo?.texto)
+            ? `<tr><td colspan="2" style="padding:0 0 12px; border-bottom:1px solid #f0f0f0;"><span style="font-size:12px;color:#888;line-height:1.5;">${item.masInfo.texto}</span></td></tr>`
+            : '';
+        return `
         <tr>
-            <td style="padding:12px 0; border-bottom:1px solid #f0f0f0;">
+            <td style="padding:12px 0 ${masInfoRow ? '4px' : '0'} 0; border-bottom:${masInfoRow ? 'none' : '1px solid #f0f0f0'};">
                 <span style="font-weight:bold; color:#d86634;">${item.qty}x</span> ${item.nombre}
+                ${item.variantLabel ? `<span style="font-size:11px;color:#999;"> (${item.variantLabel})</span>` : ''}
             </td>
-            <td style="padding:12px 0; border-bottom:1px solid #f0f0f0; text-align:right;">
+            <td style="padding:12px 0 ${masInfoRow ? '4px' : '0'} 0; border-bottom:${masInfoRow ? 'none' : '1px solid #f0f0f0'}; text-align:right;">
                 $${(item.precio * item.qty).toLocaleString('es-AR')}
             </td>
         </tr>
-    `).join('');
+        ${masInfoRow}`;
+    }).join('');
 
     // 4. Obtener Configuración de la Tienda para el Mail
     let config = {};
