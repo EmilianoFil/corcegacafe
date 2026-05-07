@@ -362,6 +362,24 @@ function renderSummary() {
         </div>
     `).join('');
 
+    // Mensaje de entrega: solo si TODOS los items comparten la misma condición
+    const entregaEl = document.getElementById('checkout-entrega-info');
+    if (entregaEl && cart.length > 0) {
+        const todosRetiro = cart.every(i => i.retiroInmediato);
+        const todosTiempo = !todosRetiro && cart.every(i => i.tiempoMinimo && i.textoTiempoMinimo);
+        if (todosRetiro) {
+            const texto = cart[0].textoRetiroInmediato || 'Disponible poco tiempo después de tu compra.';
+            entregaEl.innerHTML = `<div style="margin-top:10px; display:inline-flex; align-items:center; gap:6px; background:#e8f9ee; color:#1a6b3a; border-radius:12px; padding:7px 14px; font-size:0.82rem; font-weight:700;">⚡ ${texto}</div>`;
+            entregaEl.style.display = 'block';
+        } else if (todosTiempo) {
+            const texto = cart[0].textoTiempoMinimo;
+            entregaEl.innerHTML = `<div style="margin-top:10px; display:inline-flex; align-items:center; gap:6px; background:#fff8e6; color:#7a5800; border-radius:12px; padding:7px 14px; font-size:0.82rem; font-weight:700;">🕐 ${texto}</div>`;
+            entregaEl.style.display = 'block';
+        } else {
+            entregaEl.style.display = 'none';
+        }
+    }
+
     const total = cart.reduce((acc, item) => acc + (item.precio * item.qty), 0);
     checkoutTotal.innerText = `$${total.toLocaleString('es-AR')}`;
 }

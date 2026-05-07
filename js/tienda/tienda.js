@@ -172,7 +172,7 @@ function renderProducts() {
                     <h3 class="product-title">${p.nombre}</h3>
                     <p class="product-desc">${p.descripcion || ''}</p>
                     <div class="product-footer">
-                        <span class="product-price">$${p.precio.toLocaleString('es-AR')}</span>
+                        <span class="product-price">$${p.precio.toLocaleString('es-AR')}${p.retiroInmediato ? ` <span title="${p.textoRetiroInmediato || 'Disponible poco tiempo después de tu compra.'}" style="cursor:default; font-size:0.9em; margin-left:2px;">⚡</span>` : ''}</span>
                         <button class="btn-add-cart" onclick="event.stopPropagation(); window.addToCart('${p.id}')" ${isAgotado ? 'disabled' : ''}>
                             ${isAgotado
                                 ? '<i class="fas fa-times"></i>'
