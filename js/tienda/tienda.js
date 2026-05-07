@@ -41,17 +41,22 @@ async function init() {
 
     // Admin preview: validar antes del fetch para que el primer query ya traiga inactivos
     if (urlParams.get('adminPreview') === '1') {
+        const ADMIN_EMAILS = ['emilianofilgueira@gmail.com'];
         await new Promise(resolve => {
             const unsub = onAuthStateChanged(auth, async (user) => {
                 unsub();
                 if (user) {
-                    try {
-                        const snap = await getDoc(doc(db, 'admins', user.uid));
-                        if (snap.exists()) {
-                            isAdminPreview = true;
-                            showAdminBanner();
-                        }
-                    } catch(e) {}
+                    let esAdmin = ADMIN_EMAILS.includes(user.email);
+                    if (!esAdmin) {
+                        try {
+                            const snap = await getDoc(doc(db, 'admins', user.uid));
+                            esAdmin = snap.exists();
+                        } catch(e) {}
+                    }
+                    if (esAdmin) {
+                        isAdminPreview = true;
+                        showAdminBanner();
+                    }
                 }
                 resolve();
             });
