@@ -568,14 +568,12 @@ init();
     document.body.appendChild(tip);
     window._showRetiroTip = function(e, texto) {
         tip.textContent = texto;
-        tip.style.opacity = '1';
-        const r = e.target.getBoundingClientRect();
-        tip.style.left = (r.left + r.width / 2 - tip.offsetWidth / 2) + 'px';
-        tip.style.top = (r.top - tip.offsetHeight - 6 + window.scrollY) + 'px';
-        // reposicionar después de conocer el ancho real
+        tip.style.opacity = '0';
         requestAnimationFrame(() => {
-            tip.style.left = (r.left + r.width / 2 - tip.offsetWidth / 2) + 'px';
+            const r = e.target.getBoundingClientRect();
+            tip.style.left = Math.max(4, r.left + r.width / 2 - tip.offsetWidth / 2) + 'px';
             tip.style.top = (r.top - tip.offsetHeight - 6) + 'px';
+            tip.style.opacity = '1';
         });
     };
     window._hideRetiroTip = function() { tip.style.opacity = '0'; };
