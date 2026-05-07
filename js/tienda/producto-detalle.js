@@ -393,7 +393,6 @@ function renderVariantSelectors() {
         Object.values(p.variantes || {}).every(v => !v.stockIlimitado && (v.stock || 0) <= 0);
 
     const addBtn = document.getElementById('btn-add-to-cart-page');
-    const qtyPicker = document.querySelector('.qty-picker');
     if (todasAgotadas) {
         if (addBtn) {
             addBtn.disabled = true;
@@ -401,21 +400,12 @@ function renderVariantSelectors() {
             addBtn.style.cursor = 'not-allowed';
             addBtn.innerHTML = 'SIN STOCK';
         }
-        if (qtyPicker) {
-            qtyPicker.style.opacity = '0.4';
-            qtyPicker.style.pointerEvents = 'none';
-        }
     } else {
-        // Deshabilitar el botón hasta que el cliente elija TODAS las opciones
         if (addBtn) {
             addBtn.disabled = true;
             addBtn.style.background = '#bbb';
             addBtn.style.cursor = 'not-allowed';
             addBtn.innerHTML = '<i class="fas fa-hand-pointer"></i> Elegí las opciones';
-        }
-        if (qtyPicker) {
-            qtyPicker.style.opacity = '';
-            qtyPicker.style.pointerEvents = '';
         }
     }
 
