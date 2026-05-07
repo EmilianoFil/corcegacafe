@@ -35,10 +35,28 @@ window.tienda = {
 async function init() {
     initCart();
 
-    // Leer filtro de categoría desde URL (ej: tienda.html?cat=cafeteria)
     const urlParams = new URLSearchParams(window.location.search);
     const catFromUrl = urlParams.get('cat');
     if (catFromUrl) activeCategory = catFromUrl;
+
+    // Admin preview: validar antes del fetch para que el primer query ya traiga inactivos
+    if (urlParams.get('adminPreview') === '1') {
+        await new Promise(resolve => {
+            const unsub = onAuthStateChanged(auth, async (user) => {
+                unsub();
+                if (user) {
+                    try {
+                        const snap = await getDoc(doc(db, 'admins', user.uid));
+                        if (snap.exists()) {
+                            isAdminPreview = true;
+                            showAdminBanner();
+                        }
+                    } catch(e) {}
+                }
+                resolve();
+            });
+        });
+    }
 
     await Promise.all([
         fetchCategories(),
@@ -579,20 +597,11 @@ init();
     window._hideRetiroTip = function() { tip.style.opacity = '0'; };
 })();
 
-// Admin preview: si el usuario logueado es admin, re-carga los productos incluyendo inactivos
-onAuthStateChanged(auth, async (user) => {
-    if (!user) return;
-    try {
-        const snap = await getDoc(doc(db, 'admins', user.uid));
-        if (!snap.exists()) return;
-        // Es admin → modo preview
-        isAdminPreview = true;
-        await fetchProducts();
-        renderProducts();
-        // Banner
-        const banner = document.createElement('div');
-        banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:8000;background:#f59e0b;color:white;text-align:center;padding:8px 16px;font-size:0.82rem;font-weight:700;letter-spacing:0.02em;';
-        banner.innerHTML = '👁️ Modo preview admin — estás viendo todos los productos, incluidos los <span style="text-decoration:underline">inactivos</span>.';
-        document.body.appendChild(banner);
-    } catch(e) { /* usuario no admin, sin acción */ }
-});
+function showAdminBanner() {
+    if (document.getElementById('admin-preview-banner')) return;
+    const banner = document.createElement('div');
+    banner.id = 'admin-preview-banner';
+    banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:8000;background:#f59e0b;color:white;text-align:center;padding:8px 16px;font-size:0.82rem;font-weight:700;letter-spacing:0.02em;';
+    banner.innerHTML = '👁️ Modo preview admin — estás viendo todos los productos, incluidos los <span style="text-decoration:underline">inactivos</span>.';
+    document.body.appendChild(banner);
+}

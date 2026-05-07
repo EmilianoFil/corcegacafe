@@ -1073,7 +1073,13 @@
         <section id="tienda-productos" class="section-content">
             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
                 <h3 style="margin:0; font-size: 1.5rem;">Gestión de Productos 🛒</h3>
-                <button class="btn-primary" onclick="window.tiendaAdmin.mostrarFormularioProducto()" style="margin:0; width: auto; padding: 10px 20px; font-size: 0.85rem; height: auto;">+ Nuevo Producto</button>
+                <div style="display:flex; gap:10px;">
+                    <a href="tienda.html?adminPreview=1" target="_blank"
+                        style="display:inline-flex; align-items:center; gap:7px; padding:10px 18px; background:#f0f7f4; color:#1a6b3a; border:1.5px solid #b2e8c4; border-radius:12px; font-size:0.82rem; font-weight:700; text-decoration:none; cursor:pointer;">
+                        👁️ Preview tienda
+                    </a>
+                    <button class="btn-primary" onclick="window.tiendaAdmin.mostrarFormularioProducto()" style="margin:0; width: auto; padding: 10px 20px; font-size: 0.85rem; height: auto;">+ Nuevo Producto</button>
+                </div>
             </div>
             
             <div id="form-producto-container" class="card form-container" style="display: none; margin-bottom: 20px;">
