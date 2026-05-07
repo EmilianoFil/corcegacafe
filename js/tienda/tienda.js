@@ -169,10 +169,13 @@ function renderProducts() {
                     ` : ''}
                 </div>
                 <div class="product-info" onclick="window.location.href='producto.html?id=${p.id}'">
-                    <h3 class="product-title">${p.nombre}</h3>
+                    <h3 class="product-title">
+                        ${p.nombre}
+                        ${p.retiroInmediato ? `<span class="badge-retiro" data-tip="${(p.textoRetiroInmediato || 'Disponible poco tiempo después de tu compra.').replace(/"/g, '&quot;')}">⚡</span>` : ''}
+                    </h3>
                     <p class="product-desc">${p.descripcion || ''}</p>
                     <div class="product-footer">
-                        <span class="product-price">$${p.precio.toLocaleString('es-AR')}${p.retiroInmediato ? ` <span title="${p.textoRetiroInmediato || 'Disponible poco tiempo después de tu compra.'}" style="cursor:default; font-size:0.9em; margin-left:2px;">⚡</span>` : ''}</span>
+                        <span class="product-price">$${p.precio.toLocaleString('es-AR')}</span>
                         <button class="btn-add-cart" onclick="event.stopPropagation(); window.addToCart('${p.id}')" ${isAgotado ? 'disabled' : ''}>
                             ${isAgotado
                                 ? '<i class="fas fa-times"></i>'

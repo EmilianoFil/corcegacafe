@@ -285,6 +285,47 @@ header {
     font-family: var(--font-display);
     font-size: 18px;
     margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.badge-retiro {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: #22c55e;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    position: relative;
+    cursor: default;
+}
+
+.badge-retiro::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a;
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: var(--font-base, sans-serif);
+    white-space: nowrap;
+    padding: 5px 10px;
+    border-radius: 8px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s ease;
+    z-index: 10;
+}
+
+.badge-retiro:hover::after {
+    opacity: 1;
 }
 
 .product-desc {
