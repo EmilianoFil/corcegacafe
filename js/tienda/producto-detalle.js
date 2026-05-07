@@ -215,7 +215,19 @@ function renderProductDetail() {
     document.getElementById('product-content').style.display = 'grid';
 
     // Button Logic
-    document.getElementById('btn-add-to-cart-page').onclick = () => addToCartFromPage();
+    const addBtn = document.getElementById('btn-add-to-cart-page');
+    addBtn.onclick = () => addToCartFromPage();
+
+    // Sincronizar qty picker con el estado del botón (disabled = qty deshabilitado)
+    const qtyPicker = document.querySelector('.qty-picker');
+    if (qtyPicker) {
+        const syncQty = () => {
+            qtyPicker.style.opacity = addBtn.disabled ? '0.4' : '';
+            qtyPicker.style.pointerEvents = addBtn.disabled ? 'none' : '';
+        };
+        syncQty();
+        new MutationObserver(syncQty).observe(addBtn, { attributes: true, attributeFilter: ['disabled'] });
+    }
 
     // Stock info para productos sin variantes
     if (!p.tieneVariantes) {
