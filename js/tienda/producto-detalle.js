@@ -376,13 +376,35 @@ function renderVariantSelectors() {
     selectedVariants = {};
     section.style.display = 'block';
 
-    // Deshabilitar el botón hasta que el cliente elija TODAS las opciones
+    // Verificar si todas las variantes están sin stock
+    const todasAgotadas = Object.values(p.variantes || {}).length > 0 &&
+        Object.values(p.variantes || {}).every(v => !v.stockIlimitado && (v.stock || 0) <= 0);
+
     const addBtn = document.getElementById('btn-add-to-cart-page');
-    if (addBtn) {
-        addBtn.disabled = true;
-        addBtn.style.background = '#bbb';
-        addBtn.style.cursor = 'not-allowed';
-        addBtn.innerHTML = '<i class="fas fa-hand-pointer"></i> Elegí las opciones';
+    const qtyPicker = document.querySelector('.qty-picker');
+    if (todasAgotadas) {
+        if (addBtn) {
+            addBtn.disabled = true;
+            addBtn.style.background = '#ccc';
+            addBtn.style.cursor = 'not-allowed';
+            addBtn.innerHTML = 'SIN STOCK';
+        }
+        if (qtyPicker) {
+            qtyPicker.style.opacity = '0.4';
+            qtyPicker.style.pointerEvents = 'none';
+        }
+    } else {
+        // Deshabilitar el botón hasta que el cliente elija TODAS las opciones
+        if (addBtn) {
+            addBtn.disabled = true;
+            addBtn.style.background = '#bbb';
+            addBtn.style.cursor = 'not-allowed';
+            addBtn.innerHTML = '<i class="fas fa-hand-pointer"></i> Elegí las opciones';
+        }
+        if (qtyPicker) {
+            qtyPicker.style.opacity = '';
+            qtyPicker.style.pointerEvents = '';
+        }
     }
 
     list.innerHTML = p.atributosVariantes.map((attr, attrIdx) => `
