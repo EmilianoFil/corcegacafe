@@ -1,0 +1,31 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Menú PDF público (ya existente)
+    match /menu.pdf {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Fotos de la carta digital
+    match /carta/{platoId}/{filename} {
+      allow read: if true;
+      allow write: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    // Imágenes de productos de tienda (ya existente)
+    match /productos/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    // Flyers de campañas
+    match /flyers/{filename} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
