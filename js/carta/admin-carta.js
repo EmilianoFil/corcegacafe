@@ -101,8 +101,8 @@ async function _confirmCrop() {
     btn.disabled = true;
 
     const blob = await new Promise(resolve => {
-        _cropperInstance.getCroppedCanvas({ maxWidth: 1200, maxHeight: 900, fillColor: '#fff' })
-            .toBlob(b => resolve(b), 'image/jpeg', 0.82);
+        _cropperInstance.getCroppedCanvas({ maxWidth: 1800, maxHeight: 1350, fillColor: '#fff' })
+            .toBlob(b => resolve(b), 'image/jpeg', 0.92);
     });
 
     const blobUrl = URL.createObjectURL(blob);
