@@ -5,87 +5,102 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carta — Córcega Café</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #d86634;
-            --secondary: #0d2b37;
-            --bg: #fdfcf7;
-            --white: #ffffff;
-            --border: #e8e4db;
-            --text: #1d1d1d;
-            --muted: #888;
-            --radius: 14px;
+            --dark:    #01323f;
+            --coral:   #ed7053;
+            --coral2:  #b7542c;
+            --bg:      #fdfcf7;
+            --border:  #e0dbd2;
+            --muted:   #7a7a7a;
+            --white:   #ffffff;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            background-color: var(--bg);
+            color: #1d1d1d;
             min-height: 100vh;
+        }
+
+        /* Fondo wallpaper igual que index.html */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: url('css/img/wallpaper.png');
+            background-repeat: repeat;
+            background-size: 600px;
+            opacity: 0.5;
+            z-index: -1;
+            pointer-events: none;
         }
 
         /* ── Header ── */
         header {
-            background: var(--white);
-            border-bottom: 1px solid var(--border);
-            padding: 18px 20px 0;
+            background: var(--dark);
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            box-shadow: 0 2px 16px rgba(1,50,63,0.18);
         }
 
         .header-top {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 14px;
+            padding: 14px 20px 10px;
         }
 
-        .header-top img { width: 38px; }
+        .header-top img { width: 36px; filter: brightness(0) invert(1); }
 
         .header-top h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.3rem;
-            color: var(--secondary);
+            font-family: 'Syncopate', serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--white);
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
 
-        /* ── Tabs de secciones ── */
+        /* ── Tabs ── */
         .tabs-scroll {
             display: flex;
-            gap: 6px;
+            gap: 0;
             overflow-x: auto;
-            padding-bottom: 0;
             scrollbar-width: none;
+            border-top: 1px solid rgba(255,255,255,0.08);
         }
         .tabs-scroll::-webkit-scrollbar { display: none; }
 
         .tab-btn {
             flex-shrink: 0;
-            padding: 8px 18px;
+            padding: 10px 20px;
             border: none;
-            border-radius: 30px 30px 0 0;
             background: transparent;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--muted);
+            font-family: 'Syncopate', serif;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.45);
             cursor: pointer;
-            transition: color 0.2s, background 0.2s;
             border-bottom: 3px solid transparent;
+            transition: color 0.2s, border-color 0.2s;
+            white-space: nowrap;
         }
 
         .tab-btn.active {
-            color: var(--primary);
-            border-bottom: 3px solid var(--primary);
+            color: var(--coral);
+            border-bottom-color: var(--coral);
         }
 
         /* ── Contenido ── */
         main {
-            max-width: 680px;
+            max-width: 640px;
             margin: 0 auto;
             padding: 24px 16px 80px;
         }
@@ -93,36 +108,31 @@
         .seccion-titulo {
             font-family: 'Playfair Display', serif;
             font-size: 1.6rem;
-            color: var(--secondary);
+            font-style: italic;
+            color: var(--dark);
             margin-bottom: 18px;
-            padding-top: 4px;
         }
 
         /* ── Cards de platos ── */
         .platos-grid {
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 12px;
         }
 
         .plato-card {
             background: var(--white);
             border: 1px solid var(--border);
-            border-radius: var(--radius);
+            border-radius: 14px;
             display: flex;
-            gap: 0;
             overflow: hidden;
             cursor: pointer;
             transition: box-shadow 0.2s, transform 0.15s;
+            box-shadow: 0 2px 8px rgba(1,50,63,0.06);
         }
 
-        .plato-card:active {
-            transform: scale(0.985);
-        }
-
-        .plato-card:hover {
-            box-shadow: 0 6px 20px rgba(0,0,0,0.07);
-        }
+        .plato-card:active { transform: scale(0.985); }
+        .plato-card:hover  { box-shadow: 0 6px 20px rgba(1,50,63,0.1); }
 
         .plato-info {
             flex: 1;
@@ -130,20 +140,23 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            gap: 4px;
+            gap: 5px;
         }
 
         .plato-nombre {
+            font-family: 'Syncopate', serif;
             font-weight: 700;
-            font-size: 0.95rem;
-            color: var(--text);
-            line-height: 1.3;
+            font-size: 0.72rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--dark);
+            line-height: 1.4;
         }
 
         .plato-desc {
             font-size: 0.8rem;
             color: var(--muted);
-            line-height: 1.4;
+            line-height: 1.45;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -154,38 +167,41 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-top: 8px;
+            margin-top: 6px;
+            flex-wrap: wrap;
         }
 
         .plato-precio {
-            font-weight: 800;
-            font-size: 1rem;
-            color: var(--secondary);
+            font-family: 'Syncopate', serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--coral);
         }
 
         .tag {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             padding: 2px 7px;
             border-radius: 20px;
             background: #f0f0f0;
             color: #666;
             font-weight: 600;
+            letter-spacing: 0.3px;
         }
         .tag.vegetariano { background: #e8f5e9; color: #2d6a4f; }
         .tag.vegano       { background: #e8f5e9; color: #1b5e20; }
         .tag.sin-tacc     { background: #fff3e0; color: #e65100; }
-        .tag.destacado    { background: #fff8e1; color: #f57f17; }
+        .tag.destacado    { background: #fff8e1; color: #c17900; }
 
         .plato-foto {
-            width: 100px;
-            min-height: 100px;
+            width: 110px;
+            min-height: 110px;
             object-fit: cover;
             flex-shrink: 0;
         }
 
         .plato-foto-placeholder {
-            width: 100px;
-            background: #f5f3ee;
+            width: 110px;
+            background: #f0ece4;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -193,12 +209,12 @@
             flex-shrink: 0;
         }
 
-        /* ── Modal detalle ── */
+        /* ── Modal ── */
         .modal-overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.6);
+            background: rgba(1,50,63,0.65);
             z-index: 999;
             align-items: flex-end;
             justify-content: center;
@@ -209,10 +225,10 @@
             background: var(--white);
             border-radius: 22px 22px 0 0;
             width: 100%;
-            max-width: 680px;
-            max-height: 90vh;
+            max-width: 640px;
+            max-height: 92vh;
             overflow-y: auto;
-            animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+            animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1);
         }
 
         @keyframes slideUp {
@@ -254,7 +270,7 @@
         .foto-dot {
             width: 6px; height: 6px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.45);
             cursor: pointer;
             transition: background 0.2s;
         }
@@ -264,7 +280,7 @@
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
-            background: rgba(0,0,0,0.35);
+            background: rgba(0,0,0,0.3);
             border: none;
             color: white;
             font-size: 1.2rem;
@@ -279,73 +295,69 @@
         .modal-nav.prev { left: 10px; }
         .modal-nav.next { right: 10px; }
 
-        .modal-body { padding: 20px 20px 36px; }
+        .modal-body { padding: 22px 20px 40px; }
 
         .modal-nombre {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.5rem;
-            color: var(--secondary);
-            margin-bottom: 8px;
+            font-family: 'Syncopate', serif;
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--dark);
+            margin-bottom: 10px;
+            line-height: 1.4;
         }
 
         .modal-desc {
             font-size: 0.9rem;
-            color: #666;
+            color: var(--muted);
             line-height: 1.6;
             margin-bottom: 14px;
         }
 
         .modal-precio {
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: var(--primary);
+            font-family: 'Syncopate', serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--coral);
         }
 
-        .modal-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+        .modal-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
 
-        /* ── Loader ── */
-        #loader {
+        /* ── Estados ── */
+        #loader, .empty-state {
             text-align: center;
-            padding: 60px 20px;
+            padding: 70px 20px;
             color: var(--muted);
-            font-size: 0.9rem;
+            font-family: 'Syncopate', serif;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
-
-        /* ── Empty state ── */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--muted);
-        }
-        .empty-state p { margin-top: 10px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
 <header>
     <div class="header-top">
-        <img src="css/img/Corcega_Logo_Original.png" alt="Logo Córcega">
+        <img src="css/img/Corcega_Logo_Original.png" alt="Córcega">
         <h1>Córcega Café</h1>
     </div>
-    <div class="tabs-scroll" id="tabs-secciones">
-        <!-- tabs dinámicos -->
-    </div>
+    <div class="tabs-scroll" id="tabs-secciones"></div>
 </header>
 
 <main id="main-content">
     <div id="loader">Cargando carta...</div>
 </main>
 
-<!-- Modal detalle de plato -->
+<!-- Modal -->
 <div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
     <div class="modal-sheet" id="modal-sheet">
         <div class="modal-handle"></div>
-        <div class="modal-fotos" id="modal-fotos">
-            <!-- fotos dinámicas -->
-        </div>
+        <div class="modal-fotos" id="modal-fotos"></div>
         <div class="modal-body">
             <p class="modal-nombre" id="modal-nombre"></p>
-            <p class="modal-desc" id="modal-desc"></p>
+            <p class="modal-desc"   id="modal-desc"></p>
             <p class="modal-precio" id="modal-precio"></p>
             <div class="modal-tags" id="modal-tags"></div>
         </div>
@@ -355,94 +367,74 @@
 <script type="module">
     import { db } from './js/firebase-config.js';
     import {
-        collection, getDocs, query, orderBy, where
+        collection, getDocs, query, orderBy
     } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    const TAG_LABELS = {
+        'vegetariano': '🌱 Vegetariano',
+        'vegano':      '🌿 Vegano',
+        'sin-tacc':    '⚠️ Sin TACC',
+        'destacado':   '⭐ Destacado',
+    };
 
     let secciones = [];
     let platos = [];
-    let seccionActiva = null;
     let fotoActualIdx = 0;
 
-    // ─── Carga inicial ───────────────────────────────────────────────────────
-
     async function init() {
-        const [snapSec, snapPlatos] = await Promise.all([
-            getDocs(query(collection(db, 'carta_secciones'), orderBy('orden'))),
-            getDocs(query(collection(db, 'carta_platos'), orderBy('orden')))
-        ]);
+        try {
+            const [snapSec, snapPlatos] = await Promise.all([
+                getDocs(query(collection(db, 'carta_secciones'), orderBy('orden'))),
+                getDocs(query(collection(db, 'carta_platos'),    orderBy('orden')))
+            ]);
 
-        secciones = snapSec.docs
-            .map(d => ({ id: d.id, ...d.data() }))
-            .filter(s => s.activa !== false);
+            secciones = snapSec.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.activa !== false);
+            platos    = snapPlatos.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.activo !== false);
 
-        platos = snapPlatos.docs
-            .map(d => ({ id: d.id, ...d.data() }))
-            .filter(p => p.activo !== false);
+            if (!secciones.length) {
+                document.getElementById('loader').textContent = 'Carta en preparación — volvé pronto';
+                return;
+            }
 
-        if (!secciones.length) {
-            document.getElementById('loader').textContent = 'La carta está en preparación. ¡Volvé pronto!';
-            return;
+            renderTabs();
+            activarSeccion(secciones[0].id);
+        } catch (err) {
+            console.error(err);
+            document.getElementById('loader').textContent = 'Error al cargar la carta';
         }
-
-        renderTabs();
-        activarSeccion(secciones[0].id);
     }
 
-    // ─── Tabs ────────────────────────────────────────────────────────────────
-
     function renderTabs() {
-        const container = document.getElementById('tabs-secciones');
-        container.innerHTML = secciones.map(s => `
-            <button class="tab-btn" data-id="${s.id}" onclick="window._activarSeccion('${s.id}')">
-                ${s.nombre}
-            </button>
-        `).join('');
+        document.getElementById('tabs-secciones').innerHTML = secciones.map(s =>
+            `<button class="tab-btn" data-id="${s.id}" onclick="window._activarSeccion('${s.id}')">${s.nombre}</button>`
+        ).join('');
     }
 
     window._activarSeccion = activarSeccion;
 
     function activarSeccion(id) {
-        seccionActiva = id;
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.id === id);
-        });
-        // Scroll el tab activo al centro
-        const activeBtn = document.querySelector(`.tab-btn[data-id="${id}"]`);
-        activeBtn?.scrollIntoView({ inline: 'center', behavior: 'smooth' });
-
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.id === id));
+        document.querySelector(`.tab-btn[data-id="${id}"]`)?.scrollIntoView({ inline: 'center', behavior: 'smooth' });
         renderPlatos(id);
     }
 
-    // ─── Platos ──────────────────────────────────────────────────────────────
-
     function renderPlatos(seccionId) {
-        const main = document.getElementById('main-content');
+        const main    = document.getElementById('main-content');
         const seccion = secciones.find(s => s.id === seccionId);
-        const platosSeccion = platos.filter(p => p.seccionId === seccionId);
+        const lista   = platos.filter(p => p.seccionId === seccionId);
 
-        if (!platosSeccion.length) {
-            main.innerHTML = `
-                <div class="empty-state">
-                    <span style="font-size:2.5rem;">🍽️</span>
-                    <p>Esta sección todavía no tiene platos.</p>
-                </div>`;
+        if (!lista.length) {
+            main.innerHTML = `<div class="empty-state">Sección en preparación</div>`;
             return;
         }
-
-        const TAG_LABELS = {
-            'vegetariano': '🌱 Vegetariano',
-            'vegano':      '🌿 Vegano',
-            'sin-tacc':    '⚠️ Sin TACC',
-            'destacado':   '⭐ Destacado',
-        };
 
         main.innerHTML = `
             <p class="seccion-titulo">${seccion?.nombre ?? ''}</p>
             <div class="platos-grid">
-                ${platosSeccion.map(p => {
-                    const foto = p.fotos?.[0] ?? '';
+                ${lista.map(p => {
+                    const foto   = p.fotos?.[0] ?? '';
                     const precio = p.precio != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '';
-                    const tags = (p.tags ?? []).map(t => `<span class="tag ${t}">${TAG_LABELS[t] ?? t}</span>`).join('');
+                    const tags   = (p.tags ?? []).map(t => `<span class="tag ${t}">${TAG_LABELS[t] ?? t}</span>`).join('');
                     return `
                     <div class="plato-card" onclick="window._abrirModal('${p.id}')">
                         <div class="plato-info">
@@ -461,44 +453,27 @@
             </div>`;
     }
 
-    // ─── Modal ───────────────────────────────────────────────────────────────
-
     window._abrirModal = function(id) {
         const p = platos.find(pl => pl.id === id);
         if (!p) return;
 
         fotoActualIdx = 0;
         const fotos = p.fotos ?? [];
-
-        // Fotos
         const fotosEl = document.getElementById('modal-fotos');
-        if (fotos.length) {
-            fotosEl.innerHTML = fotos.map((url, i) => `
-                <img src="${url}" class="${i === 0 ? 'visible' : ''}" alt="">
-            `).join('') +
-            (fotos.length > 1 ? `
+
+        fotosEl.innerHTML = fotos.length
+            ? fotos.map((url, i) => `<img src="${url}" class="${i === 0 ? 'visible' : ''}" alt="">`).join('')
+              + (fotos.length > 1 ? `
                 <button class="modal-nav prev" onclick="navFoto(-1)">‹</button>
                 <button class="modal-nav next" onclick="navFoto(1)">›</button>
-                <div class="foto-dots">
-                    ${fotos.map((_, i) => `<div class="foto-dot ${i === 0 ? 'active' : ''}" onclick="irFoto(${i})"></div>`).join('')}
-                </div>
-            ` : '');
-            fotosEl.style.display = 'block';
-        } else {
-            fotosEl.innerHTML = `<div style="height:180px; background:#f0ece4; display:flex; align-items:center; justify-content:center; font-size:3rem;">🍽️</div>`;
-        }
-
-        const TAG_LABELS = {
-            'vegetariano': '🌱 Vegetariano',
-            'vegano':      '🌿 Vegano',
-            'sin-tacc':    '⚠️ Sin TACC',
-            'destacado':   '⭐ Destacado',
-        };
+                <div class="foto-dots">${fotos.map((_, i) => `<div class="foto-dot ${i===0?'active':''}" onclick="irFoto(${i})"></div>`).join('')}</div>`
+              : '')
+            : `<div style="height:200px;background:#f0ece4;display:flex;align-items:center;justify-content:center;font-size:3rem;">🍽️</div>`;
 
         document.getElementById('modal-nombre').textContent = p.nombre;
-        document.getElementById('modal-desc').textContent = p.descripcion ?? '';
+        document.getElementById('modal-desc').textContent   = p.descripcion ?? '';
         document.getElementById('modal-precio').textContent = p.precio != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '';
-        document.getElementById('modal-tags').innerHTML = (p.tags ?? []).map(t => `<span class="tag ${t}">${TAG_LABELS[t] ?? t}</span>`).join('');
+        document.getElementById('modal-tags').innerHTML     = (p.tags ?? []).map(t => `<span class="tag ${t}">${TAG_LABELS[t] ?? t}</span>`).join('');
 
         document.getElementById('modal-overlay').classList.add('open');
         document.body.style.overflow = 'hidden';
@@ -532,10 +507,10 @@
         dots[fotoActualIdx]?.classList.add('active');
     };
 
-    // Swipe en el modal
+    // Swipe táctil
     let touchStartX = 0;
-    document.getElementById('modal-fotos').addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
-    document.getElementById('modal-fotos').addEventListener('touchend', e => {
+    document.getElementById('modal-fotos').addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+    document.getElementById('modal-fotos').addEventListener('touchend',   e => {
         const diff = touchStartX - e.changedTouches[0].clientX;
         if (Math.abs(diff) > 40) navFoto(diff > 0 ? 1 : -1);
     });

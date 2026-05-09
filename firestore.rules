@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Clientes: cualquiera puede consultar y registrarse, solo admin modifica
+    match /clientes/{docId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if request.auth != null;
+    }
+
+    // Logs: cualquiera puede escribir, nadie puede leer
+    match /logs/{logId} {
+      allow read: if false;
+      allow write: if true;
+    }
+
+    // TIENDA: Cualquiera ve productos, solo admin (auth) los edita
+    match /productos/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+      // Historial de stock: solo admin
+      match /movimientos_stock/{movId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    // ORDENES: Clientes crean pedidos, administrador los gestiona
+    match /ordenes/{docId} {
+      allow create: if true;
+      allow read, write: if request.auth != null;
+    }
+
+    // TIENDA PÚBLICA: categorías y configuración son datos públicos
+    match /categorias/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /configuracion/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // RESERVAS DE STOCK: cualquiera puede leer/escribir (carritos anónimos)
+    match /reservas/{id} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // CARTA DIGITAL: lectura pública, escritura solo admin
+    match /carta_secciones/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /carta_platos/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Todo lo demás requiere login (admin)
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
