@@ -841,6 +841,12 @@
                 <li><a href="#tienda-config"><span class="icon">⚙️</span> Configuración</a></li>
             </ul>
 
+            <div class="nav-label">Carta Digital</div>
+            <ul>
+                <li><a href="#carta-secciones"><span class="icon">📋</span> Secciones</a></li>
+                <li><a href="#carta-platos"><span class="icon">🍽️</span> Platos</a></li>
+            </ul>
+
             <div class="nav-label">Marketing y Sistema</div>
             <ul>
                 <li><a href="#mails"><span class="icon">📧</span> Mails Masivos</a></li>
@@ -1766,6 +1772,157 @@
             </div>
         </section>
 
+        <!-- CARTA SECCIONES -->
+        <section id="carta-secciones" class="section-content">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:25px; border-bottom:1px solid var(--border); padding-bottom:15px;">
+                <h3 style="margin:0; font-size:1.5rem;">Secciones de la Carta 📋</h3>
+                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:500;">CARTA DIGITAL</span>
+            </div>
+
+            <!-- Form nueva sección -->
+            <div class="card" style="margin-bottom:20px; padding:20px; background:white; border:1px solid var(--border); box-shadow:0 2px 10px rgba(0,0,0,0.02);">
+                <p style="margin:0 0 12px; font-weight:700; font-size:0.85rem; color:var(--secondary);">Nueva sección</p>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <input type="text" id="carta-sec-nombre" placeholder="Ej: Desayunos, Almuerzos, Bebidas..."
+                        style="flex:1; padding:10px 16px; border-radius:10px; border:1px solid #ddd; font-size:0.9rem; outline:none; font-family:inherit;">
+                    <button class="btn-primary" onclick="window.cartaAdmin.guardarSeccion()" style="margin:0; padding:11px 25px; width:auto; font-size:0.85rem; height:auto;">
+                        + Agregar
+                    </button>
+                </div>
+                <div id="carta-sec-error" style="display:none; color:var(--error); font-size:0.8rem; margin-top:8px;"></div>
+            </div>
+
+            <!-- Lista de secciones -->
+            <div class="card" style="padding:10px; border:1px solid var(--border); background:white;">
+                <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                    <thead style="background:#fdfcf7;">
+                        <tr>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Orden</th>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Nombre</th>
+                            <th style="text-align:center; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Activa</th>
+                            <th style="text-align:right; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="carta-secciones-body">
+                        <tr><td colspan="4" style="text-align:center; padding:30px; color:var(--text-muted);">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- CARTA PLATOS -->
+        <section id="carta-platos" class="section-content">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:25px; border-bottom:1px solid var(--border); padding-bottom:15px;">
+                <h3 style="margin:0; font-size:1.5rem;">Platos de la Carta 🍽️</h3>
+                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:500;">CARTA DIGITAL</span>
+            </div>
+
+            <!-- Toolbar -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; gap:12px; flex-wrap:wrap;">
+                <select id="carta-filtro-seccion" onchange="window.cartaAdmin.filtrarPlatosPorSeccion(this.value)"
+                    style="padding:8px 14px; border-radius:10px; border:1px solid #ddd; font-size:0.85rem; font-family:inherit; background:white; cursor:pointer;">
+                    <option value="">— Todas las secciones —</option>
+                </select>
+                <button class="btn-primary" onclick="window.cartaAdmin.mostrarFormPlato()" style="margin:0; width:auto; padding:10px 20px; font-size:0.85rem; height:auto;">
+                    + Nuevo Plato
+                </button>
+            </div>
+
+            <!-- Form plato (oculto por defecto) -->
+            <div id="form-plato-wrapper" style="display:none; margin-bottom:24px;">
+                <div class="card" style="padding:24px; border:1px solid var(--border); background:white;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <p style="margin:0; font-weight:800; font-size:1rem; color:var(--secondary);" id="form-plato-titulo">Nuevo Plato</p>
+                        <button type="button" onclick="window.cartaAdmin.ocultarFormPlato()"
+                            style="background:none; border:none; font-size:1.3rem; cursor:pointer; color:#aaa; line-height:1;">✕</button>
+                    </div>
+                    <input type="hidden" id="plato-id">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                        <div style="grid-column:1/-1;">
+                            <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:6px;">NOMBRE *</label>
+                            <input type="text" id="plato-nombre" placeholder="Nombre del plato"
+                                style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #ddd; font-size:0.9rem; font-family:inherit; outline:none; box-sizing:border-box;">
+                        </div>
+                        <div style="grid-column:1/-1;">
+                            <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:6px;">DESCRIPCIÓN</label>
+                            <textarea id="plato-descripcion" placeholder="Ingredientes, preparación, etc." rows="2"
+                                style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #ddd; font-size:0.9rem; font-family:inherit; outline:none; resize:vertical; box-sizing:border-box;"></textarea>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:6px;">PRECIO *</label>
+                            <input type="number" id="plato-precio" placeholder="0" min="0"
+                                style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #ddd; font-size:0.9rem; font-family:inherit; outline:none; box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:6px;">SECCIÓN *</label>
+                            <select id="plato-seccion"
+                                style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #ddd; font-size:0.9rem; font-family:inherit; background:white; outline:none; box-sizing:border-box;">
+                                <option value="">— Elegir sección —</option>
+                            </select>
+                        </div>
+                        <div style="grid-column:1/-1;">
+                            <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:6px;">TAGS</label>
+                            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                                <label style="display:flex; align-items:center; gap:5px; font-size:0.85rem; cursor:pointer;">
+                                    <input type="checkbox" value="vegetariano" class="plato-tag"> 🌱 Vegetariano
+                                </label>
+                                <label style="display:flex; align-items:center; gap:5px; font-size:0.85rem; cursor:pointer;">
+                                    <input type="checkbox" value="vegano" class="plato-tag"> 🌿 Vegano
+                                </label>
+                                <label style="display:flex; align-items:center; gap:5px; font-size:0.85rem; cursor:pointer;">
+                                    <input type="checkbox" value="sin-tacc" class="plato-tag"> ⚠️ Sin TACC
+                                </label>
+                                <label style="display:flex; align-items:center; gap:5px; font-size:0.85rem; cursor:pointer;">
+                                    <input type="checkbox" value="destacado" class="plato-tag"> ⭐ Destacado
+                                </label>
+                            </div>
+                        </div>
+                        <!-- Fotos -->
+                        <div style="grid-column:1/-1;">
+                            <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:6px;">FOTOS <span style="font-weight:400;">(la primera es la principal)</span></label>
+                            <div id="plato-fotos-preview" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; min-height:80px; align-items:center;">
+                                <span style="color:#ccc; font-size:0.85rem;" id="plato-fotos-empty">Sin fotos todavía</span>
+                            </div>
+                            <input type="file" id="plato-fotos-input" accept="image/*" multiple style="display:none;" onchange="window.cartaAdmin.handleFotosUpload(this)">
+                            <button type="button" onclick="document.getElementById('plato-fotos-input').click()"
+                                style="padding:8px 18px; border-radius:8px; border:1px dashed #ccc; background:white; font-size:0.8rem; cursor:pointer; font-family:inherit; color:var(--text-muted);">
+                                + Agregar fotos
+                            </button>
+                            <p style="font-size:0.75rem; color:#bbb; margin:6px 0 0;">Tocá una foto para marcarla como principal. Arrastrá para reordenar.</p>
+                        </div>
+                    </div>
+                    <div id="plato-form-error" style="display:none; color:var(--error); font-size:0.8rem; margin-top:12px;"></div>
+                    <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end;">
+                        <button type="button" onclick="window.cartaAdmin.ocultarFormPlato()"
+                            style="padding:10px 24px; border-radius:10px; border:1px solid #eee; background:white; font-weight:700; cursor:pointer; font-family:inherit; color:#666;">Cancelar</button>
+                        <button type="button" onclick="window.cartaAdmin.guardarPlato()"
+                            style="padding:10px 28px; border-radius:10px; border:none; background:var(--secondary); color:white; font-weight:800; cursor:pointer; font-family:inherit;">
+                            Guardar Plato
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de platos -->
+            <div class="card" style="padding:10px; border:1px solid var(--border); background:white;">
+                <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                    <thead style="background:#fdfcf7;">
+                        <tr>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee; width:60px;">Foto</th>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Nombre</th>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Sección</th>
+                            <th style="text-align:right; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Precio</th>
+                            <th style="text-align:center; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Activo</th>
+                            <th style="text-align:right; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="carta-platos-body">
+                        <tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
     </main>
 
     <!-- Cropper.js -->
@@ -1804,6 +1961,8 @@
         import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
         import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=15';
         window.tiendaAdmin = tiendaAdmin;
+        import * as cartaAdmin from './js/carta/admin-carta.js?v=1';
+        window.cartaAdmin = cartaAdmin;
 
         let adminData = null;
         let chartInstance = null;
@@ -1860,32 +2019,46 @@
         };
 
         // --- SPA NAVIGATION ---
+        function navigateTo(target) {
+            const section = document.getElementById(target);
+            if (!section) return;
+
+            document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+            section.classList.add('active');
+
+            document.querySelectorAll('#main-nav a').forEach(a => {
+                a.classList.toggle('active', a.getAttribute('href') === '#' + target);
+            });
+
+            history.replaceState(null, '', '#' + target);
+
+            if (target === 'logs' && (typeof logsData !== 'undefined' && logsData.length === 0)) loadLogsTable();
+            if (target === 'mails') loadCampanasHistory();
+            if (target === 'tienda-productos') window.tiendaAdmin.loadProductosTable();
+            if (target === 'tienda-categorias') window.tiendaAdmin.loadCategoriasTable();
+            if (target === 'tienda-ordenes') window.tiendaAdmin.loadOrdenesTable();
+            if (target === 'tienda-config') window.tiendaAdmin.loadConfigStore();
+            if (target === 'carta-secciones') window.cartaAdmin.loadSecciones();
+            if (target === 'carta-platos') window.cartaAdmin.loadPlatos();
+        }
+
+        window._navigateTo = navigateTo;
+
         document.querySelectorAll('#main-nav a').forEach(link => {
             link.addEventListener('click', (e) => {
                 const href = link.getAttribute('href');
-                if (!href.startsWith('#')) return; // Let real links navigate
-
+                if (!href.startsWith('#')) return;
                 e.preventDefault();
-                const target = href.substring(1);
-
-                // UI Toggle
-                const section = document.getElementById(target);
-                if (section) {
-                    document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
-                    section.classList.add('active');
-                }
-
-                document.querySelectorAll('#main-nav a').forEach(a => a.classList.remove('active'));
-                link.classList.add('active');
-
-                if (target === 'logs' && (typeof logsData !== 'undefined' && logsData.length === 0)) loadLogsTable();
-                if (target === 'mails') loadCampanasHistory();
-                if (target === 'tienda-productos') window.tiendaAdmin.loadProductosTable();
-                if (target === 'tienda-categorias') window.tiendaAdmin.loadCategoriasTable();
-                if (target === 'tienda-ordenes') window.tiendaAdmin.loadOrdenesTable();
-                if (target === 'tienda-config') window.tiendaAdmin.loadConfigStore();
+                navigateTo(href.substring(1));
             });
         });
+
+        // Restaurar sección desde el hash al cargar
+        window.addEventListener('hashchange', () => navigateTo(location.hash.substring(1)));
+        const hashInicial = location.hash.substring(1);
+        if (hashInicial && document.getElementById(hashInicial)) {
+            navigateTo(hashInicial);
+        }
 
         window.handleFlyerUpload = async (input) => {
             const file = input.files[0];
