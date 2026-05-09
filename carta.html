@@ -388,6 +388,11 @@
 
     let platos = [];
     let fotoIdx = 0;
+    let pausaObserver = false;  // evita que el observer pise el tab activo durante scroll programático
+    let pausaTimer    = null;
+
+    // ── Evita scroll restoration del browser que tapa el header ──────────────
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
     // ── Carga ────────────────────────────────────────────────────────────────
     async function init() {
@@ -439,6 +444,17 @@
         const el      = document.getElementById('sec-' + id);
         const headerH = document.getElementById('main-header').offsetHeight;
         if (!el) return;
+
+        // Activar el tab inmediatamente, sin esperar al observer
+        document.querySelectorAll('.tab-btn').forEach(b =>
+            b.classList.toggle('active', b.dataset.id === id)
+        );
+
+        // Pausar el observer durante el scroll animado para que no lo pise
+        pausaObserver = true;
+        clearTimeout(pausaTimer);
+        pausaTimer = setTimeout(() => { pausaObserver = false; }, 900);
+
         const top = el.getBoundingClientRect().top + window.scrollY - headerH - 8;
         window.scrollTo({ top, behavior: 'smooth' });
     };
@@ -479,9 +495,10 @@
         </div>`;
     }
 
-    // ── Scroll spy (actualiza tab activo al scrollear) ────────────────────────
+    // ── Scroll spy (actualiza tab activo al scrollear manualmente) ───────────
     function initScrollSpy(secciones) {
         const observer = new IntersectionObserver(entries => {
+            if (pausaObserver) return; // tap en curso, no pisar
             entries.forEach(entry => {
                 if (!entry.isIntersecting) return;
                 const id = entry.target.dataset.seccionId;
