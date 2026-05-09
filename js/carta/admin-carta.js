@@ -65,20 +65,25 @@ function _abrirCrop(file) {
     if (_cropperInstance) { _cropperInstance.destroy(); _cropperInstance = null; }
 
     const url = URL.createObjectURL(file);
-    img.src   = url;
     modal.style.display = 'flex';
 
-    img.onload = () => {
-        _cropperInstance = new Cropper(img, {
-            aspectRatio: 4 / 3,
-            viewMode: 1,
-            autoCropArea: 0.9,
-            movable: true,
-            zoomable: true,
-            cropBoxResizable: true,
-            preview: ['#carta-crop-thumb', '#carta-crop-thumb-wide'],
-        });
-    };
+    // Esperar un frame para que el modal tenga dimensiones reales antes de Cropper
+    requestAnimationFrame(() => {
+        img.onload = () => {
+            setTimeout(() => {
+                _cropperInstance = new Cropper(img, {
+                    aspectRatio: 4 / 3,
+                    viewMode: 1,
+                    autoCropArea: 0.9,
+                    movable: true,
+                    zoomable: true,
+                    cropBoxResizable: true,
+                    preview: '#carta-crop-thumb, #carta-crop-thumb-wide',
+                });
+            }, 50);
+        };
+        img.src = url;
+    });
 }
 
 function _cancelCrop() {
