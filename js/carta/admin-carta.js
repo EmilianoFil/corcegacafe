@@ -1,7 +1,7 @@
 import { db, storage } from '../firebase-config.js';
 import {
     collection, doc, getDocs, addDoc, updateDoc, deleteDoc,
-    query, orderBy, serverTimestamp
+    query, orderBy, serverTimestamp, writeBatch
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import {
     ref, uploadBytes, getDownloadURL
@@ -130,12 +130,12 @@ export async function loadSecciones() {
 function _renderSecciones() {
     const tbody = document.getElementById('carta-secciones-body');
     if (!secciones.length) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:30px;color:#aaa;">Todavía no hay secciones.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:#aaa;">Todavía no hay secciones.</td></tr>`;
         return;
     }
     tbody.innerHTML = secciones.map(s => `
-        <tr style="border-bottom:1px solid #f5f5f5;">
-            <td style="padding:12px 15px; color:#aaa; font-size:0.85rem;">${s.orden ?? '—'}</td>
+        <tr data-id="${s.id}" style="border-bottom:1px solid #f5f5f5;">
+            <td class="drag-handle" style="padding:12px 10px 12px 15px; color:#ccc; cursor:grab; font-size:1.1rem; user-select:none; touch-action:none;">⠿</td>
             <td style="padding:12px 15px; font-weight:600;">${s.nombre}</td>
             <td style="padding:12px 15px; text-align:center;">
                 <label style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:0.85rem;">
@@ -154,6 +154,30 @@ function _renderSecciones() {
                 </button>
             </td>
         </tr>`).join('');
+
+    _initSortable(tbody);
+}
+
+function _initSortable(tbody) {
+    if (typeof Sortable === 'undefined') return;
+    Sortable.create(tbody, {
+        handle: '.drag-handle',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: async () => {
+            const rows   = [...tbody.querySelectorAll('tr[data-id]')];
+            const batch  = writeBatch(db);
+            rows.forEach((row, i) => {
+                batch.update(doc(db, 'carta_secciones', row.dataset.id), { orden: i + 1 });
+            });
+            await batch.commit();
+            // Actualizar cache local para que _poblarSelectSecciones quede en orden
+            const nuevoOrden = rows.map(r => r.dataset.id);
+            secciones = nuevoOrden.map(id => secciones.find(s => s.id === id)).filter(Boolean);
+            secciones.forEach((s, i) => s.orden = i + 1);
+            _poblarSelectSecciones();
+        }
+    });
 }
 
 function _poblarSelectSecciones() {
