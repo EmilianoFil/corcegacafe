@@ -40,10 +40,14 @@
         /* ── Header ── */
         header {
             background: var(--dark);
+            position: -webkit-sticky;
             position: sticky;
             top: 0;
             z-index: 100;
             box-shadow: 0 2px 16px rgba(1,50,63,0.18);
+            /* fuerza compositing layer en iOS Safari — arregla taps en sticky */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
         }
 
         .header-top {
@@ -92,6 +96,9 @@
             border-bottom: 3px solid transparent;
             transition: color 0.2s, border-color 0.2s;
             white-space: nowrap;
+            /* elimina delay de 300ms en iOS */
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .tab-btn.active {
@@ -429,7 +436,11 @@
     }
 
     window.scrollASeccion = function(id) {
-        document.getElementById('sec-' + id)?.scrollIntoView({ behavior: 'smooth' });
+        const el      = document.getElementById('sec-' + id);
+        const headerH = document.getElementById('main-header').offsetHeight;
+        if (!el) return;
+        const top = el.getBoundingClientRect().top + window.scrollY - headerH - 8;
+        window.scrollTo({ top, behavior: 'smooth' });
     };
 
     // ── Contenido único (scroll largo) ───────────────────────────────────────
