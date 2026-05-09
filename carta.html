@@ -334,6 +334,27 @@
 
         .modal-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
 
+        /* ── Botón HD ── */
+        .btn-hd {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.45);
+            border: 1px solid rgba(255,255,255,0.35);
+            color: white;
+            font-family: 'Syncopate', serif;
+            font-size: 0.55rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: background 0.2s;
+        }
+        .btn-hd:active { background: rgba(0,0,0,0.7); }
+        .btn-hd.loaded { border-color: var(--coral); color: var(--coral); }
+
         /* ── Estados ── */
         #loader, .empty-state {
             text-align: center;
@@ -379,6 +400,11 @@
     import {
         collection, getDocs, query, orderBy
     } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    // Compatibilidad: foto puede ser string (viejo) o {thumb,medium,full} (nuevo)
+    const fotoThumb  = f => typeof f === 'string' ? f : (f?.thumb  ?? '');
+    const fotoMedium = f => typeof f === 'string' ? f : (f?.medium ?? f?.thumb ?? '');
+    const fotoFull   = f => typeof f === 'string' ? f : (f?.full   ?? f?.medium ?? f?.thumb ?? '');
 
     const TAG_LABELS = {
         'vegetariano': '🌱 Vegetariano',
@@ -488,7 +514,7 @@
     }
 
     function cardPlato(p) {
-        const foto   = p.fotos?.[0] ?? '';
+        const thumb  = fotoThumb(p.fotos?.[0]);
         const precio = p.precio != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '';
         const tags   = (p.tags ?? []).map(t => `<span class="tag ${t}">${TAG_LABELS[t] ?? t}</span>`).join('');
         return `
@@ -501,8 +527,8 @@
                     ${tags}
                 </div>
             </div>
-            ${foto
-                ? `<img class="plato-foto" src="${foto}" alt="${p.nombre}" loading="lazy">`
+            ${thumb
+                ? `<img class="plato-foto" src="${thumb}" alt="${p.nombre}" loading="lazy">`
                 : `<div class="plato-foto-placeholder">🍽️</div>`}
         </div>`;
     }
@@ -524,24 +550,27 @@
     }
 
     // ── Modal ─────────────────────────────────────────────────────────────────
+    let _fotosModal = []; // guarda los objetos foto del plato abierto
+
     window.abrirModal = function(id) {
         const p = platos.find(pl => pl.id === id);
         if (!p) return;
 
-        fotoIdx = 0;
-        const fotos   = p.fotos ?? [];
+        fotoIdx    = 0;
+        _fotosModal = p.fotos ?? [];
         const fotosEl = document.getElementById('modal-fotos');
 
-        fotosEl.innerHTML = fotos.length
-            ? fotos.map((url, i) =>
-                `<img src="${url}" class="${i === 0 ? 'visible' : ''}" alt="">`
+        fotosEl.innerHTML = _fotosModal.length
+            ? _fotosModal.map((f, i) =>
+                `<img src="${fotoMedium(f)}" data-full="${fotoFull(f)}" class="${i === 0 ? 'visible' : ''}" alt="">`
               ).join('')
-              + (fotos.length > 1 ? `
+              + ((_fotosModal.length > 1) ? `
                 <button class="modal-nav prev" onclick="navFoto(-1)">‹</button>
                 <button class="modal-nav next" onclick="navFoto(1)">›</button>
                 <div class="foto-dots">
-                    ${fotos.map((_, i) => `<div class="foto-dot ${i===0?'active':''}" onclick="irFoto(${i})"></div>`).join('')}
+                    ${_fotosModal.map((_, i) => `<div class="foto-dot ${i===0?'active':''}" onclick="irFoto(${i})"></div>`).join('')}
                 </div>` : '')
+              + `<button class="btn-hd" onclick="verFullHD()" title="Ver en Full HD">HD</button>`
             : `<div style="height:200px;background:#f0ece4;display:flex;align-items:center;justify-content:center;font-size:3rem;">🍽️</div>`;
 
         document.getElementById('modal-nombre').textContent = p.nombre;
@@ -553,6 +582,21 @@
 
         document.getElementById('modal-overlay').classList.add('open');
         document.body.style.overflow = 'hidden';
+    };
+
+    window.verFullHD = function() {
+        const img = document.querySelectorAll('#modal-fotos img')[fotoIdx];
+        if (!img) return;
+        const fullSrc = img.dataset.full;
+        if (!fullSrc || img.src === fullSrc) return;
+        const btn = document.querySelector('.btn-hd');
+        if (btn) btn.textContent = '...';
+        const tmp = new Image();
+        tmp.onload = () => {
+            img.src = fullSrc;
+            if (btn) { btn.textContent = 'HD'; btn.classList.add('loaded'); }
+        };
+        tmp.src = fullSrc;
     };
 
     window.cerrarModal = function(e) {

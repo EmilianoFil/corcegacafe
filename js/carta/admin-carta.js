@@ -93,6 +93,19 @@ function _cancelCrop() {
     document.getElementById('carta-crop-modal').style.display = 'none';
 }
 
+// Redimensiona un canvas a maxPx en el lado largo y lo convierte a blob JPEG
+function _resizeCanvas(srcCanvas, maxPx, quality) {
+    return new Promise(resolve => {
+        const ratio = Math.min(maxPx / srcCanvas.width, maxPx / srcCanvas.height, 1);
+        const w = Math.round(srcCanvas.width  * ratio);
+        const h = Math.round(srcCanvas.height * ratio);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(srcCanvas, 0, 0, w, h);
+        c.toBlob(b => resolve(b), 'image/jpeg', quality);
+    });
+}
+
 async function _confirmCrop() {
     if (!_cropperInstance) return;
 
@@ -100,13 +113,18 @@ async function _confirmCrop() {
     btn.textContent = 'Procesando...';
     btn.disabled = true;
 
-    const blob = await new Promise(resolve => {
-        _cropperInstance.getCroppedCanvas({ maxWidth: 1800, maxHeight: 1350, fillColor: '#fff' })
-            .toBlob(b => resolve(b), 'image/jpeg', 0.92);
-    });
+    // Canvas base sin redimensionar (máxima calidad del crop)
+    const srcCanvas = _cropperInstance.getCroppedCanvas({ fillColor: '#fff' });
 
-    const blobUrl = URL.createObjectURL(blob);
-    fotosPlato.push({ url: blobUrl, blob, isNew: true });
+    // Generar los 3 tamaños en paralelo
+    const [thumbBlob, mediumBlob, fullBlob] = await Promise.all([
+        _resizeCanvas(srcCanvas,  500, 0.75),   // card thumbnail
+        _resizeCanvas(srcCanvas, 1400, 0.88),   // modal view
+        _resizeCanvas(srcCanvas, 2800, 0.96),   // full HD
+    ]);
+
+    const thumbUrl = URL.createObjectURL(thumbBlob);
+    fotosPlato.push({ url: thumbUrl, thumbBlob, mediumBlob, fullBlob, isNew: true });
     _renderFotosPreview();
 
     _cropperInstance.destroy();
@@ -305,7 +323,12 @@ export async function editarPlato(id) {
     const p = { id: platoDoc.id, ...platoDoc.data() };
 
     platoEditando = id;
-    fotosPlato    = (p.fotos ?? []).map(url => ({ url, isNew: false }));
+    // Compatibilidad: fotos puede ser string[] (viejo) u objeto[] {thumb,medium,full} (nuevo)
+    fotosPlato = (p.fotos ?? []).map(f => ({
+        url:    typeof f === 'string' ? f : f.thumb,
+        stored: f,   // guardar el valor original para re-persistir sin resubir
+        isNew:  false
+    }));
 
     document.getElementById('plato-id').value          = id;
     document.getElementById('plato-nombre').value      = p.nombre ?? '';
@@ -417,13 +440,27 @@ export function quitarFoto(idx) {
     _renderFotosPreview();
 }
 
+async function _uploadBlob(blob, path) {
+    const r = ref(storage, path);
+    await uploadBytes(r, blob, { contentType: 'image/jpeg' });
+    return getDownloadURL(r);
+}
+
 async function _subirFotosNuevas(platoId) {
     const urls = [];
     for (const foto of fotosPlato) {
-        if (!foto.isNew) { urls.push(foto.url); continue; }
-        const storageRef = ref(storage, `carta/${platoId}/${Date.now()}.jpg`);
-        await uploadBytes(storageRef, foto.blob, { contentType: 'image/jpeg' });
-        urls.push(await getDownloadURL(storageRef));
+        if (!foto.isNew) {
+            // Persistir el valor original tal cual (string o {thumb,medium,full})
+            urls.push(foto.stored ?? foto.url);
+            continue;
+        }
+        const base = `carta/${platoId}/${Date.now()}`;
+        const [thumb, medium, full] = await Promise.all([
+            _uploadBlob(foto.thumbBlob,  `${base}_thumb.jpg`),
+            _uploadBlob(foto.mediumBlob, `${base}_medium.jpg`),
+            _uploadBlob(foto.fullBlob,   `${base}_full.jpg`),
+        ]);
+        urls.push({ thumb, medium, full });
     }
     return urls;
 }
