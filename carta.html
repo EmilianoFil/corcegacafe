@@ -205,7 +205,8 @@
         }
         .tag.vegetariano { background: #e8f5e9; color: #2d6a4f; }
         .tag.vegano       { background: #e8f5e9; color: #1b5e20; }
-        .tag.sin-tacc     { background: #fff3e0; color: #e65100; }
+        .tag.sin-tacc     { background: white; color: #c0392b; border: 1px solid #eee; padding: 2px 6px 2px 2px; }
+        .tag.sin-tacc img { height: 16px; width: auto; vertical-align: middle; margin-right: 3px; display: inline-block; }
         .tag.destacado    { background: #fff8e1; color: #c17900; }
 
         .plato-foto {
@@ -382,7 +383,7 @@
     const TAG_LABELS = {
         'vegetariano': '🌱 Vegetariano',
         'vegano':      '🌿 Vegano',
-        'sin-tacc':    '⚠️ Sin TACC',
+        'sin-tacc':    '<img src="css/img/sin-tacc.svg" alt="Sin TACC"> Sin T.A.C.C.',
         'destacado':   '⭐ Destacado',
     };
 
