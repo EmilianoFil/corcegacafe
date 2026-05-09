@@ -440,15 +440,26 @@
         document.querySelector('.tab-btn')?.classList.add('active');
     }
 
+    function activarTab(id) {
+        document.querySelectorAll('.tab-btn').forEach(b =>
+            b.classList.toggle('active', b.dataset.id === id)
+        );
+        // Scroll horizontal del contenedor de tabs para centrar el activo
+        // — sin scrollIntoView que arrastra la página verticalmente
+        const tabsEl = document.getElementById('tabs-secciones');
+        const btn    = tabsEl.querySelector(`.tab-btn[data-id="${id}"]`);
+        if (btn) {
+            const offset = btn.offsetLeft - tabsEl.clientWidth / 2 + btn.offsetWidth / 2;
+            tabsEl.scrollTo({ left: offset, behavior: 'smooth' });
+        }
+    }
+
     window.scrollASeccion = function(id) {
         const el      = document.getElementById('sec-' + id);
         const headerH = document.getElementById('main-header').offsetHeight;
         if (!el) return;
 
-        // Activar el tab inmediatamente, sin esperar al observer
-        document.querySelectorAll('.tab-btn').forEach(b =>
-            b.classList.toggle('active', b.dataset.id === id)
-        );
+        activarTab(id);
 
         // Pausar el observer durante el scroll animado para que no lo pise
         pausaObserver = true;
@@ -498,15 +509,10 @@
     // ── Scroll spy (actualiza tab activo al scrollear manualmente) ───────────
     function initScrollSpy(secciones) {
         const observer = new IntersectionObserver(entries => {
-            if (pausaObserver) return; // tap en curso, no pisar
+            if (pausaObserver) return;
             entries.forEach(entry => {
                 if (!entry.isIntersecting) return;
-                const id = entry.target.dataset.seccionId;
-                document.querySelectorAll('.tab-btn').forEach(b =>
-                    b.classList.toggle('active', b.dataset.id === id)
-                );
-                document.querySelector(`.tab-btn[data-id="${id}"]`)
-                    ?.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+                activarTab(entry.target.dataset.seccionId);
             });
         }, { rootMargin: '-15% 0px -75% 0px' });
 
