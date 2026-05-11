@@ -106,11 +106,13 @@
         body.social-activo #carta-user-btn { display: flex; }
 
         /* ── Botón ❤️ en cards ── */
+        .plato-info { position: relative; }
+
         .plato-card .btn-fav-carta {
             display: none;
             position: absolute;
-            bottom: 10px;
-            right: 10px;
+            top: 8px;
+            right: 8px;
             background: white;
             border: 1.5px solid #ed7053;
             border-radius: 50%;
@@ -629,13 +631,13 @@
                     ${precio ? `<span class="plato-precio">${precio}</span>` : ''}
                     ${tags}
                 </div>
+                <button class="btn-fav-carta" data-id="${p.id}"
+                    onclick="event.stopPropagation(); window.cartaSocial?.toggleFavorito('${p.id}')"
+                    title="Quiero probarlo">❤️</button>
             </div>
             ${thumb
                 ? `<img class="plato-foto" src="${thumb}" alt="${p.nombre}" loading="lazy">`
                 : `<div class="plato-foto-placeholder">🍽️</div>`}
-            <button class="btn-fav-carta" data-id="${p.id}"
-                onclick="event.stopPropagation(); window.cartaSocial?.toggleFavorito('${p.id}')"
-                title="Quiero probarlo">❤️</button>
         </div>`;
     }
 
