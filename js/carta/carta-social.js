@@ -94,11 +94,15 @@ function _actualizarHeaderUI(user) {
     if (user) {
         const nombre = user.displayName?.split(' ')[0] ?? user.email?.split('@')[0] ?? 'Vos';
         btn.innerHTML = `<span style="font-size:1rem;">👤</span><span>${nombre}</span>`;
-        btn.onclick = () => mostrarMenuUsuario();
     } else {
         btn.innerHTML = `<span style="font-size:1rem;">👤</span><span>Entrar</span>`;
-        btn.onclick = () => mostrarLogin();
     }
+}
+
+// Llamada directa desde el HTML del botón (igual que el corazón)
+export function accionBotonUsuario() {
+    if (_user) mostrarMenuUsuario();
+    else mostrarLogin();
 }
 
 // ─── Actualizar botones ❤️ en cards ──────────────────────────────────────────
