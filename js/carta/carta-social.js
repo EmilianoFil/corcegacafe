@@ -518,20 +518,26 @@ async function _resetPass() {
 
 // ─── Swipe-to-close en paneles bottom-sheet ───────────────────────────────────
 function _addSwipeDown(panel, onClose) {
-    let startY = null, dy = 0;
+    let startY = null, dy = 0, esGesture = false;
     panel.addEventListener('touchstart', e => {
-        if (panel.scrollTop > 0) { startY = null; return; }
         startY = e.touches[0].clientY;
-        dy = 0;
+        dy = 0; esGesture = false;
         panel.style.transition = 'none';
     }, { passive: true });
     panel.addEventListener('touchmove', e => {
         if (startY === null) return;
-        dy = Math.max(0, e.touches[0].clientY - startY);
+        const delta = e.touches[0].clientY - startY;
+        if (!esGesture) {
+            if (delta > 8 && panel.scrollTop === 0) esGesture = true;
+            else if (delta < -4 || panel.scrollTop > 0) { startY = null; return; }
+            else return;
+        }
+        e.preventDefault();
+        dy = Math.max(0, delta);
         panel.style.transform = `translateY(${dy}px)`;
-    }, { passive: true });
+    }, { passive: false });
     panel.addEventListener('touchend', () => {
-        if (startY === null) return;
+        if (!esGesture) { startY = null; return; }
         panel.style.transition = 'transform 0.28s cubic-bezier(0.32,0.72,0,1)';
         if (dy > 80) {
             panel.style.transform = 'translateY(110%)';
@@ -540,7 +546,7 @@ function _addSwipeDown(panel, onClose) {
             panel.style.transform = 'translateY(0)';
             setTimeout(() => { panel.style.transition = ''; }, 300);
         }
-        startY = null; dy = 0;
+        startY = null; dy = 0; esGesture = false;
     });
 }
 

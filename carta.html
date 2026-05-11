@@ -718,30 +718,43 @@
         if (e.target === document.getElementById('modal-overlay')) _cerrarModalSheet();
     };
 
-    // Swipe hacia abajo para cerrar — escucha en todo el overlay (zona oscura + blanca)
+    // Swipe para cerrar — non-passive para poder preventDefault y evitar scroll
     (function() {
         const overlay = document.getElementById('modal-overlay');
         const sheet   = document.querySelector('.modal-sheet');
-        let startY = null, dy = 0;
+        let startY = null, dy = 0, esGestureCierre = false;
 
         overlay.addEventListener('touchstart', e => {
-            // No capturar si es un swipe horizontal en las fotos
-            if (e.target.closest('#modal-fotos')) { startY = null; return; }
-            // No capturar si la sheet está scrolleada (el usuario está leyendo)
-            if (sheet.scrollTop > 10 && e.target.closest('.modal-sheet')) { startY = null; return; }
+            if (e.target.closest('#modal-fotos')) return;
             startY = e.touches[0].clientY;
             dy = 0;
+            esGestureCierre = false;
             sheet.style.transition = 'none';
         }, { passive: true });
 
         overlay.addEventListener('touchmove', e => {
             if (startY === null) return;
-            dy = Math.max(0, e.touches[0].clientY - startY);
+            const delta = e.touches[0].clientY - startY;
+
+            if (!esGestureCierre) {
+                // Confirmar que es gesto de cierre: hacia abajo y sheet sin scroll
+                if (delta > 8 && sheet.scrollTop === 0) {
+                    esGestureCierre = true;
+                } else if (delta < -4 || sheet.scrollTop > 0) {
+                    startY = null; // es scroll normal, no interferir
+                    return;
+                } else {
+                    return; // todavía decidiendo
+                }
+            }
+
+            e.preventDefault(); // bloquea el scroll del contenedor
+            dy = Math.max(0, delta);
             sheet.style.transform = `translateY(${dy}px)`;
-        }, { passive: true });
+        }, { passive: false });
 
         overlay.addEventListener('touchend', () => {
-            if (startY === null) return;
+            if (!esGestureCierre) { startY = null; return; }
             sheet.style.transition = 'transform 0.28s cubic-bezier(0.32,0.72,0,1)';
             if (dy > 80) {
                 sheet.style.transform = 'translateY(110%)';
@@ -754,7 +767,7 @@
                 sheet.style.transform = 'translateY(0)';
                 setTimeout(() => { sheet.style.transition = ''; }, 300);
             }
-            startY = null; dy = 0;
+            startY = null; dy = 0; esGestureCierre = false;
         });
     })();
 
