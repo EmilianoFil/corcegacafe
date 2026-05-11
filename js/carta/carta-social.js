@@ -109,6 +109,7 @@ function _actualizarTodosLosBotones() {
 function _actualizarBtnFav(btn, id) {
     const activo = _favs.has(id);
     btn.classList.toggle('fav-activo', activo);
+    btn.textContent = activo ? '♥' : '♡';
     btn.title = activo ? 'Quitar de favoritos' : 'Quiero probarlo';
 }
 

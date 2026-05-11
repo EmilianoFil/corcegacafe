@@ -116,17 +116,17 @@
             background: none;
             border: none;
             padding: 0;
-            font-size: 0.78rem;
+            font-size: 1.2rem;
             cursor: pointer;
             color: #eb6f53;
-            opacity: 0.35;
+            opacity: 0.4;
             transition: opacity .2s;
             z-index: 2;
             line-height: 1;
         }
         body.social-activo .plato-card .btn-fav-carta { display: flex; }
         .plato-card .btn-fav-carta.fav-activo { opacity: 1; }
-        .plato-card .btn-fav-carta:not(.fav-activo):hover { opacity: 0.7; }
+        .plato-card .btn-fav-carta:not(.fav-activo):hover { opacity: 0.75; }
 
         /* ── Badge "los más amados" ── */
         .badge-amado {
@@ -629,7 +629,7 @@
                 </div>
                 <button class="btn-fav-carta" data-id="${p.id}"
                     onclick="event.stopPropagation(); window.cartaSocial?.toggleFavorito('${p.id}')"
-                    title="Quiero probarlo">❤️</button>
+                    title="Quiero probarlo">♡</button>
             </div>
             ${thumb
                 ? `<img class="plato-foto" src="${thumb}" alt="${p.nombre}" loading="lazy">`
