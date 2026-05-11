@@ -23,6 +23,8 @@
             background-color: var(--bg);
             color: #1d1d1d;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         body::before {
@@ -109,8 +111,10 @@
         /* ── Contenido ── */
         main {
             max-width: 640px;
+            width: 100%;
             margin: 0 auto;
             padding: 28px 16px 80px;
+            flex: 1;
         }
 
         /* ── Sección ── */
