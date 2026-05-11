@@ -106,7 +106,7 @@
         body.social-activo #carta-user-btn { display: flex; }
 
         /* ── Botón ❤️ en cards ── */
-        .btn-fav-carta {
+        .plato-card .btn-fav-carta {
             display: none;
             position: absolute;
             bottom: 10px;
@@ -125,7 +125,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.12);
             z-index: 2;
         }
-        body.social-activo .btn-fav-carta { display: flex; }
+        body.social-activo .plato-card .btn-fav-carta { display: flex; }
         .btn-fav-carta.fav-activo { background: #ed7053; border-color: #ed7053; }
         .btn-fav-carta:not(.fav-activo) { filter: grayscale(1); opacity: 0.6; }
         .btn-fav-carta:not(.fav-activo):hover { filter: none; opacity: 1; }
@@ -240,6 +240,7 @@
             cursor: pointer;
             transition: box-shadow 0.2s, transform 0.15s;
             box-shadow: 0 2px 8px rgba(1,50,63,0.05);
+            position: relative;
         }
         .plato-card:active { transform: scale(0.985); }
         .plato-card:hover  { box-shadow: 0 6px 20px rgba(1,50,63,0.1); }
