@@ -309,22 +309,14 @@ export async function guardarRating(platoId) {
 export function mostrarLogin(vista = 'login') {
     const modal = document.getElementById('carta-login-modal');
     if (!modal) return;
-    const inner = modal.querySelector('.login-inner');
     modal.style.display = 'flex';
-    requestAnimationFrame(() => {
-        modal.style.opacity = '1';
-        if (inner) inner.style.transform = 'translateY(0)';
-    });
     _mostrarVistaLogin(vista);
 }
 
 function _ocultarLogin() {
     const modal = document.getElementById('carta-login-modal');
     if (!modal) return;
-    const inner = modal.querySelector('.login-inner');
-    modal.style.opacity = '0';
-    if (inner) inner.style.transform = 'translateY(100%)';
-    setTimeout(() => { modal.style.display = 'none'; }, 280);
+    modal.style.display = 'none';
 }
 
 function _mostrarVistaLogin(vista) {
@@ -388,9 +380,9 @@ async function _resetPass() {
 function _inyectarLoginModal() {
     const modal = document.createElement('div');
     modal.id = 'carta-login-modal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:none;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .25s;';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:none;align-items:flex-end;justify-content:center;';
     modal.innerHTML = `
-    <div class="login-inner" style="background:white;border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:28px 24px max(36px,env(safe-area-inset-bottom));overflow-y:auto;max-height:90vh;transform:translateY(100%);transition:transform .3s ease-out;">
+    <div class="login-inner" style="background:white;border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:28px 24px 40px;overflow-y:auto;max-height:90vh;">
         <div style="width:40px;height:4px;background:#e0dbd2;border-radius:4px;margin:0 auto 24px;"></div>
 
         <div id="carta-auth-login">
