@@ -90,7 +90,7 @@ function _actualizarHeaderUI(user) {
         btn.onclick = mostrarMenuUsuario;
     } else {
         btn.innerHTML = `<span style="font-size:1rem;">👤</span><span>Entrar</span>`;
-        btn.onclick = mostrarLogin;
+        btn.onclick = () => mostrarLogin();
     }
 }
 
