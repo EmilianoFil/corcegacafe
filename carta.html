@@ -58,6 +58,96 @@
             align-items: center;
             gap: 6px;
             padding: 16px 20px 12px;
+            position: relative;
+        }
+
+        .header-actions {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        .header-link-tienda {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: color .2s;
+        }
+        .header-link-tienda:hover { color: white; }
+
+        #carta-user-btn {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background .2s;
+            white-space: nowrap;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #carta-user-btn:hover { background: rgba(255,255,255,0.18); }
+        body.social-activo #carta-user-btn { display: flex; }
+
+        /* ── Botón ❤️ en cards ── */
+        .btn-fav-carta {
+            display: none;
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: white;
+            border: 1.5px solid #ed7053;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: all .2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            z-index: 2;
+        }
+        body.social-activo .btn-fav-carta { display: flex; }
+        .btn-fav-carta.fav-activo { background: #ed7053; border-color: #ed7053; }
+        .btn-fav-carta:not(.fav-activo) { filter: grayscale(1); opacity: 0.6; }
+        .btn-fav-carta:not(.fav-activo):hover { filter: none; opacity: 1; }
+
+        /* ── Badge "los más amados" ── */
+        .badge-amado {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(237,112,83,0.92);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 3px 7px;
+            border-radius: 20px;
+            z-index: 2;
+        }
+
+        /* ── Botones probado/fav activos en modal ── */
+        .btn-probado-carta.probado-activo {
+            background: #01323f !important;
+            color: white !important;
         }
 
         .header-top img {
@@ -377,6 +467,12 @@
     <div class="header-top">
         <img src="css/img/Corcega_Logo_Original.png" alt="Córcega">
         <h1>Córcega Café</h1>
+        <div class="header-actions">
+            <a href="tienda.html" class="header-link-tienda">🛒 Tienda</a>
+            <button id="carta-user-btn" onclick="window.cartaSocial?.mostrarLogin()">
+                <span>👤</span><span>Entrar</span>
+            </button>
+        </div>
     </div>
     <div class="tabs-scroll" id="tabs-secciones"></div>
 </header>
@@ -395,6 +491,7 @@
             <p class="modal-desc"   id="modal-desc"></p>
             <p class="modal-precio" id="modal-precio"></p>
             <div class="modal-tags" id="modal-tags"></div>
+            <div id="modal-social"></div>
         </div>
     </div>
 </div>
@@ -448,6 +545,7 @@
 
             renderTabs(secciones);
             renderContenido(secciones);
+            window.cartaSocial?.onCartaRendered();
             initScrollSpy(secciones);
 
             // Ajustar scroll-margin-top dinámicamente según altura del header
@@ -522,7 +620,7 @@
         const precio = p.precio != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '';
         const tags   = (p.tags ?? []).map(t => `<span class="tag ${t}">${TAG_LABELS[t] ?? t}</span>`).join('');
         return `
-        <div class="plato-card" onclick="abrirModal('${p.id}')">
+        <div class="plato-card" data-plato-id="${p.id}" onclick="abrirModal('${p.id}')">
             <div class="plato-info">
                 <p class="plato-nombre">${p.nombre}</p>
                 ${p.descripcion ? `<p class="plato-desc">${p.descripcion}</p>` : ''}
@@ -534,6 +632,9 @@
             ${thumb
                 ? `<img class="plato-foto" src="${thumb}" alt="${p.nombre}" loading="lazy">`
                 : `<div class="plato-foto-placeholder">🍽️</div>`}
+            <button class="btn-fav-carta" data-id="${p.id}"
+                onclick="event.stopPropagation(); window.cartaSocial?.toggleFavorito('${p.id}')"
+                title="Quiero probarlo">❤️</button>
         </div>`;
     }
 
@@ -586,6 +687,8 @@
 
         document.getElementById('modal-overlay').classList.add('open');
         document.body.style.overflow = 'hidden';
+        document.getElementById('modal-social').innerHTML = '';
+        window.cartaSocial?.onModalAbierto(id);
     };
 
     window.verFullHD = function() {
@@ -640,6 +743,12 @@
     });
 
     init();
+</script>
+
+<script type="module">
+    import * as cartaSocial from './js/carta/carta-social.js?v=1';
+    window.cartaSocial = cartaSocial;
+    cartaSocial.init();
 </script>
 
 <div id="copyright-container"></div>

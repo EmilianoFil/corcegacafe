@@ -1779,6 +1779,26 @@
                 <span style="font-size:0.75rem; color:var(--text-muted); font-weight:500;">CARTA DIGITAL</span>
             </div>
 
+            <!-- Feature flag: funciones sociales -->
+            <div class="card" style="margin-bottom:20px; padding:18px 20px; background:white; border:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:16px;">
+                <div>
+                    <p style="margin:0 0 3px; font-weight:700; font-size:0.9rem; color:var(--secondary);">👤 Funciones sociales (login, favoritos, valoraciones)</p>
+                    <p style="margin:0; font-size:0.78rem; color:var(--text-muted);">Cuando está activo, los clientes pueden loguearse, guardar favoritos y dejar reseñas en la carta.</p>
+                </div>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; flex-shrink:0;">
+                    <span id="lbl-social-estado" style="font-size:0.78rem; font-weight:700; color:var(--text-muted);">Cargando...</span>
+                    <div style="position:relative; width:44px; height:24px;">
+                        <input type="checkbox" id="toggle-social" onchange="window.toggleSocialCarta(this.checked)"
+                            style="opacity:0; width:0; height:0; position:absolute;">
+                        <div id="toggle-social-track" onclick="document.getElementById('toggle-social').click()"
+                            style="position:absolute;inset:0;border-radius:12px;background:#ddd;cursor:pointer;transition:background .2s;">
+                            <div id="toggle-social-thumb"
+                                style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;box-shadow:0 1px 4px rgba(0,0,0,0.2);transition:transform .2s;"></div>
+                        </div>
+                    </div>
+                </label>
+            </div>
+
             <!-- Form nueva sección -->
             <div class="card" style="margin-bottom:20px; padding:20px; background:white; border:1px solid var(--border); box-shadow:0 2px 10px rgba(0,0,0,0.02);">
                 <p style="margin:0 0 12px; font-weight:700; font-size:0.85rem; color:var(--secondary);">Nueva sección</p>
@@ -1960,7 +1980,7 @@
         import { requireAdmin } from './js/admin-guard.js';
         import { db, storage } from './js/firebase-config.js';
         import {
-            doc, getDoc, getDocs, collection, query, where, orderBy, limit,
+            doc, getDoc, getDocs, setDoc, collection, query, where, orderBy, limit,
             updateDoc, increment, serverTimestamp, addDoc, onSnapshot, deleteDoc
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
         import {
@@ -2046,11 +2066,39 @@
             if (target === 'tienda-categorias') window.tiendaAdmin.loadCategoriasTable();
             if (target === 'tienda-ordenes') window.tiendaAdmin.loadOrdenesTable();
             if (target === 'tienda-config') window.tiendaAdmin.loadConfigStore();
-            if (target === 'carta-secciones') window.cartaAdmin.loadSecciones();
+            if (target === 'carta-secciones') { window.cartaAdmin.loadSecciones(); _cargarToggleSocial(); }
             if (target === 'carta-platos') window.cartaAdmin.loadPlatos();
         }
 
         window._navigateTo = navigateTo;
+
+        // ── Toggle funciones sociales de la carta ─────────────────────────────
+        async function _cargarToggleSocial() {
+            const snap = await getDoc(doc(db, 'config', 'carta'));
+            const activo = snap.exists() ? (snap.data().loginHabilitado ?? false) : false;
+            const chk   = document.getElementById('toggle-social');
+            const track = document.getElementById('toggle-social-track');
+            const thumb = document.getElementById('toggle-social-thumb');
+            const lbl   = document.getElementById('lbl-social-estado');
+            if (!chk) return;
+            chk.checked = activo;
+            _actualizarToggleUI(activo, track, thumb, lbl);
+        }
+
+        function _actualizarToggleUI(activo, track, thumb, lbl) {
+            track.style.background = activo ? '#01323f' : '#ddd';
+            thumb.style.transform  = activo ? 'translateX(20px)' : 'translateX(0)';
+            lbl.textContent        = activo ? 'Activo' : 'Inactivo';
+            lbl.style.color        = activo ? '#22c55e' : 'var(--text-muted)';
+        }
+
+        window.toggleSocialCarta = async (activo) => {
+            await setDoc(doc(db, 'config', 'carta'), { loginHabilitado: activo }, { merge: true });
+            const track = document.getElementById('toggle-social-track');
+            const thumb = document.getElementById('toggle-social-thumb');
+            const lbl   = document.getElementById('lbl-social-estado');
+            _actualizarToggleUI(activo, track, thumb, lbl);
+        };
 
         document.querySelectorAll('#main-nav a').forEach(link => {
             link.addEventListener('click', (e) => {
