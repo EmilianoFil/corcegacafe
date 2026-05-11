@@ -113,24 +113,20 @@
             position: absolute;
             top: 8px;
             right: 8px;
-            background: white;
-            border: 1.5px solid #ed7053;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            align-items: center;
-            justify-content: center;
+            background: none;
+            border: none;
             padding: 0;
-            transition: all .2s;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            font-size: 0.78rem;
+            cursor: pointer;
+            color: #eb6f53;
+            opacity: 0.35;
+            transition: opacity .2s;
             z-index: 2;
+            line-height: 1;
         }
         body.social-activo .plato-card .btn-fav-carta { display: flex; }
-        .btn-fav-carta.fav-activo { background: #ed7053; border-color: #ed7053; }
-        .btn-fav-carta:not(.fav-activo) { filter: grayscale(1); opacity: 0.6; }
-        .btn-fav-carta:not(.fav-activo):hover { filter: none; opacity: 1; }
+        .plato-card .btn-fav-carta.fav-activo { opacity: 1; }
+        .plato-card .btn-fav-carta:not(.fav-activo):hover { opacity: 0.7; }
 
         /* ── Badge "los más amados" ── */
         .badge-amado {
