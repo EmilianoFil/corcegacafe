@@ -1785,18 +1785,14 @@
                     <p style="margin:0 0 3px; font-weight:700; font-size:0.9rem; color:var(--secondary);">👤 Funciones sociales (login, favoritos, valoraciones)</p>
                     <p style="margin:0; font-size:0.78rem; color:var(--text-muted);">Cuando está activo, los clientes pueden loguearse, guardar favoritos y dejar reseñas en la carta.</p>
                 </div>
-                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; flex-shrink:0;">
+                <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
                     <span id="lbl-social-estado" style="font-size:0.78rem; font-weight:700; color:var(--text-muted);">Cargando...</span>
-                    <div style="position:relative; width:44px; height:24px;">
-                        <input type="checkbox" id="toggle-social" onchange="window.toggleSocialCarta(this.checked)"
-                            style="opacity:0; width:0; height:0; position:absolute;">
-                        <div id="toggle-social-track" onclick="document.getElementById('toggle-social').click()"
-                            style="position:absolute;inset:0;border-radius:12px;background:#ddd;cursor:pointer;transition:background .2s;">
-                            <div id="toggle-social-thumb"
-                                style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;box-shadow:0 1px 4px rgba(0,0,0,0.2);transition:transform .2s;"></div>
-                        </div>
+                    <div id="toggle-social-track" onclick="window.toggleSocialCarta()"
+                        style="position:relative;width:44px;height:24px;border-radius:12px;background:#ddd;cursor:pointer;transition:background .2s;flex-shrink:0;">
+                        <div id="toggle-social-thumb"
+                            style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;box-shadow:0 1px 4px rgba(0,0,0,0.2);transition:transform .2s;"></div>
                     </div>
-                </label>
+                </div>
             </div>
 
             <!-- Form nueva sección -->
@@ -2076,28 +2072,27 @@
         async function _cargarToggleSocial() {
             const snap = await getDoc(doc(db, 'config', 'carta'));
             const activo = snap.exists() ? (snap.data().loginHabilitado ?? false) : false;
-            const chk   = document.getElementById('toggle-social');
+            _actualizarToggleUI(activo);
+        }
+
+        function _actualizarToggleUI(activo) {
             const track = document.getElementById('toggle-social-track');
             const thumb = document.getElementById('toggle-social-thumb');
             const lbl   = document.getElementById('lbl-social-estado');
-            if (!chk) return;
-            chk.checked = activo;
-            _actualizarToggleUI(activo, track, thumb, lbl);
-        }
-
-        function _actualizarToggleUI(activo, track, thumb, lbl) {
+            if (!track) return;
+            track.dataset.activo   = activo;
             track.style.background = activo ? '#01323f' : '#ddd';
             thumb.style.transform  = activo ? 'translateX(20px)' : 'translateX(0)';
             lbl.textContent        = activo ? 'Activo' : 'Inactivo';
             lbl.style.color        = activo ? '#22c55e' : 'var(--text-muted)';
         }
 
-        window.toggleSocialCarta = async (activo) => {
-            await setDoc(doc(db, 'config', 'carta'), { loginHabilitado: activo }, { merge: true });
-            const track = document.getElementById('toggle-social-track');
-            const thumb = document.getElementById('toggle-social-thumb');
-            const lbl   = document.getElementById('lbl-social-estado');
-            _actualizarToggleUI(activo, track, thumb, lbl);
+        window.toggleSocialCarta = async () => {
+            const track  = document.getElementById('toggle-social-track');
+            const activo = track.dataset.activo === 'true';
+            const nuevo  = !activo;
+            _actualizarToggleUI(nuevo);
+            await setDoc(doc(db, 'config', 'carta'), { loginHabilitado: nuevo }, { merge: true });
         };
 
         document.querySelectorAll('#main-nav a').forEach(link => {
