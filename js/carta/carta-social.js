@@ -239,10 +239,22 @@ async function _renderSocialEnModal(platoId) {
     const resenasSnap = await getDocs(
         query(collection(db, 'carta_valoraciones'), where('platoId', '==', platoId))
     );
-    const resenas = resenasSnap.docs.map(d => d.data())
-        .filter(r => r.comentario?.trim() && !r.oculta)
+    const todasVal = resenasSnap.docs.map(d => d.data()).filter(r => !r.oculta && r.rating);
+    const avgRating = todasVal.length
+        ? (todasVal.reduce((s, r) => s + r.rating, 0) / todasVal.length)
+        : null;
+
+    const resenas = todasVal
+        .filter(r => r.comentario?.trim())
         .sort((a, b) => (b.creadoEn?.seconds ?? 0) - (a.creadoEn?.seconds ?? 0))
         .slice(0, 5);
+
+    const avgHTML = avgRating != null ? `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #f0ece4;">
+            <span style="color:#e8a838;font-size:1.05rem;">${'★'.repeat(Math.round(avgRating))}${'☆'.repeat(5-Math.round(avgRating))}</span>
+            <span style="font-weight:800;font-size:0.95rem;color:#222;">${avgRating.toFixed(1)}</span>
+            <span style="color:#aaa;font-size:0.76rem;">(${todasVal.length} ${todasVal.length === 1 ? 'valoración' : 'valoraciones'})</span>
+        </div>` : '';
 
     const resenasHTML = resenas.length ? resenas.map(r => `
         <div style="padding:10px 0;border-top:1px solid #f0ece4;">
@@ -255,6 +267,7 @@ async function _renderSocialEnModal(platoId) {
 
     container.innerHTML = `
         <div style="border-top:1px solid #e0dbd2;margin-top:16px;padding-top:16px;">
+            ${avgHTML}
             ${_user ? `
             <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;">
                 <button id="modal-social-fav" class="btn-fav-carta" data-id="${platoId}"

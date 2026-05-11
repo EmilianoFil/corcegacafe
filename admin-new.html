@@ -2042,7 +2042,9 @@
         let clientesData = [];
 
         let logsData = [];
-        let _statsValDocs = {};  // { platoId: [{ docId, ...data }] } para expandir reseñas
+        let _statsValDocs  = {};  // { platoId: [{ docId, ...data }] } para expandir reseñas
+        let _statsFavUsers = {};  // { platoId: [uid] } — quiénes quieren probar cada plato
+        let _statsUsersMap = {};  // { uid: { nombre, email, ... } } — datos de usuarios
 
         // Dashboard Cache
         let cachedLogs = [];
@@ -2150,15 +2152,32 @@
             if (!tbody) return;
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">Cargando...</td></tr>`;
 
-            const [snapPlatos, snapStats, snapVal] = await Promise.all([
+            const [snapPlatos, snapStats, snapVal, snapFavs, snapClientes, snapUsuarios] = await Promise.all([
                 getDocs(query(collection(db, 'carta_platos'), orderBy('orden'))),
                 getDocs(collection(db, 'carta_plato_stats')),
-                getDocs(collection(db, 'carta_valoraciones'))
+                getDocs(collection(db, 'carta_valoraciones')),
+                getDocs(collection(db, 'carta_favoritos')),
+                getDocs(collection(db, 'clientes')),
+                getDocs(collection(db, 'usuarios_tienda'))
             ]);
 
             // Indexar stats por platoId
             const statsMap = {};
             snapStats.forEach(d => { statsMap[d.id] = d.data(); });
+
+            // Indexar usuarios (clientes + usuarios_tienda)
+            _statsUsersMap = {};
+            snapClientes.forEach(d => { _statsUsersMap[d.id] = { ...d.data() }; });
+            snapUsuarios.forEach(d => { if (!_statsUsersMap[d.id]) _statsUsersMap[d.id] = { ...d.data() }; });
+
+            // Índice inverso: platoId → [uid] de quienes lo favoritearon
+            _statsFavUsers = {};
+            snapFavs.forEach(d => {
+                (d.data().platoIds ?? []).forEach(pid => {
+                    if (!_statsFavUsers[pid]) _statsFavUsers[pid] = [];
+                    _statsFavUsers[pid].push(d.id);
+                });
+            });
 
             // Agrupar valoraciones por platoId → avg rating + guardar docs raw
             const valMap = {};
@@ -2214,7 +2233,14 @@
                 return `<tr data-plato-id="${p.id}" style="border-bottom:1px solid #f5f0ea;">
                     <td style="padding:11px 15px;font-weight:600;color:#222;">${p.nombre ?? p.id}</td>
                     <td style="padding:11px 10px;text-align:center;color:var(--text-muted);">${clicks || '—'}</td>
-                    <td style="padding:11px 10px;text-align:center;color:#eb6f53;font-weight:700;">${likes || '—'}</td>
+                    <td style="padding:11px 10px;text-align:center;">
+                        ${(_statsFavUsers[p.id]?.length)
+                            ? `<button onclick="window._expandFavs('${p.id}')"
+                                style="padding:4px 12px;border-radius:8px;border:1px solid #eb6f53;background:white;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;color:#eb6f53;">
+                                ❤️ Ver ${_statsFavUsers[p.id].length}
+                               </button>`
+                            : `<span style="color:var(--text-muted);">—</span>`}
+                    </td>
                     <td style="padding:11px 10px;text-align:center;color:#e8a838;">
                         ${vData ? `<span style="font-weight:700;">${rating}</span> <span style="font-size:0.75rem;">${stars}</span>` : '—'}
                     </td>
@@ -2229,6 +2255,76 @@
                 </tr>`;
             }).join('');
         }
+
+        window._expandFavs = function(platoId) {
+            const existing = document.getElementById(`favs-row-${platoId}`);
+            if (existing) { existing.remove(); return; }
+            const mainRow = document.querySelector(`[data-plato-id="${platoId}"]`);
+            if (!mainRow) return;
+            const uids = _statsFavUsers[platoId] ?? [];
+            const tr = document.createElement('tr');
+            tr.id = `favs-row-${platoId}`;
+            tr.innerHTML = `<td colspan="5" style="padding:0;background:#fff8f5;border-bottom:2px solid #f5e8e4;">
+                <div style="padding:14px 20px 18px;">
+                    <p style="font-size:0.75rem;font-weight:700;color:#eb6f53;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 10px;">❤️ Quieren probarlo (${uids.length})</p>
+                    ${uids.map(uid => {
+                        const u = _statsUsersMap[uid];
+                        const nombre = u?.nombre ?? u?.displayName ?? 'Usuario';
+                        const email  = u?.email ?? '';
+                        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f5ece4;">
+                            <div>
+                                <span style="font-weight:600;font-size:0.85rem;color:#222;">${nombre}</span>
+                                ${email ? `<span style="font-size:0.75rem;color:#aaa;margin-left:8px;">${email}</span>` : ''}
+                            </div>
+                            ${u ? `<button onclick="window._verUsuario('${uid}')"
+                                style="padding:4px 12px;border-radius:8px;border:1px solid #ddd;background:white;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;color:var(--secondary);">
+                                Ver perfil
+                            </button>` : ''}
+                        </div>`;
+                    }).join('')}
+                </div>
+            </td>`;
+            mainRow.insertAdjacentElement('afterend', tr);
+        };
+
+        window._verUsuario = function(uid) {
+            const u = _statsUsersMap[uid];
+            if (!u) return;
+            const campos = [
+                ['Nombre',         u.nombre ?? u.displayName],
+                ['Email',          u.email],
+                ['Teléfono',       u.telefono],
+                ['Puntos loyalty', u.puntos],
+                ['Visitas',        u.visitas],
+                ['Registrado',     u.creado?.toDate?.()?.toLocaleDateString('es-AR') ?? u.fechaRegistro],
+                ['Última visita',  u.ultimaVisita?.toDate?.()?.toLocaleDateString('es-AR')],
+                ['Barrio',         u.barrio],
+            ].filter(([, v]) => v != null && v !== '');
+            let modal = document.getElementById('modal-usuario-stats');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'modal-usuario-stats';
+                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:none;align-items:center;justify-content:center;padding:20px;';
+                modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
+                document.body.appendChild(modal);
+            }
+            modal.innerHTML = `
+                <div style="background:white;border-radius:20px;padding:28px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                        <h3 style="margin:0;font-size:1rem;color:var(--secondary);">👤 ${u.nombre ?? u.displayName ?? 'Usuario'}</h3>
+                        <button onclick="document.getElementById('modal-usuario-stats').style.display='none'"
+                            style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#999;line-height:1;">✕</button>
+                    </div>
+                    <div>
+                        ${campos.map(([label, val]) => `
+                        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid #f5f0ea;">
+                            <span style="font-size:0.75rem;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;">${label}</span>
+                            <span style="font-size:0.88rem;color:#222;font-weight:600;">${val}</span>
+                        </div>`).join('')}
+                    </div>
+                </div>`;
+            modal.style.display = 'flex';
+        };
 
         window._expandResenas = function(platoId) {
             const existing = document.getElementById(`resenas-row-${platoId}`);
@@ -2249,7 +2345,9 @@
                             style="display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #eeebe5;${r.oculta ? 'opacity:0.45;' : ''}">
                             <div style="flex:1;min-width:0;">
                                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:3px;">
-                                    <span style="font-weight:700;font-size:0.82rem;color:#222;">${r.displayName ?? 'Anónimo'}</span>
+                                    ${r.userId && _statsUsersMap[r.userId]
+                                        ? `<button onclick="window._verUsuario('${r.userId}')" style="font-weight:700;font-size:0.82rem;color:var(--secondary);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;">${r.displayName ?? 'Anónimo'}</button>`
+                                        : `<span style="font-weight:700;font-size:0.82rem;color:#222;">${r.displayName ?? 'Anónimo'}</span>`}
                                     <span style="color:#e8a838;font-size:0.82rem;">${'★'.repeat(r.rating ?? 0)}${'☆'.repeat(5-(r.rating??0))}</span>
                                     ${r.oculta ? `<span style="font-size:0.7rem;background:#eee;color:#999;padding:1px 7px;border-radius:20px;">Oculta</span>` : ''}
                                 </div>
