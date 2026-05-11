@@ -309,12 +309,22 @@ export async function guardarRating(platoId) {
 export function mostrarLogin(vista = 'login') {
     const modal = document.getElementById('carta-login-modal');
     if (!modal) return;
-    modal.classList.add('open');
+    const inner = modal.querySelector('.login-inner');
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => {
+        modal.style.opacity = '1';
+        if (inner) inner.style.transform = 'translateY(0)';
+    });
     _mostrarVistaLogin(vista);
 }
 
 function _ocultarLogin() {
-    document.getElementById('carta-login-modal')?.classList.remove('open');
+    const modal = document.getElementById('carta-login-modal');
+    if (!modal) return;
+    const inner = modal.querySelector('.login-inner');
+    modal.style.opacity = '0';
+    if (inner) inner.style.transform = 'translateY(100%)';
+    setTimeout(() => { modal.style.display = 'none'; }, 280);
 }
 
 function _mostrarVistaLogin(vista) {
@@ -378,9 +388,9 @@ async function _resetPass() {
 function _inyectarLoginModal() {
     const modal = document.createElement('div');
     modal.id = 'carta-login-modal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:none;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .25s;';
     modal.innerHTML = `
-    <div style="background:white;border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:28px 24px 36px;transform:translateY(20px);transition:transform .25s;">
+    <div class="login-inner" style="background:white;border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:28px 24px max(36px,env(safe-area-inset-bottom));overflow-y:auto;max-height:90vh;transform:translateY(100%);transition:transform .3s ease-out;">
         <div style="width:40px;height:4px;background:#e0dbd2;border-radius:4px;margin:0 auto 24px;"></div>
 
         <div id="carta-auth-login">
@@ -441,15 +451,6 @@ function _inyectarLoginModal() {
 
     // Cerrar al tocar el fondo
     modal.addEventListener('click', e => { if (e.target === modal) _ocultarLogin(); });
-
-    // Animación open
-    const observer = new MutationObserver(() => {
-        const isOpen = modal.classList.contains('open');
-        modal.style.opacity = isOpen ? '1' : '0';
-        modal.style.pointerEvents = isOpen ? 'all' : 'none';
-        modal.querySelector('div').style.transform = isOpen ? 'translateY(0)' : 'translateY(20px)';
-    });
-    observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
 
     document.getElementById('carta-btn-google').onclick  = _loginGoogle;
     document.getElementById('carta-btn-login').onclick   = _loginEmail;
