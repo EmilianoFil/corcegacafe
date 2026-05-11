@@ -109,8 +109,9 @@ function _actualizarTodosLosBotones() {
 function _actualizarBtnFav(btn, id) {
     const activo = _favs.has(id);
     btn.classList.toggle('fav-activo', activo);
-    btn.textContent = activo ? '♥' : '♡';
     btn.title = activo ? 'Quitar de favoritos' : 'Quiero probarlo';
+    const icon = btn.querySelector('img');
+    if (icon) icon.src = activo ? 'css/img/heart-filled.svg' : 'css/img/heart-outline.svg';
 }
 
 function _actualizarBtnProbado(btn, id) {
@@ -234,8 +235,8 @@ async function _renderSocialEnModal(platoId) {
             <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;">
                 <button id="modal-social-fav" class="btn-fav-carta" data-id="${platoId}"
                     onclick="window.cartaSocial.toggleFavorito('${platoId}')"
-                    style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #ed7053;background:white;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;">
-                    ❤️ Quiero probarlo
+                    style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #eb6f53;background:white;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;position:static;width:auto;height:auto;opacity:1;">
+                    <img id="modal-fav-icon" src="css/img/heart-outline.svg" width="15" height="15" style="flex-shrink:0;"> Quiero probarlo
                 </button>
                 <button id="modal-social-probado" class="btn-probado-carta" data-id="${platoId}"
                     onclick="window.cartaSocial.toggleProbado('${platoId}')"

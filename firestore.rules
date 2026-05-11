@@ -59,6 +59,33 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // CONFIG PÚBLICA (feature flags)
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // CARTA SOCIAL: cada usuario solo su propio doc
+    match /carta_favoritos/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /carta_probados/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // VALORACIONES: lectura pública, escribe usuario autenticado
+    match /carta_valoraciones/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // STATS DE PLATOS: lectura pública, escritura autenticada
+    match /carta_plato_stats/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
     // Todo lo demás requiere login (admin)
     match /{document=**} {
       allow read, write: if request.auth != null;
