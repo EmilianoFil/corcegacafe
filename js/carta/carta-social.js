@@ -17,6 +17,7 @@ let _probados     = new Set();   // platoIds probados por el usuario
 let _favCounts    = {};          // { platoId: N } — conteo global de favs
 let _pendingAction = null;       // acción a ejecutar tras login
 let _platosMap    = {};          // { platoId: { nombre, ... } } — poblado desde carta.html
+let _modalAbiertoPlatoId = null; // platoId del modal de detalle abierto
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -36,6 +37,7 @@ export async function init() {
             await Promise.all([_cargarFavs(), _cargarProbados()]);
             _actualizarHeaderUI(user);
             _actualizarTodosLosBotones();
+            if (_modalAbiertoPlatoId) await _renderSocialEnModal(_modalAbiertoPlatoId);
             if (_pendingAction) { _pendingAction(); _pendingAction = null; }
         } else {
             _favs.clear();
@@ -64,8 +66,13 @@ export function onCartaRendered() {
 // ─── Se llama desde carta.html cuando se abre el modal ───────────────────────
 export function onModalAbierto(platoId) {
     if (!_enabled) return;
+    _modalAbiertoPlatoId = platoId;
     _renderSocialEnModal(platoId);
     setDoc(doc(db, 'carta_plato_stats', platoId), { clickCount: increment(1) }, { merge: true });
+}
+
+export function onModalCerrado() {
+    _modalAbiertoPlatoId = null;
 }
 
 // ─── Carga datos del usuario ─────────────────────────────────────────────────
@@ -123,6 +130,12 @@ function _actualizarBtnFav(btn, id) {
     btn.title = activo ? 'Quitar de favoritos' : 'Quiero probarlo';
     const icon = btn.querySelector('img');
     if (icon) icon.src = activo ? 'css/img/heart-filled.svg' : 'css/img/heart-outline.svg';
+    // Botón del modal: rellena el fondo igual que el botón probado
+    if (btn.id === 'modal-social-fav') {
+        btn.style.background = activo ? '#eb6f53' : 'white';
+        btn.style.color      = activo ? 'white' : '';
+        if (icon) icon.style.filter = activo ? 'brightness(0) invert(1)' : '';
+    }
 }
 
 function _actualizarBtnProbado(btn, id) {
@@ -246,12 +259,12 @@ async function _renderSocialEnModal(platoId) {
             <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;">
                 <button id="modal-social-fav" class="btn-fav-carta" data-id="${platoId}"
                     onclick="window.cartaSocial.toggleFavorito('${platoId}')"
-                    style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #eb6f53;background:white;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;position:static;width:auto;height:auto;opacity:1;">
-                    <img id="modal-fav-icon" src="css/img/heart-outline.svg" width="15" height="15" style="flex-shrink:0;"> Quiero probarlo
+                    style="flex:1;padding:8px 10px;border-radius:10px;border:1.5px solid #eb6f53;background:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .2s,color .2s;position:static;width:auto;height:auto;opacity:1;">
+                    <img id="modal-fav-icon" src="css/img/heart-outline.svg" width="14" height="14" style="flex-shrink:0;"> Quiero probarlo
                 </button>
                 <button id="modal-social-probado" class="btn-probado-carta" data-id="${platoId}"
                     onclick="window.cartaSocial.toggleProbado('${platoId}')"
-                    style="flex:1;padding:10px;border-radius:10px;border:1.5px solid #01323f;background:white;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;">
+                    style="flex:1;padding:8px 10px;border-radius:10px;border:1.5px solid #01323f;background:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .2s,color .2s;">
                     ✓ Marcar como probado
                 </button>
             </div>
@@ -444,6 +457,34 @@ async function _resetPass() {
     } catch (e) { alert('No pudimos enviar el mail.'); }
 }
 
+// ─── Swipe-to-close en paneles bottom-sheet ───────────────────────────────────
+function _addSwipeDown(panel, onClose) {
+    let startY = null, dy = 0;
+    panel.addEventListener('touchstart', e => {
+        if (panel.scrollTop > 0) { startY = null; return; }
+        startY = e.touches[0].clientY;
+        dy = 0;
+        panel.style.transition = 'none';
+    }, { passive: true });
+    panel.addEventListener('touchmove', e => {
+        if (startY === null) return;
+        dy = Math.max(0, e.touches[0].clientY - startY);
+        panel.style.transform = `translateY(${dy}px)`;
+    }, { passive: true });
+    panel.addEventListener('touchend', () => {
+        if (startY === null) return;
+        panel.style.transition = 'transform 0.28s cubic-bezier(0.32,0.72,0,1)';
+        if (dy > 80) {
+            panel.style.transform = 'translateY(110%)';
+            setTimeout(() => { panel.style.transform = ''; panel.style.transition = ''; onClose(); }, 280);
+        } else {
+            panel.style.transform = 'translateY(0)';
+            setTimeout(() => { panel.style.transition = ''; }, 300);
+        }
+        startY = null; dy = 0;
+    });
+}
+
 // ─── Inyectar modal de login ──────────────────────────────────────────────────
 function _inyectarLoginModal() {
     const modal = document.createElement('div');
@@ -511,6 +552,7 @@ function _inyectarLoginModal() {
 
     // Cerrar al tocar el fondo
     modal.addEventListener('click', e => { if (e.target === modal) _ocultarLogin(); });
+    _addSwipeDown(modal.querySelector('.login-inner'), _ocultarLogin);
 
     // ── Panel de perfil ──────────────────────────────────────────────────────
     const perfilModal = document.createElement('div');
@@ -521,6 +563,7 @@ function _inyectarLoginModal() {
     </div>`;
     document.body.appendChild(perfilModal);
     perfilModal.addEventListener('click', e => { if (e.target === perfilModal) _ocultarPerfil(); });
+    _addSwipeDown(document.getElementById('carta-perfil-inner'), _ocultarPerfil);
 
     document.getElementById('carta-btn-google').onclick  = _loginGoogle;
     document.getElementById('carta-btn-login').onclick   = _loginEmail;
