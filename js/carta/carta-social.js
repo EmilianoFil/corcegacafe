@@ -16,6 +16,7 @@ let _favs         = new Set();   // platoIds favoritos del usuario
 let _probados     = new Set();   // platoIds probados por el usuario
 let _favCounts    = {};          // { platoId: N } — conteo global de favs
 let _pendingAction = null;       // acción a ejecutar tras login
+let _platosMap    = {};          // { platoId: { nombre, ... } } — poblado desde carta.html
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -48,6 +49,11 @@ export async function init() {
     _actualizarBadgesGlobales();
 }
 
+// ─── Recibe el mapa de platos desde carta.html ───────────────────────────────
+export function setPlatos(map) {
+    _platosMap = map ?? {};
+}
+
 // ─── Se llama desde carta.html tras renderizar las cards ─────────────────────
 export function onCartaRendered() {
     if (!_enabled) return;
@@ -59,6 +65,7 @@ export function onCartaRendered() {
 export function onModalAbierto(platoId) {
     if (!_enabled) return;
     _renderSocialEnModal(platoId);
+    setDoc(doc(db, 'carta_plato_stats', platoId), { clickCount: increment(1) }, { merge: true });
 }
 
 // ─── Carga datos del usuario ─────────────────────────────────────────────────
@@ -87,7 +94,7 @@ function _actualizarHeaderUI(user) {
     if (user) {
         const nombre = user.displayName?.split(' ')[0] ?? user.email?.split('@')[0] ?? 'Vos';
         btn.innerHTML = `<span style="font-size:1rem;">👤</span><span>${nombre}</span>`;
-        btn.onclick = mostrarMenuUsuario;
+        btn.onclick = () => mostrarMenuUsuario();
     } else {
         btn.innerHTML = `<span style="font-size:1rem;">👤</span><span>Entrar</span>`;
         btn.onclick = () => mostrarLogin();
@@ -328,10 +335,67 @@ function _mostrarVistaLogin(vista) {
 
 export function mostrarMenuUsuario() {
     if (!_user) { mostrarLogin(); return; }
-    const nombre = _user.displayName ?? _user.email ?? '';
-    if (confirm(`Conectado como ${nombre}\n\n¿Cerrar sesión?`)) {
-        signOut(auth);
-    }
+    const modal = document.getElementById('carta-perfil-modal');
+    if (!modal) return;
+    _renderPerfilPanel();
+    modal.style.display = 'flex';
+}
+
+function _ocultarPerfil() {
+    const modal = document.getElementById('carta-perfil-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function _renderPerfilPanel() {
+    const container = document.getElementById('carta-perfil-inner');
+    if (!container || !_user) return;
+
+    const nombre = _user.displayName ?? _user.email?.split('@')[0] ?? 'Vos';
+    const email  = _user.email ?? '';
+
+    const _listaPlatos = (ids) => {
+        if (!ids.size) return '<p style="font-size:0.82rem;color:#aaa;margin:6px 0 0;">Todavía no hay ninguno.</p>';
+        return [...ids].map(id => {
+            const nombre = _platosMap[id]?.nombre ?? id;
+            return `<div style="font-size:0.85rem;padding:6px 0;border-bottom:1px solid #f5f0ea;color:#333;">${nombre}</div>`;
+        }).join('');
+    };
+
+    container.innerHTML = `
+        <div style="width:40px;height:4px;background:#e0dbd2;border-radius:4px;margin:0 auto 20px;"></div>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+            <div style="width:46px;height:46px;border-radius:50%;background:#01323f;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <span style="font-size:1.3rem;">👤</span>
+            </div>
+            <div>
+                <p style="margin:0;font-weight:700;font-size:1rem;color:#01323f;">${nombre}</p>
+                <p style="margin:0;font-size:0.78rem;color:#888;">${email}</p>
+            </div>
+        </div>
+
+        <div style="background:#fffbf7;border:1px solid #f0ece4;border-radius:14px;padding:16px;margin-bottom:14px;">
+            <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">
+                ❤️ Quiero probar (${_favs.size})
+            </p>
+            ${_listaPlatos(_favs)}
+        </div>
+
+        <div style="background:#fffbf7;border:1px solid #f0ece4;border-radius:14px;padding:16px;margin-bottom:22px;">
+            <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">
+                ✓ Ya probé (${_probados.size})
+            </p>
+            ${_listaPlatos(_probados)}
+        </div>
+
+        <button onclick="window.cartaSocial._cerrarSesion()"
+            style="width:100%;padding:13px;border:1.5px solid #e0dbd2;border-radius:12px;background:white;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit;color:#666;">
+            Cerrar sesión
+        </button>`;
+}
+
+export async function _cerrarSesion() {
+    _ocultarPerfil();
+    await signOut(auth);
 }
 
 async function _loginGoogle() {
@@ -443,6 +507,16 @@ function _inyectarLoginModal() {
 
     // Cerrar al tocar el fondo
     modal.addEventListener('click', e => { if (e.target === modal) _ocultarLogin(); });
+
+    // ── Panel de perfil ──────────────────────────────────────────────────────
+    const perfilModal = document.createElement('div');
+    perfilModal.id = 'carta-perfil-modal';
+    perfilModal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:none;align-items:flex-end;justify-content:center;';
+    perfilModal.innerHTML = `
+    <div id="carta-perfil-inner" style="background:white;border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:28px 24px 40px;overflow-y:auto;max-height:85vh;">
+    </div>`;
+    document.body.appendChild(perfilModal);
+    perfilModal.addEventListener('click', e => { if (e.target === perfilModal) _ocultarPerfil(); });
 
     document.getElementById('carta-btn-google').onclick  = _loginGoogle;
     document.getElementById('carta-btn-login').onclick   = _loginEmail;

@@ -845,6 +845,7 @@
             <ul>
                 <li><a href="#carta-secciones"><span class="icon">📋</span> Secciones</a></li>
                 <li><a href="#carta-platos"><span class="icon">🍽️</span> Platos</a></li>
+                <li><a href="#carta-stats"><span class="icon">📊</span> Estadísticas</a></li>
             </ul>
 
             <div class="nav-label">Marketing y Sistema</div>
@@ -1945,6 +1946,52 @@
             </div>
         </section>
 
+        <!-- CARTA ESTADÍSTICAS -->
+        <section id="carta-stats" class="section-content">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:25px; border-bottom:1px solid var(--border); padding-bottom:15px;">
+                <h3 style="margin:0; font-size:1.5rem;">Estadísticas de Carta 📊</h3>
+                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:500;">CARTA DIGITAL</span>
+            </div>
+
+            <!-- Resumen general -->
+            <div id="carta-stats-resumen" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:24px;">
+                <div class="card" style="padding:18px 20px; background:white; border:1px solid var(--border); text-align:center;">
+                    <p style="font-size:1.8rem; font-weight:800; color:var(--secondary); margin:0;" id="stat-total-clicks">—</p>
+                    <p style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:6px 0 0; text-transform:uppercase;">Aperturas totales</p>
+                </div>
+                <div class="card" style="padding:18px 20px; background:white; border:1px solid var(--border); text-align:center;">
+                    <p style="font-size:1.8rem; font-weight:800; color:#eb6f53; margin:0;" id="stat-total-likes">—</p>
+                    <p style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:6px 0 0; text-transform:uppercase;">Likes totales</p>
+                </div>
+                <div class="card" style="padding:18px 20px; background:white; border:1px solid var(--border); text-align:center;">
+                    <p style="font-size:1.8rem; font-weight:800; color:#e8a838; margin:0;" id="stat-total-resenas">—</p>
+                    <p style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:6px 0 0; text-transform:uppercase;">Reseñas</p>
+                </div>
+                <div class="card" style="padding:18px 20px; background:white; border:1px solid var(--border); text-align:center;">
+                    <p style="font-size:1.8rem; font-weight:800; color:var(--success); margin:0;" id="stat-rating-global">—</p>
+                    <p style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:6px 0 0; text-transform:uppercase;">Rating promedio</p>
+                </div>
+            </div>
+
+            <!-- Tabla por plato -->
+            <div class="card" style="padding:10px; border:1px solid var(--border); background:white;">
+                <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                    <thead style="background:#fdfcf7;">
+                        <tr>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Plato</th>
+                            <th style="text-align:center; padding:12px 10px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">👁 Aperturas</th>
+                            <th style="text-align:center; padding:12px 10px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">❤️ Likes</th>
+                            <th style="text-align:center; padding:12px 10px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">★ Rating</th>
+                            <th style="text-align:center; padding:12px 10px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Reseñas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="carta-stats-body">
+                        <tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
     </main>
 
     <!-- Cropper.js -->
@@ -2064,6 +2111,7 @@
             if (target === 'tienda-config') window.tiendaAdmin.loadConfigStore();
             if (target === 'carta-secciones') { window.cartaAdmin.loadSecciones(); _cargarToggleSocial(); }
             if (target === 'carta-platos') window.cartaAdmin.loadPlatos();
+            if (target === 'carta-stats') _cargarStats();
         }
 
         window._navigateTo = navigateTo;
@@ -2094,6 +2142,77 @@
             _actualizarToggleUI(nuevo);
             await setDoc(doc(db, 'config', 'carta'), { loginHabilitado: nuevo }, { merge: true });
         };
+
+        // ── Estadísticas de carta ─────────────────────────────────────────────
+        async function _cargarStats() {
+            const tbody = document.getElementById('carta-stats-body');
+            if (!tbody) return;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">Cargando...</td></tr>`;
+
+            const [snapPlatos, snapStats, snapVal] = await Promise.all([
+                getDocs(query(collection(db, 'carta_platos'), orderBy('orden'))),
+                getDocs(collection(db, 'carta_plato_stats')),
+                getDocs(collection(db, 'carta_valoraciones'))
+            ]);
+
+            // Indexar stats por platoId
+            const statsMap = {};
+            snapStats.forEach(d => { statsMap[d.id] = d.data(); });
+
+            // Agrupar valoraciones por platoId → avg rating
+            const valMap = {};
+            snapVal.forEach(d => {
+                const { platoId, rating } = d.data();
+                if (!platoId || !rating) return;
+                if (!valMap[platoId]) valMap[platoId] = { sum: 0, count: 0 };
+                valMap[platoId].sum   += rating;
+                valMap[platoId].count += 1;
+            });
+
+            const platos = snapPlatos.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .filter(p => p.activo !== false);
+
+            // Totales para el resumen
+            let totalClicks = 0, totalLikes = 0, totalResenas = 0, sumRating = 0, countRating = 0;
+            platos.forEach(p => {
+                totalClicks  += statsMap[p.id]?.clickCount ?? 0;
+                totalLikes   += statsMap[p.id]?.favCount   ?? 0;
+                totalResenas += valMap[p.id]?.count        ?? 0;
+                if (valMap[p.id]) { sumRating += valMap[p.id].sum; countRating += valMap[p.id].count; }
+            });
+            document.getElementById('stat-total-clicks').textContent = totalClicks;
+            document.getElementById('stat-total-likes').textContent  = totalLikes;
+            document.getElementById('stat-total-resenas').textContent = totalResenas;
+            document.getElementById('stat-rating-global').textContent =
+                countRating ? (sumRating / countRating).toFixed(1) + ' ★' : '—';
+
+            // Ordenar por clicks desc
+            platos.sort((a, b) => (statsMap[b.id]?.clickCount ?? 0) - (statsMap[a.id]?.clickCount ?? 0));
+
+            if (!platos.length) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">No hay datos todavía.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = platos.map(p => {
+                const clicks  = statsMap[p.id]?.clickCount ?? 0;
+                const likes   = statsMap[p.id]?.favCount   ?? 0;
+                const vData   = valMap[p.id];
+                const rating  = vData ? (vData.sum / vData.count).toFixed(1) : '—';
+                const resenas = vData?.count ?? 0;
+                const stars   = vData ? '★'.repeat(Math.round(vData.sum / vData.count)) : '';
+                return `<tr style="border-bottom:1px solid #f5f0ea;">
+                    <td style="padding:11px 15px;font-weight:600;color:#222;">${p.nombre ?? p.id}</td>
+                    <td style="padding:11px 10px;text-align:center;color:var(--text-muted);">${clicks || '—'}</td>
+                    <td style="padding:11px 10px;text-align:center;color:#eb6f53;font-weight:700;">${likes || '—'}</td>
+                    <td style="padding:11px 10px;text-align:center;color:#e8a838;">
+                        ${vData ? `<span style="font-weight:700;">${rating}</span> <span style="font-size:0.75rem;">${stars}</span>` : '—'}
+                    </td>
+                    <td style="padding:11px 10px;text-align:center;color:var(--text-muted);">${resenas || '—'}</td>
+                </tr>`;
+            }).join('');
+        }
 
         document.querySelectorAll('#main-nav a').forEach(link => {
             link.addEventListener('click', (e) => {

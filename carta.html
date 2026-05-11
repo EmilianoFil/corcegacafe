@@ -546,6 +546,7 @@
 
             renderTabs(secciones);
             renderContenido(secciones);
+            window.cartaSocial?.setPlatos(Object.fromEntries(platos.map(p => [p.id, p])));
             window.cartaSocial?.onCartaRendered();
             initScrollSpy(secciones);
 
