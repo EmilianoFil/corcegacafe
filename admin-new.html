@@ -1961,7 +1961,15 @@
                 </div>
                 <div class="card" style="padding:18px 20px; background:white; border:1px solid var(--border); text-align:center;">
                     <p style="font-size:1.8rem; font-weight:800; color:#eb6f53; margin:0;" id="stat-total-likes">—</p>
-                    <p style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:6px 0 0; text-transform:uppercase;">Likes totales</p>
+                    <p style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:6px 0 0; text-transform:uppercase;">❤️ Me gusta</p>
+                </div>
+                <div class="card" style="padding:18px 20px; background:white; border:1px solid var(--border); text-align:center;">
+                    <p style="font-size:1.8rem; font-weight:800; color:#eb6f53; margin:0;" id="stat-total-qp">—</p>
+                    <p style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:6px 0 0; text-transform:uppercase;">🔖 Quieren probar</p>
+                </div>
+                <div class="card" style="padding:18px 20px; background:white; border:1px solid var(--border); text-align:center;">
+                    <p style="font-size:1.8rem; font-weight:800; color:var(--secondary); margin:0;" id="stat-total-probaron">—</p>
+                    <p style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:6px 0 0; text-transform:uppercase;">✓ Ya probaron</p>
                 </div>
                 <div class="card" style="padding:18px 20px; background:white; border:1px solid var(--border); text-align:center;">
                     <p style="font-size:1.8rem; font-weight:800; color:#e8a838; margin:0;" id="stat-total-resenas">—</p>
@@ -1979,14 +1987,16 @@
                     <thead style="background:#fdfcf7;">
                         <tr>
                             <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Plato</th>
-                            <th style="text-align:center; padding:12px 10px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">👁 Aperturas</th>
-                            <th style="text-align:center; padding:12px 10px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">❤️ Likes</th>
-                            <th style="text-align:center; padding:12px 10px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">★ Rating</th>
-                            <th style="text-align:center; padding:12px 10px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Reseñas</th>
+                            <th style="text-align:center; padding:12px 8px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">👁 Vistas</th>
+                            <th style="text-align:center; padding:12px 8px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">❤️ Me gusta</th>
+                            <th style="text-align:center; padding:12px 8px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">🔖 Q. probar</th>
+                            <th style="text-align:center; padding:12px 8px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">✓ Ya probaron</th>
+                            <th style="text-align:center; padding:12px 8px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">★ Rating</th>
+                            <th style="text-align:center; padding:12px 8px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Reseñas</th>
                         </tr>
                     </thead>
                     <tbody id="carta-stats-body">
-                        <tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">Cargando...</td></tr>
+                        <tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">Cargando...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -2150,13 +2160,15 @@
         async function _cargarStats() {
             const tbody = document.getElementById('carta-stats-body');
             if (!tbody) return;
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">Cargando...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">Cargando...</td></tr>`;
 
-            const [snapPlatos, snapStats, snapVal, snapFavs, snapClientes, snapUsuarios] = await Promise.all([
+            const [snapPlatos, snapStats, snapVal, snapFavs, snapQP, snapProbados, snapClientes, snapUsuarios] = await Promise.all([
                 getDocs(query(collection(db, 'carta_platos'), orderBy('orden'))),
                 getDocs(collection(db, 'carta_plato_stats')),
                 getDocs(collection(db, 'carta_valoraciones')),
                 getDocs(collection(db, 'carta_favoritos')),
+                getDocs(collection(db, 'carta_quiero_probar')),
+                getDocs(collection(db, 'carta_probados')),
                 getDocs(collection(db, 'clientes')),
                 getDocs(collection(db, 'usuarios_tienda'))
             ]);
@@ -2170,7 +2182,7 @@
             snapClientes.forEach(d => { _statsUsersMap[d.id] = { ...d.data() }; });
             snapUsuarios.forEach(d => { if (!_statsUsersMap[d.id]) _statsUsersMap[d.id] = { ...d.data() }; });
 
-            // Índice inverso: platoId → [uid] de quienes lo favoritearon
+            // Índice inverso: platoId → [uid] para cada colección social
             _statsFavUsers = {};
             snapFavs.forEach(d => {
                 (d.data().platoIds ?? []).forEach(pid => {
@@ -2178,6 +2190,24 @@
                     _statsFavUsers[pid].push(d.id);
                 });
             });
+
+            const _statsQPUsers = {};
+            snapQP.forEach(d => {
+                (d.data().platoIds ?? []).forEach(pid => {
+                    if (!_statsQPUsers[pid]) _statsQPUsers[pid] = [];
+                    _statsQPUsers[pid].push(d.id);
+                });
+            });
+            window._statsQPUsers = _statsQPUsers;
+
+            const _statsProbadosUsers = {};
+            snapProbados.forEach(d => {
+                (d.data().platoIds ?? []).forEach(pid => {
+                    if (!_statsProbadosUsers[pid]) _statsProbadosUsers[pid] = [];
+                    _statsProbadosUsers[pid].push(d.id);
+                });
+            });
+            window._statsProbadosUsers = _statsProbadosUsers;
 
             // Agrupar valoraciones por platoId → avg rating + guardar docs raw
             const valMap = {};
@@ -2202,55 +2232,60 @@
                 .filter(p => p.activo !== false);
 
             // Totales para el resumen
-            let totalClicks = 0, totalLikes = 0, totalResenas = 0, sumRating = 0, countRating = 0;
+            let totalClicks = 0, totalLikes = 0, totalQP = 0, totalProbaron = 0, totalResenas = 0, sumRating = 0, countRating = 0;
             platos.forEach(p => {
-                totalClicks  += statsMap[p.id]?.clickCount ?? 0;
-                totalLikes   += statsMap[p.id]?.favCount   ?? 0;
-                totalResenas += valMap[p.id]?.count        ?? 0;
+                totalClicks   += statsMap[p.id]?.clickCount ?? 0;
+                totalLikes    += _statsFavUsers[p.id]?.length ?? 0;
+                totalQP       += _statsQPUsers[p.id]?.length ?? 0;
+                totalProbaron += _statsProbadosUsers[p.id]?.length ?? 0;
+                totalResenas  += valMap[p.id]?.count ?? 0;
                 if (valMap[p.id]) { sumRating += valMap[p.id].sum; countRating += valMap[p.id].count; }
             });
-            document.getElementById('stat-total-clicks').textContent = totalClicks;
-            document.getElementById('stat-total-likes').textContent  = totalLikes;
-            document.getElementById('stat-total-resenas').textContent = totalResenas;
-            document.getElementById('stat-rating-global').textContent =
+            document.getElementById('stat-total-clicks').textContent   = totalClicks;
+            document.getElementById('stat-total-likes').textContent    = totalLikes;
+            document.getElementById('stat-total-qp').textContent       = totalQP;
+            document.getElementById('stat-total-probaron').textContent = totalProbaron;
+            document.getElementById('stat-total-resenas').textContent  = totalResenas;
+            document.getElementById('stat-rating-global').textContent  =
                 countRating ? (sumRating / countRating).toFixed(1) + ' ★' : '—';
 
             // Ordenar por clicks desc
             platos.sort((a, b) => (statsMap[b.id]?.clickCount ?? 0) - (statsMap[a.id]?.clickCount ?? 0));
 
             if (!platos.length) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">No hay datos todavía.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">No hay datos todavía.</td></tr>`;
                 return;
             }
 
+            const _btnExpand = (id, label, color, fn) =>
+                `<button onclick="window.${fn}('${id}')" style="padding:4px 10px;border-radius:8px;border:1px solid ${color};background:white;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;color:${color};">${label}</button>`;
+
             tbody.innerHTML = platos.map(p => {
-                const clicks  = statsMap[p.id]?.clickCount ?? 0;
-                const likes   = statsMap[p.id]?.favCount   ?? 0;
-                const vData   = valMap[p.id];
-                const rating  = vData ? (vData.sum / vData.count).toFixed(1) : '—';
-                const resenas = vData?.count ?? 0;
-                const stars   = vData ? '★'.repeat(Math.round(vData.sum / vData.count)) : '';
+                const clicks    = statsMap[p.id]?.clickCount ?? 0;
+                const likesN    = _statsFavUsers[p.id]?.length ?? 0;
+                const qpN       = _statsQPUsers[p.id]?.length ?? 0;
+                const probN     = _statsProbadosUsers[p.id]?.length ?? 0;
+                const vData     = valMap[p.id];
+                const rating    = vData ? (vData.sum / vData.count).toFixed(1) : '—';
+                const resenas   = vData?.count ?? 0;
+                const stars     = vData ? '★'.repeat(Math.round(vData.sum / vData.count)) : '';
                 return `<tr data-plato-id="${p.id}" style="border-bottom:1px solid #f5f0ea;">
                     <td style="padding:11px 15px;font-weight:600;color:#222;">${p.nombre ?? p.id}</td>
-                    <td style="padding:11px 10px;text-align:center;color:var(--text-muted);">${clicks || '—'}</td>
-                    <td style="padding:11px 10px;text-align:center;">
-                        ${(_statsFavUsers[p.id]?.length)
-                            ? `<button onclick="window._expandFavs('${p.id}')"
-                                style="padding:4px 12px;border-radius:8px;border:1px solid #eb6f53;background:white;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;color:#eb6f53;">
-                                ❤️ Ver ${_statsFavUsers[p.id].length}
-                               </button>`
-                            : `<span style="color:var(--text-muted);">—</span>`}
+                    <td style="padding:11px 8px;text-align:center;color:var(--text-muted);">${clicks || '—'}</td>
+                    <td style="padding:11px 8px;text-align:center;">
+                        ${likesN ? _btnExpand(p.id, '❤️ ' + likesN, '#eb6f53', '_expandFavs') : '<span style="color:var(--text-muted);">—</span>'}
                     </td>
-                    <td style="padding:11px 10px;text-align:center;color:#e8a838;">
-                        ${vData ? `<span style="font-weight:700;">${rating}</span> <span style="font-size:0.75rem;">${stars}</span>` : '—'}
+                    <td style="padding:11px 8px;text-align:center;">
+                        ${qpN ? _btnExpand(p.id, '🔖 ' + qpN, '#eb6f53', '_expandQP') : '<span style="color:var(--text-muted);">—</span>'}
                     </td>
-                    <td style="padding:11px 10px;text-align:center;">
-                        ${resenas
-                            ? `<button onclick="window._expandResenas('${p.id}')"
-                                style="padding:4px 12px;border-radius:8px;border:1px solid #ddd;background:white;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;color:var(--secondary);">
-                                Ver ${resenas}
-                               </button>`
-                            : `<span style="color:var(--text-muted);">—</span>`}
+                    <td style="padding:11px 8px;text-align:center;">
+                        ${probN ? _btnExpand(p.id, '✓ ' + probN, 'var(--secondary)', '_expandProbados') : '<span style="color:var(--text-muted);">—</span>'}
+                    </td>
+                    <td style="padding:11px 8px;text-align:center;color:#e8a838;">
+                        ${vData ? `<span style="font-weight:700;">${rating}</span> <span style="font-size:0.73rem;">${stars}</span>` : '—'}
+                    </td>
+                    <td style="padding:11px 8px;text-align:center;">
+                        ${resenas ? _btnExpand(p.id, 'Ver ' + resenas, '#999', '_expandResenas') : '<span style="color:var(--text-muted);">—</span>'}
                     </td>
                 </tr>`;
             }).join('');
@@ -2264,7 +2299,7 @@
             const uids = _statsFavUsers[platoId] ?? [];
             const tr = document.createElement('tr');
             tr.id = `favs-row-${platoId}`;
-            tr.innerHTML = `<td colspan="5" style="padding:0;background:#fff8f5;border-bottom:2px solid #f5e8e4;">
+            tr.innerHTML = `<td colspan="7" style="padding:0;background:#fff8f5;border-bottom:2px solid #f5e8e4;">
                 <div style="padding:14px 20px 18px;">
                     <p style="font-size:0.75rem;font-weight:700;color:#eb6f53;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 10px;">❤️ Quieren probarlo (${uids.length})</p>
                     ${uids.map(uid => {
@@ -2285,6 +2320,48 @@
                 </div>
             </td>`;
             mainRow.insertAdjacentElement('afterend', tr);
+        };
+
+        function _buildUserList(uids, titulo, color) {
+            if (!uids.length) return `<p style="color:#aaa;font-size:0.82rem;margin:0;">Nadie todavía.</p>`;
+            return uids.map(uid => {
+                const u = _statsUsersMap[uid];
+                const nombre = u?.nombre ?? u?.displayName ?? 'Usuario';
+                const email  = u?.email ?? '';
+                return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f5ece4;">
+                    <div>
+                        <span style="font-weight:600;font-size:0.85rem;color:#222;">${nombre}</span>
+                        ${email ? `<span style="font-size:0.75rem;color:#aaa;margin-left:8px;">${email}</span>` : ''}
+                    </div>
+                    ${u ? `<button onclick="window._verUsuario('${uid}')" style="padding:4px 12px;border-radius:8px;border:1px solid #ddd;background:white;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;color:var(--secondary);">Ver perfil</button>` : ''}
+                </div>`;
+            }).join('');
+        }
+
+        function _buildExpandRow(id, suffix, bgColor, borderColor, titulo, uids) {
+            const existing = document.getElementById(`${suffix}-row-${id}`);
+            if (existing) { existing.remove(); return; }
+            const mainRow = document.querySelector(`[data-plato-id="${id}"]`);
+            if (!mainRow) return;
+            const tr = document.createElement('tr');
+            tr.id = `${suffix}-row-${id}`;
+            tr.innerHTML = `<td colspan="7" style="padding:0;background:${bgColor};border-bottom:2px solid ${borderColor};">
+                <div style="padding:14px 20px 18px;">
+                    <p style="font-size:0.75rem;font-weight:700;color:${borderColor};text-transform:uppercase;letter-spacing:0.5px;margin:0 0 10px;">${titulo} (${uids.length})</p>
+                    ${_buildUserList(uids, titulo, borderColor)}
+                </div>
+            </td>`;
+            mainRow.insertAdjacentElement('afterend', tr);
+        }
+
+        window._expandQP = function(platoId) {
+            _buildExpandRow(platoId, 'qp', '#fff8f5', '#eb6f53',
+                '🔖 Quieren probarlo', window._statsQPUsers[platoId] ?? []);
+        };
+
+        window._expandProbados = function(platoId) {
+            _buildExpandRow(platoId, 'prob', '#f5f9f8', 'var(--secondary)',
+                '✓ Ya lo probaron', window._statsProbadosUsers[platoId] ?? []);
         };
 
         window._verUsuario = function(uid) {
@@ -2336,7 +2413,7 @@
             const docs = _statsValDocs[platoId] ?? [];
             const tr = document.createElement('tr');
             tr.id = `resenas-row-${platoId}`;
-            tr.innerHTML = `<td colspan="5" style="padding:0;background:#fdfcf7;border-bottom:2px solid #e8e4db;">
+            tr.innerHTML = `<td colspan="7" style="padding:0;background:#fdfcf7;border-bottom:2px solid #e8e4db;">
                 <div style="padding:14px 20px 18px;">
                     ${!docs.length
                         ? `<p style="color:#aaa;font-size:0.82rem;margin:0;">Sin reseñas con texto.</p>`

@@ -12,9 +12,10 @@ import {
 // ─── Estado ──────────────────────────────────────────────────────────────────
 let _user         = null;
 let _enabled      = false;
-let _favs         = new Set();   // platoIds favoritos del usuario
-let _probados     = new Set();   // platoIds probados por el usuario
-let _favCounts    = {};          // { platoId: N } — conteo global de favs
+let _likes        = new Set();   // platoIds con ❤️ Me gusta
+let _quieroProbar = new Set();   // platoIds con 🔖 Quiero probarlo
+let _probados     = new Set();   // platoIds con ✓ Ya lo probé (exclusivo con quieroProbar)
+let _favCounts    = {};          // { platoId: N } — conteo global de likes
 let _pendingAction = null;       // acción a ejecutar tras login
 let _platosMap    = {};          // { platoId: { nombre, ... } } — poblado desde carta.html
 let _modalAbiertoPlatoId = null; // platoId del modal de detalle abierto
@@ -34,13 +35,14 @@ export async function init() {
     onAuthStateChanged(auth, async user => {
         _user = user;
         if (user) {
-            await Promise.all([_cargarFavs(), _cargarProbados()]);
+            await Promise.all([_cargarLikes(), _cargarQuieroProbar(), _cargarProbados()]);
             _actualizarHeaderUI(user);
             _actualizarTodosLosBotones();
             if (_modalAbiertoPlatoId) await _renderSocialEnModal(_modalAbiertoPlatoId);
             if (_pendingAction) { _pendingAction(); _pendingAction = null; }
         } else {
-            _favs.clear();
+            _likes.clear();
+            _quieroProbar.clear();
             _probados.clear();
             _actualizarHeaderUI(null);
             _actualizarTodosLosBotones();
@@ -76,10 +78,16 @@ export function onModalCerrado() {
 }
 
 // ─── Carga datos del usuario ─────────────────────────────────────────────────
-async function _cargarFavs() {
+async function _cargarLikes() {
     if (!_user) return;
     const snap = await getDoc(doc(db, 'carta_favoritos', _user.uid));
-    _favs = new Set(snap.exists() ? (snap.data().platoIds ?? []) : []);
+    _likes = new Set(snap.exists() ? (snap.data().platoIds ?? []) : []);
+}
+
+async function _cargarQuieroProbar() {
+    if (!_user) return;
+    const snap = await getDoc(doc(db, 'carta_quiero_probar', _user.uid));
+    _quieroProbar = new Set(snap.exists() ? (snap.data().platoIds ?? []) : []);
 }
 
 async function _cargarProbados() {
@@ -112,25 +120,19 @@ export function accionBotonUsuario() {
     else mostrarLogin();
 }
 
-// ─── Actualizar botones ❤️ en cards ──────────────────────────────────────────
+// ─── Actualizar botones en cards y modal ─────────────────────────────────────
 function _actualizarTodosLosBotones() {
-    document.querySelectorAll('.btn-fav-carta').forEach(btn => {
-        const id = btn.dataset.id;
-        _actualizarBtnFav(btn, id);
-    });
-    document.querySelectorAll('.btn-probado-carta').forEach(btn => {
-        const id = btn.dataset.id;
-        _actualizarBtnProbado(btn, id);
-    });
+    document.querySelectorAll('.btn-fav-carta').forEach(btn => _actualizarBtnLike(btn, btn.dataset.id));
+    document.querySelectorAll('.btn-qp-carta').forEach(btn => _actualizarBtnQP(btn, btn.dataset.id));
+    document.querySelectorAll('.btn-probado-carta').forEach(btn => _actualizarBtnProbado(btn, btn.dataset.id));
 }
 
-function _actualizarBtnFav(btn, id) {
-    const activo = _favs.has(id);
+function _actualizarBtnLike(btn, id) {
+    const activo = _likes.has(id);
     btn.classList.toggle('fav-activo', activo);
-    btn.title = activo ? 'Quitar de favoritos' : 'Quiero probarlo';
+    btn.title = activo ? 'Quitar like' : 'Me gusta';
     const icon = btn.querySelector('img');
     if (icon) icon.src = activo ? 'css/img/heart-filled.svg' : 'css/img/heart-outline.svg';
-    // Botón del modal: rellena el fondo igual que el botón probado
     if (btn.id === 'modal-social-fav') {
         btn.style.background = activo ? '#eb6f53' : 'white';
         btn.style.color      = activo ? 'white' : '';
@@ -138,10 +140,27 @@ function _actualizarBtnFav(btn, id) {
     }
 }
 
+function _actualizarBtnQP(btn, id) {
+    const activo = _quieroProbar.has(id);
+    btn.classList.toggle('qp-activo', activo);
+    btn.style.background = activo ? '#eb6f53' : 'white';
+    btn.style.color      = activo ? 'white' : '';
+    const icon = btn.querySelector('img');
+    if (icon) {
+        icon.src = activo ? 'css/img/bookmark-filled.svg' : 'css/img/bookmark-outline.svg';
+        icon.style.filter = activo ? 'brightness(0) invert(1)' : '';
+    }
+    const span = btn.querySelector('span');
+    if (span) span.textContent = activo ? 'Quiero probarlo ✓' : 'Quiero probarlo';
+}
+
 function _actualizarBtnProbado(btn, id) {
     const activo = _probados.has(id);
     btn.classList.toggle('probado-activo', activo);
-    btn.textContent = activo ? '✓ Ya lo probé' : '✓ Marcar como probado';
+    btn.style.background = activo ? '#01323f' : 'white';
+    btn.style.color      = activo ? 'white' : '';
+    const span = btn.querySelector('span');
+    if (span) span.textContent = activo ? 'Ya lo probé ✓' : 'Ya lo probé';
 }
 
 // ─── Badges "los más amados" ─────────────────────────────────────────────────
@@ -163,60 +182,71 @@ function _actualizarBadgesGlobales() {
     });
 }
 
-// ─── Toggle favorito ─────────────────────────────────────────────────────────
-export function toggleFavorito(platoId) {
+// ─── Toggle ❤️ Me gusta ───────────────────────────────────────────────────────
+export function toggleLike(platoId) {
     if (!_user) {
-        _pendingAction = () => toggleFavorito(platoId);
+        _pendingAction = () => toggleLike(platoId);
         mostrarLogin();
         return;
     }
-    const esFav = _favs.has(platoId);
-    if (esFav) {
-        _favs.delete(platoId);
-    } else {
-        _favs.add(platoId);
-    }
+    const era = _likes.has(platoId);
+    era ? _likes.delete(platoId) : _likes.add(platoId);
 
-    // Actualizar botones inmediatamente (optimistic)
-    document.querySelectorAll(`.btn-fav-carta[data-id="${platoId}"]`).forEach(btn => {
-        _actualizarBtnFav(btn, platoId);
-    });
+    document.querySelectorAll(`.btn-fav-carta[data-id="${platoId}"]`).forEach(btn => _actualizarBtnLike(btn, platoId));
+    setDoc(doc(db, 'carta_favoritos', _user.uid), { platoIds: [..._likes] }, { merge: true });
 
-    // Guardar en Firestore
-    setDoc(doc(db, 'carta_favoritos', _user.uid),
-        { platoIds: [..._favs] }, { merge: true });
-
-    // Actualizar contador global
-    const delta = esFav ? -1 : 1;
+    const delta = era ? -1 : 1;
     _favCounts[platoId] = Math.max(0, (_favCounts[platoId] ?? 0) + delta);
-    setDoc(doc(db, 'carta_plato_stats', platoId),
-        { favCount: increment(delta) }, { merge: true });
+    setDoc(doc(db, 'carta_plato_stats', platoId), { favCount: increment(delta) }, { merge: true });
     _actualizarBadgesGlobales();
-
-    // Actualizar corazón en el modal si está abierto
-    const modalFav = document.getElementById('modal-social-fav');
-    if (modalFav && modalFav.dataset.id === platoId) {
-        _actualizarBtnFav(modalFav, platoId);
-    }
 }
 
-// ─── Toggle probado ───────────────────────────────────────────────────────────
+// Alias para compatibilidad con onclick existente en cards (carta.html)
+export const toggleFavorito = toggleLike;
+
+// ─── Toggle 🔖 Quiero probarlo ────────────────────────────────────────────────
+export function toggleQuieroProbar(platoId) {
+    if (!_user) {
+        _pendingAction = () => toggleQuieroProbar(platoId);
+        mostrarLogin();
+        return;
+    }
+    const era = _quieroProbar.has(platoId);
+    era ? _quieroProbar.delete(platoId) : _quieroProbar.add(platoId);
+
+    // Exclusividad: si activamos, quitamos de "ya lo probé"
+    if (!era && _probados.has(platoId)) {
+        _probados.delete(platoId);
+        setDoc(doc(db, 'carta_probados', _user.uid), { platoIds: [..._probados] }, { merge: true });
+        const btnProb = document.getElementById('modal-social-probado');
+        if (btnProb) _actualizarBtnProbado(btnProb, platoId);
+    }
+
+    setDoc(doc(db, 'carta_quiero_probar', _user.uid), { platoIds: [..._quieroProbar] }, { merge: true });
+    document.querySelectorAll(`.btn-qp-carta[data-id="${platoId}"]`).forEach(btn => _actualizarBtnQP(btn, platoId));
+}
+
+// ─── Toggle ✓ Ya lo probé ─────────────────────────────────────────────────────
 export function toggleProbado(platoId) {
     if (!_user) {
         _pendingAction = () => toggleProbado(platoId);
         mostrarLogin();
         return;
     }
-    if (_probados.has(platoId)) {
-        _probados.delete(platoId);
-    } else {
-        _probados.add(platoId);
-    }
-    setDoc(doc(db, 'carta_probados', _user.uid),
-        { platoIds: [..._probados] }, { merge: true });
+    const era = _probados.has(platoId);
+    era ? _probados.delete(platoId) : _probados.add(platoId);
 
-    const btn = document.getElementById('modal-social-probado');
-    if (btn) _actualizarBtnProbado(btn, platoId);
+    // Exclusividad: si activamos, quitamos de "quiero probarlo"
+    if (!era && _quieroProbar.has(platoId)) {
+        _quieroProbar.delete(platoId);
+        setDoc(doc(db, 'carta_quiero_probar', _user.uid), { platoIds: [..._quieroProbar] }, { merge: true });
+        const btnQP = document.getElementById('modal-social-qp');
+        if (btnQP) _actualizarBtnQP(btnQP, platoId);
+    }
+
+    setDoc(doc(db, 'carta_probados', _user.uid), { platoIds: [..._probados] }, { merge: true });
+    const btnProb = document.getElementById('modal-social-probado');
+    if (btnProb) _actualizarBtnProbado(btnProb, platoId);
 }
 
 // ─── Sección social en el modal ───────────────────────────────────────────────
@@ -269,16 +299,23 @@ async function _renderSocialEnModal(platoId) {
         <div style="border-top:1px solid #e0dbd2;margin-top:16px;padding-top:16px;">
             ${avgHTML}
             ${_user ? `
-            <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;">
-                <button id="modal-social-fav" class="btn-fav-carta" data-id="${platoId}"
-                    onclick="window.cartaSocial.toggleFavorito('${platoId}')"
-                    style="flex:1;padding:8px 10px;border-radius:10px;border:1.5px solid #eb6f53;background:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .2s,color .2s;position:static;width:auto;height:auto;opacity:1;">
-                    <img id="modal-fav-icon" src="css/img/heart-outline.svg" width="14" height="14" style="flex-shrink:0;"> Quiero probarlo
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+                <button id="modal-social-qp" class="btn-qp-carta" data-id="${platoId}"
+                    onclick="window.cartaSocial.toggleQuieroProbar('${platoId}')"
+                    style="flex:1;padding:8px 10px;border-radius:10px;border:1.5px solid #eb6f53;background:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .2s,color .2s;">
+                    <img src="css/img/bookmark-outline.svg" width="13" height="13" style="flex-shrink:0;"><span>Quiero probarlo</span>
                 </button>
                 <button id="modal-social-probado" class="btn-probado-carta" data-id="${platoId}"
                     onclick="window.cartaSocial.toggleProbado('${platoId}')"
                     style="flex:1;padding:8px 10px;border-radius:10px;border:1.5px solid #01323f;background:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .2s,color .2s;">
-                    ✓ Marcar como probado
+                    <span>Ya lo probé</span>
+                </button>
+            </div>
+            <div style="margin-bottom:14px;">
+                <button id="modal-social-fav" class="btn-fav-carta" data-id="${platoId}"
+                    onclick="window.cartaSocial.toggleLike('${platoId}')"
+                    style="width:100%;padding:7px 10px;border-radius:10px;border:1.5px solid #eb6f53;background:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .2s,color .2s;position:static;height:auto;opacity:1;">
+                    <img src="css/img/heart-outline.svg" width="13" height="13" style="flex-shrink:0;"><span>Me gusta</span>
                 </button>
             </div>
             <div style="margin-bottom:14px;">
@@ -310,9 +347,11 @@ async function _renderSocialEnModal(platoId) {
 
     // Aplicar estados
     if (_user) {
-        const btnFav = document.getElementById('modal-social-fav');
+        const btnLike = document.getElementById('modal-social-fav');
+        const btnQP   = document.getElementById('modal-social-qp');
         const btnProb = document.getElementById('modal-social-probado');
-        if (btnFav) _actualizarBtnFav(btnFav, platoId);
+        if (btnLike) _actualizarBtnLike(btnLike, platoId);
+        if (btnQP)   _actualizarBtnQP(btnQP, platoId);
         if (btnProb) _actualizarBtnProbado(btnProb, platoId);
         _tempRating = miRating;
     }
@@ -403,18 +442,25 @@ function _renderPerfilPanel() {
             </div>
         </div>
 
-        <div style="background:#fffbf7;border:1px solid #f0ece4;border-radius:14px;padding:16px;margin-bottom:14px;">
-            <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">
-                ❤️ Quiero probar (${_favs.size})
+        <div style="background:#fffbf7;border:1px solid #f0ece4;border-radius:14px;padding:16px;margin-bottom:10px;">
+            <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;color:#eb6f53;text-transform:uppercase;letter-spacing:0.5px;">
+                🔖 Quiero probarlo (${_quieroProbar.size})
             </p>
-            ${_listaPlatos(_favs)}
+            ${_listaPlatos(_quieroProbar)}
+        </div>
+
+        <div style="background:#fffbf7;border:1px solid #f0ece4;border-radius:14px;padding:16px;margin-bottom:10px;">
+            <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;color:#01323f;text-transform:uppercase;letter-spacing:0.5px;">
+                ✓ Ya probé (${_probados.size})
+            </p>
+            ${_listaPlatos(_probados)}
         </div>
 
         <div style="background:#fffbf7;border:1px solid #f0ece4;border-radius:14px;padding:16px;margin-bottom:22px;">
             <p style="margin:0 0 10px;font-size:0.75rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">
-                ✓ Ya probé (${_probados.size})
+                ❤️ Me gusta (${_likes.size})
             </p>
-            ${_listaPlatos(_probados)}
+            ${_listaPlatos(_likes)}
         </div>
 
         <button onclick="window.cartaSocial._cerrarSesion()"
