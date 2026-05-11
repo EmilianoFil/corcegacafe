@@ -399,6 +399,186 @@ export async function eliminarPlato(id) {
     await loadPlatos();
 }
 
+// ─── EDITOR MASIVO DE PRECIOS ────────────────────────────────────────────────
+
+function _redondear50(precio) {
+    return Math.ceil(precio / 50) * 50;
+}
+
+export async function abrirEditorPrecios() {
+    const snap = await getDocs(query(collection(db, 'carta_platos'), orderBy('seccionId'), orderBy('orden')));
+    const platos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const secMap = Object.fromEntries(secciones.map(s => [s.id, s.nombre]));
+
+    let modal = document.getElementById('modal-precios');
+    if (modal) modal.remove();
+
+    modal = document.createElement('div');
+    modal.id = 'modal-precios';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
+
+    const filas = platos.map(p => {
+        const precioActual = p.precio != null ? p.precio : '';
+        return `
+        <tr data-id="${p.id}" data-precio-original="${precioActual}" style="border-bottom:1px solid #f0f0f0;">
+            <td style="padding:10px 12px;text-align:center;">
+                <input type="checkbox" class="chk-plato" checked style="width:16px;height:16px;cursor:pointer;">
+            </td>
+            <td style="padding:10px 12px;font-weight:600;font-size:0.9rem;">${p.nombre}</td>
+            <td style="padding:10px 12px;font-size:0.8rem;color:#888;">${secMap[p.seccionId] ?? '—'}</td>
+            <td style="padding:10px 12px;font-weight:700;color:#555;text-align:right;">
+                ${precioActual !== '' ? `$${Number(precioActual).toLocaleString('es-AR')}` : '—'}
+            </td>
+            <td style="padding:8px 12px;">
+                <input type="number" class="inp-precio-nuevo" value="${precioActual}"
+                    min="0" step="50"
+                    style="width:110px;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;font-family:inherit;text-align:right;"
+                    oninput="_marcarCambio(this)">
+            </td>
+        </tr>`;
+    }).join('');
+
+    modal.innerHTML = `
+    <div style="background:white;border-radius:18px;width:100%;max-width:780px;box-shadow:0 30px 80px rgba(0,0,0,0.35);overflow:hidden;margin:auto;">
+        <div style="background:#0d2b37;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <p style="margin:0;font-weight:800;font-size:1.05rem;color:white;">Actualizar precios</p>
+                <p style="margin:4px 0 0;font-size:0.75rem;color:rgba(255,255,255,0.55);">Los precios se redondean al múltiplo de 50 más cercano hacia arriba</p>
+            </div>
+            <button onclick="document.getElementById('modal-precios').remove()"
+                style="background:rgba(255,255,255,0.12);border:none;border-radius:8px;color:white;font-size:1.2rem;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>
+
+        <!-- Toolbar aumento % -->
+        <div style="padding:16px 24px;border-bottom:1px solid #f0f0f0;background:#fafafa;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <label style="font-size:0.8rem;font-weight:700;color:#555;">Aumentar seleccionados:</label>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <input type="number" id="inp-pct-aumento" value="10" min="0" max="999" step="1"
+                    style="width:70px;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;font-family:inherit;text-align:right;">
+                <span style="font-size:0.9rem;font-weight:700;color:#555;">%</span>
+                <button onclick="window.cartaAdmin._aplicarPorcentaje()"
+                    style="padding:8px 18px;border-radius:8px;border:none;background:#0d2b37;color:white;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit;">
+                    Aplicar
+                </button>
+            </div>
+            <div style="margin-left:auto;display:flex;gap:8px;">
+                <button onclick="window.cartaAdmin._seleccionarTodos(true)"
+                    style="padding:6px 12px;border-radius:7px;border:1px solid #ddd;background:white;font-size:0.78rem;cursor:pointer;font-family:inherit;">
+                    Seleccionar todo
+                </button>
+                <button onclick="window.cartaAdmin._seleccionarTodos(false)"
+                    style="padding:6px 12px;border-radius:7px;border:1px solid #ddd;background:white;font-size:0.78rem;cursor:pointer;font-family:inherit;">
+                    Ninguno
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div style="max-height:60vh;overflow-y:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+                <thead style="position:sticky;top:0;background:#f7f7f7;z-index:1;">
+                    <tr style="font-size:0.75rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">
+                        <th style="padding:10px 12px;text-align:center;width:40px;">✓</th>
+                        <th style="padding:10px 12px;text-align:left;">Nombre</th>
+                        <th style="padding:10px 12px;text-align:left;">Sección</th>
+                        <th style="padding:10px 12px;text-align:right;">Precio actual</th>
+                        <th style="padding:10px 12px;text-align:left;">Precio nuevo</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-precios-body">
+                    ${filas}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div style="padding:16px 24px;border-top:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+            <span id="lbl-cambios-precios" style="font-size:0.82rem;color:#888;"></span>
+            <div style="display:flex;gap:10px;">
+                <button onclick="document.getElementById('modal-precios').remove()"
+                    style="padding:10px 20px;border-radius:10px;border:1px solid #ddd;background:white;font-size:0.85rem;cursor:pointer;font-family:inherit;font-weight:600;">
+                    Cancelar
+                </button>
+                <button id="btn-guardar-precios" onclick="window.cartaAdmin._guardarPrecios()"
+                    style="padding:10px 24px;border-radius:10px;border:none;background:#d86634;color:white;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:inherit;">
+                    Guardar cambios
+                </button>
+            </div>
+        </div>
+    </div>`;
+
+    document.body.appendChild(modal);
+    _actualizarContadorCambios();
+}
+
+export function _aplicarPorcentaje() {
+    const pct = parseFloat(document.getElementById('inp-pct-aumento').value);
+    if (isNaN(pct) || pct < 0) return;
+    document.querySelectorAll('#tabla-precios-body tr').forEach(tr => {
+        const chk = tr.querySelector('.chk-plato');
+        if (!chk?.checked) return;
+        const original = parseFloat(tr.dataset.precioOriginal);
+        if (isNaN(original)) return;
+        const nuevo = _redondear50(original * (1 + pct / 100));
+        const inp = tr.querySelector('.inp-precio-nuevo');
+        inp.value = nuevo;
+        _marcarCambio(inp);
+    });
+    _actualizarContadorCambios();
+}
+
+export function _seleccionarTodos(estado) {
+    document.querySelectorAll('#tabla-precios-body .chk-plato').forEach(chk => { chk.checked = estado; });
+}
+
+function _marcarCambio(inp) {
+    const tr = inp.closest('tr');
+    const original = parseFloat(tr.dataset.precioOriginal);
+    const nuevo = parseFloat(inp.value);
+    const cambio = !isNaN(nuevo) && nuevo !== original;
+    inp.style.borderColor = cambio ? '#d86634' : '#ddd';
+    inp.style.fontWeight  = cambio ? '700' : '400';
+    _actualizarContadorCambios();
+}
+
+window._marcarCambio = _marcarCambio;
+
+function _actualizarContadorCambios() {
+    let cambios = 0;
+    document.querySelectorAll('#tabla-precios-body tr').forEach(tr => {
+        const original = parseFloat(tr.dataset.precioOriginal);
+        const nuevo = parseFloat(tr.querySelector('.inp-precio-nuevo')?.value);
+        if (!isNaN(nuevo) && nuevo !== original) cambios++;
+    });
+    const lbl = document.getElementById('lbl-cambios-precios');
+    if (lbl) lbl.textContent = cambios > 0 ? `${cambios} precio${cambios > 1 ? 's' : ''} modificado${cambios > 1 ? 's' : ''}` : '';
+}
+
+export async function _guardarPrecios() {
+    const btn = document.getElementById('btn-guardar-precios');
+    const filas = [...document.querySelectorAll('#tabla-precios-body tr')];
+    const cambios = filas.filter(tr => {
+        const original = parseFloat(tr.dataset.precioOriginal);
+        const nuevo = parseFloat(tr.querySelector('.inp-precio-nuevo')?.value);
+        return !isNaN(nuevo) && nuevo !== original;
+    });
+    if (!cambios.length) { document.getElementById('modal-precios').remove(); return; }
+
+    btn.textContent = 'Guardando...';
+    btn.disabled = true;
+
+    const batch = writeBatch(db);
+    cambios.forEach(tr => {
+        const nuevo = parseFloat(tr.querySelector('.inp-precio-nuevo').value);
+        batch.update(doc(db, 'carta_platos', tr.dataset.id), { precio: nuevo, actualizadoEn: serverTimestamp() });
+    });
+    await batch.commit();
+
+    document.getElementById('modal-precios').remove();
+    await loadPlatos();
+}
+
 // ─── Fotos ───────────────────────────────────────────────────────────────────
 
 export function handleFotosUpload(input) {

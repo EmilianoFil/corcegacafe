@@ -1823,9 +1823,15 @@
                     style="padding:8px 14px; border-radius:10px; border:1px solid #ddd; font-size:0.85rem; font-family:inherit; background:white; cursor:pointer;">
                     <option value="">— Todas las secciones —</option>
                 </select>
-                <button class="btn-primary" onclick="window.cartaAdmin.mostrarFormPlato()" style="margin:0; width:auto; padding:10px 20px; font-size:0.85rem; height:auto;">
-                    + Nuevo Plato
-                </button>
+                <div style="display:flex;gap:10px;">
+                    <button onclick="window.cartaAdmin.abrirEditorPrecios()"
+                        style="margin:0;padding:10px 20px;font-size:0.85rem;height:auto;border-radius:10px;border:1px solid #ddd;background:white;font-family:inherit;font-weight:700;cursor:pointer;color:#0d2b37;">
+                        💲 Actualizar precios
+                    </button>
+                    <button class="btn-primary" onclick="window.cartaAdmin.mostrarFormPlato()" style="margin:0; width:auto; padding:10px 20px; font-size:0.85rem; height:auto;">
+                        + Nuevo Plato
+                    </button>
+                </div>
             </div>
 
             <!-- Form plato (oculto por defecto) -->
@@ -1963,7 +1969,7 @@
         import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
         import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=15';
         window.tiendaAdmin = tiendaAdmin;
-        import * as cartaAdmin from './js/carta/admin-carta.js?v=1';
+        import * as cartaAdmin from './js/carta/admin-carta.js?v=2';
         window.cartaAdmin = cartaAdmin;
 
         let adminData = null;
