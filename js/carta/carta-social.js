@@ -302,19 +302,19 @@ async function _renderSocialEnModal(platoId) {
             <div style="display:flex;gap:8px;margin-bottom:8px;">
                 <button id="modal-social-qp" class="btn-qp-carta" data-id="${platoId}"
                     onclick="window.cartaSocial.toggleQuieroProbar('${platoId}')"
-                    style="flex:1;padding:8px 10px;border-radius:10px;border:1.5px solid #eb6f53;background:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .2s,color .2s;">
+                    style="flex:1;min-height:42px;padding:8px 10px;border-radius:10px;border:1.5px solid #eb6f53;background:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .2s,color .2s;">
                     <img src="css/img/bookmark-outline.svg" width="13" height="13" style="flex-shrink:0;"><span>Quiero probarlo</span>
                 </button>
                 <button id="modal-social-probado" class="btn-probado-carta" data-id="${platoId}"
                     onclick="window.cartaSocial.toggleProbado('${platoId}')"
-                    style="flex:1;padding:8px 10px;border-radius:10px;border:1.5px solid #01323f;background:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .2s,color .2s;">
+                    style="flex:1;min-height:42px;padding:8px 10px;border-radius:10px;border:1.5px solid #01323f;background:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .2s,color .2s;">
                     <span>Ya lo probé</span>
                 </button>
             </div>
             <div style="margin-bottom:14px;">
                 <button id="modal-social-fav" class="btn-fav-carta" data-id="${platoId}"
                     onclick="window.cartaSocial.toggleLike('${platoId}')"
-                    style="width:100%;padding:7px 10px;border-radius:10px;border:1.5px solid #eb6f53;background:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .2s,color .2s;position:static;height:auto;opacity:1;">
+                    style="width:100%;min-height:42px;padding:7px 10px;border-radius:10px;border:1.5px solid #eb6f53;background:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .2s,color .2s;position:static;height:auto;opacity:1;">
                     <img src="css/img/heart-outline.svg" width="13" height="13" style="flex-shrink:0;"><span>Me gusta</span>
                 </button>
             </div>

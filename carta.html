@@ -718,23 +718,29 @@
         if (e.target === document.getElementById('modal-overlay')) _cerrarModalSheet();
     };
 
-    // Swipe hacia abajo para cerrar el modal de plato
+    // Swipe hacia abajo para cerrar — escucha en todo el overlay (zona oscura + blanca)
     (function() {
+        const overlay = document.getElementById('modal-overlay');
         const sheet   = document.querySelector('.modal-sheet');
         let startY = null, dy = 0;
-        sheet.addEventListener('touchstart', e => {
+
+        overlay.addEventListener('touchstart', e => {
+            // No capturar si es un swipe horizontal en las fotos
             if (e.target.closest('#modal-fotos')) { startY = null; return; }
-            if (sheet.scrollTop > 0) { startY = null; return; }
+            // No capturar si la sheet está scrolleada (el usuario está leyendo)
+            if (sheet.scrollTop > 10 && e.target.closest('.modal-sheet')) { startY = null; return; }
             startY = e.touches[0].clientY;
             dy = 0;
             sheet.style.transition = 'none';
         }, { passive: true });
-        sheet.addEventListener('touchmove', e => {
+
+        overlay.addEventListener('touchmove', e => {
             if (startY === null) return;
             dy = Math.max(0, e.touches[0].clientY - startY);
             sheet.style.transform = `translateY(${dy}px)`;
         }, { passive: true });
-        sheet.addEventListener('touchend', () => {
+
+        overlay.addEventListener('touchend', () => {
             if (startY === null) return;
             sheet.style.transition = 'transform 0.28s cubic-bezier(0.32,0.72,0,1)';
             if (dy > 80) {
@@ -785,7 +791,7 @@
 </script>
 
 <script type="module">
-    import * as cartaSocial from './js/carta/carta-social.js?v=1';
+    import * as cartaSocial from './js/carta/carta-social.js?v=3';
     window.cartaSocial = cartaSocial;
     cartaSocial.init();
 </script>
