@@ -2042,6 +2042,7 @@
         let clientesData = [];
 
         let logsData = [];
+        let _statsValDocs = {};  // { platoId: [{ docId, ...data }] } para expandir reseñas
 
         // Dashboard Cache
         let cachedLogs = [];
@@ -2159,15 +2160,23 @@
             const statsMap = {};
             snapStats.forEach(d => { statsMap[d.id] = d.data(); });
 
-            // Agrupar valoraciones por platoId → avg rating
+            // Agrupar valoraciones por platoId → avg rating + guardar docs raw
             const valMap = {};
+            _statsValDocs = {};
             snapVal.forEach(d => {
-                const { platoId, rating } = d.data();
+                const data = d.data();
+                const { platoId, rating } = data;
                 if (!platoId || !rating) return;
                 if (!valMap[platoId]) valMap[platoId] = { sum: 0, count: 0 };
                 valMap[platoId].sum   += rating;
                 valMap[platoId].count += 1;
+                if (!_statsValDocs[platoId]) _statsValDocs[platoId] = [];
+                _statsValDocs[platoId].push({ docId: d.id, ...data });
             });
+            // Ordenar cada lista por fecha desc
+            Object.values(_statsValDocs).forEach(arr =>
+                arr.sort((a, b) => (b.creadoEn?.seconds ?? 0) - (a.creadoEn?.seconds ?? 0))
+            );
 
             const platos = snapPlatos.docs
                 .map(d => ({ id: d.id, ...d.data() }))
@@ -2202,17 +2211,69 @@
                 const rating  = vData ? (vData.sum / vData.count).toFixed(1) : '—';
                 const resenas = vData?.count ?? 0;
                 const stars   = vData ? '★'.repeat(Math.round(vData.sum / vData.count)) : '';
-                return `<tr style="border-bottom:1px solid #f5f0ea;">
+                return `<tr data-plato-id="${p.id}" style="border-bottom:1px solid #f5f0ea;">
                     <td style="padding:11px 15px;font-weight:600;color:#222;">${p.nombre ?? p.id}</td>
                     <td style="padding:11px 10px;text-align:center;color:var(--text-muted);">${clicks || '—'}</td>
                     <td style="padding:11px 10px;text-align:center;color:#eb6f53;font-weight:700;">${likes || '—'}</td>
                     <td style="padding:11px 10px;text-align:center;color:#e8a838;">
                         ${vData ? `<span style="font-weight:700;">${rating}</span> <span style="font-size:0.75rem;">${stars}</span>` : '—'}
                     </td>
-                    <td style="padding:11px 10px;text-align:center;color:var(--text-muted);">${resenas || '—'}</td>
+                    <td style="padding:11px 10px;text-align:center;">
+                        ${resenas
+                            ? `<button onclick="window._expandResenas('${p.id}')"
+                                style="padding:4px 12px;border-radius:8px;border:1px solid #ddd;background:white;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;color:var(--secondary);">
+                                Ver ${resenas}
+                               </button>`
+                            : `<span style="color:var(--text-muted);">—</span>`}
+                    </td>
                 </tr>`;
             }).join('');
         }
+
+        window._expandResenas = function(platoId) {
+            const existing = document.getElementById(`resenas-row-${platoId}`);
+            if (existing) { existing.remove(); return; }
+
+            const mainRow = document.querySelector(`[data-plato-id="${platoId}"]`);
+            if (!mainRow) return;
+
+            const docs = _statsValDocs[platoId] ?? [];
+            const tr = document.createElement('tr');
+            tr.id = `resenas-row-${platoId}`;
+            tr.innerHTML = `<td colspan="5" style="padding:0;background:#fdfcf7;border-bottom:2px solid #e8e4db;">
+                <div style="padding:14px 20px 18px;">
+                    ${!docs.length
+                        ? `<p style="color:#aaa;font-size:0.82rem;margin:0;">Sin reseñas con texto.</p>`
+                        : docs.map(r => `
+                        <div id="resena-item-${r.docId}"
+                            style="display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #eeebe5;${r.oculta ? 'opacity:0.45;' : ''}">
+                            <div style="flex:1;min-width:0;">
+                                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:3px;">
+                                    <span style="font-weight:700;font-size:0.82rem;color:#222;">${r.displayName ?? 'Anónimo'}</span>
+                                    <span style="color:#e8a838;font-size:0.82rem;">${'★'.repeat(r.rating ?? 0)}${'☆'.repeat(5-(r.rating??0))}</span>
+                                    ${r.oculta ? `<span style="font-size:0.7rem;background:#eee;color:#999;padding:1px 7px;border-radius:20px;">Oculta</span>` : ''}
+                                </div>
+                                ${r.comentario ? `<p style="margin:0;font-size:0.83rem;color:#555;">${r.comentario}</p>` : `<p style="margin:0;font-size:0.78rem;color:#aaa;font-style:italic;">Sin comentario</p>`}
+                            </div>
+                            <button onclick="window._toggleResena('${r.docId}','${platoId}',${!!r.oculta})"
+                                style="flex-shrink:0;padding:5px 14px;border-radius:8px;border:1px solid #ddd;background:white;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;color:${r.oculta ? 'var(--success)' : 'var(--error)'};">
+                                ${r.oculta ? 'Mostrar' : 'Ocultar'}
+                            </button>
+                        </div>`).join('')}
+                </div>
+            </td>`;
+            mainRow.insertAdjacentElement('afterend', tr);
+        };
+
+        window._toggleResena = async function(docId, platoId, estaOculta) {
+            const nuevo = !estaOculta;
+            await updateDoc(doc(db, 'carta_valoraciones', docId), { oculta: nuevo });
+            const r = _statsValDocs[platoId]?.find(x => x.docId === docId);
+            if (r) r.oculta = nuevo;
+            // Re-renderizar la sub-fila
+            document.getElementById(`resenas-row-${platoId}`)?.remove();
+            window._expandResenas(platoId);
+        };
 
         document.querySelectorAll('#main-nav a').forEach(link => {
             link.addEventListener('click', (e) => {

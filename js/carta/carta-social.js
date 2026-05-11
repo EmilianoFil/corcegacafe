@@ -227,7 +227,7 @@ async function _renderSocialEnModal(platoId) {
         query(collection(db, 'carta_valoraciones'), where('platoId', '==', platoId))
     );
     const resenas = resenasSnap.docs.map(d => d.data())
-        .filter(r => r.comentario?.trim())
+        .filter(r => r.comentario?.trim() && !r.oculta)
         .sort((a, b) => (b.creadoEn?.seconds ?? 0) - (a.creadoEn?.seconds ?? 0))
         .slice(0, 5);
 
