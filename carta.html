@@ -34,7 +34,7 @@
             background-image: url('css/img/wallpaper.png');
             background-repeat: repeat;
             background-size: 600px;
-            opacity: 0.5;
+            opacity: 0.15;
             z-index: -1;
             pointer-events: none;
         }
@@ -46,7 +46,12 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 16px rgba(1,50,63,0.18);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            padding: 0 20px;
+            height: 100px;
             /* fuerza compositing layer en iOS Safari — arregla taps en sticky */
             -webkit-transform: translateZ(0);
             transform: translateZ(0);
@@ -56,20 +61,18 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             gap: 6px;
-            padding: 16px 20px 12px;
-            position: relative;
+            grid-column: 2;
         }
 
         .header-actions {
-            position: absolute;
-            right: 14px;
-            top: 50%;
-            transform: translateY(-50%);
+            grid-column: 3;
             display: flex;
             flex-direction: column;
             align-items: flex-end;
             gap: 6px;
+            justify-self: end;
         }
 
         .header-link-tienda {
@@ -151,18 +154,41 @@
             color: white !important;
         }
 
-        .header-top img {
-            width: 44px;
+        .header-left {
+            grid-column: 1;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .header-left img {
+            width: 45px;
+            height: auto;
             filter: brightness(0) invert(1);
+        }
+
+        .header-top {
+            text-align: center;
         }
 
         .header-top h1 {
             font-family: 'Syncopate', serif;
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             font-weight: 700;
             color: var(--white);
             letter-spacing: 3px;
             text-transform: uppercase;
+            display: block;
+        }
+
+        .header-subtitle {
+            font-family: 'Syncopate', serif;
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: var(--white);
+            letter-spacing: 3px;
+            text-transform: lowercase;
+            display: block;
+            margin-top: 2px;
         }
 
         /* ── Tabs ── */
@@ -466,14 +492,17 @@
 <body>
 
 <header id="main-header">
-    <div class="header-top">
+    <div class="header-left">
         <img src="css/img/Corcega_Logo_Original.png" alt="Córcega">
-        <h1>Córcega Café</h1>
-        <div class="header-actions">
-            <button id="carta-user-btn" onclick="window.cartaSocial?.accionBotonUsuario()">
-                <span>👤</span><span>Entrar</span>
-            </button>
-        </div>
+    </div>
+    <div class="header-top">
+        <h1>Carta</h1>
+        <span class="header-subtitle">corcega café</span>
+    </div>
+    <div class="header-actions">
+        <button id="carta-user-btn" onclick="window.cartaSocial?.accionBotonUsuario()">
+            <span>👤</span><span>Entrar</span>
+        </button>
     </div>
     <div class="tabs-scroll" id="tabs-secciones"></div>
 </header>
