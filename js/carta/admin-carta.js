@@ -256,14 +256,15 @@ export async function loadPlatos(seccionId = '') {
     if (seccionId) platos = platos.filter(p => p.seccionId === seccionId);
 
     if (!platos.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:#aaa;">Todavía no hay platos.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:#aaa;">Todavía no hay platos.</td></tr>`;
         return;
     }
 
     const secMap = Object.fromEntries(secciones.map(s => [s.id, s.nombre]));
     tbody.innerHTML = platos.map(p => {
-        const foto   = p.fotos?.[0] ?? '';
-        const precio = p.precio != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '—';
+        const foto     = p.fotos?.[0] ?? '';
+        const precio   = p.precio   != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '—';
+        const precioPY = p.precioPY != null ? `$${Number(p.precioPY).toLocaleString('es-AR')}` : '—';
         return `
         <tr style="border-bottom:1px solid #f5f5f5;">
             <td style="padding:10px 15px;">
@@ -274,6 +275,7 @@ export async function loadPlatos(seccionId = '') {
             <td style="padding:10px 15px; font-weight:600;">${p.nombre}</td>
             <td style="padding:10px 15px; color:#888; font-size:0.85rem;">${secMap[p.seccionId] ?? '—'}</td>
             <td style="padding:10px 15px; text-align:right; font-weight:700;">${precio}</td>
+            <td style="padding:10px 15px; text-align:right; font-weight:700; color:#d86634;">${precioPY}</td>
             <td style="padding:10px 15px; text-align:center;">
                 <input type="checkbox" ${p.activo !== false ? 'checked' : ''} onchange="window.cartaAdmin.togglePlatoActivo('${p.id}', this.checked)">
             </td>
@@ -301,6 +303,8 @@ export function mostrarFormPlato() {
     document.getElementById('plato-descripcion').value = '';
     document.getElementById('plato-precio').value      = '';
     document.getElementById('plato-seccion').value     = '';
+    document.getElementById('plato-pct-py').value      = '';
+    document.getElementById('plato-precio-py').value   = '';
     document.querySelectorAll('.plato-tag').forEach(cb => cb.checked = false);
     document.getElementById('form-plato-titulo').textContent = 'Nuevo Plato';
     document.getElementById('plato-form-error').style.display = 'none';
@@ -335,6 +339,8 @@ export async function editarPlato(id) {
     document.getElementById('plato-descripcion').value = p.descripcion ?? '';
     document.getElementById('plato-precio').value      = p.precio ?? '';
     document.getElementById('plato-seccion').value     = p.seccionId ?? '';
+    document.getElementById('plato-pct-py').value      = p.pctPY ?? '';
+    document.getElementById('plato-precio-py').value   = p.precioPY ?? '';
     document.querySelectorAll('.plato-tag').forEach(cb => { cb.checked = (p.tags ?? []).includes(cb.value); });
     document.getElementById('form-plato-titulo').textContent = 'Editar Plato';
     document.getElementById('plato-form-error').style.display = 'none';
@@ -353,6 +359,8 @@ export async function guardarPlato() {
     const precio     = parseFloat(document.getElementById('plato-precio').value);
     const seccionId  = document.getElementById('plato-seccion').value;
     const tags       = [...document.querySelectorAll('.plato-tag:checked')].map(cb => cb.value);
+    const pctPY      = parseFloat(document.getElementById('plato-pct-py').value);
+    const precioPY   = parseFloat(document.getElementById('plato-precio-py').value);
 
     if (!nombre)   { errDiv.textContent = 'El nombre es obligatorio.'; errDiv.style.display = 'block'; return; }
     if (!seccionId) { errDiv.textContent = 'Elegí una sección.';       errDiv.style.display = 'block'; return; }
@@ -365,7 +373,9 @@ export async function guardarPlato() {
 
         const data = {
             nombre, descripcion,
-            precio: isNaN(precio) ? null : precio,
+            precio:   isNaN(precio)   ? null : precio,
+            pctPY:    isNaN(pctPY)    ? null : pctPY,
+            precioPY: isNaN(precioPY) ? null : precioPY,
             seccionId, tags,
             fotos: fotosUrls,
             activo: true,
@@ -386,6 +396,15 @@ export async function guardarPlato() {
         await loadPlatos();
     } finally {
         if (btn) { btn.textContent = 'Guardar Plato'; btn.disabled = false; }
+    }
+}
+
+export function _calcPrecioPY() {
+    const precio = parseFloat(document.getElementById('plato-precio').value);
+    const pct    = parseFloat(document.getElementById('plato-pct-py').value);
+    const pyInp  = document.getElementById('plato-precio-py');
+    if (!isNaN(precio) && !isNaN(pct) && pct >= 0) {
+        pyInp.value = _redondear50(precio * (1 + pct / 100));
     }
 }
 
@@ -419,9 +438,11 @@ export async function abrirEditorPrecios() {
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
 
     const filas = platos.map(p => {
-        const precioActual = p.precio != null ? p.precio : '';
+        const precioActual   = p.precio   != null ? p.precio   : '';
+        const precioPYActual = p.precioPY != null ? p.precioPY : '';
+        const pctPY          = p.pctPY    != null ? p.pctPY    : '';
         return `
-        <tr data-id="${p.id}" data-precio-original="${precioActual}" style="border-bottom:1px solid #f0f0f0;">
+        <tr data-id="${p.id}" data-precio-original="${precioActual}" data-precio-py-original="${precioPYActual}" data-pct-py="${pctPY}" style="border-bottom:1px solid #f0f0f0;">
             <td style="padding:10px 12px;text-align:center;">
                 <input type="checkbox" class="chk-plato" checked style="width:16px;height:16px;cursor:pointer;">
             </td>
@@ -435,6 +456,13 @@ export async function abrirEditorPrecios() {
                     min="0" step="50"
                     style="width:110px;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;font-family:inherit;text-align:right;"
                     oninput="_marcarCambio(this)">
+            </td>
+            <td style="padding:8px 12px;">
+                <input type="number" class="inp-precio-py-nuevo" value="${precioPYActual}"
+                    min="0" step="50"
+                    style="width:110px;padding:7px 10px;border:1px solid #f0ddd0;border-radius:8px;font-size:0.9rem;font-family:inherit;text-align:right;background:#fff8f0;"
+                    oninput="_marcarCambioPY(this)">
+                ${pctPY !== '' ? `<span style="font-size:0.72rem;color:#aaa;display:block;text-align:right;margin-top:2px;">${pctPY}%</span>` : ''}
             </td>
         </tr>`;
     }).join('');
@@ -484,6 +512,7 @@ export async function abrirEditorPrecios() {
                         <th style="padding:10px 12px;text-align:left;">Sección</th>
                         <th style="padding:10px 12px;text-align:right;">Precio actual</th>
                         <th style="padding:10px 12px;text-align:left;">Precio nuevo</th>
+                        <th style="padding:10px 12px;text-align:left;color:#d86634;">🛵 Precio PY</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-precios-body">
@@ -539,17 +568,38 @@ function _marcarCambio(inp) {
     const cambio = !isNaN(nuevo) && nuevo !== original;
     inp.style.borderColor = cambio ? '#d86634' : '#ddd';
     inp.style.fontWeight  = cambio ? '700' : '400';
+
+    if (!isNaN(nuevo)) {
+        const pctPY = parseFloat(tr.dataset.pctPy);
+        if (!isNaN(pctPY) && pctPY > 0) {
+            const pyInp = tr.querySelector('.inp-precio-py-nuevo');
+            if (pyInp) pyInp.value = _redondear50(nuevo * (1 + pctPY / 100));
+        }
+    }
+
     _actualizarContadorCambios();
 }
 
-window._marcarCambio = _marcarCambio;
+function _marcarCambioPY(inp) {
+    const tr = inp.closest('tr');
+    const original = parseFloat(tr.dataset.precioPyOriginal);
+    const nuevo = parseFloat(inp.value);
+    const cambio = !isNaN(nuevo) && nuevo !== original;
+    inp.style.borderColor = cambio ? '#d86634' : '#f0ddd0';
+    _actualizarContadorCambios();
+}
+
+window._marcarCambio   = _marcarCambio;
+window._marcarCambioPY = _marcarCambioPY;
 
 function _actualizarContadorCambios() {
     let cambios = 0;
     document.querySelectorAll('#tabla-precios-body tr').forEach(tr => {
-        const original = parseFloat(tr.dataset.precioOriginal);
-        const nuevo = parseFloat(tr.querySelector('.inp-precio-nuevo')?.value);
-        if (!isNaN(nuevo) && nuevo !== original) cambios++;
+        const original   = parseFloat(tr.dataset.precioOriginal);
+        const nuevo      = parseFloat(tr.querySelector('.inp-precio-nuevo')?.value);
+        const originalPY = parseFloat(tr.dataset.precioPyOriginal);
+        const nuevoPY    = parseFloat(tr.querySelector('.inp-precio-py-nuevo')?.value);
+        if ((!isNaN(nuevo) && nuevo !== original) || (!isNaN(nuevoPY) && nuevoPY !== originalPY)) cambios++;
     });
     const lbl = document.getElementById('lbl-cambios-precios');
     if (lbl) lbl.textContent = cambios > 0 ? `${cambios} precio${cambios > 1 ? 's' : ''} modificado${cambios > 1 ? 's' : ''}` : '';
@@ -559,9 +609,11 @@ export async function _guardarPrecios() {
     const btn = document.getElementById('btn-guardar-precios');
     const filas = [...document.querySelectorAll('#tabla-precios-body tr')];
     const cambios = filas.filter(tr => {
-        const original = parseFloat(tr.dataset.precioOriginal);
-        const nuevo = parseFloat(tr.querySelector('.inp-precio-nuevo')?.value);
-        return !isNaN(nuevo) && nuevo !== original;
+        const original   = parseFloat(tr.dataset.precioOriginal);
+        const nuevo      = parseFloat(tr.querySelector('.inp-precio-nuevo')?.value);
+        const originalPY = parseFloat(tr.dataset.precioPyOriginal);
+        const nuevoPY    = parseFloat(tr.querySelector('.inp-precio-py-nuevo')?.value);
+        return (!isNaN(nuevo) && nuevo !== original) || (!isNaN(nuevoPY) && nuevoPY !== originalPY);
     });
     if (!cambios.length) { document.getElementById('modal-precios').remove(); return; }
 
@@ -570,8 +622,14 @@ export async function _guardarPrecios() {
 
     const batch = writeBatch(db);
     cambios.forEach(tr => {
-        const nuevo = parseFloat(tr.querySelector('.inp-precio-nuevo').value);
-        batch.update(doc(db, 'carta_platos', tr.dataset.id), { precio: nuevo, actualizadoEn: serverTimestamp() });
+        const original   = parseFloat(tr.dataset.precioOriginal);
+        const nuevo      = parseFloat(tr.querySelector('.inp-precio-nuevo').value);
+        const originalPY = parseFloat(tr.dataset.precioPyOriginal);
+        const nuevoPY    = parseFloat(tr.querySelector('.inp-precio-py-nuevo')?.value);
+        const updateData = { actualizadoEn: serverTimestamp() };
+        if (!isNaN(nuevo)   && nuevo   !== original)   updateData.precio   = nuevo;
+        if (!isNaN(nuevoPY) && nuevoPY !== originalPY) updateData.precioPY = nuevoPY;
+        batch.update(doc(db, 'carta_platos', tr.dataset.id), updateData);
     });
     await batch.commit();
 

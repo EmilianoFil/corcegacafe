@@ -1874,6 +1874,7 @@
                         <div>
                             <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:6px;">PRECIO *</label>
                             <input type="number" id="plato-precio" placeholder="0" min="0"
+                                oninput="window.cartaAdmin._calcPrecioPY()"
                                 style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #ddd; font-size:0.9rem; font-family:inherit; outline:none; box-sizing:border-box;">
                         </div>
                         <div>
@@ -1883,6 +1884,24 @@
                                 <option value="">— Elegir sección —</option>
                             </select>
                         </div>
+                        <!-- PedidosYa -->
+                        <div style="grid-column:1/-1; background:#fff8f0; border:1px solid #f0ddd0; border-radius:12px; padding:16px;">
+                            <label style="font-size:0.78rem; font-weight:800; color:#d86634; display:block; margin-bottom:12px; letter-spacing:0.5px;">🛵 PEDIDOSYA — uso interno</label>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:end;">
+                                <div>
+                                    <label style="font-size:0.75rem; font-weight:700; color:#999; display:block; margin-bottom:6px;">% RECARGO</label>
+                                    <input type="number" id="plato-pct-py" placeholder="ej: 30" min="0" step="1"
+                                        oninput="window.cartaAdmin._calcPrecioPY()"
+                                        style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #f0ddd0; font-size:0.9rem; font-family:inherit; outline:none; box-sizing:border-box;">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.75rem; font-weight:700; color:#999; display:block; margin-bottom:6px;">PRECIO PY ($) <span style="font-weight:400; font-style:italic;">editable</span></label>
+                                    <input type="number" id="plato-precio-py" placeholder="0" min="0" step="50"
+                                        style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #f0ddd0; font-size:0.9rem; font-family:inherit; outline:none; box-sizing:border-box;">
+                                </div>
+                            </div>
+                        </div>
+
                         <div style="grid-column:1/-1;">
                             <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:6px;">TAGS</label>
                             <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -1935,12 +1954,13 @@
                             <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Nombre</th>
                             <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Sección</th>
                             <th style="text-align:right; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Precio</th>
+                            <th style="text-align:right; padding:12px 15px; color:#d86634; font-weight:600; border-bottom:1px solid #eee;">🛵 PedidosYa</th>
                             <th style="text-align:center; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Activo</th>
                             <th style="text-align:right; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="carta-platos-body">
-                        <tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">Cargando...</td></tr>
+                        <tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">Cargando...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -2042,7 +2062,7 @@
         import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
         import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=15';
         window.tiendaAdmin = tiendaAdmin;
-        import * as cartaAdmin from './js/carta/admin-carta.js?v=2';
+        import * as cartaAdmin from './js/carta/admin-carta.js?v=3';
         window.cartaAdmin = cartaAdmin;
 
         let adminData = null;
