@@ -1,17 +1,19 @@
 import { db, storage } from '../firebase-config.js';
 import {
-    collection, doc, getDocs, addDoc, updateDoc, deleteDoc,
-    query, orderBy, serverTimestamp, writeBatch
+    collection, doc, getDocs, addDoc, updateDoc, deleteDoc, setDoc,
+    query, orderBy, serverTimestamp, writeBatch, Timestamp
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import {
     ref, uploadBytes, getDownloadURL
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 // ─── Estado ─────────────────────────────────────────────────────────────────
-let secciones      = [];
-let platoEditando  = null;
+let secciones          = [];
+let platoEditando      = null;
+let _snapshotAnterior  = null; // { precio, precioPY, nombre } antes de editar
+let _platosListaCache  = [];   // cache para form manual de historial
 // cada entrada: { url: string (preview), blob?: Blob (si es nueva), isNew: bool }
-let fotosPlato     = [];
+let fotosPlato         = [];
 
 // ─── Crop modal (self-contained, usa Cropper.js ya cargado en la página) ────
 let _cropperInstance = null;
@@ -298,6 +300,7 @@ export function filtrarPlatosPorSeccion(seccionId) { loadPlatos(seccionId); }
 export function mostrarFormPlato() {
     platoEditando = null;
     fotosPlato    = [];
+    _snapshotAnterior = null;
     document.getElementById('plato-id').value          = '';
     document.getElementById('plato-nombre').value      = '';
     document.getElementById('plato-descripcion').value = '';
@@ -334,6 +337,7 @@ export async function editarPlato(id) {
         isNew:  false
     }));
 
+    _snapshotAnterior = { precio: p.precio ?? null, precioPY: p.precioPY ?? null, nombre: p.nombre ?? '' };
     document.getElementById('plato-id').value          = id;
     document.getElementById('plato-nombre').value      = p.nombre ?? '';
     document.getElementById('plato-descripcion').value = p.descripcion ?? '';
@@ -385,6 +389,24 @@ export async function guardarPlato() {
 
         if (platoEditando) {
             await updateDoc(doc(db, 'carta_platos', platoEditando), data);
+            if (_snapshotAnterior) {
+                const nuevoPrecio = isNaN(precio) ? null : precio;
+                const nuevoPY     = isNaN(precioPY) ? null : precioPY;
+                const cambioBase  = _snapshotAnterior.precio   !== nuevoPrecio;
+                const cambioPY    = _snapshotAnterior.precioPY !== nuevoPY;
+                if (cambioBase || cambioPY) {
+                    await _registrarHistorial([{
+                        platoId: platoEditando,
+                        platoNombre: nombre,
+                        tipo: 'cambio',
+                        precioAnterior:   cambioBase ? _snapshotAnterior.precio   : null,
+                        precioNuevo:      cambioBase ? nuevoPrecio                : null,
+                        precioPYAnterior: cambioPY   ? _snapshotAnterior.precioPY : null,
+                        precioPYNuevo:    cambioPY   ? nuevoPY                   : null,
+                        nota: '',
+                    }]);
+                }
+            }
         } else {
             const snap = await getDocs(collection(db, 'carta_platos'));
             data.orden    = snap.size;
@@ -458,11 +480,13 @@ export async function abrirEditorPrecios() {
                     oninput="_marcarCambio(this)">
             </td>
             <td style="padding:8px 12px;">
-                <input type="number" class="inp-precio-py-nuevo" value="${precioPYActual}"
-                    min="0" step="50"
-                    style="width:110px;padding:7px 10px;border:1px solid #f0ddd0;border-radius:8px;font-size:0.9rem;font-family:inherit;text-align:right;background:#fff8f0;"
-                    oninput="_marcarCambioPY(this)">
-                ${pctPY !== '' ? `<span style="font-size:0.72rem;color:#aaa;display:block;text-align:right;margin-top:2px;">${pctPY}%</span>` : ''}
+                <div style="display:flex;align-items:center;gap:6px;">
+                    ${pctPY !== '' ? `<span style="font-size:0.72rem;color:#bbb;font-weight:600;white-space:nowrap;min-width:30px;">${pctPY}%</span>` : `<span style="min-width:30px;"></span>`}
+                    <input type="number" class="inp-precio-py-nuevo" value="${precioPYActual}"
+                        min="0" step="50"
+                        style="width:110px;padding:7px 10px;border:1px solid #f0ddd0;border-radius:8px;font-size:0.9rem;font-family:inherit;text-align:right;background:#fff8f0;"
+                        oninput="_marcarCambioPY(this)">
+                </div>
             </td>
         </tr>`;
     }).join('');
@@ -633,6 +657,25 @@ export async function _guardarPrecios() {
     });
     await batch.commit();
 
+    const histEntries = cambios.map(tr => {
+        const original   = parseFloat(tr.dataset.precioOriginal);
+        const nuevo      = parseFloat(tr.querySelector('.inp-precio-nuevo').value);
+        const originalPY = parseFloat(tr.dataset.precioPyOriginal);
+        const nuevoPY    = parseFloat(tr.querySelector('.inp-precio-py-nuevo')?.value);
+        const nombre     = tr.querySelector('td:nth-child(2)')?.textContent?.trim() ?? '';
+        const cambioBase = !isNaN(nuevo) && nuevo !== original;
+        const cambioPY   = !isNaN(nuevoPY) && nuevoPY !== originalPY;
+        return {
+            platoId: tr.dataset.id, platoNombre: nombre, tipo: 'cambio',
+            precioAnterior:   cambioBase ? (isNaN(original)   ? null : original)   : null,
+            precioNuevo:      cambioBase ? nuevo   : null,
+            precioPYAnterior: cambioPY   ? (isNaN(originalPY) ? null : originalPY) : null,
+            precioPYNuevo:    cambioPY   ? nuevoPY : null,
+            nota: '',
+        };
+    });
+    await _registrarHistorial(histEntries);
+
     document.getElementById('modal-precios').remove();
     await loadPlatos();
 }
@@ -701,4 +744,166 @@ async function _subirFotosNuevas(platoId) {
         urls.push({ thumb, medium, full });
     }
     return urls;
+}
+
+// ─── HISTORIAL DE PRECIOS ────────────────────────────────────────────────────
+
+async function _registrarHistorial(entries) {
+    if (!entries.length) return;
+    const batch = writeBatch(db);
+    entries.forEach(e => {
+        batch.set(doc(collection(db, 'carta_precios_historial')), { ...e, fecha: serverTimestamp() });
+    });
+    await batch.commit();
+}
+
+function _formatFecha(ts) {
+    if (!ts) return '—';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function _precioChange(ant, nuevo) {
+    if (ant == null && nuevo == null) return '<span style="color:#ddd;">—</span>';
+    const fmt = v => v != null ? `$${Number(v).toLocaleString('es-AR')}` : '—';
+    if (ant == null) return `<span style="color:#555;">${fmt(nuevo)}</span>`;
+    if (nuevo == null) return fmt(ant);
+    const diff  = nuevo - ant;
+    const color = diff > 0 ? '#ae2012' : '#2d7a4f';
+    const sign  = diff > 0 ? '+' : '';
+    return `${fmt(ant)} → <strong style="color:${color};">${fmt(nuevo)}</strong>&nbsp;<small style="color:${color};">(${sign}$${Math.abs(diff).toLocaleString('es-AR')})</small>`;
+}
+
+export async function abrirHistorialPrecios() {
+    const [histSnap, platosSnap] = await Promise.all([
+        getDocs(query(collection(db, 'carta_precios_historial'), orderBy('fecha', 'desc'))),
+        getDocs(query(collection(db, 'carta_platos'), orderBy('nombre')))
+    ]);
+    const historial = histSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    _platosListaCache = platosSnap.docs.map(d => ({ id: d.id, nombre: d.data().nombre }));
+
+    let modal = document.getElementById('modal-historial');
+    if (modal) modal.remove();
+    modal = document.createElement('div');
+    modal.id = 'modal-historial';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
+
+    const filas = historial.length
+        ? historial.map(h => `
+            <tr style="border-bottom:1px solid #f0f0f0;">
+                <td style="padding:10px 12px;font-size:0.8rem;color:#888;white-space:nowrap;">${_formatFecha(h.fecha)}</td>
+                <td style="padding:10px 12px;font-weight:600;font-size:0.88rem;">${h.platoNombre ?? '—'}</td>
+                <td style="padding:10px 12px;font-size:0.85rem;">${_precioChange(h.precioAnterior, h.precioNuevo)}</td>
+                <td style="padding:10px 12px;font-size:0.85rem;">${_precioChange(h.precioPYAnterior, h.precioPYNuevo)}</td>
+                <td style="padding:10px 12px;font-size:0.78rem;color:#aaa;font-style:italic;">${h.nota ?? ''}</td>
+                <td style="padding:10px 12px;text-align:center;">
+                    <span style="font-size:0.68rem;padding:2px 8px;border-radius:20px;background:${h.tipo === 'inicial' ? '#e8f5e9' : '#f0f4ff'};color:${h.tipo === 'inicial' ? '#2d7a4f' : '#555'};">
+                        ${h.tipo === 'inicial' ? 'inicial' : 'cambio'}
+                    </span>
+                </td>
+            </tr>`).join('')
+        : `<tr><td colspan="6" style="text-align:center;padding:40px;color:#aaa;">Sin historial todavía.</td></tr>`;
+
+    const optsPlatos = _platosListaCache.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+
+    modal.innerHTML = `
+    <div style="background:white;border-radius:18px;width:100%;max-width:920px;box-shadow:0 30px 80px rgba(0,0,0,0.35);overflow:hidden;margin:auto;">
+        <div style="background:#0d2b37;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <p style="margin:0;font-weight:800;font-size:1.05rem;color:white;">Historial de precios</p>
+                <p style="margin:4px 0 0;font-size:0.75rem;color:rgba(255,255,255,0.55);">${historial.length} registro${historial.length !== 1 ? 's' : ''}</p>
+            </div>
+            <button onclick="document.getElementById('modal-historial').remove()"
+                style="background:rgba(255,255,255,0.12);border:none;border-radius:8px;color:white;font-size:1.2rem;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>
+
+        <div style="padding:16px 24px;border-bottom:1px solid #f0f0f0;background:#fafafa;">
+            <details id="det-entrada-manual">
+                <summary style="cursor:pointer;font-size:0.85rem;font-weight:700;color:#0d2b37;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
+                    <span>+</span> Agregar precio histórico <span style="font-weight:400;color:#aaa;font-size:0.78rem;">(para registrar precios anteriores al historial automático)</span>
+                </summary>
+                <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 2fr auto;gap:10px;align-items:end;margin-top:14px;">
+                    <div>
+                        <label style="font-size:0.72rem;font-weight:700;color:#888;display:block;margin-bottom:4px;">PLATO</label>
+                        <select id="hist-plato-id" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #ddd;font-size:0.85rem;font-family:inherit;background:white;">
+                            <option value="">— Elegir —</option>${optsPlatos}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:0.72rem;font-weight:700;color:#888;display:block;margin-bottom:4px;">FECHA</label>
+                        <input type="date" id="hist-fecha" value="${new Date().toISOString().slice(0,10)}"
+                            style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #ddd;font-size:0.85rem;font-family:inherit;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.72rem;font-weight:700;color:#888;display:block;margin-bottom:4px;">PRECIO BASE ($)</label>
+                        <input type="number" id="hist-precio" placeholder="0" min="0" step="50"
+                            style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #ddd;font-size:0.85rem;font-family:inherit;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.72rem;font-weight:700;color:#d86634;display:block;margin-bottom:4px;">PRECIO PY ($)</label>
+                        <input type="number" id="hist-precio-py" placeholder="0" min="0" step="50"
+                            style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #f0ddd0;font-size:0.85rem;font-family:inherit;background:#fff8f0;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.72rem;font-weight:700;color:#888;display:block;margin-bottom:4px;">NOTA</label>
+                        <input type="text" id="hist-nota" placeholder="ej: Precio de enero 2025"
+                            style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #ddd;font-size:0.85rem;font-family:inherit;">
+                    </div>
+                    <div>
+                        <button onclick="window.cartaAdmin._guardarEntradaManual()"
+                            style="padding:9px 18px;border-radius:8px;border:none;background:#0d2b37;color:white;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit;white-space:nowrap;">
+                            Guardar
+                        </button>
+                    </div>
+                </div>
+                <div id="hist-manual-error" style="display:none;color:#ae2012;font-size:0.8rem;margin-top:8px;"></div>
+            </details>
+        </div>
+
+        <div style="max-height:60vh;overflow-y:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+                <thead style="position:sticky;top:0;background:#f7f7f7;z-index:1;">
+                    <tr style="font-size:0.72rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">
+                        <th style="padding:10px 12px;text-align:left;">Fecha</th>
+                        <th style="padding:10px 12px;text-align:left;">Plato</th>
+                        <th style="padding:10px 12px;text-align:left;">Precio base</th>
+                        <th style="padding:10px 12px;text-align:left;color:#d86634;">🛵 Precio PY</th>
+                        <th style="padding:10px 12px;text-align:left;">Nota</th>
+                        <th style="padding:10px 12px;text-align:center;">Tipo</th>
+                    </tr>
+                </thead>
+                <tbody>${filas}</tbody>
+            </table>
+        </div>
+    </div>`;
+
+    document.body.appendChild(modal);
+}
+
+export async function _guardarEntradaManual() {
+    const errDiv   = document.getElementById('hist-manual-error');
+    errDiv.style.display = 'none';
+    const platoId  = document.getElementById('hist-plato-id').value;
+    const fechaStr = document.getElementById('hist-fecha').value;
+    const precio   = parseFloat(document.getElementById('hist-precio').value);
+    const precioPY = parseFloat(document.getElementById('hist-precio-py').value);
+    const nota     = document.getElementById('hist-nota').value.trim();
+
+    if (!platoId)  { errDiv.textContent = 'Elegí un plato.';  errDiv.style.display = 'block'; return; }
+    if (!fechaStr) { errDiv.textContent = 'Elegí una fecha.'; errDiv.style.display = 'block'; return; }
+    if (isNaN(precio) && isNaN(precioPY)) {
+        errDiv.textContent = 'Ingresá al menos un precio.'; errDiv.style.display = 'block'; return;
+    }
+
+    const plato   = _platosListaCache.find(p => p.id === platoId);
+    const fechaTs = Timestamp.fromDate(new Date(fechaStr + 'T12:00:00'));
+
+    await setDoc(doc(collection(db, 'carta_precios_historial')), {
+        platoId, platoNombre: plato?.nombre ?? '', tipo: 'inicial',
+        precioAnterior: null, precioNuevo: isNaN(precio) ? null : precio,
+        precioPYAnterior: null, precioPYNuevo: isNaN(precioPY) ? null : precioPY,
+        nota, fecha: fechaTs,
+    });
+
+    await abrirHistorialPrecios();
 }

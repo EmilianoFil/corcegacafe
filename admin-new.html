@@ -1841,6 +1841,10 @@
                     <option value="">— Todas las secciones —</option>
                 </select>
                 <div style="display:flex;gap:10px;">
+                    <button onclick="window.cartaAdmin.abrirHistorialPrecios()"
+                        style="padding:8px 16px; border-radius:8px; border:1px solid #ddd; background:white; font-size:0.82rem; cursor:pointer; font-family:inherit; color:#555; font-weight:600;">
+                        📋 Historial
+                    </button>
                     <button onclick="window.cartaAdmin.abrirEditorPrecios()"
                         style="margin:0;padding:10px 20px;font-size:0.85rem;height:auto;border-radius:10px;border:1px solid #ddd;background:white;font-family:inherit;font-weight:700;cursor:pointer;color:#0d2b37;">
                         💲 Actualizar precios
@@ -2062,7 +2066,7 @@
         import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
         import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=15';
         window.tiendaAdmin = tiendaAdmin;
-        import * as cartaAdmin from './js/carta/admin-carta.js?v=3';
+        import * as cartaAdmin from './js/carta/admin-carta.js?v=4';
         window.cartaAdmin = cartaAdmin;
 
         let adminData = null;
