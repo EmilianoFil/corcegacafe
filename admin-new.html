@@ -3704,11 +3704,14 @@
     </div>
 
     <script type="module">
-        import { getAuth, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
         import { getFirestore, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-        import { app } from './js/firebase-config.js';
+        import { app, firebaseConfig } from './js/firebase-config.js';
 
-        const auth = getAuth(app);
+        // App secundaria para crear usuarios sin afectar la sesión actual
+        const secondaryApp = initializeApp(firebaseConfig, 'adminCreator');
+        const secondaryAuth = getAuth(secondaryApp);
         const db = getFirestore(app);
 
         window.abrirModalNuevoAdmin = () => {
@@ -3736,7 +3739,9 @@
             msg.textContent = '';
 
             try {
-                const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                // Crear en app secundaria → no toca la sesión del admin actual
+                const cred = await createUserWithEmailAndPassword(secondaryAuth, email, pass);
+                await signOut(secondaryAuth);
                 await setDoc(doc(db, 'admins', cred.user.uid), {
                     email,
                     creadoPor: localStorage.getItem('usuario') || 'admin',
