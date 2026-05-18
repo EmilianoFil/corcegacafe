@@ -1761,8 +1761,8 @@
                 <div class="card">
                     <h4>Seguridad</h4>
                     <p>Registrar un nuevo administrador.</p>
-                    <a href="registro-admin.html" class="btn-primary"
-                        style="text-decoration:none; display:block; text-align:center">Nuevo Admin</a>
+                    <button onclick="window.abrirModalNuevoAdmin()" class="btn-primary"
+                        style="width:100%; cursor:pointer;">Nuevo Admin</button>
                 </div>
                 <div class="card">
                     <h4>Auditoría Completa</h4>
@@ -3687,6 +3687,78 @@
         }
     </script>
     
+    <!-- MODAL NUEVO ADMIN -->
+    <div id="modal-nuevo-admin" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center; padding:20px;">
+        <div class="card" style="width:100%; max-width:440px; position:relative; padding:36px 32px;">
+            <button onclick="document.getElementById('modal-nuevo-admin').style.display='none'" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#aaa;">&times;</button>
+            <h3 style="margin:0 0 6px; font-family:'Playfair Display'; font-size:1.5rem;">Nuevo Administrador</h3>
+            <p style="margin:0 0 24px; font-size:0.85rem; color:var(--text-muted);">Creá una cuenta para que pueda ingresar al panel.</p>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+                <input id="nuevo-admin-email" type="email" placeholder="Correo electrónico" style="padding:12px 14px; border:1px solid var(--border); border-radius:8px; font-size:0.95rem; width:100%; box-sizing:border-box;">
+                <input id="nuevo-admin-pass" type="password" placeholder="Contraseña (mín. 6 caracteres)" style="padding:12px 14px; border:1px solid var(--border); border-radius:8px; font-size:0.95rem; width:100%; box-sizing:border-box;">
+                <input id="nuevo-admin-pass2" type="password" placeholder="Repetir contraseña" style="padding:12px 14px; border:1px solid var(--border); border-radius:8px; font-size:0.95rem; width:100%; box-sizing:border-box;">
+                <div id="nuevo-admin-msg" style="font-size:0.88rem; min-height:20px;"></div>
+                <button id="nuevo-admin-btn" onclick="window.crearNuevoAdmin()" class="btn-primary" style="width:100%; cursor:pointer;">Crear administrador</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getAuth, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+        import { getFirestore, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        import { app } from './js/firebase-config.js';
+
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.abrirModalNuevoAdmin = () => {
+            document.getElementById('modal-nuevo-admin').style.display = 'flex';
+            document.getElementById('nuevo-admin-email').value = '';
+            document.getElementById('nuevo-admin-pass').value = '';
+            document.getElementById('nuevo-admin-pass2').value = '';
+            document.getElementById('nuevo-admin-msg').textContent = '';
+        };
+
+        window.crearNuevoAdmin = async () => {
+            const email = document.getElementById('nuevo-admin-email').value.trim();
+            const pass = document.getElementById('nuevo-admin-pass').value;
+            const pass2 = document.getElementById('nuevo-admin-pass2').value;
+            const msg = document.getElementById('nuevo-admin-msg');
+            const btn = document.getElementById('nuevo-admin-btn');
+
+            msg.style.color = '#c0392b';
+            if (!email || !pass) { msg.textContent = '⚠️ Completá todos los campos.'; return; }
+            if (pass.length < 6) { msg.textContent = '⚠️ La contraseña debe tener al menos 6 caracteres.'; return; }
+            if (pass !== pass2) { msg.textContent = '⚠️ Las contraseñas no coinciden.'; return; }
+
+            btn.disabled = true;
+            btn.textContent = 'Creando...';
+            msg.textContent = '';
+
+            try {
+                const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                await setDoc(doc(db, 'admins', cred.user.uid), {
+                    email,
+                    creadoPor: localStorage.getItem('usuario') || 'admin',
+                    creado: serverTimestamp()
+                });
+                msg.style.color = '#27ae60';
+                msg.textContent = `✅ Admin creado: ${email}`;
+                btn.textContent = 'Crear administrador';
+                btn.disabled = false;
+                document.getElementById('nuevo-admin-email').value = '';
+                document.getElementById('nuevo-admin-pass').value = '';
+                document.getElementById('nuevo-admin-pass2').value = '';
+            } catch (e) {
+                btn.textContent = 'Crear administrador';
+                btn.disabled = false;
+                if (e.code === 'auth/email-already-in-use') msg.textContent = '⚠️ Ese email ya tiene una cuenta.';
+                else if (e.code === 'auth/invalid-email') msg.textContent = '⚠️ Email inválido.';
+                else msg.textContent = '⚠️ Error: ' + e.message;
+            }
+        };
+    </script>
+
     <!-- MODAL HISTORIAL STOCK -->
     <div id="modal-stock-history" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
         <div class="card" style="width:90%; max-width:600px; max-height:80vh; overflow-y:auto; position:relative;">
