@@ -29,6 +29,19 @@ async function _fetchStockos(recipeId = null) {
     return resp.json();
 }
 
+// Cache de recetas StockOS { recipeId: recipe } — compartido entre lista y modal de precios
+let _stockosPriceCache = {};
+
+async function _cargarPreciosStockos(platos) {
+    const ids = platos.map(p => p.stockosRecipeId).filter(Boolean);
+    if (!ids.length) return;
+    if (ids.every(id => id in _stockosPriceCache)) return; // ya cargado
+    try {
+        const data = await _fetchStockos();
+        (data.recipes ?? []).forEach(r => { _stockosPriceCache[r.id] = r; });
+    } catch (_) { /* StockOS no disponible, continúa sin precios */ }
+}
+
 // ─── Crop modal (self-contained, usa Cropper.js ya cargado en la página) ────
 let _cropperInstance = null;
 let _cropQueue       = [];   // archivos pendientes de cropear
@@ -471,12 +484,21 @@ export async function loadPlatos(seccionId = '') {
         return;
     }
 
+    await _cargarPreciosStockos(platos);
+
     const secMap = Object.fromEntries(secciones.map(s => [s.id, s.nombre]));
     tbody.innerHTML = platos.map(p => {
-        const fotoRaw  = p.fotos?.[0] ?? '';
-        const foto     = typeof fotoRaw === 'string' ? fotoRaw : (fotoRaw.thumb ?? '');
-        const precio   = p.precio   != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '—';
-        const precioPY = p.precioPY != null ? `$${Number(p.precioPY).toLocaleString('es-AR')}` : '—';
+        const fotoRaw    = p.fotos?.[0] ?? '';
+        const foto       = typeof fotoRaw === 'string' ? fotoRaw : (fotoRaw.thumb ?? '');
+        const precio     = p.precio   != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '—';
+        const precioPY   = p.precioPY != null ? `$${Number(p.precioPY).toLocaleString('es-AR')}` : '—';
+        const sInfo      = p.stockosRecipeId ? _stockosPriceCache[p.stockosRecipeId] : null;
+        const dotTitle   = sInfo
+            ? `StockOS: $${Number(sInfo.salePrice).toLocaleString('es-AR')} · Rentab: ${Number(sInfo.profitability ?? 0).toFixed(1)}%`
+            : 'Vinculado a StockOS';
+        const dot        = p.stockosRecipeId
+            ? `<span title="${dotTitle}" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1a6bc4;margin-left:7px;vertical-align:middle;flex-shrink:0;cursor:help;"></span>`
+            : '';
         return `
         <tr style="border-bottom:1px solid #f5f5f5;">
             <td style="padding:10px 15px;">
@@ -484,7 +506,7 @@ export async function loadPlatos(seccionId = '') {
                     ? `<img src="${foto}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;">`
                     : `<div style="width:48px;height:48px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🍽️</div>`}
             </td>
-            <td style="padding:10px 15px; font-weight:600;">${p.nombre}</td>
+            <td style="padding:10px 15px; font-weight:600;">${p.nombre}${dot}</td>
             <td style="padding:10px 15px; color:#888; font-size:0.85rem;">${secMap[p.seccionId] ?? '—'}</td>
             <td style="padding:10px 15px; text-align:right; font-weight:700;">${precio}</td>
             <td style="padding:10px 15px; text-align:right; font-weight:700; color:#d86634;">${precioPY}</td>
@@ -673,7 +695,10 @@ export async function abrirEditorPrecios() {
     const snap = await getDocs(query(collection(db, 'carta_platos'), orderBy('seccionId'), orderBy('orden')));
     const platos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    const secMap = Object.fromEntries(secciones.map(s => [s.id, s.nombre]));
+    await _cargarPreciosStockos(platos);
+
+    const secMap      = Object.fromEntries(secciones.map(s => [s.id, s.nombre]));
+    const hayStockos  = platos.some(p => p.stockosRecipeId);
 
     let modal = document.getElementById('modal-precios');
     if (modal) modal.remove();
@@ -686,6 +711,20 @@ export async function abrirEditorPrecios() {
         const precioActual   = p.precio   != null ? p.precio   : '';
         const precioPYActual = p.precioPY != null ? p.precioPY : '';
         const pctPY          = p.pctPY    != null ? p.pctPY    : '';
+        const sInfo          = p.stockosRecipeId ? _stockosPriceCache[p.stockosRecipeId] : null;
+        const precioStockos  = sInfo?.salePrice ?? null;
+
+        const celdaStockos = hayStockos ? `
+            <td style="padding:8px 12px;">
+                ${precioStockos != null ? `
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:0.88rem;font-weight:700;color:#1a6bc4;white-space:nowrap;">$${Number(precioStockos).toLocaleString('es-AR')}</span>
+                    <button type="button" onclick="window.cartaAdmin._copiarPrecioStockos(this.closest('tr'), ${precioStockos})"
+                        title="Usar precio de StockOS"
+                        style="padding:3px 8px;border-radius:6px;border:none;background:#e8f0fd;color:#1a6bc4;font-size:0.75rem;font-weight:800;cursor:pointer;font-family:inherit;">↓</button>
+                </div>` : `<span style="color:#ccc;font-size:0.82rem;">—</span>`}
+            </td>` : '';
+
         return `
         <tr data-id="${p.id}" data-precio-original="${precioActual}" data-precio-py-original="${precioPYActual}" data-pct-py="${pctPY}" style="border-bottom:1px solid #f0f0f0;">
             <td style="padding:10px 12px;text-align:center;">
@@ -696,6 +735,7 @@ export async function abrirEditorPrecios() {
             <td style="padding:10px 12px;font-weight:700;color:#555;text-align:right;">
                 ${precioActual !== '' ? `$${Number(precioActual).toLocaleString('es-AR')}` : '—'}
             </td>
+            ${celdaStockos}
             <td style="padding:8px 12px;">
                 <input type="number" class="inp-precio-nuevo" value="${precioActual}"
                     min="0" step="50"
@@ -715,7 +755,7 @@ export async function abrirEditorPrecios() {
     }).join('');
 
     modal.innerHTML = `
-    <div style="background:white;border-radius:18px;width:100%;max-width:780px;box-shadow:0 30px 80px rgba(0,0,0,0.35);overflow:hidden;margin:auto;">
+    <div style="background:white;border-radius:18px;width:100%;max-width:${hayStockos ? 920 : 780}px;box-shadow:0 30px 80px rgba(0,0,0,0.35);overflow:hidden;margin:auto;">
         <div style="background:#0d2b37;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;">
             <div>
                 <p style="margin:0;font-weight:800;font-size:1.05rem;color:white;">Actualizar precios</p>
@@ -758,6 +798,7 @@ export async function abrirEditorPrecios() {
                         <th style="padding:10px 12px;text-align:left;">Nombre</th>
                         <th style="padding:10px 12px;text-align:left;">Sección</th>
                         <th style="padding:10px 12px;text-align:right;">Precio actual</th>
+                        ${hayStockos ? `<th style="padding:10px 12px;text-align:left;color:#1a6bc4;">💰 StockOS</th>` : ''}
                         <th style="padding:10px 12px;text-align:left;">Precio nuevo</th>
                         <th style="padding:10px 12px;text-align:left;color:#d86634;">🛵 Precio PY</th>
                     </tr>
@@ -786,6 +827,13 @@ export async function abrirEditorPrecios() {
 
     document.body.appendChild(modal);
     _actualizarContadorCambios();
+}
+
+export function _copiarPrecioStockos(tr, precio) {
+    const inp = tr.querySelector('.inp-precio-nuevo');
+    if (!inp) return;
+    inp.value = precio;
+    _marcarCambio(inp);
 }
 
 export function _aplicarPorcentaje() {
