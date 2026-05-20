@@ -494,10 +494,10 @@ export async function loadPlatos(seccionId = '') {
         const precioPY   = p.precioPY != null ? `$${Number(p.precioPY).toLocaleString('es-AR')}` : '—';
         const sInfo      = p.stockosRecipeId ? _stockosPriceCache[p.stockosRecipeId] : null;
         const dotTitle   = sInfo
-            ? `StockOS: $${Number(sInfo.salePrice).toLocaleString('es-AR')} · Rentab: ${Number(sInfo.profitability ?? 0).toFixed(1)}%`
+            ? `StockOS: $${Number(sInfo.salePrice).toLocaleString('es-AR')} · Costo: $${Number(sInfo.currentCost ?? 0).toLocaleString('es-AR')} · Rentab: ${Number(sInfo.profitability ?? 0).toFixed(1)}%`
             : 'Vinculado a StockOS';
         const dot        = p.stockosRecipeId
-            ? `<span title="${dotTitle}" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1a6bc4;margin-left:7px;vertical-align:middle;flex-shrink:0;cursor:help;"></span>`
+            ? `<span title="${dotTitle}" style="display:inline-flex;align-items:center;gap:3px;background:#e8f0fd;color:#1a6bc4;font-size:0.68rem;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle;white-space:nowrap;cursor:help;letter-spacing:0.2px;">${sInfo ? `$${Number(sInfo.salePrice).toLocaleString('es-AR')}` : 'S'}</span>`
             : '';
         return `
         <tr style="border-bottom:1px solid #f5f5f5;">
