@@ -260,7 +260,7 @@ export async function vincularStockos() {
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
 
     const filas = recipes.map(r => `
-        <tr style="border-bottom:1px solid #f0f0f0; cursor:pointer;" onclick="window.cartaAdmin._elegirRecetaStockos('${r.id}', ${JSON.stringify(r.name).replace(/'/g, '&#39;')}, this)"
+        <tr style="border-bottom:1px solid #f0f0f0; cursor:pointer;" onclick="window.cartaAdmin._elegirRecetaStockos('${r.id}')"
             onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
             <td style="padding:10px 12px; font-weight:600; font-size:0.88rem;">${r.name}</td>
             <td style="padding:10px 12px; text-align:right; font-weight:700; color:#1a6bc4; font-size:0.88rem;">$${Number(r.salePrice).toLocaleString('es-AR')}</td>
@@ -313,7 +313,7 @@ export function _filtrarRecetasStockos(q) {
     });
 }
 
-export function _elegirRecetaStockos(id, nombre) {
+export function _elegirRecetaStockos(id) {
     stockosRecipeId = id;
     document.getElementById('modal-stockos-vincular')?.remove();
     _renderStockosSection(null, true);
@@ -473,7 +473,8 @@ export async function loadPlatos(seccionId = '') {
 
     const secMap = Object.fromEntries(secciones.map(s => [s.id, s.nombre]));
     tbody.innerHTML = platos.map(p => {
-        const foto     = p.fotos?.[0] ?? '';
+        const fotoRaw  = p.fotos?.[0] ?? '';
+        const foto     = typeof fotoRaw === 'string' ? fotoRaw : (fotoRaw.thumb ?? '');
         const precio   = p.precio   != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '—';
         const precioPY = p.precioPY != null ? `$${Number(p.precioPY).toLocaleString('es-AR')}` : '—';
         return `
