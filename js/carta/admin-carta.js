@@ -1,4 +1,4 @@
-import { db, storage } from '../firebase-config.js';
+import { db, storage, app } from '../firebase-config.js';
 import {
     collection, doc, getDocs, addDoc, updateDoc, deleteDoc, setDoc,
     query, orderBy, serverTimestamp, writeBatch, Timestamp
@@ -6,6 +6,9 @@ import {
 import {
     ref, uploadBytes, getDownloadURL
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+import {
+    getFunctions, httpsCallable
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js';
 
 // ─── Estado ─────────────────────────────────────────────────────────────────
 let secciones          = [];
@@ -14,6 +17,14 @@ let _snapshotAnterior  = null; // { precio, precioPY, nombre } antes de editar
 let _platosListaCache  = [];   // cache para form manual de historial
 // cada entrada: { url: string (preview), blob?: Blob (si es nueva), isNew: bool }
 let fotosPlato         = [];
+let stockosRecipeId    = null; // ID de la receta vinculada en StockOS
+
+// ─── StockOS callable ────────────────────────────────────────────────────────
+let _fnStockos = null;
+function _stockosCallable() {
+    if (!_fnStockos) _fnStockos = httpsCallable(getFunctions(app, 'us-central1'), 'getStockosPrice');
+    return _fnStockos;
+}
 
 // ─── Crop modal (self-contained, usa Cropper.js ya cargado en la página) ────
 let _cropperInstance = null;
@@ -137,6 +148,201 @@ async function _confirmCrop() {
 
     // Si hay más fotos en la cola, procesarlas
     if (_cropQueue.length) _abrirCrop(_cropQueue.shift());
+}
+
+// ─── STOCKOS ─────────────────────────────────────────────────────────────────
+
+function _renderStockosSection(recipe = null, loading = false) {
+    const el = document.getElementById('stockos-section-content');
+    if (!el) return;
+
+    if (loading) {
+        el.innerHTML = `<p style="font-size:0.82rem; color:#888; margin:0;">Consultando StockOS...</p>`;
+        return;
+    }
+
+    if (!stockosRecipeId) {
+        el.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:0.82rem; color:#aaa; flex:1;">Sin vincular</span>
+                <button type="button" onclick="window.cartaAdmin.vincularStockos()"
+                    style="padding:7px 14px; border-radius:8px; border:1px solid #c9dff7; background:white; color:#1a6bc4; font-size:0.8rem; font-weight:700; cursor:pointer; font-family:inherit;">
+                    + Vincular con StockOS
+                </button>
+            </div>`;
+        return;
+    }
+
+    const precioStockos  = recipe?.salePrice    ?? null;
+    const costoActual    = recipe?.currentCost  ?? null;
+    const rentabilidad   = recipe?.profitability ?? null;
+    const nombre         = recipe?.name         ?? stockosRecipeId;
+    const porciones      = recipe?.portions      ?? null;
+    const costoPorcion   = recipe?.costPerPortion ?? null;
+    const precioLocal    = parseFloat(document.getElementById('plato-precio')?.value);
+    const diferencia     = precioStockos != null && !isNaN(precioLocal) ? precioStockos - precioLocal : null;
+
+    const fmtARS = v => v != null ? `$${Number(v).toLocaleString('es-AR')}` : '—';
+    const fmtPct = v => v != null ? `${Number(v).toFixed(1)}%` : '—';
+
+    let diferenciaBadge = '';
+    if (diferencia !== null) {
+        if (diferencia === 0) {
+            diferenciaBadge = `<span style="font-size:0.72rem; background:#e8f5e9; color:#2d7a4f; padding:2px 7px; border-radius:20px; font-weight:700;">= Sin diferencia</span>`;
+        } else if (diferencia > 0) {
+            diferenciaBadge = `<span style="font-size:0.72rem; background:#fff3e0; color:#e65100; padding:2px 7px; border-radius:20px; font-weight:700;">StockOS +${fmtARS(diferencia)} más caro</span>`;
+        } else {
+            diferenciaBadge = `<span style="font-size:0.72rem; background:#fff3e0; color:#e65100; padding:2px 7px; border-radius:20px; font-weight:700;">StockOS ${fmtARS(diferencia)} más barato</span>`;
+        }
+    }
+
+    el.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <span style="font-size:0.85rem; font-weight:700; color:#0d2b37; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${nombre}">${nombre}</span>
+                <button type="button" onclick="window.cartaAdmin.desvincularStockos()"
+                    style="padding:4px 10px; border-radius:6px; border:1px solid #f0c4c4; background:white; color:#ae2012; font-size:0.75rem; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap;">
+                    Desvincular
+                </button>
+            </div>
+            ${recipe ? `
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:8px;">
+                <div style="background:white; border-radius:8px; padding:8px 10px; border:1px solid #d0e4f8;">
+                    <p style="margin:0 0 2px; font-size:0.68rem; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.4px;">Precio StockOS</p>
+                    <p style="margin:0; font-size:0.95rem; font-weight:800; color:#1a6bc4;">${fmtARS(precioStockos)}</p>
+                </div>
+                <div style="background:white; border-radius:8px; padding:8px 10px; border:1px solid #d0e4f8;">
+                    <p style="margin:0 0 2px; font-size:0.68rem; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.4px;">Costo actual</p>
+                    <p style="margin:0; font-size:0.95rem; font-weight:800; color:#555;">${fmtARS(costoActual)}</p>
+                </div>
+                <div style="background:white; border-radius:8px; padding:8px 10px; border:1px solid #d0e4f8;">
+                    <p style="margin:0 0 2px; font-size:0.68rem; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.4px;">Rentabilidad</p>
+                    <p style="margin:0; font-size:0.95rem; font-weight:800; color:#2d7a4f;">${fmtPct(rentabilidad)}</p>
+                </div>
+                ${porciones > 1 ? `
+                <div style="background:white; border-radius:8px; padding:8px 10px; border:1px solid #d0e4f8;">
+                    <p style="margin:0 0 2px; font-size:0.68rem; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.4px;">Porciones</p>
+                    <p style="margin:0; font-size:0.95rem; font-weight:800; color:#555;">${porciones}${costoPorcion != null ? ` · ${fmtARS(costoPorcion)}/u` : ''}</p>
+                </div>` : ''}
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                ${diferenciaBadge}
+                <button type="button" onclick="window.cartaAdmin.sincronizarPrecioStockos(${precioStockos})"
+                    style="padding:7px 14px; border-radius:8px; border:none; background:#1a6bc4; color:white; font-size:0.8rem; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap;">
+                    Actualizar precio a ${fmtARS(precioStockos)}
+                </button>
+            </div>` : `<p style="margin:0; font-size:0.8rem; color:#aaa;">No se pudo obtener el precio de StockOS.</p>`}
+        </div>`;
+}
+
+export async function vincularStockos() {
+    const btn = document.querySelector('[onclick="window.cartaAdmin.vincularStockos()"]');
+    if (btn) { btn.textContent = 'Cargando...'; btn.disabled = true; }
+
+    let recipes = [];
+    try {
+        const result = await _stockosCallable()({});
+        recipes = result.data?.recipes ?? [];
+    } catch (e) {
+        alert('No se pudo conectar con StockOS: ' + e.message);
+        if (btn) { btn.textContent = '+ Vincular con StockOS'; btn.disabled = false; }
+        return;
+    }
+
+    // Modal de búsqueda
+    let modal = document.getElementById('modal-stockos-vincular');
+    if (modal) modal.remove();
+    modal = document.createElement('div');
+    modal.id = 'modal-stockos-vincular';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+    const filas = recipes.map(r => `
+        <tr style="border-bottom:1px solid #f0f0f0; cursor:pointer;" onclick="window.cartaAdmin._elegirRecetaStockos('${r.id}', ${JSON.stringify(r.name).replace(/'/g, '&#39;')}, this)"
+            onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
+            <td style="padding:10px 12px; font-weight:600; font-size:0.88rem;">${r.name}</td>
+            <td style="padding:10px 12px; text-align:right; font-weight:700; color:#1a6bc4; font-size:0.88rem;">$${Number(r.salePrice).toLocaleString('es-AR')}</td>
+            <td style="padding:10px 12px; text-align:right; color:#2d7a4f; font-size:0.82rem;">${r.profitability != null ? r.profitability.toFixed(1) + '%' : '—'}</td>
+            <td style="padding:10px 12px; font-size:0.75rem; color:#aaa;">${r.code ?? ''}</td>
+        </tr>`).join('');
+
+    modal.innerHTML = `
+    <div style="background:white;border-radius:18px;width:100%;max-width:640px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.35);overflow:hidden;">
+        <div style="background:#0d2b37;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+            <div>
+                <p style="margin:0;font-weight:800;font-size:1rem;color:white;">Vincular con receta de StockOS</p>
+                <p style="margin:4px 0 0;font-size:0.75rem;color:rgba(255,255,255,0.55);">${recipes.length} recetas disponibles</p>
+            </div>
+            <button onclick="document.getElementById('modal-stockos-vincular').remove()"
+                style="background:rgba(255,255,255,0.12);border:none;border-radius:8px;color:white;font-size:1.2rem;width:34px;height:34px;cursor:pointer;">✕</button>
+        </div>
+        <div style="padding:14px 18px;border-bottom:1px solid #f0f0f0;flex-shrink:0;">
+            <input type="text" id="stockos-buscar" placeholder="Buscar receta..." oninput="window.cartaAdmin._filtrarRecetasStockos(this.value)"
+                style="width:100%;padding:9px 14px;border-radius:9px;border:1px solid #ddd;font-size:0.9rem;font-family:inherit;box-sizing:border-box;outline:none;">
+        </div>
+        <div style="overflow-y:auto;flex:1;">
+            <table style="width:100%;border-collapse:collapse;" id="tabla-stockos-recetas">
+                <thead style="position:sticky;top:0;background:#f7f7f7;z-index:1;">
+                    <tr style="font-size:0.72rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">
+                        <th style="padding:9px 12px;text-align:left;">Nombre</th>
+                        <th style="padding:9px 12px;text-align:right;">Precio venta</th>
+                        <th style="padding:9px 12px;text-align:right;">Rentab.</th>
+                        <th style="padding:9px 12px;text-align:left;">Código</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-stockos-recetas">${filas}</tbody>
+            </table>
+        </div>
+    </div>`;
+
+    document.body.appendChild(modal);
+    document.getElementById('stockos-buscar').focus();
+
+    // Guardar recetas para el filtro
+    window._stockosRecetasCache = recipes;
+}
+
+export function _filtrarRecetasStockos(q) {
+    const filas = document.querySelectorAll('#tbody-stockos-recetas tr');
+    const texto = q.toLowerCase();
+    filas.forEach(tr => {
+        const nombre = tr.querySelector('td')?.textContent?.toLowerCase() ?? '';
+        tr.style.display = nombre.includes(texto) ? '' : 'none';
+    });
+}
+
+export function _elegirRecetaStockos(id, nombre) {
+    stockosRecipeId = id;
+    document.getElementById('modal-stockos-vincular')?.remove();
+    _renderStockosSection(null, true);
+    // Buscar la receta del cache para mostrar datos sin otro round-trip
+    const cached = (window._stockosRecetasCache ?? []).find(r => r.id === id);
+    if (cached) {
+        _renderStockosSection(cached);
+    } else {
+        _stockosCallable()({ recipeId: id })
+            .then(r => _renderStockosSection(r.data?.recipe))
+            .catch(() => _renderStockosSection(null));
+    }
+}
+
+export function desvincularStockos() {
+    if (!confirm('¿Desvincular este plato de StockOS?')) return;
+    stockosRecipeId = null;
+    _renderStockosSection();
+}
+
+export function sincronizarPrecioStockos(precioStockos) {
+    if (precioStockos == null) return;
+    const fmtARS = v => `$${Number(v).toLocaleString('es-AR')}`;
+    if (!confirm(`¿Actualizar el precio a ${fmtARS(precioStockos)}? Esto reemplaza el precio actual del plato.`)) return;
+    const inp = document.getElementById('plato-precio');
+    if (inp) {
+        inp.value = precioStockos;
+        window.cartaAdmin._calcPrecioPY();
+        _renderStockosSection(
+            (window._stockosRecetasCache ?? []).find(r => r.id === stockosRecipeId) ?? { salePrice: precioStockos }
+        );
+    }
 }
 
 // ─── SECCIONES ──────────────────────────────────────────────────────────────
@@ -298,8 +504,9 @@ export async function loadPlatos(seccionId = '') {
 export function filtrarPlatosPorSeccion(seccionId) { loadPlatos(seccionId); }
 
 export function mostrarFormPlato() {
-    platoEditando = null;
-    fotosPlato    = [];
+    platoEditando   = null;
+    fotosPlato      = [];
+    stockosRecipeId = null;
     _snapshotAnterior = null;
     document.getElementById('plato-id').value          = '';
     document.getElementById('plato-nombre').value      = '';
@@ -312,6 +519,7 @@ export function mostrarFormPlato() {
     document.getElementById('form-plato-titulo').textContent = 'Nuevo Plato';
     document.getElementById('plato-form-error').style.display = 'none';
     _renderFotosPreview();
+    _renderStockosSection();
     document.getElementById('form-plato-wrapper').style.display = 'block';
     document.getElementById('form-plato-wrapper').scrollIntoView({ behavior: 'smooth' });
 }
@@ -329,7 +537,8 @@ export async function editarPlato(id) {
     if (!platoDoc) return;
     const p = { id: platoDoc.id, ...platoDoc.data() };
 
-    platoEditando = id;
+    platoEditando   = id;
+    stockosRecipeId = p.stockosRecipeId ?? null;
     // Compatibilidad: fotos puede ser string[] (viejo) u objeto[] {thumb,medium,full} (nuevo)
     fotosPlato = (p.fotos ?? []).map(f => ({
         url:    typeof f === 'string' ? f : f.thumb,
@@ -349,6 +558,15 @@ export async function editarPlato(id) {
     document.getElementById('form-plato-titulo').textContent = 'Editar Plato';
     document.getElementById('plato-form-error').style.display = 'none';
     _renderFotosPreview();
+    // Mostrar sección StockOS y cargar datos si hay vínculo
+    if (stockosRecipeId) {
+        _renderStockosSection(null, true);
+        _stockosCallable()({ recipeId: stockosRecipeId })
+            .then(r => _renderStockosSection(r.data?.recipe ?? null))
+            .catch(() => _renderStockosSection(null));
+    } else {
+        _renderStockosSection();
+    }
     document.getElementById('form-plato-wrapper').style.display = 'block';
     document.getElementById('form-plato-wrapper').scrollIntoView({ behavior: 'smooth' });
 }
@@ -382,6 +600,7 @@ export async function guardarPlato() {
             precioPY: isNaN(precioPY) ? null : precioPY,
             seccionId, tags,
             fotos: fotosUrls,
+            stockosRecipeId: stockosRecipeId ?? null,
             activo: true,
             orden: 0,
             actualizadoEn: serverTimestamp()

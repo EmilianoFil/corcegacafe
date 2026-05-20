@@ -1906,6 +1906,16 @@
                             </div>
                         </div>
 
+                        <!-- StockOS -->
+                        <div style="grid-column:1/-1;">
+                            <div style="background:#f0f7ff; border:1px solid #c9dff7; border-radius:12px; padding:16px;">
+                                <label style="font-size:0.78rem; font-weight:800; color:#1a6bc4; display:block; margin-bottom:12px; letter-spacing:0.5px;">💰 STOCKOS — Precio desde inventario</label>
+                                <div id="stockos-section-content">
+                                    <!-- Renderizado por JS en editarPlato / mostrarFormPlato -->
+                                </div>
+                            </div>
+                        </div>
+
                         <div style="grid-column:1/-1;">
                             <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:6px;">TAGS</label>
                             <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -2066,7 +2076,7 @@
         import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
         import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=15';
         window.tiendaAdmin = tiendaAdmin;
-        import * as cartaAdmin from './js/carta/admin-carta.js?v=4';
+        import * as cartaAdmin from './js/carta/admin-carta.js?v=5';
         window.cartaAdmin = cartaAdmin;
 
         let adminData = null;

@@ -1,5 +1,5 @@
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { onRequest } = require("firebase-functions/v2/https");
+const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onDocumentUpdated, onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { defineSecret } = require("firebase-functions/params");
@@ -76,6 +76,7 @@ const renderStepperHtml = (estadoActual) => {
 
 const emailUser = defineSecret("EMAIL_USER");
 const emailPass = defineSecret("EMAIL_PASS");
+const STOCKOS_API_KEY = defineSecret("STOCKOS_API_KEY");
 
 exports.enviarMailRegistro = onRequest(
   { region: "us-central1", secrets: [emailUser, emailPass] },
@@ -1597,5 +1598,38 @@ exports.enviarMailRecupero = onRequest(
         res.status(500).send({ error: error.message });
       }
     });
+  }
+);
+
+// ─── STOCKOS — proxy para no exponer la API key en el frontend ───────────────
+exports.getStockosPrice = onCall(
+  { region: "us-central1", secrets: [STOCKOS_API_KEY] },
+  async (request) => {
+    const { recipeId } = request.data ?? {};
+    const apiKey = STOCKOS_API_KEY.value();
+
+    try {
+      if (recipeId) {
+        const res = await fetch(
+          `https://apigetrecipe-pw75n3yyma-uc.a.run.app?id=${encodeURIComponent(recipeId)}`,
+          { headers: { "x-api-key": apiKey } }
+        );
+        if (!res.ok) throw new HttpsError("unavailable", "StockOS no respondió correctamente.");
+        const data = await res.json();
+        if (!data.ok) throw new HttpsError("not-found", "Receta no encontrada en StockOS.");
+        return { recipe: data.recipe };
+      } else {
+        const res = await fetch(
+          "https://apigetrecipes-pw75n3yyma-uc.a.run.app",
+          { headers: { "x-api-key": apiKey } }
+        );
+        if (!res.ok) throw new HttpsError("unavailable", "StockOS no respondió correctamente.");
+        const data = await res.json();
+        return { recipes: data.recipes ?? [] };
+      }
+    } catch (e) {
+      if (e instanceof HttpsError) throw e;
+      throw new HttpsError("internal", e.message);
+    }
   }
 );
