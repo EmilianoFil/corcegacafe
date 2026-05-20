@@ -1,4 +1,4 @@
-import { db, storage, app } from '../firebase-config.js';
+import { db, storage, auth } from '../firebase-config.js';
 import {
     collection, doc, getDocs, addDoc, updateDoc, deleteDoc, setDoc,
     query, orderBy, serverTimestamp, writeBatch, Timestamp
@@ -6,9 +6,6 @@ import {
 import {
     ref, uploadBytes, getDownloadURL
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
-import {
-    getFunctions, httpsCallable
-} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js';
 
 // ─── Estado ─────────────────────────────────────────────────────────────────
 let secciones          = [];
@@ -19,11 +16,17 @@ let _platosListaCache  = [];   // cache para form manual de historial
 let fotosPlato         = [];
 let stockosRecipeId    = null; // ID de la receta vinculada en StockOS
 
-// ─── StockOS callable ────────────────────────────────────────────────────────
-let _fnStockos = null;
-function _stockosCallable() {
-    if (!_fnStockos) _fnStockos = httpsCallable(getFunctions(app, 'us-central1'), 'getStockosPrice');
-    return _fnStockos;
+// ─── StockOS fetch helper ─────────────────────────────────────────────────────
+const STOCKOS_URL = 'https://us-central1-corcega-loyalty-club.cloudfunctions.net/getStockosPrice';
+
+async function _fetchStockos(recipeId = null) {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No autenticado');
+    const url = new URL(STOCKOS_URL);
+    if (recipeId) url.searchParams.set('recipeId', recipeId);
+    const resp = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+    if (!resp.ok) throw new Error(`Error ${resp.status} al consultar StockOS`);
+    return resp.json();
 }
 
 // ─── Crop modal (self-contained, usa Cropper.js ya cargado en la página) ────
@@ -241,8 +244,8 @@ export async function vincularStockos() {
 
     let recipes = [];
     try {
-        const result = await _stockosCallable()({});
-        recipes = result.data?.recipes ?? [];
+        const result = await _fetchStockos();
+        recipes = result.recipes ?? [];
     } catch (e) {
         alert('No se pudo conectar con StockOS: ' + e.message);
         if (btn) { btn.textContent = '+ Vincular con StockOS'; btn.disabled = false; }
@@ -319,8 +322,8 @@ export function _elegirRecetaStockos(id, nombre) {
     if (cached) {
         _renderStockosSection(cached);
     } else {
-        _stockosCallable()({ recipeId: id })
-            .then(r => _renderStockosSection(r.data?.recipe))
+        _fetchStockos(id)
+            .then(r => _renderStockosSection(r.recipe ?? null))
             .catch(() => _renderStockosSection(null));
     }
 }
@@ -561,8 +564,8 @@ export async function editarPlato(id) {
     // Mostrar sección StockOS y cargar datos si hay vínculo
     if (stockosRecipeId) {
         _renderStockosSection(null, true);
-        _stockosCallable()({ recipeId: stockosRecipeId })
-            .then(r => _renderStockosSection(r.data?.recipe ?? null))
+        _fetchStockos(stockosRecipeId)
+            .then(r => _renderStockosSection(r.recipe ?? null))
             .catch(() => _renderStockosSection(null));
     } else {
         _renderStockosSection();
