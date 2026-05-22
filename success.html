@@ -340,8 +340,27 @@
             const orderNum = order.orderNumber || order.id?.substring(0,8) || orderId?.substring(0,8);
             document.getElementById('order-id-badge').innerText = 'ORDEN #' + orderNum;
             
-            // Ocultar Loader y Mostrar Stepper
+            // Ocultar Loader
             document.getElementById('order-loader').style.display = 'none';
+
+            // Caso especial: pedido cancelado
+            if (order.estado === 'cancelado') {
+                mainTitle.innerText = 'Pedido cancelado';
+                document.getElementById('order-id-badge').style.background = '#fff0f0';
+                document.getElementById('order-id-badge').style.color = '#a33';
+                document.getElementById('order-id-badge').style.borderColor = 'rgba(170,51,51,0.15)';
+                document.getElementById('order-stepper').style.display = 'none';
+                document.getElementById('action-area').innerHTML = `
+                    <div style="background:#fff5f5; border-radius:16px; padding:20px; margin:20px 0; font-size:14px; color:#a33; text-align:center;">
+                        ↩️ Este pedido fue cancelado.<br>
+                        <span style="color:#888; font-size:12px;">Si realizaste un pago, el reembolso llega en 3–15 días hábiles.</span>
+                    </div>
+                    <button onclick="window.location.href='tienda.html'" class="btn-primary-corcega" style="margin-top:8px;">Volver a la tienda</button>
+                    <button onclick="window.location.href='tienda-cuenta.html'" class="btn-outline-corcega">Ver mis pedidos</button>
+                `;
+                return;
+            }
+
             document.getElementById('order-stepper').style.display = 'flex';
 
             const stepPago = document.getElementById('step-pago');
