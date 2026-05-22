@@ -1648,14 +1648,16 @@ exports.solicitarArrepentimiento = onRequest(
         return res.status(400).json({ error: "plazo_vencido" });
       }
 
-      // Verificar estado cancelable
-      const cancelableStates = ['recibido', 'pagado', 'en_preparacion'];
-      if (!cancelableStates.includes(order.estado)) {
+      // Si no fue pagado aún, siempre se puede cancelar sin excepciones
+      const sinPago = ['pendiente_pago', 'recibido'].includes(order.estado);
+      const conPago = ['pagado', 'en_preparacion'].includes(order.estado);
+
+      if (!sinPago && !conPago) {
         return res.status(400).json({ error: "estado_no_cancelable", estado: order.estado });
       }
 
-      // Excepción: pedidos con fecha de entrega pactada (a pedido / calendario)
-      if (order.fechaEntrega) {
+      // Excepción de producto a pedido solo aplica si ya se cobró el pago
+      if (conPago && order.fechaEntrega) {
         return res.status(400).json({ error: "producto_a_pedido" });
       }
 
