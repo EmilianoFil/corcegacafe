@@ -838,6 +838,7 @@
                 <li><a href="#tienda-productos"><span class="icon">🛒</span> Productos</a></li>
                 <li><a href="#tienda-categorias"><span class="icon">🏷️</span> Categorías</a></li>
                 <li><a href="#tienda-ordenes"><span class="icon">📦</span> Órdenes</a></li>
+                <li><a href="#tienda-arrepentimientos"><span class="icon">↩️</span> Arrepentimientos</a></li>
                 <li><a href="#tienda-config"><span class="icon">⚙️</span> Configuración</a></li>
             </ul>
 
@@ -1443,6 +1444,20 @@
                     </table>
                 </div>
             </div>
+        </section>
+
+        <!-- ARREPENTIMIENTOS SECTION -->
+        <section id="tienda-arrepentimientos" class="section-content">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:25px; border-bottom:1px solid var(--border); padding-bottom:15px;">
+                <h3 style="margin:0; font-size:1.5rem;">Arrepentimientos ↩️</h3>
+                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:500;">LEY 24.240 — DERECHO DE REVOCACIÓN</span>
+            </div>
+
+            <div id="arrep-loader" style="text-align:center; padding:40px; color:#999;">Cargando...</div>
+
+            <div id="arrep-stats" style="display:none; gap:12px; margin-bottom:24px; flex-wrap:wrap;"></div>
+
+            <div id="arrep-list" style="display:none;"></div>
         </section>
 
         <!-- TIENDA CONFIG SECTION -->
@@ -2155,6 +2170,7 @@
             if (target === 'tienda-productos') window.tiendaAdmin.loadProductosTable();
             if (target === 'tienda-categorias') window.tiendaAdmin.loadCategoriasTable();
             if (target === 'tienda-ordenes') window.tiendaAdmin.loadOrdenesTable();
+            if (target === 'tienda-arrepentimientos') loadArrepentimientos();
             if (target === 'tienda-config') window.tiendaAdmin.loadConfigStore();
             if (target === 'carta-secciones') { window.cartaAdmin.loadSecciones(); _cargarToggleSocial(); }
             if (target === 'carta-platos') window.cartaAdmin.loadPlatos();
@@ -3511,6 +3527,100 @@
                     url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
                 }
             });
+        }
+
+        // --- ARREPENTIMIENTOS ---
+        async function loadArrepentimientos() {
+            const loader = document.getElementById('arrep-loader');
+            const statsEl = document.getElementById('arrep-stats');
+            const listEl = document.getElementById('arrep-list');
+            loader.style.display = 'block';
+            statsEl.style.display = 'none';
+            listEl.style.display = 'none';
+
+            try {
+                const snap = await getDocs(query(collection(db, 'arrepentimientos'), orderBy('timestamp', 'desc'), limit(100)));
+                const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                // Stats
+                const total = items.length;
+                const procesados = items.filter(i => i.estado === 'reembolso_procesado').length;
+                const manuales   = items.filter(i => i.estado === 'reembolso_manual_pendiente').length;
+                const fallidos   = items.filter(i => i.estado === 'reembolso_fallido').length;
+
+                statsEl.style.display = 'flex';
+                statsEl.innerHTML = [
+                    { label: 'Total', val: total, color: '#555' },
+                    { label: 'Reembolso MP', val: procesados, color: '#25a244' },
+                    { label: 'Reembolso manual', val: manuales, color: '#e67e22' },
+                    { label: 'Con error', val: fallidos, color: '#e74c3c' },
+                ].map(s => `
+                    <div style="background:white; border:1px solid #eee; border-radius:14px; padding:16px 20px; min-width:130px; flex:1;">
+                        <div style="font-size:11px; color:#999; text-transform:uppercase; letter-spacing:0.05em;">${s.label}</div>
+                        <div style="font-size:1.8rem; font-weight:800; color:${s.color};">${s.val}</div>
+                    </div>`).join('');
+
+                if (items.length === 0) {
+                    listEl.style.display = 'block';
+                    listEl.innerHTML = '<p style="color:#999; text-align:center; padding:40px;">No hay solicitudes todavía.</p>';
+                    loader.style.display = 'none';
+                    return;
+                }
+
+                const estadoChip = (estado) => {
+                    const map = {
+                        reembolso_procesado:         { label: 'Reembolso MP ✅', bg: '#e6ffed', color: '#1a7a3c' },
+                        reembolso_manual_pendiente:  { label: 'Manual pendiente ⏳', bg: '#fff8e1', color: '#7a5000' },
+                        reembolso_fallido:           { label: 'Error reembolso ❌', bg: '#fff0f0', color: '#c0392b' },
+                        pendiente:                   { label: 'Pendiente', bg: '#f0f0f0', color: '#555' },
+                    };
+                    const s = map[estado] || { label: estado, bg: '#eee', color: '#333' };
+                    return `<span style="background:${s.bg}; color:${s.color}; font-size:11px; font-weight:700; padding:4px 10px; border-radius:100px;">${s.label}</span>`;
+                };
+
+                listEl.style.display = 'block';
+                listEl.innerHTML = `
+                    <div style="background:white; border:1px solid #eee; border-radius:16px; overflow:hidden;">
+                        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                            <thead style="background:#fdfcf7; border-bottom:2px solid #eee;">
+                                <tr>
+                                    <th style="padding:12px 16px; text-align:left; font-size:11px; color:#999; font-weight:700; text-transform:uppercase;">Código</th>
+                                    <th style="padding:12px 16px; text-align:left; font-size:11px; color:#999; font-weight:700; text-transform:uppercase;">Fecha</th>
+                                    <th style="padding:12px 16px; text-align:left; font-size:11px; color:#999; font-weight:700; text-transform:uppercase;">Pedido</th>
+                                    <th style="padding:12px 16px; text-align:left; font-size:11px; color:#999; font-weight:700; text-transform:uppercase;">Cliente</th>
+                                    <th style="padding:12px 16px; text-align:right; font-size:11px; color:#999; font-weight:700; text-transform:uppercase;">Total</th>
+                                    <th style="padding:12px 16px; text-align:left; font-size:11px; color:#999; font-weight:700; text-transform:uppercase;">Pago</th>
+                                    <th style="padding:12px 16px; text-align:left; font-size:11px; color:#999; font-weight:700; text-transform:uppercase;">Estado</th>
+                                    <th style="padding:12px 16px; text-align:left; font-size:11px; color:#999; font-weight:700; text-transform:uppercase;">Motivo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${items.map(i => {
+                                    const fecha = i.timestamp?.toDate ? i.timestamp.toDate().toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+                                    return `<tr style="border-bottom:1px solid #f5f5f5;">
+                                        <td style="padding:12px 16px; font-weight:800; color:#1a4a8a;">${i.codigo}</td>
+                                        <td style="padding:12px 16px; color:#666;">${fecha}</td>
+                                        <td style="padding:12px 16px; font-weight:700;">#${i.orderNumber || '—'}</td>
+                                        <td style="padding:12px 16px;">
+                                            <div style="font-weight:600;">${i.clienteNombre || '—'}</div>
+                                            <div style="font-size:11px; color:#999;">${i.clienteEmail || ''}</div>
+                                            ${i.clienteTelefono ? `<div style="font-size:11px; color:#999;">${i.clienteTelefono}</div>` : ''}
+                                        </td>
+                                        <td style="padding:12px 16px; text-align:right; font-weight:800; color:#d86634;">$${(i.total||0).toLocaleString('es-AR')}</td>
+                                        <td style="padding:12px 16px; color:#666;">${i.metodoPago || '—'}</td>
+                                        <td style="padding:12px 16px;">${estadoChip(i.estado)}</td>
+                                        <td style="padding:12px 16px; color:#888; font-size:12px; max-width:180px;">${i.motivo || '—'}</td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>`;
+            } catch (err) {
+                listEl.style.display = 'block';
+                listEl.innerHTML = `<p style="color:#e74c3c; text-align:center; padding:40px;">Error al cargar: ${err.message}</p>`;
+            }
+
+            loader.style.display = 'none';
         }
 
         // --- LOGS TABLE LOGIC ---

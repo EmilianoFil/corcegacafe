@@ -352,6 +352,7 @@
             // Definición de botones reutilizables
             const btnHome = `<button onclick="window.location.href='tienda.html'" class="btn-primary-corcega" style="margin-top:20px;">Seguir comprando</button>`;
             const btnOrders = `<button onclick="window.location.href='tienda-cuenta.html'" class="btn-outline-corcega">Ver mis pedidos</button>`;
+            const btnArrepentimiento = `<a href="arrepentimiento.html?orden=${orderNum}" style="display:block; text-align:center; font-size:12px; color:#aaa; margin-top:20px; text-decoration:none; border-top:1px dashed #eee; padding-top:16px;"><i class="fas fa-undo-alt" style="font-size:10px;"></i> Botón de Arrepentimiento (Ley 24.240)</a>`;
             const waMsg = encodeURIComponent(`Hola Córcega! Realicé el pedido #${orderId.substring(0,6)}. Te adjunto el comprobante.`);
             const btnWA = `
                 <a href="https://wa.me/5491136053892?text=${waMsg}" target="_blank" class="btn-wa">
@@ -368,12 +369,16 @@
             const estados = ['pagado', 'en_preparacion', 'listo', 'finalizado'];
             const actualIdx = estados.indexOf(order.estado);
 
+            // Mostrar botón de arrepentimiento solo si el estado es cancelable
+            const cancelableStates = ['recibido', 'pagado', 'en_preparacion'];
+            const mostrarArrepentimiento = cancelableStates.includes(order.estado);
+
             // 1. Lógica de Pago (Paso 2)
             if (order.estado === 'pagado' || actualIdx >= 1) {
                 stepPago.classList.add('active');
                 pagoText.innerText = "Pago confirmado ✨";
                 mainTitle.innerText = "¡Todo en marcha!";
-                actionArea.innerHTML = btnHome + btnOrders;
+                actionArea.innerHTML = btnHome + btnOrders + (mostrarArrepentimiento ? btnArrepentimiento : '');
             } else if (order.estado === 'rechazado') {
                 stepPago.classList.add('error');
                 pagoText.innerText = "Pago rechazado ❌";
@@ -391,16 +396,17 @@
                         <div style="transform:scale(0.9);">${btnMP}</div>
                         ${btnHome}
                         ${btnOrders}
+                        ${mostrarArrepentimiento ? btnArrepentimiento : ''}
                     </div>
                 `;
             } else {
                 // Pago pendiente Mercado Pago o Rechazado
                 stepPago.classList.remove('active');
                 if (order.estado === 'rechazado') stepPago.classList.add('error');
-                
+
                 pagoText.innerText = order.estado === 'rechazado' ? "Pago rechazado ❌" : "Pago pendiente";
                 mainTitle.innerText = order.estado === 'rechazado' ? "¡Ups! Algo falló" : "¡Pedido recibido!";
-                
+
                 actionArea.innerHTML = `
                     <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">
                         ${btnMP}
@@ -408,6 +414,7 @@
                         <div style="transform:scale(0.9);">${btnWA}</div>
                         ${btnHome}
                         ${btnOrders}
+                        ${mostrarArrepentimiento ? btnArrepentimiento : ''}
                     </div>
                 `;
             }

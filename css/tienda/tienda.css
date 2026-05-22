@@ -772,6 +772,26 @@ header {
   color: var(--naranja-accent);
 }
 
+.footer-arrepentimiento-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 100px;
+  padding: 4px 12px 4px 10px;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em;
+  margin-bottom: 8px;
+}
+.footer-arrepentimiento-link:hover {
+  background: rgba(255,255,255,0.22) !important;
+}
+.footer-sep {
+  display: none;
+}
+
 /* ===== HAMBURGER MENU ===== */
 
 /* Botón hamburguesa — oculto en desktop */
