@@ -42,6 +42,13 @@ const renderStepperHtml = (estadoActual) => {
         { id: 'finalizado', label: 'Entregado', icon: '✨' }
     ];
 
+    if (estadoActual === 'cancelado') {
+        return `
+        <div style="margin: 30px 0; padding: 20px; background: #fff5f5; border-radius: 20px; border: 1px solid #ffd7d7; text-align: center; color: #a33; font-size: 15px; font-weight: 700;">
+            ↩️ Pedido cancelado
+        </div>`;
+    }
+
     let indexActual = pasos.findIndex(p => p.id === estadoActual);
     if (estadoActual === 'pendiente_pago' || estadoActual === 'transferencia') indexActual = 0;
     if (indexActual === -1) indexActual = 0;
@@ -1428,7 +1435,12 @@ exports.onOrderUpdated = onDocumentUpdated(
             emoji = "❌";
             color = "#e74c3c";
             break;
-        default: 
+        case 'cancelado':
+            statusMsg = "Tu pedido fue cancelado";
+            emoji = "↩️";
+            color = "#888";
+            break;
+        default:
             statusMsg = `Tu pedido cambió al estado: ${nuevoEstado}`;
       }
 
