@@ -343,6 +343,11 @@
             // Ocultar Loader
             document.getElementById('order-loader').style.display = 'none';
 
+            const stepPago  = document.getElementById('step-pago');
+            const pagoText  = document.getElementById('pago-text');
+            const actionArea = document.getElementById('action-area');
+            const mainTitle  = document.getElementById('main-title');
+
             // Caso especial: pedido cancelado
             if (order.estado === 'cancelado') {
                 mainTitle.innerText = 'Pedido cancelado';
@@ -350,7 +355,7 @@
                 document.getElementById('order-id-badge').style.color = '#a33';
                 document.getElementById('order-id-badge').style.borderColor = 'rgba(170,51,51,0.15)';
                 document.getElementById('order-stepper').style.display = 'none';
-                document.getElementById('action-area').innerHTML = `
+                actionArea.innerHTML = `
                     <div style="background:#fff5f5; border-radius:16px; padding:20px; margin:20px 0; font-size:14px; color:#a33; text-align:center;">
                         ↩️ Este pedido fue cancelado.<br>
                         <span style="color:#888; font-size:12px;">Si realizaste un pago, el reembolso llega en 3–15 días hábiles.</span>
@@ -362,11 +367,6 @@
             }
 
             document.getElementById('order-stepper').style.display = 'flex';
-
-            const stepPago = document.getElementById('step-pago');
-            const pagoText = document.getElementById('pago-text');
-            const actionArea = document.getElementById('action-area');
-            const mainTitle = document.getElementById('main-title');
 
             // Definición de botones reutilizables
             const btnHome = `<button onclick="window.location.href='tienda.html'" class="btn-primary-corcega" style="margin-top:20px;">Seguir comprando</button>`;
