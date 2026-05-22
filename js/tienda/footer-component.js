@@ -73,13 +73,12 @@ function renderFooter(config) {
             </div>
             ${addressHTML}
             ${socialsHTML}
+            <a href="arrepentimiento.html" class="footer-arrepentimiento-link" title="Botón de Arrepentimiento — Ley 24.240">
+                <i class="fas fa-undo-alt"></i> Botón de Arrepentimiento
+            </a>
         </div>
     </div>
     <div class="tienda-footer-bottom">
-        <a href="arrepentimiento.html" class="footer-arrepentimiento-link" title="Botón de Arrepentimiento — Ley 24.240">
-            <i class="fas fa-undo-alt"></i> Botón de Arrepentimiento
-        </a>
-        <span class="footer-sep">·</span>
         © ${year} Córcega Café &nbsp;·&nbsp; Hecho con <span style="color:#ed7053">♥</span> por ${FILGUEIRA_LOGO}
     </div>`;
 }

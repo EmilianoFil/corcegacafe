@@ -775,21 +775,22 @@ header {
 .footer-arrepentimiento-link {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.2);
+  gap: 6px;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.22);
   border-radius: 100px;
-  padding: 4px 12px 4px 10px;
-  font-size: 11px !important;
+  padding: 7px 16px 7px 13px;
+  font-size: 12px !important;
   font-weight: 600 !important;
+  color: rgba(255,255,255,0.75) !important;
   letter-spacing: 0.03em;
-  margin-bottom: 8px;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+  margin-top: 4px;
 }
 .footer-arrepentimiento-link:hover {
-  background: rgba(255,255,255,0.22) !important;
-}
-.footer-sep {
-  display: none;
+  background: rgba(255,255,255,0.18) !important;
+  color: white !important;
 }
 
 /* ===== HAMBURGER MENU ===== */
