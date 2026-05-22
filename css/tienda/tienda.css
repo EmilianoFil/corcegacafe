@@ -772,6 +772,10 @@ header {
   color: var(--naranja-accent);
 }
 
+.tienda-footer-inner a {
+  color: rgba(255,255,255,0.75);
+  text-decoration: none;
+}
 .footer-arrepentimiento-link {
   display: inline-flex;
   align-items: center;
@@ -780,17 +784,17 @@ header {
   border: 1px solid rgba(255,255,255,0.22);
   border-radius: 100px;
   padding: 7px 16px 7px 13px;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  color: rgba(255,255,255,0.75) !important;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
   letter-spacing: 0.03em;
   text-decoration: none;
   transition: background 0.2s, color 0.2s;
   margin-top: 4px;
 }
 .footer-arrepentimiento-link:hover {
-  background: rgba(255,255,255,0.18) !important;
-  color: white !important;
+  background: rgba(255,255,255,0.18);
+  color: white;
 }
 
 /* ===== HAMBURGER MENU ===== */
