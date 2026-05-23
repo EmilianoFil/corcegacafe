@@ -3677,9 +3677,9 @@
                 if (!user) { alert('Sesión expirada. Recargá la página.'); return; }
                 const token = await user.getIdToken();
 
-                const btn = event.target;
-                btn.textContent = 'Procesando...';
-                btn.disabled = true;
+                // btn puede ser null si se llama desde el modal de orden (sin evento de click directo)
+                const btn = event?.target || null;
+                if (btn) { btn.textContent = 'Procesando...'; btn.disabled = true; }
 
                 const res = await fetch('https://us-central1-corcega-loyalty-club.cloudfunctions.net/procesarDevolucion', {
                     method: 'POST',
@@ -3699,11 +3699,10 @@
                         ? '🏦 Reembolso manual pendiente (transferencia).'
                         : '↩️ Pedido cancelado.';
                     alert(`${msgReembolso}\nSe envió mail de confirmación al cliente.`);
-                    loadArrepentimientos(); // Recargar la tabla
+                    loadArrepentimientos();
                 } else {
                     alert(`Error: ${data.error || data.message || 'Error desconocido'}`);
-                    btn.textContent = '📦 Confirmar y reembolsar';
-                    btn.disabled = false;
+                    if (btn) { btn.textContent = '📦 Confirmar y reembolsar'; btn.disabled = false; }
                 }
             } catch (err) {
                 console.error('Error procesarDevolucion:', err);
