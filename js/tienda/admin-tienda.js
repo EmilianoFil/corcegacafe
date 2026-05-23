@@ -611,15 +611,20 @@ export async function loadOrdenesTable(filtro = 'todos') {
                         $${o.total.toLocaleString('es-AR')}
                     </td>
                     <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03) !important; vertical-align: middle; background-color: ${rowBg} !important;">
-                        <select onchange="window.tiendaAdmin.cambiarEstadoOrden('${o.id}', this.value)" class="status-select status-${o.estado}" style="padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; border: none; cursor:pointer; width: 100%; min-width: 140px;">
-                            <option value="pendiente_pago" ${o.estado === 'pendiente_pago' ? 'selected' : ''}>PENDIENTE PAGO</option>
-                            <option value="pagado" ${o.estado === 'pagado' ? 'selected' : ''}>PAGADO</option>
-                            <option value="en_preparacion" ${o.estado === 'en_preparacion' ? 'selected' : ''}>EN PREPARACIÓN</option>
-                            <option value="listo" ${o.estado === 'listo' ? 'selected' : ''}>LISTO / PARA RETIRAR</option>
-                            <option value="en_camino" ${o.estado === 'en_camino' ? 'selected' : ''}>EN CAMINO</option>
-                            <option value="entregado" ${o.estado === 'entregado' ? 'selected' : ''}>ENTREGADO</option>
-                            <option value="cancelado" ${o.estado === 'cancelado' ? 'selected' : ''}>CANCELADO</option>
-                        </select>
+                        ${o.estado === 'pendiente_devolucion'
+                            ? `<span style="display:inline-block; background:#fff8e1; color:#7a5000; border:1.5px solid #ffe082; border-radius:8px; padding:8px 12px; font-size:11px; font-weight:800; white-space:nowrap;">📦 DEVOLUCIÓN PENDIENTE</span>`
+                            : o.estado === 'cancelado'
+                            ? `<span style="display:inline-block; background:#fff0f0; color:#a33; border:1.5px solid #ffd7d7; border-radius:8px; padding:8px 12px; font-size:11px; font-weight:800;">↩️ CANCELADO</span>`
+                            : `<select onchange="window.tiendaAdmin.cambiarEstadoOrden('${o.id}', this.value)" class="status-select status-${o.estado}" style="padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; border: none; cursor:pointer; width: 100%; min-width: 140px;">
+                                <option value="pendiente_pago" ${o.estado === 'pendiente_pago' ? 'selected' : ''}>PENDIENTE PAGO</option>
+                                <option value="pagado" ${o.estado === 'pagado' ? 'selected' : ''}>PAGADO</option>
+                                <option value="en_preparacion" ${o.estado === 'en_preparacion' ? 'selected' : ''}>EN PREPARACIÓN</option>
+                                <option value="listo" ${o.estado === 'listo' ? 'selected' : ''}>LISTO / PARA RETIRAR</option>
+                                <option value="en_camino" ${o.estado === 'en_camino' ? 'selected' : ''}>EN CAMINO</option>
+                                <option value="entregado" ${o.estado === 'entregado' ? 'selected' : ''}>ENTREGADO</option>
+                                <option value="cancelado" ${o.estado === 'cancelado' ? 'selected' : ''}>CANCELADO</option>
+                            </select>`
+                        }
                     </td>
                     <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03) !important; text-align: right; vertical-align: middle; background-color: ${rowBg} !important;">
                         <button class="btn-secondary" onclick="window.tiendaAdmin.verDetalleOrden('${o.id}')" style="padding:8px 15px; font-size:11px; font-weight:700; border-radius:8px; border:1px solid #eee; background:white; cursor:pointer; transition: all 0.2s;">🔍 DETALLES</button>
@@ -642,13 +647,38 @@ export async function verDetalleOrden(id) {
         if (!docSnap.exists()) return;
         const orden = docSnap.data();
 
+        const estadoLabels = {
+            pendiente_pago: 'PENDIENTE PAGO',
+            recibido: 'RECIBIDO',
+            pagado: 'PAGADO',
+            en_preparacion: 'EN PREPARACIÓN',
+            listo: 'LISTO PARA RETIRAR',
+            en_camino: 'EN CAMINO',
+            entregado: 'ENTREGADO',
+            finalizado: 'FINALIZADO',
+            cancelado: 'CANCELADO',
+            pendiente_devolucion: '📦 DEVOLUCIÓN PENDIENTE'
+        };
+        const estadoLabel = estadoLabels[orden.estado] || orden.estado.toUpperCase().replace(/_/g, ' ');
+
+        const devolucionBanner = orden.estado === 'pendiente_devolucion' ? `
+            <div style="background:#fff8e1; border:1.5px solid #ffe082; border-radius:14px; padding:16px 18px; margin-bottom:20px;">
+                <div style="font-weight:700; font-size:14px; color:#7a5000; margin-bottom:6px;">📦 Solicitud de arrepentimiento activa</div>
+                <div style="font-size:13px; color:#888; margin-bottom:14px; line-height:1.5;">El cliente solicitó cancelar este pedido. Cuando traiga el producto al local, confirmá la devolución para procesar el reembolso.</div>
+                <button onclick="window.confirmarDevolucionPorOrden('${id}', '${orden.orderNumber || id.substring(0,6)}')"
+                    style="width:100%; background:#25a244; color:white; border:none; border-radius:10px; padding:12px; font-weight:800; font-size:14px; cursor:pointer; letter-spacing:0.5px;">
+                    ✅ Confirmar devolución y reembolsar
+                </button>
+            </div>` : '';
+
         const modalHtml = `
             <div id="modal-detalle-orden" class="modal-overlay" style="display:flex; align-items:center; justify-content:center; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:12000; padding:20px;">
                 <div class="card" style="width:100%; max-width:550px; position:relative; max-height:90vh; overflow-y:auto; padding:30px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <h3 style="margin:0; font-size:1.4rem;">Orden #${id.substring(0,6)}</h3>
-                        <span class="badge-status status-${orden.estado}">${orden.estado.toUpperCase()}</span>
+                        <h3 style="margin:0; font-size:1.4rem;">Orden #${orden.orderNumber || id.substring(0,6)}</h3>
+                        <span class="badge-status status-${orden.estado}">${estadoLabel}</span>
                     </div>
+                    ${devolucionBanner}
 
                     <div style="background:#fdfcf7; padding:20px; border-radius:16px; margin-bottom:20px; border:1px solid #eee;">
                         <p style="margin:0 0 10px; font-weight:700;">Cliente:</p>
@@ -1053,7 +1083,9 @@ function getOrderStatusBg(status) {
         'pagado': '#f6ffed',
         'en_preparacion': '#e6f7ff',
         'listo': '#f9f0ff',
-        'entregado': '#fafafa'
+        'entregado': '#fafafa',
+        'cancelado': '#fdf5f5',
+        'pendiente_devolucion': '#fffdf0'
     };
     return bgs[status] || '#f5f5f5';
 }
@@ -1064,7 +1096,9 @@ function getOrderStatusColor(status) {
         'pagado': '#52c41a',
         'en_preparacion': '#1890ff',
         'listo': '#722ed1',
-        'entregado': '#999'
+        'entregado': '#999',
+        'cancelado': '#a33',
+        'pendiente_devolucion': '#7a5000'
     };
     return colors[status] || '#666';
 }

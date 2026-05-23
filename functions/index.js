@@ -49,6 +49,13 @@ const renderStepperHtml = (estadoActual) => {
         </div>`;
     }
 
+    if (estadoActual === 'pendiente_devolucion') {
+        return `
+        <div style="margin: 30px 0; padding: 20px; background: #fff8e1; border-radius: 20px; border: 1px solid #ffe082; text-align: center; color: #7a5000; font-size: 15px; font-weight: 700;">
+            📦 Devolución pendiente — esperando recepción del producto en el local
+        </div>`;
+    }
+
     let indexActual = pasos.findIndex(p => p.id === estadoActual);
     if (estadoActual === 'pendiente_pago' || estadoActual === 'transferencia') indexActual = 0;
     if (indexActual === -1) indexActual = 0;
@@ -1440,6 +1447,11 @@ exports.onOrderUpdated = onDocumentUpdated(
             emoji = "↩️";
             color = "#888";
             break;
+        case 'pendiente_devolucion':
+            statusMsg = "Solicitud de cancelación en proceso";
+            emoji = "📦";
+            color = "#e67e22";
+            break;
         default:
             statusMsg = `Tu pedido cambió al estado: ${nuevoEstado}`;
       }
@@ -1648,9 +1660,12 @@ exports.solicitarArrepentimiento = onRequest(
         return res.status(403).json({ error: "email_no_coincide" });
       }
 
-      // Verificar que ya no esté cancelado
+      // Verificar que ya no esté cancelado o en proceso de devolución
       if (order.estado === 'cancelado') {
         return res.status(400).json({ error: "ya_cancelado" });
+      }
+      if (order.estado === 'pendiente_devolucion') {
+        return res.status(400).json({ error: "ya_en_devolucion" });
       }
 
       // Verificar plazo de 10 días
@@ -1677,8 +1692,96 @@ exports.solicitarArrepentimiento = onRequest(
       const codigo = 'ARREP-' + Date.now().toString(36).toUpperCase().slice(-4) +
                      Math.random().toString(36).substring(2, 4).toUpperCase();
 
-      // Guardar en Firestore
-      const arrepRef = await db.collection("arrepentimientos").add({
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: emailUser.value(), pass: emailPass.value() }
+      });
+
+      // ══════════════════════════════════════════════════════════════════
+      // CAMINO A: SIN PAGO — cancelar directamente, sin devolución física
+      // ══════════════════════════════════════════════════════════════════
+      if (sinPago) {
+        await db.collection("arrepentimientos").add({
+          codigo,
+          orderId,
+          orderNumber: order.orderNumber,
+          clienteNombre: nombre,
+          clienteEmail: email,
+          clienteTelefono: telefono || null,
+          motivo: motivo || null,
+          metodoPago: order.metodoPago,
+          total: order.total,
+          mp_payment_id: null,
+          estado: 'cancelado_sin_pago',
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        await db.collection("ordenes").doc(orderId).update({
+          estado: 'cancelado',
+          canceladoEn: admin.firestore.FieldValue.serverTimestamp(),
+          motivoCancelacion: `Arrepentimiento ${codigo} (sin pago)`
+        });
+
+        // Mail al cliente
+        await transporter.sendMail({
+          from: `Córcega Café <${emailUser.value()}>`,
+          to: email,
+          subject: `✅ Cancelación confirmada - ${codigo}`,
+          html: `
+            <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
+              <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega Café" style="max-width:120px; margin-bottom:24px;">
+              <h2 style="color:#d86634; margin:0 0 8px 0;">Pedido cancelado</h2>
+              <p style="color:#666; font-size:15px;">Hola <strong>${nombre}</strong>, cancelamos tu pedido <strong>#${order.orderNumber}</strong>.</p>
+              <div style="background:#f0f7ff; border:1.5px solid #cce0ff; border-radius:14px; padding:16px; margin:20px 0; display:inline-block;">
+                <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Código de gestión</div>
+                <div style="font-size:1.3rem; font-weight:900; color:#1a4a8a; letter-spacing:0.08em;">${codigo}</div>
+              </div>
+              <div style="background:#f9f7f2; border-radius:14px; padding:16px; text-align:left; font-size:14px; color:#555; margin-bottom:20px;">
+                <p style="margin:0;">Tu pedido fue cancelado. No realizaste ningún pago, así que no hay reembolso pendiente.</p>
+              </div>
+              <p style="font-size:12px; color:#999; border-top:1px solid #eee; padding-top:20px; margin-top:10px;">
+                Conforme Ley 24.240 Art. 34 — Derecho de Revocación<br>
+                <strong>Córcega Café</strong>
+              </p>
+            </div>
+          `
+        }).catch(err => logger.error("Error mail arrepentimiento sin pago:", err));
+
+        // Mail al admin
+        await transporter.sendMail({
+          from: `Córcega Café <${emailUser.value()}>`,
+          to: "emilianofilgueira@gmail.com",
+          subject: `↩️ Cancelación sin pago ${codigo} — Pedido #${order.orderNumber}`,
+          html: `
+            <div style="font-family:sans-serif; max-width:500px; margin:auto; padding:24px; border:1px solid #eee; border-radius:16px;">
+              <h2 style="color:#888;">Cancelación sin pago</h2>
+              <table style="width:100%; font-size:14px; border-collapse:collapse;">
+                <tr><td style="padding:6px 0; color:#666; width:40%;">Código</td><td><strong>${codigo}</strong></td></tr>
+                <tr><td style="padding:6px 0; color:#666;">Pedido</td><td><strong>#${order.orderNumber}</strong></td></tr>
+                <tr><td style="padding:6px 0; color:#666;">Cliente</td><td>${nombre}</td></tr>
+                <tr><td style="padding:6px 0; color:#666;">Email</td><td>${email}</td></tr>
+                <tr><td style="padding:6px 0; color:#666;">Motivo</td><td>${motivo || '—'}</td></tr>
+              </table>
+              <p style="margin-top:16px; font-size:12px; color:#999;">El pedido no tenía pago registrado, fue cancelado directamente.</p>
+            </div>
+          `
+        }).catch(err => logger.error("Error mail admin sin pago:", err));
+
+        await db.collection("logs").add({
+          accion: "arrepentimiento_sin_pago",
+          detalles: `Código: ${codigo} — Orden #${order.orderNumber}`,
+          usuario: email,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        return res.status(200).json({ success: true, codigo, reembolso: 'sin_pago' });
+      }
+
+      // ══════════════════════════════════════════════════════════════════
+      // CAMINO B: CON PAGO — registrar y esperar devolución física
+      // El reembolso se procesa DESPUÉS cuando el admin confirma la recepción
+      // ══════════════════════════════════════════════════════════════════
+      await db.collection("arrepentimientos").add({
         codigo,
         orderId,
         orderNumber: order.orderNumber,
@@ -1689,55 +1792,21 @@ exports.solicitarArrepentimiento = onRequest(
         metodoPago: order.metodoPago,
         total: order.total,
         mp_payment_id: order.mp_payment_id || null,
-        estado: 'pendiente',
+        estado: 'pendiente_devolucion',
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      // Cancelar la orden
       await db.collection("ordenes").doc(orderId).update({
-        estado: 'cancelado',
-        canceladoEn: admin.firestore.FieldValue.serverTimestamp(),
+        estado: 'pendiente_devolucion',
+        arrepentimientoSolicitadoEn: admin.firestore.FieldValue.serverTimestamp(),
         motivoCancelacion: `Arrepentimiento ${codigo}`
       });
 
-      // Reembolso automático si pagó con MP
-      let reembolsoEstado = 'sin_pago';
-      if (order.metodoPago === 'mercadopago' && order.mp_payment_id) {
-        try {
-          const { MercadoPagoConfig, PaymentRefund } = require("mercadopago");
-          const mpClient = new MercadoPagoConfig({ accessToken: mpAccessToken.value() });
-          const refundClient = new PaymentRefund(mpClient);
-          await refundClient.create({ payment_id: String(order.mp_payment_id), body: {} });
-          reembolsoEstado = 'procesado';
-          await arrepRef.update({ estado: 'reembolso_procesado', reembolso_mp: true });
-          logger.info(`Reembolso MP procesado para orden ${orderId} (pago ${order.mp_payment_id})`);
-        } catch (mpErr) {
-          reembolsoEstado = 'error';
-          await arrepRef.update({ estado: 'reembolso_fallido', reembolso_error: mpErr.message });
-          logger.error(`Error reembolso MP para orden ${orderId}:`, mpErr);
-        }
-      } else if (order.metodoPago === 'transferencia') {
-        reembolsoEstado = 'manual';
-        await arrepRef.update({ estado: 'reembolso_manual_pendiente' });
-      }
-
-      // Emails
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: { user: emailUser.value(), pass: emailPass.value() }
-      });
-
-      const reembolsoMsgCliente = reembolsoEstado === 'procesado'
-        ? `<p style="margin:0;">💳 El <strong>reembolso fue procesado automáticamente</strong> en Mercado Pago. El dinero aparece en tu cuenta en 3 a 15 días hábiles según tu banco o billetera virtual.</p>`
-        : reembolsoEstado === 'manual'
-        ? `<p style="margin:0;">🏦 Pagaste por <strong>transferencia bancaria</strong>. Nos comunicaremos con vos dentro de las 24 hs para coordinar la devolución.</p>`
-        : `<p style="margin:0;">Un miembro del equipo se comunicará con vos dentro de las 24 hs.</p>`;
-
-      // Mail al cliente
+      // Mail al cliente — instrucciones de devolución
       await transporter.sendMail({
         from: `Córcega Café <${emailUser.value()}>`,
         to: email,
-        subject: `✅ Solicitud de cancelación registrada - ${codigo}`,
+        subject: `📦 Solicitud registrada — necesitamos que devuelvas el producto (${codigo})`,
         html: `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
             <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega Café" style="max-width:120px; margin-bottom:24px;">
@@ -1747,7 +1816,146 @@ exports.solicitarArrepentimiento = onRequest(
               <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Código de gestión</div>
               <div style="font-size:1.3rem; font-weight:900; color:#1a4a8a; letter-spacing:0.08em;">${codigo}</div>
             </div>
-            <div style="background:#f9f7f2; border-radius:14px; padding:16px; text-align:left; font-size:14px; color:#555; margin-bottom:20px;">
+            <div style="background:#fff8e1; border:1px solid #ffe082; border-radius:14px; padding:20px; text-align:left; font-size:14px; color:#5a4000; margin-bottom:20px;">
+              <p style="margin:0 0 12px 0; font-weight:700; font-size:15px;">📦 Próximo paso: devolver el producto</p>
+              <p style="margin:0 0 10px 0;">Para completar la cancelación necesitamos que <strong>devuelvas el producto al local</strong>.</p>
+              <p style="margin:0; font-size:12px; color:#888; line-height:1.6;">Una vez que lo recibamos, procesaremos el reembolso de <strong>$${(order.total||0).toLocaleString('es-AR')}</strong> y te avisamos por este mail en 3 a 15 días hábiles.</p>
+            </div>
+            <p style="font-size:12px; color:#999; border-top:1px solid #eee; padding-top:20px; margin-top:10px;">
+              Conforme Ley 24.240 Art. 34 — Derecho de Revocación<br>
+              <strong>Córcega Café</strong>
+            </p>
+          </div>
+        `
+      }).catch(err => logger.error("Error mail arrepentimiento con pago — cliente:", err));
+
+      // Mail al admin — acción requerida
+      await transporter.sendMail({
+        from: `Córcega Café <${emailUser.value()}>`,
+        to: "emilianofilgueira@gmail.com",
+        subject: `⚠️ Arrepentimiento pendiente — ${codigo} — Pedido #${order.orderNumber} ($${order.total?.toLocaleString('es-AR')})`,
+        html: `
+          <div style="font-family:sans-serif; max-width:500px; margin:auto; padding:24px; border:1px solid #eee; border-radius:16px;">
+            <h2 style="color:#e67e22;">🚨 Arrepentimiento — Devolución pendiente</h2>
+            <p style="color:#555; font-size:14px;">El cliente solicita cancelar su pedido. <strong>Esperá la devolución física del producto antes de reembolsar.</strong></p>
+            <table style="width:100%; font-size:14px; border-collapse:collapse; margin-top:16px;">
+              <tr><td style="padding:6px 0; color:#666; width:40%;">Código</td><td><strong>${codigo}</strong></td></tr>
+              <tr><td style="padding:6px 0; color:#666;">Pedido</td><td><strong>#${order.orderNumber}</strong></td></tr>
+              <tr><td style="padding:6px 0; color:#666;">Cliente</td><td>${nombre}</td></tr>
+              <tr><td style="padding:6px 0; color:#666;">Email</td><td>${email}</td></tr>
+              <tr><td style="padding:6px 0; color:#666;">Teléfono</td><td>${telefono || '—'}</td></tr>
+              <tr><td style="padding:6px 0; color:#666;">Total</td><td><strong>$${order.total?.toLocaleString('es-AR')}</strong></td></tr>
+              <tr><td style="padding:6px 0; color:#666;">Método de pago</td><td>${order.metodoPago}</td></tr>
+              <tr><td style="padding:6px 0; color:#666;">Motivo</td><td>${motivo || '—'}</td></tr>
+            </table>
+            <div style="margin-top:20px; padding:14px; background:#fff8e1; border-radius:12px; border:1px solid #ffe082; font-size:13px; color:#7a5000;">
+              <strong>Acción requerida:</strong> Cuando el cliente traiga el producto al local, confirmá la devolución desde el panel de administración para procesar el reembolso.
+            </div>
+          </div>
+        `
+      }).catch(err => logger.error("Error mail admin con pago:", err));
+
+      await db.collection("logs").add({
+        accion: "arrepentimiento_pendiente_devolucion",
+        detalles: `Código: ${codigo} — Orden #${order.orderNumber} — Pago: ${order.metodoPago}`,
+        usuario: email,
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      return res.status(200).json({ success: true, codigo, reembolso: 'pendiente_devolucion' });
+    });
+  }
+);
+
+// ─── PROCESAR DEVOLUCIÓN (admin confirma recepción del producto y dispara reembolso) ─────
+exports.procesarDevolucion = onRequest(
+  { region: "us-central1", secrets: [emailUser, emailPass, mpAccessToken] },
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      if (!await verificarAuthAdmin(req, res)) return;
+
+      const { arrepentimientoId } = req.body;
+      if (!arrepentimientoId) {
+        return res.status(400).json({ error: "Falta arrepentimientoId" });
+      }
+
+      const arrepDoc = await db.collection("arrepentimientos").doc(arrepentimientoId).get();
+      if (!arrepDoc.exists) {
+        return res.status(404).json({ error: "arrepentimiento_no_encontrado" });
+      }
+
+      const arrep = arrepDoc.data();
+
+      if (arrep.estado !== 'pendiente_devolucion') {
+        return res.status(400).json({ error: "estado_invalido", estado: arrep.estado });
+      }
+
+      const { orderId, mp_payment_id, metodoPago, codigo, orderNumber,
+              clienteNombre, clienteEmail, total } = arrep;
+
+      // Procesar reembolso MP si aplica
+      let reembolsoEstado = 'sin_pago';
+      if (metodoPago === 'mercadopago' && mp_payment_id) {
+        try {
+          const { MercadoPagoConfig, PaymentRefund } = require("mercadopago");
+          const mpClient = new MercadoPagoConfig({ accessToken: mpAccessToken.value() });
+          const refundClient = new PaymentRefund(mpClient);
+          await refundClient.create({ payment_id: String(mp_payment_id), body: {} });
+          reembolsoEstado = 'procesado';
+          logger.info(`Reembolso MP procesado — arrepentimiento ${codigo} (pago ${mp_payment_id})`);
+        } catch (mpErr) {
+          logger.error(`Error reembolso MP — arrepentimiento ${codigo}:`, mpErr);
+          return res.status(500).json({ error: "reembolso_fallido", message: mpErr.message });
+        }
+      } else if (metodoPago === 'transferencia') {
+        reembolsoEstado = 'manual';
+      }
+
+      // Cancelar la orden
+      await db.collection("ordenes").doc(orderId).update({
+        estado: 'cancelado',
+        canceladoEn: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Actualizar el arrepentimiento
+      const nuevoEstadoArrep = reembolsoEstado === 'procesado'
+        ? 'reembolso_procesado'
+        : reembolsoEstado === 'manual'
+        ? 'reembolso_manual_pendiente'
+        : 'cancelado_sin_pago';
+
+      await arrepDoc.ref.update({
+        estado: nuevoEstadoArrep,
+        procesadoEn: admin.firestore.FieldValue.serverTimestamp(),
+        reembolso_mp: reembolsoEstado === 'procesado'
+      });
+
+      // Mail de confirmación al cliente
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: emailUser.value(), pass: emailPass.value() }
+      });
+
+      const reembolsoMsgCliente = reembolsoEstado === 'procesado'
+        ? `<p style="margin:0;">💳 El <strong>reembolso fue procesado</strong> en Mercado Pago. El dinero aparece en tu cuenta en 3 a 15 días hábiles según tu banco o billetera virtual.</p>`
+        : reembolsoEstado === 'manual'
+        ? `<p style="margin:0;">🏦 Pagaste por transferencia. Nos comunicaremos con vos dentro de las 24 hs para coordinar la devolución del dinero.</p>`
+        : `<p style="margin:0;">Tu pedido fue cancelado. Si tenés dudas, contactanos por WhatsApp.</p>`;
+
+      await transporter.sendMail({
+        from: `Córcega Café <${emailUser.value()}>`,
+        to: clienteEmail,
+        subject: `✅ Devolución confirmada — ${codigo}`,
+        html: `
+          <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
+            <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega Café" style="max-width:120px; margin-bottom:24px;">
+            <h2 style="color:#25a244; margin:0 0 8px 0;">¡Devolución recibida!</h2>
+            <p style="color:#666; font-size:15px;">Hola <strong>${clienteNombre}</strong>, recibimos el producto del pedido <strong>#${orderNumber}</strong>.</p>
+            <div style="background:#f0f7ff; border:1.5px solid #cce0ff; border-radius:14px; padding:16px; margin:20px 0; display:inline-block;">
+              <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Código de gestión</div>
+              <div style="font-size:1.3rem; font-weight:900; color:#1a4a8a; letter-spacing:0.08em;">${codigo}</div>
+            </div>
+            <div style="background:#f0fff4; border:1px solid #b7f5c5; border-radius:14px; padding:16px; text-align:left; font-size:14px; color:#1a4d2e; margin-bottom:20px;">
               ${reembolsoMsgCliente}
             </div>
             <p style="font-size:12px; color:#999; border-top:1px solid #eee; padding-top:20px; margin-top:10px;">
@@ -1756,39 +1964,16 @@ exports.solicitarArrepentimiento = onRequest(
             </p>
           </div>
         `
-      }).catch(err => logger.error("Error mail arrepentimiento cliente:", err));
-
-      // Mail al admin
-      await transporter.sendMail({
-        from: `Córcega Café <${emailUser.value()}>`,
-        to: "emilianofilgueira@gmail.com",
-        subject: `⚠️ Arrepentimiento ${codigo} — Pedido #${order.orderNumber} ($${order.total?.toLocaleString('es-AR')})`,
-        html: `
-          <div style="font-family:sans-serif; max-width:500px; margin:auto; padding:24px; border:1px solid #eee; border-radius:16px;">
-            <h2 style="color:#d86634;">Nuevo Arrepentimiento</h2>
-            <table style="width:100%; font-size:14px; border-collapse:collapse;">
-              <tr><td style="padding:6px 0; color:#666; width:40%;">Código</td><td><strong>${codigo}</strong></td></tr>
-              <tr><td style="padding:6px 0; color:#666;">Pedido</td><td><strong>#${order.orderNumber}</strong></td></tr>
-              <tr><td style="padding:6px 0; color:#666;">Cliente</td><td>${nombre}</td></tr>
-              <tr><td style="padding:6px 0; color:#666;">Email</td><td>${email}</td></tr>
-              <tr><td style="padding:6px 0; color:#666;">Teléfono</td><td>${telefono || '—'}</td></tr>
-              <tr><td style="padding:6px 0; color:#666;">Total</td><td><strong>$${order.total?.toLocaleString('es-AR')}</strong></td></tr>
-              <tr><td style="padding:6px 0; color:#666;">Pago</td><td>${order.metodoPago}</td></tr>
-              <tr><td style="padding:6px 0; color:#666;">Reembolso</td><td><strong>${reembolsoEstado}</strong></td></tr>
-              <tr><td style="padding:6px 0; color:#666;">Motivo</td><td>${motivo || '—'}</td></tr>
-            </table>
-          </div>
-        `
-      }).catch(err => logger.error("Error mail arrepentimiento admin:", err));
+      }).catch(err => logger.error("Error mail confirmación devolución:", err));
 
       await db.collection("logs").add({
-        accion: "arrepentimiento_procesado",
-        detalles: `Código: ${codigo} — Orden #${order.orderNumber} — Reembolso: ${reembolsoEstado}`,
-        usuario: email,
+        accion: "devolucion_procesada",
+        detalles: `Código: ${codigo} — Orden #${orderNumber} — Reembolso: ${reembolsoEstado}`,
+        usuario: "admin",
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      return res.status(200).json({ success: true, codigo, reembolso: reembolsoEstado });
+      return res.status(200).json({ success: true, reembolso: reembolsoEstado });
     });
   }
 );

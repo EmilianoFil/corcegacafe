@@ -285,9 +285,9 @@
     <!-- Estado: Éxito -->
     <div id="state-success">
         <div class="card" style="text-align:center; padding: 40px 28px;">
-            <span class="result-icon">✅</span>
-            <div class="result-title">Solicitud registrada</div>
-            <p class="result-text">Recibimos tu pedido de cancelación. En las próximas 24 hs te enviaremos un mail de confirmación con los detalles del reembolso.</p>
+            <span class="result-icon" id="success-icon">✅</span>
+            <div class="result-title" id="success-title">Solicitud registrada</div>
+            <p class="result-text" id="success-text">Tu cancelación fue procesada.</p>
             <div class="code-badge" id="codigo-display"></div>
             <div class="info-block" id="reembolso-info"></div>
             <a href="tienda.html" class="btn-back">← Volver a la tienda</a>
@@ -375,14 +375,34 @@
             if (res.ok && data.success) {
                 document.getElementById('codigo-display').textContent = data.codigo;
 
+                let icon = '✅';
+                let title = 'Solicitud registrada';
+                let text = '';
                 let reembolsoMsg = '';
-                if (data.reembolso === 'procesado') {
-                    reembolsoMsg = '💳 El reembolso fue procesado automáticamente en Mercado Pago. El dinero aparece en tu cuenta en 3 a 15 días hábiles según tu banco o billetera.';
+
+                if (data.reembolso === 'sin_pago') {
+                    title = 'Pedido cancelado';
+                    text = 'Tu pedido fue cancelado exitosamente. No realizaste ningún pago, así que no hay reembolso pendiente.';
+                    reembolsoMsg = '✅ No hay nada más que hacer. Tu pedido quedó anulado.';
+                } else if (data.reembolso === 'pendiente_devolucion') {
+                    icon = '📦';
+                    title = 'Solicitud registrada';
+                    text = 'Registramos tu solicitud. Para completar el proceso, necesitamos que devuelvas el producto al local.';
+                    reembolsoMsg = '📦 Una vez que recibamos el producto, procesaremos el reembolso y te avisamos por mail. Te llegó un mail con más detalles.';
+                    document.getElementById('reembolso-info').classList.add('warning');
                 } else if (data.reembolso === 'manual') {
-                    reembolsoMsg = '🏦 Pagaste por transferencia bancaria. Un miembro del equipo se comunicará con vos dentro de las 24 hs para coordinar la devolución.';
+                    title = 'Solicitud registrada';
+                    text = 'Recibimos tu pedido de cancelación.';
+                    reembolsoMsg = '🏦 Pagaste por transferencia bancaria. Nos comunicaremos con vos dentro de las 24 hs para coordinar la devolución.';
                 } else {
+                    title = 'Solicitud registrada';
+                    text = 'Recibimos tu pedido de cancelación.';
                     reembolsoMsg = 'Guardamos tu solicitud y nos comunicaremos dentro de las 24 hs.';
                 }
+
+                document.getElementById('success-icon').textContent = icon;
+                document.getElementById('success-title').textContent = title;
+                document.getElementById('success-text').textContent = text;
                 document.getElementById('reembolso-info').textContent = reembolsoMsg;
 
                 showState('state-success');
@@ -401,6 +421,11 @@
 
             } else {
                 const errMap = {
+                    ya_en_devolucion: {
+                        title: 'Ya registramos tu solicitud',
+                        text: 'Ya tenemos una solicitud de cancelación activa para este pedido. Llevá el producto al local para completar el proceso.',
+                        detail: 'Si tenés dudas sobre el estado de tu devolución, contactanos por WhatsApp.'
+                    },
                     plazo_vencido: {
                         title: 'Plazo vencido',
                         text: 'Han pasado más de 10 días corridos desde tu compra. El derecho de revocación venció.',

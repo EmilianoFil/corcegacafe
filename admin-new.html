@@ -2089,7 +2089,7 @@
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
         import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
-        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=15';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=16';
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=8';
         window.cartaAdmin = cartaAdmin;
@@ -3544,6 +3544,7 @@
 
                 // Stats
                 const total = items.length;
+                const pendientes = items.filter(i => i.estado === 'pendiente_devolucion').length;
                 const procesados = items.filter(i => i.estado === 'reembolso_procesado').length;
                 const manuales   = items.filter(i => i.estado === 'reembolso_manual_pendiente').length;
                 const fallidos   = items.filter(i => i.estado === 'reembolso_fallido').length;
@@ -3551,11 +3552,12 @@
                 statsEl.style.display = 'flex';
                 statsEl.innerHTML = [
                     { label: 'Total', val: total, color: '#555' },
-                    { label: 'Reembolso MP', val: procesados, color: '#25a244' },
-                    { label: 'Reembolso manual', val: manuales, color: '#e67e22' },
-                    { label: 'Con error', val: fallidos, color: '#e74c3c' },
+                    { label: '⏳ Dev. pendiente', val: pendientes, color: '#e67e22' },
+                    { label: '✅ Reembolso MP', val: procesados, color: '#25a244' },
+                    { label: '🏦 Manual pendiente', val: manuales, color: '#7a5000' },
+                    { label: '❌ Con error', val: fallidos, color: '#e74c3c' },
                 ].map(s => `
-                    <div style="background:white; border:1px solid #eee; border-radius:14px; padding:16px 20px; min-width:130px; flex:1;">
+                    <div style="background:white; border:1px solid #eee; border-radius:14px; padding:16px 20px; min-width:120px; flex:1; ${s.label.includes('Dev') && s.val > 0 ? 'border-color:#ffe082; background:#fffdf0;' : ''}">
                         <div style="font-size:11px; color:#999; text-transform:uppercase; letter-spacing:0.05em;">${s.label}</div>
                         <div style="font-size:1.8rem; font-weight:800; color:${s.color};">${s.val}</div>
                     </div>`).join('');
@@ -3569,9 +3571,11 @@
 
                 const estadoChip = (estado) => {
                     const map = {
-                        reembolso_procesado:         { label: 'Reembolso MP ✅', bg: '#e6ffed', color: '#1a7a3c' },
-                        reembolso_manual_pendiente:  { label: 'Manual pendiente ⏳', bg: '#fff8e1', color: '#7a5000' },
-                        reembolso_fallido:           { label: 'Error reembolso ❌', bg: '#fff0f0', color: '#c0392b' },
+                        pendiente_devolucion:        { label: '📦 Dev. pendiente', bg: '#fff8e1', color: '#7a5000' },
+                        reembolso_procesado:         { label: '✅ Reembolso MP', bg: '#e6ffed', color: '#1a7a3c' },
+                        reembolso_manual_pendiente:  { label: '🏦 Manual pendiente', bg: '#fff0e8', color: '#7a3000' },
+                        reembolso_fallido:           { label: '❌ Error reembolso', bg: '#fff0f0', color: '#c0392b' },
+                        cancelado_sin_pago:          { label: '↩️ Sin pago', bg: '#f5f5f5', color: '#555' },
                         pendiente:                   { label: 'Pendiente', bg: '#f0f0f0', color: '#555' },
                     };
                     const s = map[estado] || { label: estado, bg: '#eee', color: '#333' };
@@ -3592,12 +3596,19 @@
                                     <th style="padding:12px 16px; text-align:left; font-size:11px; color:#999; font-weight:700; text-transform:uppercase;">Pago</th>
                                     <th style="padding:12px 16px; text-align:left; font-size:11px; color:#999; font-weight:700; text-transform:uppercase;">Estado</th>
                                     <th style="padding:12px 16px; text-align:left; font-size:11px; color:#999; font-weight:700; text-transform:uppercase;">Motivo</th>
+                                    <th style="padding:12px 16px; text-align:left; font-size:11px; color:#999; font-weight:700; text-transform:uppercase;">Acción</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${items.map(i => {
                                     const fecha = i.timestamp?.toDate ? i.timestamp.toDate().toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
-                                    return `<tr style="border-bottom:1px solid #f5f5f5;">
+                                    const accionBtn = i.estado === 'pendiente_devolucion'
+                                        ? `<button onclick="confirmarDevolucion('${i.id}', '${i.codigo}', '${i.orderNumber}')"
+                                                style="background:#25a244; color:white; border:none; border-radius:8px; padding:7px 12px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">
+                                                📦 Confirmar y reembolsar
+                                           </button>`
+                                        : '—';
+                                    return `<tr style="border-bottom:1px solid #f5f5f5; ${i.estado === 'pendiente_devolucion' ? 'background:#fffdf5;' : ''}">
                                         <td style="padding:12px 16px; font-weight:800; color:#1a4a8a;">${i.codigo}</td>
                                         <td style="padding:12px 16px; color:#666;">${fecha}</td>
                                         <td style="padding:12px 16px; font-weight:700;">#${i.orderNumber || '—'}</td>
@@ -3610,6 +3621,7 @@
                                         <td style="padding:12px 16px; color:#666;">${i.metodoPago || '—'}</td>
                                         <td style="padding:12px 16px;">${estadoChip(i.estado)}</td>
                                         <td style="padding:12px 16px; color:#888; font-size:12px; max-width:180px;">${i.motivo || '—'}</td>
+                                        <td style="padding:12px 16px;">${accionBtn}</td>
                                     </tr>`;
                                 }).join('')}
                             </tbody>
@@ -3622,6 +3634,82 @@
 
             loader.style.display = 'none';
         }
+
+        // --- CONFIRMAR DEVOLUCIÓN desde el detalle de una orden ---
+        // Llamado desde el modal de detalle de orden cuando estado === 'pendiente_devolucion'
+        window.confirmarDevolucionPorOrden = async function(orderId, orderNumber) {
+            // Buscar el arrepentimiento asociado a esta orden
+            try {
+                const snap = await getDocs(
+                    query(collection(db, 'arrepentimientos'),
+                        where('orderId', '==', orderId),
+                        where('estado', '==', 'pendiente_devolucion'),
+                        limit(1))
+                );
+
+                if (snap.empty) {
+                    alert('No se encontró un arrepentimiento pendiente para este pedido.\nRevisá la sección Arrepentimientos.');
+                    return;
+                }
+
+                const arrepDoc = snap.docs[0];
+                const arrep = arrepDoc.data();
+                // Delegar al flujo estándar
+                document.getElementById('modal-detalle-orden')?.remove();
+                await window.confirmarDevolucion(arrepDoc.id, arrep.codigo, orderNumber);
+            } catch (err) {
+                console.error('Error buscando arrepentimiento:', err);
+                alert('Error al buscar el arrepentimiento. Intentá desde la sección Arrepentimientos.');
+            }
+        };
+
+        // --- CONFIRMAR DEVOLUCIÓN (admin) ---
+        window.confirmarDevolucion = async function(arrepentimientoId, codigo, orderNumber) {
+            const ok = confirm(
+                `¿Confirmar la devolución del producto del pedido #${orderNumber}?\n\n` +
+                `Código: ${codigo}\n\n` +
+                `Esto procesará el reembolso en Mercado Pago (si aplica) y cancelará el pedido.`
+            );
+            if (!ok) return;
+
+            try {
+                const user = auth.currentUser;
+                if (!user) { alert('Sesión expirada. Recargá la página.'); return; }
+                const token = await user.getIdToken();
+
+                const btn = event.target;
+                btn.textContent = 'Procesando...';
+                btn.disabled = true;
+
+                const res = await fetch('https://us-central1-corcega-loyalty-club.cloudfunctions.net/procesarDevolucion', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ arrepentimientoId })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    const msgReembolso = data.reembolso === 'procesado'
+                        ? '✅ Reembolso procesado en Mercado Pago.'
+                        : data.reembolso === 'manual'
+                        ? '🏦 Reembolso manual pendiente (transferencia).'
+                        : '↩️ Pedido cancelado.';
+                    alert(`${msgReembolso}\nSe envió mail de confirmación al cliente.`);
+                    loadArrepentimientos(); // Recargar la tabla
+                } else {
+                    alert(`Error: ${data.error || data.message || 'Error desconocido'}`);
+                    btn.textContent = '📦 Confirmar y reembolsar';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                console.error('Error procesarDevolucion:', err);
+                alert('Error de red. Intentá nuevamente.');
+            }
+        };
 
         // --- LOGS TABLE LOGIC ---
         async function loadLogsTable() {

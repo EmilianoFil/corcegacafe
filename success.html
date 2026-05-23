@@ -237,7 +237,7 @@
     <script type="module">
         import { db, auth } from './js/firebase-config.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-        import { doc, onSnapshot, updateDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        import { doc, onSnapshot, updateDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
         const urlParams  = new URLSearchParams(window.location.search);
         const orderId    = urlParams.get('orderId');
@@ -245,12 +245,21 @@
         const mpPaymentId = urlParams.get('payment_id') || urlParams.get('collection_id');
 
         // Guardar el ID de pago de MP en Firestore (llega en la URL de redirect)
+        // IMPORTANTE: verificar que el pedido NO esté cancelado ni en devolución antes de
+        // sobreescribir el estado. Sin esta guarda, un refresh de la página con
+        // ?status=approved en la URL pisaría un pedido cancelado y lo volvería a 'pagado'.
         if (orderId && mpPaymentId && mpStatus === 'approved') {
-            updateDoc(doc(db, 'ordenes', orderId), {
-                mp_payment_id: mpPaymentId,
-                estado: 'pagado',
-                impreso: false
-            }).catch(() => {/* sin permisos de escritura pública, el webhook de MP lo hace */});
+            getDoc(doc(db, 'ordenes', orderId)).then(snap => {
+                const estadoActual = snap.exists() ? snap.data().estado : null;
+                const estadosProtegidos = ['cancelado', 'pendiente_devolucion'];
+                if (snap.exists() && !estadosProtegidos.includes(estadoActual)) {
+                    updateDoc(doc(db, 'ordenes', orderId), {
+                        mp_payment_id: mpPaymentId,
+                        estado: 'pagado',
+                        impreso: false
+                    }).catch(() => {/* sin permisos de escritura pública, el webhook de MP lo hace */});
+                }
+            }).catch(() => {/* no se pudo leer, el webhook de MP se encarga */});
         }
 
         if (!orderId) {
@@ -362,6 +371,26 @@
                     </div>
                     <button onclick="window.location.href='tienda.html'" class="btn-primary-corcega" style="margin-top:8px;">Volver a la tienda</button>
                     <button onclick="window.location.href='tienda-cuenta.html'" class="btn-outline-corcega">Ver mis pedidos</button>
+                `;
+                return;
+            }
+
+            // Caso especial: arrepentimiento solicitado — esperando devolución física
+            if (order.estado === 'pendiente_devolucion') {
+                mainTitle.innerText = 'Devolución pendiente';
+                document.getElementById('order-id-badge').style.background = '#fff8e1';
+                document.getElementById('order-id-badge').style.color = '#7a5000';
+                document.getElementById('order-id-badge').style.borderColor = 'rgba(255,224,130,0.5)';
+                document.getElementById('order-stepper').style.display = 'none';
+                actionArea.innerHTML = `
+                    <div style="background:#fff8e1; border-radius:16px; padding:20px; margin:20px 0; text-align:left;">
+                        <div style="font-weight:700; font-size:14px; color:#7a5000; margin-bottom:8px;">📦 Devolución en proceso</div>
+                        <div style="font-size:13px; color:#888; line-height:1.6;">
+                            Registramos tu solicitud de cancelación. Llevá el producto al local para que podamos procesar el reembolso.<br>
+                            <span style="font-size:11px; color:#bbb; margin-top:4px; display:block;">Te avisaremos por mail cuando el reembolso sea procesado.</span>
+                        </div>
+                    </div>
+                    <button onclick="window.location.href='tienda.html'" class="btn-primary-corcega" style="margin-top:8px;">Volver a la tienda</button>
                 `;
                 return;
             }
