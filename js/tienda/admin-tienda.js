@@ -1,6 +1,6 @@
 import { db, storage } from '../firebase-config.js';
 import {
-    collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy, setDoc
+    collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy, setDoc, onSnapshot
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import {
     ref, uploadBytes, getDownloadURL
@@ -576,11 +576,17 @@ export async function eliminarCategoria(id, nombre) {
 // ORDERS LOGIC (Existing)
 // ============================================
 
-export async function loadOrdenesTable(filtro = 'todos') {
-    try {
-        let q = query(collection(db, "ordenes"), orderBy("timestamp", "desc"));
-        const snap = await getDocs(q);
-        let ordenes = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+// Listener activo de órdenes — se cancela al cambiar filtro o salir
+let _unsubOrdenes = null;
+
+export function loadOrdenesTable(filtro = 'todos') {
+    // Cancelar listener anterior si existe
+    if (_unsubOrdenes) { _unsubOrdenes(); _unsubOrdenes = null; }
+
+    const q = query(collection(db, "ordenes"), orderBy("timestamp", "desc"));
+
+    _unsubOrdenes = onSnapshot(q, (snap) => {
+        let ordenes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         // Filtrado en memoria
         if (filtro !== 'todos') {
@@ -590,8 +596,13 @@ export async function loadOrdenesTable(filtro = 'todos') {
         const tbody = document.querySelector('#tablaOrdenesDash tbody');
         if (!tbody) return;
 
+        // Guardar qué modal está abierto para no pisarlo al re-renderizar
+        const modalAbierto = !!document.getElementById('modal-detalle-orden');
+
         tbody.innerHTML = ordenes.map(o => {
-            const date = o.timestamp?.toDate ? o.timestamp.toDate().toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }) : (o.fecha?.toDate ? o.fecha.toDate().toLocaleString('es-AR') : '—');
+            const date = o.timestamp?.toDate
+                ? o.timestamp.toDate().toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })
+                : (o.fecha?.toDate ? o.fecha.toDate().toLocaleString('es-AR') : '—');
             const rowBg = getOrderStatusBg(o.estado);
             return `
                 <tr style="background-color: ${rowBg} !important;">
@@ -632,13 +643,19 @@ export async function loadOrdenesTable(filtro = 'todos') {
                 </tr>
             `;
         }).join('');
-    } catch (err) {
-        console.error("Error loading orders:", err);
-    }
+
+    }, (err) => {
+        console.error("Error en listener de órdenes:", err);
+    });
 }
 
 export function filtrarOrdenes(estado) {
     loadOrdenesTable(estado);
+}
+
+// Detener el listener cuando el admin navega a otra sección
+export function detenerListenerOrdenes() {
+    if (_unsubOrdenes) { _unsubOrdenes(); _unsubOrdenes = null; }
 }
 
 export async function verDetalleOrden(id) {
