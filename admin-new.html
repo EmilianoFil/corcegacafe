@@ -3553,6 +3553,7 @@
                 const procesados = items.filter(i => i.estado === 'reembolso_procesado').length;
                 const manuales   = items.filter(i => i.estado === 'reembolso_manual_pendiente').length;
                 const fallidos   = items.filter(i => i.estado === 'reembolso_fallido').length;
+                const completados = items.filter(i => i.estado === 'completado').length;
 
                 statsEl.style.display = 'flex';
                 statsEl.innerHTML = [
@@ -3560,6 +3561,7 @@
                     { label: '⏳ Dev. pendiente', val: pendientes, color: '#e67e22' },
                     { label: '✅ Reembolso MP', val: procesados, color: '#25a244' },
                     { label: '🏦 Manual pendiente', val: manuales, color: '#7a5000' },
+                    { label: '✅ Completados', val: completados, color: '#1a7a3c' },
                     { label: '❌ Con error', val: fallidos, color: '#e74c3c' },
                 ].map(s => `
                     <div style="background:white; border:1px solid #eee; border-radius:14px; padding:16px 20px; min-width:120px; flex:1; ${s.label.includes('Dev') && s.val > 0 ? 'border-color:#ffe082; background:#fffdf0;' : ''}">
@@ -3581,6 +3583,7 @@
                         reembolso_manual_pendiente:  { label: '🏦 Manual pendiente', bg: '#fff0e8', color: '#7a3000' },
                         reembolso_fallido:           { label: '❌ Error reembolso', bg: '#fff0f0', color: '#c0392b' },
                         cancelado_sin_pago:          { label: '↩️ Sin pago', bg: '#f5f5f5', color: '#555' },
+                        completado:                  { label: '✅ Completado', bg: '#e6ffed', color: '#1a7a3c' },
                         pendiente:                   { label: 'Pendiente', bg: '#f0f0f0', color: '#555' },
                     };
                     const s = map[estado] || { label: estado, bg: '#eee', color: '#333' };
@@ -3611,6 +3614,11 @@
                                         ? `<button onclick="confirmarDevolucion('${i.id}', '${i.codigo}', '${i.orderNumber}')"
                                                 style="background:#25a244; color:white; border:none; border-radius:8px; padding:7px 12px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">
                                                 📦 Confirmar y reembolsar
+                                           </button>`
+                                        : i.estado === 'reembolso_manual_pendiente'
+                                        ? `<button onclick="marcarDevolucionManualEnviada('${i.id}', '${i.orderNumber}')"
+                                                style="background:#1a6bbf; color:white; border:none; border-radius:8px; padding:7px 12px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">
+                                                🏦 Devolución enviada
                                            </button>`
                                         : '—';
                                     return `<tr style="border-bottom:1px solid #f5f5f5; ${i.estado === 'pendiente_devolucion' ? 'background:#fffdf5;' : ''}">
@@ -3712,6 +3720,32 @@
             } catch (err) {
                 console.error('Error procesarDevolucion:', err);
                 alert('Error de red. Intentá nuevamente.');
+            }
+        };
+
+        // --- MARCAR DEVOLUCIÓN MANUAL COMO ENVIADA ---
+        window.marcarDevolucionManualEnviada = async function(arrepentimientoId, orderNumber) {
+            const ok = confirm(
+                `¿Confirmás que ya enviaste la transferencia al cliente del pedido #${orderNumber}?\n\n` +
+                `Esto marcará el arrepentimiento como completado.`
+            );
+            if (!ok) return;
+
+            const btn = event?.target || null;
+            if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
+
+            try {
+                await updateDoc(doc(db, 'arrepentimientos', arrepentimientoId), {
+                    estado: 'completado',
+                    fechaCompletado: serverTimestamp(),
+                    completadoPorAdmin: true
+                });
+                alert('✅ Devolución marcada como completada.');
+                loadArrepentimientos();
+            } catch (err) {
+                console.error('Error marcando devolución manual:', err);
+                alert('Error al guardar. Intentá nuevamente.');
+                if (btn) { btn.textContent = '🏦 Devolución enviada'; btn.disabled = false; }
             }
         };
 
