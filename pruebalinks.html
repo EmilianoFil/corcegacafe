@@ -565,26 +565,26 @@
 
     <div class="teaser-contenido">
       <img src="css/img/Corcega_Logo_Letras_Blanco.png" alt="Córcega" class="teaser-logo">
-      <p class="teaser-titulo">Tienda Córcega</p>
+      <p class="teaser-titulo">Tienda</p>
       <p class="teaser-subtitulo">Rebeldía Cafetera · Para llevar a casa</p>
 
-      <!-- Productos silhouette -->
+      <!-- Productos -->
       <div class="teaser-productos">
         <div class="teaser-item">
-          <div class="teaser-item-emoji">☕</div>
-          <div class="teaser-item-nombre">Café en grano</div>
+          <div class="teaser-item-emoji">🥐</div>
+          <div class="teaser-item-nombre">Pastelería</div>
         </div>
         <div class="teaser-item">
-          <div class="teaser-item-emoji">🫙</div>
-          <div class="teaser-item-nombre">Cold Brew</div>
+          <div class="teaser-item-emoji">✨</div>
+          <div class="teaser-item-nombre">Experiencias</div>
         </div>
         <div class="teaser-item">
           <div class="teaser-item-emoji">👕</div>
           <div class="teaser-item-nombre">Merch</div>
         </div>
         <div class="teaser-item">
-          <div class="teaser-item-emoji">🎁</div>
-          <div class="teaser-item-nombre">Regalos</div>
+          <div class="teaser-item-emoji">☕</div>
+          <div class="teaser-item-nombre">Café</div>
         </div>
       </div>
 
@@ -592,7 +592,7 @@
 
       <!-- Formulario email -->
       <div class="teaser-form" id="teaser3-form">
-        <p>Dejá tu mail y te avisamos el día que abramos.</p>
+        <p>Dejá tu email y sé el primero en enterarte.</p>
         <input
           type="email"
           class="email-input"
@@ -601,16 +601,16 @@
           autocomplete="email"
         />
         <button class="boton-modal" style="margin-top: 12px;" onclick="enviarEmailTeaser()">
-          Quiero ser el primero ☕
+          Anotame ✦
         </button>
       </div>
 
       <!-- Estado éxito teaser -->
       <div class="teaser-estado-exito" id="teaser3-exito">
         <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
-        <p class="exito-titulo" style="color:white;">¡Perfecto!</p>
+        <p class="exito-titulo" style="color:white;">¡Anotado!</p>
         <p style="font-family:'Playfair Display',serif; color:rgba(255,255,255,0.65); font-style:italic; font-size:15px;">
-          Te mandamos un mail el día<br>que la Tienda Córcega abra.
+          Te avisamos el día que<br>la Tienda Córcega abra sus puertas.
         </p>
         <button class="boton-modal" style="max-width:200px; margin: 28px auto 0;" onclick="cerrarTeaser()">
           Volver al inicio
@@ -645,7 +645,7 @@
     });
 
     /* ── Email Modal 2 ── */
-    function enviarEmail() {
+    async function enviarEmail() {
       const input = document.getElementById('email-input-m2');
       if (!input.value || !input.value.includes('@')) {
         input.style.borderColor = '#ed7053';
@@ -653,8 +653,7 @@
         return;
       }
       input.style.borderColor = '';
-      // Acá iría el guardado real (Firestore, etc.)
-      console.log('Email registrado (modal 2):', input.value);
+      await window.guardarEmailWaitlist(input.value);
       document.getElementById('modal2-form').style.display = 'none';
       document.getElementById('modal2-exito').style.display = 'block';
     }
@@ -672,7 +671,7 @@
     }
 
     /* ── Email Teaser ── */
-    function enviarEmailTeaser() {
+    async function enviarEmailTeaser() {
       const input = document.getElementById('email-input-t3');
       if (!input.value || !input.value.includes('@')) {
         input.style.borderColor = '#ed7053';
@@ -680,7 +679,7 @@
         return;
       }
       input.style.borderColor = '';
-      console.log('Email registrado (teaser):', input.value);
+      await window.guardarEmailWaitlist(input.value);
       document.getElementById('teaser3-form').style.display = 'none';
       document.getElementById('teaser3-exito').style.display = 'block';
     }
@@ -692,6 +691,23 @@
         cerrarTeaser();
       }
     });
+  </script>
+
+  <!-- Firebase: guarda emails en tienda_waitlist -->
+  <script type="module">
+    import { db } from './js/firebase-config.js';
+    import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    window.guardarEmailWaitlist = async function(email) {
+      try {
+        await addDoc(collection(db, 'tienda_waitlist'), {
+          email: email,
+          timestamp: serverTimestamp()
+        });
+      } catch (e) {
+        console.error('Error guardando email:', e);
+      }
+    };
   </script>
 </body>
 </html>
