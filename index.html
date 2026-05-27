@@ -401,6 +401,7 @@ body::before {
       document.getElementById('teaserExito').style.display = 'none';
       document.getElementById('teaserEmail').value = '';
       document.getElementById('teaserTienda').classList.add('activo');
+      if (window.registrarClickTienda) window.registrarClickTienda();
     }
     function cerrarTeaser() {
       document.getElementById('teaserTienda').classList.remove('activo');
@@ -424,7 +425,8 @@ body::before {
 
   <script type="module">
     import { db } from './js/firebase-config.js';
-    import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { collection, addDoc, serverTimestamp, doc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
     window.guardarEmailWaitlist = async function(email) {
       try {
         await addDoc(collection(db, 'tienda_waitlist'), {
@@ -433,6 +435,16 @@ body::before {
         });
       } catch (e) {
         console.error('Error guardando email:', e);
+      }
+    };
+
+    window.registrarClickTienda = async function() {
+      try {
+        await setDoc(doc(db, 'tienda_stats', 'general'), {
+          clicks: increment(1)
+        }, { merge: true });
+      } catch (e) {
+        console.error('Error registrando click:', e);
       }
     };
   </script>
