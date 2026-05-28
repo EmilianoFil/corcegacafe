@@ -808,6 +808,49 @@
         .prod-tab-btn.active { background:white; color:var(--secondary); box-shadow:0 2px 8px rgba(0,0,0,0.08); }
         .prod-tab-pane { display:none; }
         .prod-tab-pane.active { display:block; }
+
+        /* Autocomplete dropdown */
+        #autocomplete-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% - 6px);
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1.5px solid var(--primary);
+            border-top: none;
+            border-radius: 0 0 14px 14px;
+            z-index: 300;
+            max-height: 240px;
+            overflow-y: auto;
+            box-shadow: 0 10px 28px rgba(0,0,0,0.12);
+        }
+        #cliente-search:focus {
+            border-radius: 12px 12px 0 0;
+        }
+        .ac-item {
+            padding: 11px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f2f2f2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.88rem;
+            transition: background 0.12s;
+        }
+        .ac-item:hover, .ac-item.ac-focused {
+            background: var(--primary-light);
+        }
+        .ac-item:last-child {
+            border-bottom: none;
+            border-radius: 0 0 12px 12px;
+        }
+        .ac-empty {
+            padding: 14px 16px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-style: italic;
+        }
     </style>
 </head>
 
@@ -987,13 +1030,14 @@
         <section id="puntos" class="section-content">
             <h3>Cargar Cafecito</h3>
             <div class="card form-container">
-                <p style="color: var(--text-muted); margin-top:0">Ingresá el DNI para sumar un sello automáticamente.
+                <p style="color: var(--text-muted); margin-top:0">Buscá al cliente por DNI o nombre para sumar un sello.
                 </p>
                 <form id="puntos-form">
-                    <div class="input-group">
-                        <label>Documento / Pasaporte</label>
-                        <input type="tel" id="dni-input" placeholder="DNI del cliente" inputmode="numeric" required
-                            autofocus>
+                    <div class="input-group" style="position:relative;">
+                        <label>Documento / Nombre del cliente</label>
+                        <input type="text" id="cliente-search" placeholder="Buscá por DNI o nombre..." autocomplete="off" autofocus>
+                        <input type="hidden" id="dni-input">
+                        <div id="autocomplete-dropdown"></div>
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <button type="submit" id="btn-sumar" class="btn-primary">Sumar Sello ☕</button>
@@ -3324,6 +3368,124 @@
             });
         }
 
+        // --- AUTOCOMPLETE búsqueda de clientes ---
+        (function () {
+            const searchEl   = document.getElementById('cliente-search');
+            const dniEl      = document.getElementById('dni-input');
+            const dropEl     = document.getElementById('autocomplete-dropdown');
+            let debounce     = null;
+            let focusedIdx   = -1;
+
+            async function getClientes() {
+                // Reusar clientesData si ya fue cargado por el dashboard
+                if (clientesData.length > 0) return clientesData;
+                const snap = await getDocs(collection(db, 'clientes'));
+                clientesData = snap.docs.map(d => d.data());
+                return clientesData;
+            }
+
+            function renderItems(matches) {
+                if (matches.length === 0) {
+                    dropEl.innerHTML = `<div class="ac-empty">Sin resultados. Si es nuevo, podés registrarlo.</div>`;
+                } else {
+                    dropEl.innerHTML = matches.map((c, i) => {
+                        const sellos = c.cafes || 0;
+                        const badge  = sellos >= 8 ? '🏆 Premio listo' : `${sellos}/8 ☕`;
+                        const color  = sellos >= 8 ? 'var(--success)' : 'var(--primary)';
+                        return `<div class="ac-item" data-dni="${c.dni}" data-idx="${i}" role="option">
+                            <div>
+                                <strong style="color:var(--secondary);">${c.nombre || '—'}</strong>
+                                <span style="color:var(--text-muted); margin-left:10px; font-size:0.77rem; font-family:monospace; letter-spacing:0.5px;">${c.dni || ''}</span>
+                            </div>
+                            <span style="font-size:0.75rem; color:${color}; font-weight:700; white-space:nowrap;">${badge}</span>
+                        </div>`;
+                    }).join('');
+                }
+                dropEl.style.display = 'block';
+                focusedIdx = -1;
+            }
+
+            function selectClient(dni) {
+                const client = clientesData.find(c => String(c.dni) === String(dni));
+                if (client) {
+                    searchEl.value  = client.nombre ? `${client.nombre}  ·  ${client.dni}` : client.dni;
+                    dniEl.value     = String(client.dni);
+                }
+                dropEl.style.display = 'none';
+            }
+
+            function closeDropdown() { dropEl.style.display = 'none'; }
+
+            searchEl.addEventListener('input', () => {
+                clearTimeout(debounce);
+                dniEl.value = '';
+                const q = searchEl.value.trim();
+                if (q.length < 3) { closeDropdown(); return; }
+
+                debounce = setTimeout(async () => {
+                    const clientes = await getClientes();
+                    const qLow = q.toLowerCase();
+                    const matches = clientes.filter(c =>
+                        String(c.dni || '').toLowerCase().includes(qLow) ||
+                        String(c.nombre || '').toLowerCase().includes(qLow)
+                    ).slice(0, 8);
+                    renderItems(matches);
+                }, 180);
+            });
+
+            // Click en item del dropdown
+            dropEl.addEventListener('mousedown', (e) => {
+                const item = e.target.closest('.ac-item');
+                if (!item) return;
+                e.preventDefault();
+                selectClient(item.dataset.dni);
+            });
+
+            // Navegación con teclado
+            searchEl.addEventListener('keydown', (e) => {
+                const items = dropEl.querySelectorAll('.ac-item');
+                if (!items.length || dropEl.style.display === 'none') return;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    focusedIdx = Math.min(focusedIdx + 1, items.length - 1);
+                    items.forEach((el, i) => el.classList.toggle('ac-focused', i === focusedIdx));
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    focusedIdx = Math.max(focusedIdx - 1, 0);
+                    items.forEach((el, i) => el.classList.toggle('ac-focused', i === focusedIdx));
+                } else if (e.key === 'Enter' && focusedIdx >= 0) {
+                    e.preventDefault();
+                    selectClient(items[focusedIdx].dataset.dni);
+                } else if (e.key === 'Escape') {
+                    closeDropdown();
+                }
+            });
+
+            // Si el usuario escribe solo números y sale sin elegir → usar como DNI directo
+            searchEl.addEventListener('blur', () => {
+                setTimeout(closeDropdown, 160);
+                if (!dniEl.value) {
+                    const q = searchEl.value.trim();
+                    if (/^\d+$/.test(q)) dniEl.value = q;
+                }
+            });
+
+            // Reabrir dropdown si ya tenía contenido al hacer focus
+            searchEl.addEventListener('focus', () => {
+                if (searchEl.value.trim().length >= 3 && dropEl.innerHTML && !dniEl.value) {
+                    dropEl.style.display = 'block';
+                }
+            });
+
+            // Cerrar con click fuera
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#cliente-search') && !e.target.closest('#autocomplete-dropdown')) {
+                    closeDropdown();
+                }
+            });
+        })();
+
         // --- PUNTOS LOGIC ---
         const puntosForm = document.getElementById("puntos-form");
         const resBox = document.getElementById("resultado-puntos");
@@ -3333,6 +3495,19 @@
             e.preventDefault();
             const dni = document.getElementById("dni-input").value.trim();
             const btn = document.getElementById("btn-sumar");
+
+            // Validar que haya un DNI seleccionado o ingresado
+            if (!dni) {
+                const searchEl = document.getElementById('cliente-search');
+                searchEl.style.borderColor = 'var(--error)';
+                searchEl.style.boxShadow = '0 0 0 4px rgba(174,32,18,0.12)';
+                searchEl.focus();
+                setTimeout(() => {
+                    searchEl.style.borderColor = '';
+                    searchEl.style.boxShadow = '';
+                }, 2000);
+                return;
+            }
 
             btn.disabled = true;
             resBox.style.display = "block";
