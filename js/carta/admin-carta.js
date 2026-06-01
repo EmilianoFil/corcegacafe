@@ -487,17 +487,52 @@ export async function loadPlatos(seccionId = '') {
     await _cargarPreciosStockos(platos);
 
     const secMap = Object.fromEntries(secciones.map(s => [s.id, s.nombre]));
+
+    // Banner de alerta de precios desactualizados respecto a StockOS
+    const platosConDiferencia = platos.filter(p => {
+        const sInfo = p.stockosRecipeId ? _stockosPriceCache[p.stockosRecipeId] : null;
+        return sInfo != null && p.precio != null && sInfo.salePrice !== p.precio;
+    });
+    const bannerExistente = document.getElementById('stockos-diff-banner');
+    if (bannerExistente) bannerExistente.remove();
+    if (platosConDiferencia.length) {
+        const banner = document.createElement('div');
+        banner.id = 'stockos-diff-banner';
+        const nombres = platosConDiferencia.map(p => {
+            const sInfo = _stockosPriceCache[p.stockosRecipeId];
+            const diff = sInfo.salePrice - p.precio;
+            const signo = diff > 0 ? '+' : '';
+            return `<strong>${p.nombre}</strong> (StockOS ${signo}$${Math.abs(diff).toLocaleString('es-AR')})`;
+        }).join(', ');
+        banner.innerHTML = `
+            <div style="background:#fff3e0;border:1px solid #ffcc80;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px;">
+                <span style="font-size:1.1rem;flex-shrink:0;">⚠️</span>
+                <div style="flex:1;min-width:0;">
+                    <p style="margin:0 0 3px;font-size:0.85rem;font-weight:800;color:#e65100;">
+                        ${platosConDiferencia.length} plato${platosConDiferencia.length > 1 ? 's' : ''} con precio distinto en StockOS
+                    </p>
+                    <p style="margin:0;font-size:0.78rem;color:#bf360c;line-height:1.4;">${nombres}</p>
+                </div>
+                <button onclick="window.cartaAdmin.abrirEditorPrecios()"
+                    style="padding:6px 14px;border-radius:8px;border:none;background:#e65100;color:white;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">
+                    Actualizar precios
+                </button>
+            </div>`;
+        tbody.closest('table')?.parentElement?.insertBefore(banner, tbody.closest('table'));
+    }
+
     tbody.innerHTML = platos.map(p => {
         const fotoRaw    = p.fotos?.[0] ?? '';
         const foto       = typeof fotoRaw === 'string' ? fotoRaw : (fotoRaw.thumb ?? '');
         const precio     = p.precio   != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '—';
         const precioPY   = p.precioPY != null ? `$${Number(p.precioPY).toLocaleString('es-AR')}` : '—';
         const sInfo      = p.stockosRecipeId ? _stockosPriceCache[p.stockosRecipeId] : null;
+        const preciosDifieren = sInfo != null && p.precio != null && sInfo.salePrice !== p.precio;
         const dotTitle   = sInfo
             ? `StockOS: $${Number(sInfo.salePrice).toLocaleString('es-AR')} · Costo: $${Number(sInfo.currentCost ?? 0).toLocaleString('es-AR')} · Rentab: ${Number(sInfo.profitability ?? 0).toFixed(1)}%`
             : 'Vinculado a StockOS';
         const dot        = p.stockosRecipeId
-            ? `<span title="${dotTitle}" style="display:inline-flex;align-items:center;gap:3px;background:#e8f0fd;color:#1a6bc4;font-size:0.68rem;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle;white-space:nowrap;cursor:help;letter-spacing:0.2px;">${sInfo ? `$${Number(sInfo.salePrice).toLocaleString('es-AR')}` : 'S'}</span>`
+            ? `<span title="${dotTitle}" style="display:inline-flex;align-items:center;gap:3px;background:${preciosDifieren ? '#fff3e0' : '#e8f0fd'};color:${preciosDifieren ? '#e65100' : '#1a6bc4'};font-size:0.68rem;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle;white-space:nowrap;cursor:help;letter-spacing:0.2px;">${sInfo ? `${preciosDifieren ? '⚠ ' : ''}$${Number(sInfo.salePrice).toLocaleString('es-AR')}` : 'S'}</span>`
             : '';
         return `
         <tr style="border-bottom:1px solid #f5f5f5;">
