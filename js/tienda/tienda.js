@@ -4,6 +4,7 @@ import { auth } from '../firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { fetchReservedByOthers, getSessionId, writeReserva } from './cart-reservas.js';
 import { cart, initCart, openCart, closeCart, saveAndRefresh, showToast, setMaxUnidadesPorPedido } from './cart-component.js';
+import { initComboPicker } from './combo-picker.js';
 
 // --- STATE ---
 let products = [];
@@ -76,6 +77,14 @@ async function init() {
     ]);
     renderCategories();
     renderProducts();
+
+    initComboPicker({
+        getProducts: () => products,
+        getReservedByOthers: () => reservedByOthers,
+        cart,
+        onAddToCart: saveAndRefresh,
+        openCartFn: openCart
+    });
 
     // Si hay categoría en la URL, marcar chip activo en el menú mobile
     if (catFromUrl) {
@@ -257,24 +266,6 @@ function getCompStockAvailable(cid) {
     return Math.max(0, (comp.stock || 0) - reserved);
 }
 
-// Expuesto para que cart-component.js pueda validar stock al hacer +/-
-window.getComboCartStock = function(item) {
-    if (!item.esCombo || !item.componentIds?.length) return item.stock || 0;
-    return Math.min(...item.componentIds.map(cid => {
-        const comp = products.find(x => x.id === cid);
-        if (!comp) return 0;
-        const variantKey = item.comboVariantSelections?.[cid];
-        if (comp.tieneVariantes && variantKey) {
-            const varData = comp.variantes?.[variantKey];
-            if (!varData) return 0;
-            if (varData.stockIlimitado) return 9999;
-            const reserved = reservedByOthers[`${comp.id}_${variantKey}`] || 0;
-            return Math.max(0, (varData.stock || 0) - reserved);
-        }
-        return getCompStockAvailable(cid);
-    }));
-};
-
 // --- CART INTERACTIVITY ---
 window.addToCart = function(id) {
     const p = products.find(item => item.id === id);
@@ -336,236 +327,8 @@ window.addToCart = function(id) {
     openCart();
 };
 
-// --- COMBO PICKER ---
-let _cpmProduct = null;
-let _cpmSelections = {}; // { [compId]: { [attrNombre]: opcion } }
-let _cpmQty = 1;
-
-function openComboPicker(p) {
-    _cpmProduct = p;
-    _cpmSelections = {};
-    _cpmQty = 1;
-
-    document.getElementById('cpm-nombre').innerText = p.nombre;
-    document.getElementById('cpm-qty').innerText = '1';
-
-    // Primero los sin variantes, después los con variantes
-    _cpmProduct = {
-        ...p,
-        componentIds: [...p.componentIds].sort((a, b) => {
-            const ca = products.find(x => x.id === a);
-            const cb = products.find(x => x.id === b);
-            const av = ca?.tieneVariantes ? 1 : 0;
-            const bv = cb?.tieneVariantes ? 1 : 0;
-            return av - bv;
-        })
-    };
-
-    const btn = document.getElementById('cpm-add-btn');
-    const variantComponents = _cpmProduct.componentIds.filter(cid => {
-        const c = products.find(x => x.id === cid);
-        return c?.tieneVariantes && c.atributosVariantes?.length;
-    });
-
-    if (variantComponents.length === 0) {
-        // No hay variantes — validar stock y agregar directo
-        const minStock = Math.min(...p.componentIds.map(cid => getCompStockAvailable(cid)));
-        const inCart = (cart.find(item => item.id === p.id)?.qty || 0);
-        if (inCart >= minStock) {
-            alert('¡Lo sentimos! No hay suficiente stock para armar más combos.');
-            return;
-        }
-        _cpmAddToCart({});
-        return;
-    }
-
-    // Renderizar secciones por componente con variantes
-    const container = document.getElementById('cpm-componentes');
-    container.innerHTML = _cpmProduct.componentIds.map(cid => {
-        const comp = products.find(x => x.id === cid);
-        if (!comp) return '';
-        if (!comp.tieneVariantes || !comp.atributosVariantes?.length) {
-            return `<div style="display:flex; align-items:center; gap:10px; padding:12px; background:#f9fafb; border-radius:12px;">
-                <img src="${comp.imagenUrl || ''}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; background:#eee;">
-                <div style="font-weight:600; font-size:0.9rem; color:#333;">${comp.nombre}</div>
-            </div>`;
-        }
-        _cpmSelections[cid] = {};
-        return `<div style="background:#fafafa; border-radius:14px; padding:16px; border:1px solid #eee;">
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-                <img src="${comp.imagenUrl || ''}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; background:#eee;">
-                <div style="font-weight:700; font-size:0.95rem; color:var(--panel-oscuro);">${comp.nombre}</div>
-            </div>
-            ${comp.atributosVariantes.map(attr => `
-                <div style="margin-bottom:10px;">
-                    <div style="font-size:0.78rem; font-weight:700; color:#666; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">${attr.nombre}</div>
-                    <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                        ${attr.opciones.map(op => {
-                            const hasStock = Object.entries(comp.variantes || {}).some(([key, v]) => {
-                                const parts = key.split('|');
-                                const attrIdx = comp.atributosVariantes.findIndex(a => a.nombre === attr.nombre);
-                                if (parts[attrIdx] !== op) return false;
-                                if (v.stockIlimitado) return true;
-                                const reserved = reservedByOthers[`${comp.id}_${key}`] || 0;
-                                return (v.stock || 0) - reserved > 0;
-                            });
-                            return `<button type="button"
-                                data-comp="${cid}" data-attr="${attr.nombre}" data-op="${op}"
-                                onclick="window.cpmSelectOption('${cid}','${attr.nombre}','${op}')"
-                                ${!hasStock ? 'disabled' : ''}
-                                style="padding:6px 14px; border-radius:20px; border:1.5px solid ${hasStock ? '#ddd' : '#f0f0f0'}; background:white; font-size:0.82rem; font-weight:600; cursor:${hasStock ? 'pointer' : 'not-allowed'}; color:${hasStock ? '#333' : '#ccc'}; transition:all 0.15s;">
-                                ${op}
-                            </button>`;
-                        }).join('')}
-                    </div>
-                </div>
-            `).join('')}
-        </div>`;
-    }).join('');
-
-    btn.disabled = true;
-    btn.style.background = '#bbb';
-    btn.innerHTML = '<i class="fas fa-hand-point-up"></i> Elegí las opciones';
-
-    document.getElementById('combo-picker-modal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-
-window.cpmSelectOption = function(compId, attrNombre, opcion) {
-    if (!_cpmSelections[compId]) _cpmSelections[compId] = {};
-    _cpmSelections[compId][attrNombre] = opcion;
-
-    // Update button styles for this component+attr
-    document.querySelectorAll(`button[data-comp="${compId}"][data-attr="${attrNombre}"]`).forEach(btn => {
-        const selected = btn.dataset.op === opcion;
-        btn.style.background = selected ? 'var(--panel-oscuro)' : 'white';
-        btn.style.color = selected ? 'white' : '#333';
-        btn.style.borderColor = selected ? 'var(--panel-oscuro)' : '#ddd';
-    });
-
-    // Check if all variant components are fully selected
-    const allDone = _cpmProduct.componentIds.every(cid => {
-        const comp = products.find(x => x.id === cid);
-        if (!comp?.tieneVariantes) return true;
-        return comp.atributosVariantes.every(a => _cpmSelections[cid]?.[a.nombre]);
-    });
-
-    const btn = document.getElementById('cpm-add-btn');
-    if (allDone) {
-        btn.disabled = false;
-        btn.style.background = 'var(--panel-oscuro)';
-        btn.innerHTML = 'AGREGAR AL CARRITO';
-        cpmUpdateQtyMax();
-    }
-};
-
-function cpmGetVariantKey(comp, selections) {
-    return comp.atributosVariantes.map(a => selections[a.nombre]).join('|');
-}
-
-function cpmGetAvailableForSelection() {
-    // Calcula el máximo qty disponible dado las selecciones actuales
-    return Math.min(..._cpmProduct.componentIds.map(cid => {
-        const comp = products.find(x => x.id === cid);
-        if (!comp) return 0;
-        if (!comp.tieneVariantes) return getCompStockAvailable(cid);
-        const key = cpmGetVariantKey(comp, _cpmSelections[cid] || {});
-        const varData = comp.variantes?.[key];
-        if (!varData) return 0;
-        if (varData.stockIlimitado) return 9999;
-        const reserved = reservedByOthers[`${comp.id}_${key}`] || 0;
-        return Math.max(0, (varData.stock || 0) - reserved);
-    }));
-}
-
-function cpmBuildCartKey(p, variantSelections) {
-    const selStr = Object.keys(variantSelections).sort().map(k => `${k}:${variantSelections[k]}`).join('|');
-    return `combo__${p.id}__${selStr}`;
-}
-
-function cpmUpdateQtyMax() {
-    const available = cpmGetAvailableForSelection();
-    // Contar solo los que ya están en carrito con esta misma combinación
-    const tempKey = cpmBuildCartKey(_cpmProduct, Object.fromEntries(
-        _cpmProduct.componentIds
-            .filter(cid => products.find(x => x.id === cid)?.tieneVariantes)
-            .map(cid => [cid, cpmGetVariantKey(products.find(x => x.id === cid), _cpmSelections[cid] || {})])
-    ));
-    const inCart = cart.find(item => item._cartKey === tempKey)?.qty || 0;
-    const max = Math.max(0, available - inCart);
-    _cpmQty = Math.min(_cpmQty, max || 1);
-    document.getElementById('cpm-qty').innerText = _cpmQty;
-}
-
-window.cpmAdjustQty = function(delta) {
-    const available = cpmGetAvailableForSelection();
-    const inCart = 0; // No bloqueamos qty en el picker, se valida al confirmar
-    const max = Math.max(1, available);
-    _cpmQty = Math.min(max, Math.max(1, _cpmQty + delta));
-    document.getElementById('cpm-qty').innerText = _cpmQty;
-};
-
-function _cpmAddToCart(variantSelections) {
-    const p = _cpmProduct;
-    const cartKey = cpmBuildCartKey(p, variantSelections);
-
-    // Armar label legible: "Vaso: Azul/L · Cuarto de café: Tostado medio"
-    const labelParts = Object.entries(variantSelections).map(([cid, key]) => {
-        const comp = products.find(x => x.id === cid);
-        if (!comp) return null;
-        return `${comp.nombre}: ${key.replace(/\|/g, '/')}`;
-    }).filter(Boolean);
-    const comboVariantLabel = labelParts.join(' · ');
-
-    // Buscar por cartKey — combinaciones distintas son items separados en el carrito
-    const existing = cart.find(item => item._cartKey === cartKey);
-    const itemData = {
-        _cartKey: cartKey,
-        id: p.id,
-        nombre: p.nombre,
-        precio: p.precio,
-        imagenUrl: p.imagenUrl,
-        esCombo: true,
-        componentIds: p.componentIds,
-        comboVariantSelections: variantSelections,
-        comboVariantLabel: comboVariantLabel || null,
-        stockIlimitado: false,
-        reservadoEn: Date.now()
-    };
-    if (existing) {
-        existing.qty += _cpmQty;
-    } else {
-        cart.push({ ...itemData, qty: _cpmQty });
-    }
-    if (typeof gtag === 'function') {
-        gtag('event', 'add_to_cart', { currency: 'ARS', value: p.precio * _cpmQty,
-            items: [{ item_id: p.id, item_name: p.nombre, item_category: p.categoria || '', price: p.precio, quantity: _cpmQty }] });
-    }
-    saveAndRefresh();
-    document.getElementById('combo-picker-modal').style.display = 'none';
-    document.body.style.overflow = '';
-    openCart();
-}
-
-window.cpmConfirm = function() {
-    const variantSelections = {};
-    for (const cid of _cpmProduct.componentIds) {
-        const comp = products.find(x => x.id === cid);
-        if (!comp?.tieneVariantes) continue;
-        const allSelected = comp.atributosVariantes.every(a => _cpmSelections[cid]?.[a.nombre]);
-        if (!allSelected) {
-            alert('Por favor elegí todas las opciones antes de continuar.');
-            return;
-        }
-        variantSelections[cid] = cpmGetVariantKey(comp, _cpmSelections[cid]);
-    }
-    const available = cpmGetAvailableForSelection();
-    if (available <= 0) {
-        alert('¡Sin stock para esta combinación!');
-        return;
-    }
-    _cpmAddToCart(variantSelections);
-};
+// --- COMBO PICKER (módulo compartido) ---
+function openComboPicker(p) { window.openComboPicker(p); }
 
 // --- VARIANT PICKER ---
 let _vpmProduct = null;

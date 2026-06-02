@@ -1,12 +1,15 @@
 import { db } from '../firebase-config.js';
 import { doc, getDoc, getDocs, collection, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { writeReserva } from './cart-reservas.js';
+import { writeReserva, fetchReservedByOthers } from './cart-reservas.js';
 import { cart, initCart, openCart, closeCart, saveAndRefresh, updateCartUI, showToast, setMaxUnidadesPorPedido, getMaxUnidadesPorPedido } from './cart-component.js';
+import { initComboPicker } from './combo-picker.js';
 
 // --- STATE ---
 let currentProduct = null;
 let currentQty = 1;
 let selectedVariants = {};
+let _comboComponents = [];
+let _reservedByOthers = {};
 
 // --- ACTIONS ---
 window.tienda = {
@@ -46,6 +49,26 @@ async function loadProductData(id) {
         }
 
         currentProduct = { id: snap.id, ...snap.data() };
+
+        // Si es combo: cargar componentes e inicializar picker
+        if (currentProduct.esCombo && currentProduct.componentIds?.length) {
+            const [comps, reserved] = await Promise.all([
+                Promise.all(currentProduct.componentIds.map(cid =>
+                    getDoc(doc(db, 'productos', cid)).then(d => d.exists() ? { id: d.id, ...d.data() } : null)
+                )),
+                fetchReservedByOthers().catch(() => ({}))
+            ]);
+            _comboComponents = comps.filter(Boolean);
+            _reservedByOthers = reserved;
+            initComboPicker({
+                getProducts: () => _comboComponents,
+                getReservedByOthers: () => _reservedByOthers,
+                cart,
+                onAddToCart: saveAndRefresh,
+                openCartFn: openCart
+            });
+        }
+
         renderProductDetail();
 
         // Cargar productos relacionados (si tiene)
@@ -499,6 +522,12 @@ window.selectVariantOption = function(attrName, value, btn) {
 function addToCartFromPage() {
     if (!currentProduct) return;
     const p = currentProduct;
+
+    // Si es combo, delegar al picker
+    if (p.esCombo && p.componentIds?.length) {
+        window.openComboPicker(p);
+        return;
+    }
 
     const maxUnidades = getMaxUnidadesPorPedido();
     if (maxUnidades > 0 && p.requiereAgenda) {

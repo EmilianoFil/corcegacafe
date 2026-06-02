@@ -357,6 +357,7 @@ function renderSummary() {
             <span>
                 <span class="order-item-qty">${item.qty}x</span> ${item.nombre}
                 ${item.variantLabel ? `<br><span style="font-size:0.72rem; color:var(--naranja-accent); font-weight:600;">${item.variantLabel}</span>` : ''}
+                ${item.comboVariantLabel ? `<br><span style="font-size:0.72rem; color:var(--naranja-accent); font-weight:600;">🎁 ${item.comboVariantLabel}</span>` : ''}
             </span>
             <span>$${(item.precio * item.qty).toLocaleString('es-AR')}</span>
         </div>
