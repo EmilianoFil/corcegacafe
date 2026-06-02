@@ -363,7 +363,7 @@ function openComboPicker(p) {
 
     // Renderizar secciones por componente con variantes
     const container = document.getElementById('cpm-componentes');
-    container.innerHTML = p.componentIds.map(cid => {
+    container.innerHTML = _cpmProduct.componentIds.map(cid => {
         const comp = products.find(x => x.id === cid);
         if (!comp) return '';
         if (!comp.tieneVariantes || !comp.atributosVariantes?.length) {
