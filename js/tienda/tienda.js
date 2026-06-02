@@ -398,6 +398,7 @@ function openComboPicker(p) {
     btn.innerHTML = '<i class="fas fa-hand-point-up"></i> Elegí las opciones';
 
     document.getElementById('combo-picker-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 }
 
 window.cpmSelectOption = function(compId, attrNombre, opcion) {
@@ -488,6 +489,7 @@ function _cpmAddToCart(variantSelections) {
     }
     saveAndRefresh();
     document.getElementById('combo-picker-modal').style.display = 'none';
+    document.body.style.overflow = '';
     openCart();
 }
 
