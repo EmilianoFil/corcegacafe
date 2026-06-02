@@ -164,6 +164,16 @@ function renderProducts() {
                 const reserved = reservedByOthers[reservaKey] || 0;
                 return (v.stock || 0) - reserved <= 0;
             });
+        } else if (p.esCombo && p.componentIds?.length) {
+            // Combo: agotado si alguno de sus componentes no tiene stock
+            const minStock = Math.min(...p.componentIds.map(cid => {
+                const comp = products.find(x => x.id === cid);
+                if (!comp) return 0;
+                if (comp.stockIlimitado) return Infinity;
+                const reserved = reservedByOthers[`${comp.id}_base`] || 0;
+                return Math.max(0, (comp.stock || 0) - reserved);
+            }));
+            isAgotado = minStock <= 0;
         } else {
             if (p.stockIlimitado === true) {
                 isAgotado = false;
@@ -249,7 +259,20 @@ window.addToCart = function(id) {
     }
 
     // Validación de Stock
-    if (p.stockIlimitado !== true) {
+    if (p.esCombo && p.componentIds?.length) {
+        const inCart = (cart.find(item => item.id === id)?.qty || 0);
+        const minStock = Math.min(...p.componentIds.map(cid => {
+            const comp = products.find(x => x.id === cid);
+            if (!comp) return 0;
+            if (comp.stockIlimitado) return Infinity;
+            const reserved = reservedByOthers[`${comp.id}_base`] || 0;
+            return Math.max(0, (comp.stock || 0) - reserved);
+        }));
+        if (inCart >= minStock) {
+            alert(`¡Lo sentimos! No hay suficiente stock para armar más combos.`);
+            return;
+        }
+    } else if (p.stockIlimitado !== true) {
         const reservaKey = `${p.id}_base`;
         const reserved = reservedByOthers[reservaKey] || 0;
         const stockDisponible = Math.max(0, (p.stock || 0) - reserved);

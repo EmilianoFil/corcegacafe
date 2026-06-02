@@ -1257,6 +1257,23 @@
                                 <small style="color:#aaa; font-size:0.72rem; margin-top:4px; display:block;">Cuando queden ≤ N unidades el cliente ve "¡Solo quedan X!"</small>
                             </div>
                         </div>
+                        <!-- COMBO -->
+                        <div class="input-group" id="combo-section" style="margin-top: 20px;">
+                            <label style="display:flex; align-items:center; gap:10px;">
+                                <input type="checkbox" id="prod-es-combo" style="width:auto;"
+                                    onchange="window.tiendaAdmin.toggleComboSection(this.checked)">
+                                <span>Este producto es un <strong>combo</strong> (su stock se toma de los componentes)</span>
+                            </label>
+                            <div id="combo-editor" style="display:none; margin-top:15px; background:#fdfcf7; padding:20px; border-radius:16px; border:1px solid var(--border);">
+                                <p style="font-size:0.8rem; color:#666; margin:0 0 12px;">El stock disponible del combo será el <strong>mínimo</strong> entre los stocks de sus componentes. Al venderse un combo se descuenta el stock de cada componente individualmente.</p>
+                                <div id="combo-componentes-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
+                                <button type="button" onclick="window.tiendaAdmin.agregarComponenteCombo()"
+                                    style="background:var(--secondary); color:white; border:none; border-radius:10px; padding:8px 16px; font-size:0.8rem; font-weight:700; cursor:pointer;">
+                                    + Agregar producto al combo
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- VARIANTES -->
                         <div class="input-group" id="variantes-section" style="margin-top: 20px;">
                             <label style="display:flex; align-items:center; gap:10px;">
@@ -2138,7 +2155,7 @@
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
         import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
-        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=17';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=18';
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=8';
         window.cartaAdmin = cartaAdmin;

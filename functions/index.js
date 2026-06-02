@@ -1095,13 +1095,23 @@ exports.crearPreferenciaMP = onRequest(
         const preference = new Preference(client);
 
         const body = {
-          items: items.map(item => ({
-            id: item.id || "prod",
-            title: item.nombre,
-            quantity: item.qty,
-            unit_price: Number(item.precio),
-            currency_id: "ARS"
-          })),
+          items: items.length > 1
+            ? [{
+                id: "pedido",
+                title: "Pedido Córcega Café",
+                quantity: 1,
+                unit_price: items.reduce((s, i) => s + Number(i.precio) * i.qty, 0),
+                currency_id: "ARS",
+                picture_url: "https://corcegacafe.com.ar/css/img/logo-corcega-color.png"
+              }]
+            : items.map(item => ({
+                id: item.id || "prod",
+                title: item.nombre,
+                quantity: item.qty,
+                unit_price: Number(item.precio),
+                currency_id: "ARS",
+                ...(item.imagenUrl && { picture_url: item.imagenUrl })
+              })),
           external_reference: orderId,
           back_urls: {
             success: successUrl || "https://corcegacafe.com.ar/success.html",
@@ -1221,7 +1231,30 @@ exports.onOrderCreated = onDocumentCreated({
             if (productDoc.exists) {
                 const pData = productDoc.data();
 
-                if (pData.tieneVariantes && item.variantKey) {
+                if (pData.esCombo && Array.isArray(pData.componentIds) && pData.componentIds.length > 0) {
+                    // Combo: descontar stock de cada componente
+                    for (const compId of pData.componentIds) {
+                        const compRef = db.collection("productos").doc(compId);
+                        const compDoc = await compRef.get();
+                        if (!compDoc.exists) continue;
+                        const compData = compDoc.data();
+                        if (compData.stockIlimitado === true) continue;
+                        const currentStock = compData.stock || 0;
+                        const newStock = Math.max(0, currentStock - item.qty);
+                        batch.update(compRef, {
+                            stock: newStock,
+                            actualizadoEn: admin.firestore.FieldValue.serverTimestamp()
+                        });
+                        const movRef = compRef.collection("movimientos_stock").doc();
+                        batch.set(movRef, {
+                            cantidad: item.qty,
+                            tipo: 'salida_venta',
+                            motivo: `Pedido #${orderNumber} (${orderId}) - Combo: ${item.nombre}`,
+                            timestamp: admin.firestore.FieldValue.serverTimestamp()
+                        });
+                        logger.info(`Stock componente combo ${compId}: ${currentStock} -> ${newStock}`);
+                    }
+                } else if (pData.tieneVariantes && item.variantKey) {
                     // Descontar stock de la variante específica
                     const varData = pData.variantes?.[item.variantKey] || {};
                     const currentStock = varData.stock || 0;

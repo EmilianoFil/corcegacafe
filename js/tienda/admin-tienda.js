@@ -103,6 +103,15 @@ export async function mostrarFormularioProducto() {
     document.getElementById('prod-stock').disabled = false;
     document.getElementById('prod-stock-ilimitado').checked = false;
 
+    // Reset Combo
+    if (document.getElementById('prod-es-combo')) {
+        document.getElementById('prod-es-combo').checked = false;
+        document.getElementById('combo-editor').style.display = 'none';
+        document.getElementById('combo-componentes-list').innerHTML = '';
+        document.getElementById('prod-tiene-variantes').disabled = false;
+        document.getElementById('prod-aviso-stock').closest('.input-group').style.display = 'block';
+    }
+
     // Reset Variantes
     document.getElementById('prod-tiene-variantes').checked = false;
     document.getElementById('variantes-editor').style.display = 'none';
@@ -362,6 +371,8 @@ export async function guardarProducto(e) {
             ? collectVariantesData()
             : {},
         productosRelacionados: window._productosRelacionados || [],
+        esCombo: document.getElementById('prod-es-combo')?.checked || false,
+        componentIds: document.getElementById('prod-es-combo')?.checked ? getComboComponentIds() : [],
     };
 
     btn.disabled = true;
@@ -445,6 +456,21 @@ export async function editarProducto(id) {
         atribList.innerHTML = '';
         combTbody.innerHTML = '';
         combSection.style.display = 'none';
+    }
+
+    // Load combo fields
+    if (document.getElementById('prod-es-combo')) {
+        const esCombo = p.esCombo || false;
+        document.getElementById('prod-es-combo').checked = esCombo;
+        document.getElementById('combo-editor').style.display = esCombo ? 'block' : 'none';
+        document.getElementById('prod-tiene-variantes').disabled = esCombo;
+        document.getElementById('stock-global-group').style.display = (esCombo || p.tieneVariantes) ? 'none' : 'block';
+        document.getElementById('prod-aviso-stock').closest('.input-group').style.display = esCombo ? 'none' : 'block';
+        if (esCombo && p.componentIds?.length) {
+            renderComboComponentes(p.componentIds);
+        } else {
+            document.getElementById('combo-componentes-list').innerHTML = '';
+        }
     }
 
     // Load masInfo fields
@@ -1138,6 +1164,70 @@ export function toggleVariantesSection(checked) {
         window._variantesData = {};
         addAtributo();
     }
+}
+
+// ============================================
+// COMBO MANAGEMENT
+// ============================================
+
+export function toggleComboSection(checked) {
+    document.getElementById('combo-editor').style.display = checked ? 'block' : 'none';
+    // Ocultar campos de stock propio cuando es combo
+    document.getElementById('stock-global-group').style.display = checked ? 'none' : 'block';
+    document.getElementById('prod-aviso-stock').closest('.input-group').style.display = checked ? 'none' : 'block';
+    // Deshabilitar variantes si es combo
+    const varCheck = document.getElementById('prod-tiene-variantes');
+    if (checked) {
+        varCheck.checked = false;
+        toggleVariantesSection(false);
+        varCheck.disabled = true;
+    } else {
+        varCheck.disabled = false;
+    }
+    if (checked && document.getElementById('combo-componentes-list').children.length === 0) {
+        agregarComponenteCombo();
+        agregarComponenteCombo();
+    }
+}
+
+export function agregarComponenteCombo() {
+    const list = document.getElementById('combo-componentes-list');
+    const idx = list.children.length;
+    const opts = productosData.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; gap:8px; align-items:center;';
+    row.innerHTML = `
+        <select class="combo-comp-select" style="flex:1; padding:8px 12px; border:1px solid var(--border); border-radius:10px; font-size:0.85rem;">
+            <option value="">— Seleccioná un producto —</option>
+            ${opts}
+        </select>
+        <button type="button" onclick="this.parentElement.remove()" style="background:#fee2e2; color:#dc2626; border:none; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:0.85rem;">✕</button>
+    `;
+    list.appendChild(row);
+}
+
+function getComboComponentIds() {
+    return Array.from(document.querySelectorAll('.combo-comp-select'))
+        .map(s => s.value)
+        .filter(v => v !== '');
+}
+
+function renderComboComponentes(ids) {
+    const list = document.getElementById('combo-componentes-list');
+    list.innerHTML = '';
+    ids.forEach(id => {
+        const opts = productosData.map(p => `<option value="${p.id}" ${p.id === id ? 'selected' : ''}>${p.nombre}</option>`).join('');
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; gap:8px; align-items:center;';
+        row.innerHTML = `
+            <select class="combo-comp-select" style="flex:1; padding:8px 12px; border:1px solid var(--border); border-radius:10px; font-size:0.85rem;">
+                <option value="">— Seleccioná un producto —</option>
+                ${opts}
+            </select>
+            <button type="button" onclick="this.parentElement.remove()" style="background:#fee2e2; color:#dc2626; border:none; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:0.85rem;">✕</button>
+        `;
+        list.appendChild(row);
+    });
 }
 
 export function addAtributo() {
