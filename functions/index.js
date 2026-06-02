@@ -1338,6 +1338,7 @@ exports.onOrderCreated = onDocumentCreated({
             <td style="padding:12px 0 ${masInfoRow ? '4px' : '0'} 0; border-bottom:${masInfoRow ? 'none' : '1px solid #f0f0f0'};">
                 <span style="font-weight:bold; color:#d86634;">${item.qty}x</span> ${item.nombre}
                 ${item.variantLabel ? `<span style="font-size:11px;color:#999;"> (${item.variantLabel})</span>` : ''}
+                ${item.comboVariantLabel ? `<span style="font-size:11px;color:#999;display:block;margin-top:2px;">🎁 ${item.comboVariantLabel}</span>` : ''}
             </td>
             <td style="padding:12px 0 ${masInfoRow ? '4px' : '0'} 0; border-bottom:${masInfoRow ? 'none' : '1px solid #f0f0f0'}; text-align:right;">
                 $${(item.precio * item.qty).toLocaleString('es-AR')}
@@ -1518,6 +1519,7 @@ exports.onOrderUpdated = onDocumentUpdated(
           <tr>
               <td style="padding:10px 0; border-bottom:1px solid #f0f0f0; font-size:14px;">
                   <span style="font-weight:bold; color:#d86634;">${item.qty}x</span> ${item.nombre}
+                  ${item.comboVariantLabel ? `<span style="font-size:11px;color:#999;display:block;margin-top:2px;">🎁 ${item.comboVariantLabel}</span>` : ''}
               </td>
               <td style="padding:10px 0; border-bottom:1px solid #f0f0f0; text-align:right; font-size:14px;">
                   $${(item.precio * item.qty).toLocaleString('es-AR')}
