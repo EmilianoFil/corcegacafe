@@ -1238,21 +1238,44 @@ exports.onOrderCreated = onDocumentCreated({
                         const compDoc = await compRef.get();
                         if (!compDoc.exists) continue;
                         const compData = compDoc.data();
-                        if (compData.stockIlimitado === true) continue;
-                        const currentStock = compData.stock || 0;
-                        const newStock = Math.max(0, currentStock - item.qty);
-                        batch.update(compRef, {
-                            stock: newStock,
-                            actualizadoEn: admin.firestore.FieldValue.serverTimestamp()
-                        });
-                        const movRef = compRef.collection("movimientos_stock").doc();
-                        batch.set(movRef, {
-                            cantidad: item.qty,
-                            tipo: 'salida_venta',
-                            motivo: `Pedido #${orderNumber} (${orderId}) - Combo: ${item.nombre}`,
-                            timestamp: admin.firestore.FieldValue.serverTimestamp()
-                        });
-                        logger.info(`Stock componente combo ${compId}: ${currentStock} -> ${newStock}`);
+
+                        if (compData.tieneVariantes) {
+                            // Descontar la variante seleccionada por el cliente
+                            const selectedKey = item.comboVariantSelections?.[compId];
+                            if (!selectedKey) continue;
+                            const varData = compData.variantes?.[selectedKey] || {};
+                            if (varData.stockIlimitado === true) continue;
+                            const currentStock = varData.stock || 0;
+                            const newStock = Math.max(0, currentStock - item.qty);
+                            batch.update(compRef, {
+                                [`variantes.${selectedKey}.stock`]: newStock,
+                                actualizadoEn: admin.firestore.FieldValue.serverTimestamp()
+                            });
+                            const movRef = compRef.collection("movimientos_stock").doc();
+                            batch.set(movRef, {
+                                cantidad: item.qty,
+                                tipo: 'salida_venta',
+                                motivo: `Pedido #${orderNumber} (${orderId}) - Combo: ${item.nombre} (var: ${selectedKey})`,
+                                timestamp: admin.firestore.FieldValue.serverTimestamp()
+                            });
+                            logger.info(`Stock variante combo ${compId}/${selectedKey}: ${currentStock} -> ${newStock}`);
+                        } else {
+                            if (compData.stockIlimitado === true) continue;
+                            const currentStock = compData.stock || 0;
+                            const newStock = Math.max(0, currentStock - item.qty);
+                            batch.update(compRef, {
+                                stock: newStock,
+                                actualizadoEn: admin.firestore.FieldValue.serverTimestamp()
+                            });
+                            const movRef = compRef.collection("movimientos_stock").doc();
+                            batch.set(movRef, {
+                                cantidad: item.qty,
+                                tipo: 'salida_venta',
+                                motivo: `Pedido #${orderNumber} (${orderId}) - Combo: ${item.nombre}`,
+                                timestamp: admin.firestore.FieldValue.serverTimestamp()
+                            });
+                            logger.info(`Stock componente combo ${compId}: ${currentStock} -> ${newStock}`);
+                        }
                     }
                 } else if (pData.tieneVariantes && item.variantKey) {
                     // Descontar stock de la variante específica
