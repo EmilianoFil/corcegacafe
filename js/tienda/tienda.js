@@ -257,6 +257,24 @@ function getCompStockAvailable(cid) {
     return Math.max(0, (comp.stock || 0) - reserved);
 }
 
+// Expuesto para que cart-component.js pueda validar stock al hacer +/-
+window.getComboCartStock = function(item) {
+    if (!item.esCombo || !item.componentIds?.length) return item.stock || 0;
+    return Math.min(...item.componentIds.map(cid => {
+        const comp = products.find(x => x.id === cid);
+        if (!comp) return 0;
+        const variantKey = item.comboVariantSelections?.[cid];
+        if (comp.tieneVariantes && variantKey) {
+            const varData = comp.variantes?.[variantKey];
+            if (!varData) return 0;
+            if (varData.stockIlimitado) return 9999;
+            const reserved = reservedByOthers[`${comp.id}_${variantKey}`] || 0;
+            return Math.max(0, (varData.stock || 0) - reserved);
+        }
+        return getCompStockAvailable(cid);
+    }));
+};
+
 // --- CART INTERACTIVITY ---
 window.addToCart = function(id) {
     const p = products.find(item => item.id === id);
@@ -460,9 +478,20 @@ function cpmGetAvailableForSelection() {
     }));
 }
 
+function cpmBuildCartKey(p, variantSelections) {
+    const selStr = Object.keys(variantSelections).sort().map(k => `${k}:${variantSelections[k]}`).join('|');
+    return `combo__${p.id}__${selStr}`;
+}
+
 function cpmUpdateQtyMax() {
     const available = cpmGetAvailableForSelection();
-    const inCart = cart.find(item => item.id === _cpmProduct.id)?.qty || 0;
+    // Contar solo los que ya están en carrito con esta misma combinación
+    const tempKey = cpmBuildCartKey(_cpmProduct, Object.fromEntries(
+        _cpmProduct.componentIds
+            .filter(cid => products.find(x => x.id === cid)?.tieneVariantes)
+            .map(cid => [cid, cpmGetVariantKey(products.find(x => x.id === cid), _cpmSelections[cid] || {})])
+    ));
+    const inCart = cart.find(item => item._cartKey === tempKey)?.qty || 0;
     const max = Math.max(0, available - inCart);
     _cpmQty = Math.min(_cpmQty, max || 1);
     document.getElementById('cpm-qty').innerText = _cpmQty;
@@ -470,14 +499,15 @@ function cpmUpdateQtyMax() {
 
 window.cpmAdjustQty = function(delta) {
     const available = cpmGetAvailableForSelection();
-    const inCart = cart.find(item => item.id === _cpmProduct?.id)?.qty || 0;
-    const max = Math.max(0, available - inCart);
+    const inCart = 0; // No bloqueamos qty en el picker, se valida al confirmar
+    const max = Math.max(1, available);
     _cpmQty = Math.min(max, Math.max(1, _cpmQty + delta));
     document.getElementById('cpm-qty').innerText = _cpmQty;
 };
 
 function _cpmAddToCart(variantSelections) {
     const p = _cpmProduct;
+    const cartKey = cpmBuildCartKey(p, variantSelections);
 
     // Armar label legible: "Vaso: Azul/L · Cuarto de café: Tostado medio"
     const labelParts = Object.entries(variantSelections).map(([cid, key]) => {
@@ -487,13 +517,16 @@ function _cpmAddToCart(variantSelections) {
     }).filter(Boolean);
     const comboVariantLabel = labelParts.join(' · ');
 
-    const existing = cart.find(item => item.id === p.id);
+    // Buscar por cartKey — combinaciones distintas son items separados en el carrito
+    const existing = cart.find(item => item._cartKey === cartKey);
     const itemData = {
+        _cartKey: cartKey,
         id: p.id,
         nombre: p.nombre,
         precio: p.precio,
         imagenUrl: p.imagenUrl,
         esCombo: true,
+        componentIds: p.componentIds,
         comboVariantSelections: variantSelections,
         comboVariantLabel: comboVariantLabel || null,
         stockIlimitado: false,
@@ -501,7 +534,6 @@ function _cpmAddToCart(variantSelections) {
     };
     if (existing) {
         existing.qty += _cpmQty;
-        Object.assign(existing, { comboVariantSelections: variantSelections, comboVariantLabel: comboVariantLabel || null });
     } else {
         cart.push({ ...itemData, qty: _cpmQty });
     }

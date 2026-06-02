@@ -248,7 +248,9 @@ window.updateQty = function(index, delta) {
             }
         }
         if (item.stockIlimitado !== true) {
-            const stockDisponible = item.stock || 0;
+            const stockDisponible = item.esCombo
+                ? (window.getComboCartStock?.(item) ?? 9999)
+                : (item.stock || 0);
             if (item.qty >= stockDisponible) {
                 alert(`¡Lo sentimos! Solo quedan ${stockDisponible} unidades disponibles.`);
                 return;
