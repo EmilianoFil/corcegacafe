@@ -211,6 +211,7 @@ export function updateCartUI() {
             <div class="cart-item-info">
                 <div class="cart-item-title">${item.nombre}</div>
                 ${item.variantLabel ? `<div style="font-size:0.72rem;color:var(--naranja-accent);font-weight:600;margin:2px 0;">${item.variantLabel}</div>` : ''}
+                ${item.comboVariantLabel ? `<div style="font-size:0.72rem;color:var(--naranja-accent);font-weight:600;margin:2px 0;">🎁 ${item.comboVariantLabel}</div>` : ''}
                 <div class="cart-item-price">$${item.precio.toLocaleString('es-AR')}</div>
                 ${masInfoHtml}
                 ${countdownHtml}

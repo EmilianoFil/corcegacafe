@@ -331,8 +331,20 @@ function openComboPicker(p) {
     document.getElementById('cpm-nombre').innerText = p.nombre;
     document.getElementById('cpm-qty').innerText = '1';
 
+    // Primero los sin variantes, después los con variantes
+    _cpmProduct = {
+        ...p,
+        componentIds: [...p.componentIds].sort((a, b) => {
+            const ca = products.find(x => x.id === a);
+            const cb = products.find(x => x.id === b);
+            const av = ca?.tieneVariantes ? 1 : 0;
+            const bv = cb?.tieneVariantes ? 1 : 0;
+            return av - bv;
+        })
+    };
+
     const btn = document.getElementById('cpm-add-btn');
-    const variantComponents = p.componentIds.filter(cid => {
+    const variantComponents = _cpmProduct.componentIds.filter(cid => {
         const c = products.find(x => x.id === cid);
         return c?.tieneVariantes && c.atributosVariantes?.length;
     });
@@ -466,6 +478,15 @@ window.cpmAdjustQty = function(delta) {
 
 function _cpmAddToCart(variantSelections) {
     const p = _cpmProduct;
+
+    // Armar label legible: "Vaso: Azul/L · Cuarto de café: Tostado medio"
+    const labelParts = Object.entries(variantSelections).map(([cid, key]) => {
+        const comp = products.find(x => x.id === cid);
+        if (!comp) return null;
+        return `${comp.nombre}: ${key.replace(/\|/g, '/')}`;
+    }).filter(Boolean);
+    const comboVariantLabel = labelParts.join(' · ');
+
     const existing = cart.find(item => item.id === p.id);
     const itemData = {
         id: p.id,
@@ -474,12 +495,13 @@ function _cpmAddToCart(variantSelections) {
         imagenUrl: p.imagenUrl,
         esCombo: true,
         comboVariantSelections: variantSelections,
+        comboVariantLabel: comboVariantLabel || null,
         stockIlimitado: false,
         reservadoEn: Date.now()
     };
     if (existing) {
         existing.qty += _cpmQty;
-        Object.assign(existing, { comboVariantSelections: variantSelections });
+        Object.assign(existing, { comboVariantSelections: variantSelections, comboVariantLabel: comboVariantLabel || null });
     } else {
         cart.push({ ...itemData, qty: _cpmQty });
     }

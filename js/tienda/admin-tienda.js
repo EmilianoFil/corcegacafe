@@ -745,6 +745,7 @@ export async function verDetalleOrden(id) {
                                 <span>
                                     ${i.qty}x ${i.nombre}
                                     ${i.variantLabel ? `<br><span style="font-size:0.75rem; color:var(--primary); font-weight:600;">${i.variantLabel}</span>` : ''}
+                                    ${i.comboVariantLabel ? `<br><span style="font-size:0.75rem; color:var(--secondary); font-weight:600;">🎁 ${i.comboVariantLabel}</span>` : ''}
                                 </span>
                                 <span style="font-weight:700;">$${(i.precio * i.qty).toLocaleString('es-AR')}</span>
                             </div>
