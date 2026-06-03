@@ -7,6 +7,8 @@
  *   window.openComboPicker(comboProduct)
  */
 
+import { writeReserva } from './cart-reservas.js';
+
 export function initComboPicker({ getProducts, getReservedByOthers, cart, onAddToCart, openCartFn }) {
 
     let _product = null;
@@ -233,11 +235,26 @@ export function initComboPicker({ getProducts, getReservedByOthers, cart, onAddT
             stockIlimitado: false,
             reservadoEn: Date.now()
         };
+        const newQty = (existing?.qty || 0) + _qty;
         if (existing) {
-            existing.qty += _qty;
+            existing.qty = newQty;
         } else {
             cart.push({ ...itemData, qty: _qty });
         }
+
+        // Registrar reservas por cada componente y actualizar mapa local
+        const reserved = getReservedByOthers();
+        for (const cid of p.componentIds) {
+            const comp = getProducts().find(x => x.id === cid);
+            if (!comp) continue;
+            const vKey = variantSelections[cid] || null;
+            const reservaKey = `${comp.id}_${vKey || 'base'}`;
+            // Actualizar mapa local inmediatamente para que la UI refleje el nuevo stock
+            reserved[reservaKey] = (reserved[reservaKey] || 0) + _qty;
+            // Persistir en Firestore (async, no bloqueante)
+            try { writeReserva(comp.id, vKey, newQty, comp.nombre + (vKey ? ` (${vKey})` : '')); } catch(e) {}
+        }
+
         if (typeof gtag === 'function') {
             gtag('event', 'add_to_cart', { currency: 'ARS', value: p.precio * _qty,
                 items: [{ item_id: p.id, item_name: p.nombre, price: p.precio, quantity: _qty }] });
