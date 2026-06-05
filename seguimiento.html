@@ -194,6 +194,37 @@
         .entregado-view h2 { font-family: var(--font-display); font-size: 26px; color: var(--panel-oscuro); margin-bottom: 8px; }
         .entregado-view p  { color: var(--texto-muted); font-size: 14px; }
 
+        /* ── Historial de estados ── */
+        .seg-historial {
+            margin: 16px 0 4px;
+            padding: 14px 16px;
+            background: #fdfcf7;
+            border-radius: 14px;
+            border: 1px solid #f0ede6;
+        }
+        .seg-historial-title {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--texto-muted);
+            margin-bottom: 10px;
+        }
+        .seg-historial-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 0;
+            border-bottom: 1px dashed #eee;
+        }
+        .seg-historial-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .seg-historial-dot {
+            width: 8px; height: 8px; min-width: 8px;
+            border-radius: 50%;
+        }
+        .seg-historial-label { font-size: 12px; font-weight: 700; color: var(--panel-oscuro); flex: 1; }
+        .seg-historial-fecha { font-size: 11px; color: var(--texto-muted); text-align: right; white-space: nowrap; }
+
         /* ── Login prompt ── */
         .login-prompt {
             margin-top: 16px;
@@ -282,6 +313,9 @@
                     <div class="seg-total" id="seg-total"></div>
                 </div>
 
+                <!-- Historial de estados -->
+                <div id="seg-historial" style="display:none;"></div>
+
                 <!-- Botones cliente -->
                 <div id="seg-actions" style="margin-top:20px;"></div>
 
@@ -323,6 +357,12 @@
 
         // ── Leer ID de la URL ─────────────────────────────────────────────────
         const orderId = new URLSearchParams(window.location.search).get('id');
+
+        // ── Número de WhatsApp (se sobreescribe con el de Firestore) ──────────
+        let waContactNumber = '5491136053892';
+        getDoc(doc(db, 'configuracion', 'tienda')).then(snap => {
+            if (snap.exists()) waContactNumber = snap.data().contacto?.whatsapp || waContactNumber;
+        }).catch(() => {});
 
         if (!orderId) {
             window.location.href = 'tienda.html';
@@ -385,6 +425,43 @@
             block.style.display = 'block';
         }
 
+        function renderHistorial(order) {
+            const historial = order.historial;
+            const el = document.getElementById('seg-historial');
+            if (!historial || historial.length === 0) { el.style.display = 'none'; return; }
+
+            const ESTADOS_INFO = {
+                recibido:              { label: 'Pedido recibido',          color: '#aaa' },
+                pendiente_pago:        { label: 'Pendiente de pago',        color: '#f59e0b' },
+                transferencia:         { label: 'Pago por transferencia',   color: '#f59e0b' },
+                pagado:                { label: 'Pago confirmado',           color: '#22c55e' },
+                en_preparacion:        { label: 'En preparación',            color: '#d86634' },
+                listo:                 { label: 'Listo para retirar',        color: '#d86634' },
+                entregado:             { label: 'Entregado',                 color: '#22c55e' },
+                cancelado:             { label: 'Cancelado',                 color: '#ef4444' },
+                pendiente_devolucion:  { label: 'Devolución pendiente',     color: '#f59e0b' },
+            };
+
+            const items = [...historial].sort((a, b) => (a.fecha?.seconds || 0) - (b.fecha?.seconds || 0));
+
+            el.innerHTML = `
+                <div class="seg-historial">
+                    <div class="seg-historial-title">Historial del pedido</div>
+                    ${items.map(entry => {
+                        const info = ESTADOS_INFO[entry.estado] || { label: entry.estado, color: '#888' };
+                        const d = entry.fecha?.toDate ? entry.fecha.toDate() : new Date((entry.fecha?.seconds || 0) * 1000);
+                        const fechaStr = d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+                        const horaStr  = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                        return `<div class="seg-historial-item">
+                            <div class="seg-historial-dot" style="background:${info.color};"></div>
+                            <span class="seg-historial-label">${info.label}</span>
+                            <span class="seg-historial-fecha">${fechaStr} · ${horaStr}</span>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+            el.style.display = 'block';
+        }
+
         function renderPage(order, isAdmin) {
             const estado = order.estado;
 
@@ -396,15 +473,17 @@
                 // Vista de entregado
                 document.getElementById('seg-stepper').style.display   = 'none';
                 document.getElementById('entregado-view').style.display = 'block';
+                renderHistorial(order);
                 document.getElementById('seg-actions').innerHTML =
                     `<button onclick="window.location.href='tienda.html'" class="btn-seg-primary">Seguir comprando</button>`;
             } else {
                 // Vista de stepper
                 renderStepper(order);
                 renderInfoBlock(order);
+                renderHistorial(order);
 
                 // Botón para abrir WhatsApp si hay duda
-                const wa = `https://wa.me/5491136053892?text=${encodeURIComponent('Hola! Consulta sobre mi pedido #' + orderId.slice(-8).toUpperCase())}`;
+                const wa = `https://wa.me/${waContactNumber}?text=${encodeURIComponent('Hola! Consulta sobre mi pedido #' + orderId.slice(-8).toUpperCase())}`;
                 document.getElementById('seg-actions').innerHTML =
                     `<a href="${wa}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;
                      width:100%;padding:13px;background:#25d366;color:white;border-radius:14px;

@@ -241,6 +241,12 @@
 
         const urlParams  = new URLSearchParams(window.location.search);
         const orderId    = urlParams.get('orderId');
+
+        // ── Número de WhatsApp (se sobreescribe con el de Firestore) ──────────
+        let waContactNumber = '5491136053892';
+        getDoc(doc(db, 'configuracion', 'tienda')).then(snap => {
+            if (snap.exists()) waContactNumber = snap.data().contacto?.whatsapp || waContactNumber;
+        }).catch(() => {});
         const mpStatus   = urlParams.get('status');
         const mpPaymentId = urlParams.get('payment_id') || urlParams.get('collection_id');
 
@@ -403,7 +409,7 @@
             const btnArrepentimiento = `<a href="arrepentimiento.html?orden=${orderNum}" style="display:block; text-align:center; font-size:12px; color:#aaa; margin-top:20px; text-decoration:none; border-top:1px dashed #eee; padding-top:16px;"><i class="fas fa-undo-alt" style="font-size:10px;"></i> Botón de Arrepentimiento (Ley 24.240)</a>`;
             const waMsg = encodeURIComponent(`Hola Córcega! Realicé el pedido #${orderId.substring(0,6)}. Te adjunto el comprobante.`);
             const btnWA = `
-                <a href="https://wa.me/5491136053892?text=${waMsg}" target="_blank" class="btn-wa">
+                <a href="https://wa.me/${waContactNumber}?text=${waMsg}" target="_blank" class="btn-wa">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:20px;"> Enviar Comprobante
                 </a>`;
             const btnMP = `<button id="btn-pay-mp" onclick="retryPayment('${orderId}')" class="btn-retry">Pagar con MercadoPago</button>`;

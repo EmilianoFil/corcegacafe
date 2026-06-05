@@ -460,6 +460,13 @@ async function fetchOrders(dni, email) {
         // Ordenar por fecha (ya que combinamos dos queries)
         orders.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
+        // Número de WhatsApp desde Firestore
+        let waContactNumber = '5491136053892';
+        try {
+            const confSnap = await getDoc(doc(db, 'configuracion', 'tienda'));
+            if (confSnap.exists()) waContactNumber = confSnap.data().contacto?.whatsapp || waContactNumber;
+        } catch(e) {}
+
         ordersList.innerHTML = orders.map(order => {
             const date = order.timestamp ? order.timestamp.toDate().toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
             const statusLabel = formatStatus(order.estado);
@@ -497,7 +504,7 @@ async function fetchOrders(dni, email) {
                         <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
                             ${order.estado === 'pendiente_pago' 
                                 ? (order.metodoPago === 'transferencia' 
-                                    ? `<a href="https://wa.me/5491136053892?text=${encodeURIComponent('Hola Córcega! Adjunto comprobante del pedido #' + (order.orderNumber || order.id.substring(0,8).toUpperCase()))}" target="_blank" style="background:#25d366; border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:5px;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:12px; height:12px;"> COMPROBANTE</a>
+                                    ? `<a href="https://wa.me/${waContactNumber}?text=${encodeURIComponent('Hola Córcega! Adjunto comprobante del pedido #' + (order.orderNumber || order.id.substring(0,8).toUpperCase()))}" target="_blank" style="background:#25d366; border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:5px;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:12px; height:12px;"> COMPROBANTE</a>
                                        <button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer;">PAGAR CON MP</button>`
                                     : `<button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer;">PAGAR CON MERCADOPAGO</button>`)
                                 : ''}

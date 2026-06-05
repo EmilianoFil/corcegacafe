@@ -301,7 +301,7 @@
             <div class="result-title" id="not-eligible-title">No aplica la revocación</div>
             <p class="result-text" id="not-eligible-text"></p>
             <div class="info-block warning" id="not-eligible-detail"></div>
-            <a href="https://wa.me/5491136053892" target="_blank" class="btn-submit" style="display:inline-block; text-decoration:none; padding:14px 28px; margin-top:8px;">
+            <a href="https://wa.me/5491136053892" id="btn-wa-no-eligible" target="_blank" class="btn-submit" style="display:inline-block; text-decoration:none; padding:14px 28px; margin-top:8px;">
                 <i class="fab fa-whatsapp"></i> Contactar por WhatsApp
             </a>
             <a href="tienda.html" class="btn-back">← Volver a la tienda</a>
@@ -315,7 +315,7 @@
             <div class="result-title">Algo salió mal</div>
             <p class="result-text" id="error-text">No pudimos procesar tu solicitud. Por favor intentá nuevamente o contactanos por WhatsApp.</p>
             <button class="btn-submit" onclick="reintentar()" style="margin-top:8px;">Reintentar</button>
-            <a href="https://wa.me/5491136053892" target="_blank" class="btn-back">Contactar por WhatsApp</a>
+            <a href="https://wa.me/5491136053892" id="btn-wa-error" target="_blank" class="btn-back">Contactar por WhatsApp</a>
         </div>
     </div>
 
@@ -469,6 +469,24 @@
             btn.classList.remove('loading');
         }
     }
+</script>
+
+<script type="module">
+    import { db } from './js/firebase-config.js';
+    import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    try {
+        const snap = await getDoc(doc(db, 'configuracion', 'tienda'));
+        if (snap.exists()) {
+            const waNum = snap.data().contacto?.whatsapp;
+            if (waNum) {
+                const url = `https://wa.me/${waNum}`;
+                ['btn-wa-no-eligible', 'btn-wa-error'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.href = url;
+                });
+            }
+        }
+    } catch(e) {}
 </script>
 
 </body>
