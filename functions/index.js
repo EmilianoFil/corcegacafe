@@ -1338,7 +1338,8 @@ exports.onOrderCreated = onDocumentCreated({
         const metodoPago = orderData.metodoPago === 'transferencia' ? '🏦 Transferencia' : '💳 MercadoPago';
         const entrega = orderData.metodoEntrega === 'delivery' ? '🛵 Delivery' : '🏠 Retiro en local';
         const total = (orderData.total || 0).toLocaleString('es-AR');
-        const tgMsg = `🛒 *Nuevo pedido #${orderNumber}*\n👤 ${orderData.cliente?.nombre || 'Sin nombre'}\n\n${itemsTexto}\n\n💰 $${total}\n${metodoPago} · ${entrega}`;
+        const horarioLinea = orderData.horario ? `\n📅 Retiro: ${orderData.horario}` : '';
+        const tgMsg = `🛒 *Nuevo pedido #${orderNumber}*\n👤 ${orderData.cliente?.nombre || 'Sin nombre'}\n\n${itemsTexto}\n\n💰 $${total}\n${metodoPago} · ${entrega}${horarioLinea}`;
 
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN.value()}/sendMessage`, {
             method: 'POST',
@@ -1624,7 +1625,12 @@ exports.getPublicOrder = onRequest(async (req, res) => {
         total: data.total,
         metodoEntrega: data.metodoEntrega,
         metodoPago: data.metodoPago,
-        timestamp: data.timestamp
+        timestamp: data.timestamp,
+        horario: data.horario || null,
+        historial: (data.historial || []).map(h => ({
+          estado: h.estado,
+          fecha: h.fecha ? { seconds: h.fecha._seconds || h.fecha.seconds, nanoseconds: 0 } : null
+        }))
       };
 
       res.status(200).send(publicData);
