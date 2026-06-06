@@ -407,7 +407,8 @@
             const btnHome = `<button onclick="window.location.href='tienda.html'" class="btn-primary-corcega" style="margin-top:20px;">Seguir comprando</button>`;
             const btnOrders = `<button onclick="window.location.href='tienda-cuenta.html'" class="btn-outline-corcega">Ver mis pedidos</button>`;
             const btnArrepentimiento = `<a href="arrepentimiento.html?orden=${orderNum}" style="display:block; text-align:center; font-size:12px; color:#aaa; margin-top:20px; text-decoration:none; border-top:1px dashed #eee; padding-top:16px;"><i class="fas fa-undo-alt" style="font-size:10px;"></i> Botón de Arrepentimiento (Ley 24.240)</a>`;
-            const waMsg = encodeURIComponent(`Hola Córcega! Realicé el pedido #${orderId.substring(0,6)}. Te adjunto el comprobante.`);
+            const clienteNombre = (order.cliente?.nombre || '').split(' ')[0];
+            const waMsg = encodeURIComponent(`Hola Córcega! Soy ${clienteNombre}, realicé el pedido #${orderNum}. Te adjunto el comprobante.`);
             const btnWA = `
                 <a href="https://wa.me/${waContactNumber}?text=${waMsg}" target="_blank" class="btn-wa">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:20px;"> Enviar Comprobante
