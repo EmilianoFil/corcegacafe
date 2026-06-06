@@ -1,11 +1,31 @@
 User-agent: *
 Allow: /
 
+# Admin y autenticación
 Disallow: /admin.html
-Disallow: /login.html
-Disallow: /registro-admin.html
-Disallow: /panel.html
+Disallow: /admin-new.html
+Disallow: /admin-badges.html
 Disallow: /admin_estado_cliente.html
 Disallow: /emilianofil_admin.html
+Disallow: /emilianofil_corcega-menu.html
+Disallow: /panel.html
+Disallow: /login.html
+Disallow: /registro-admin.html
 
-Sitemap: https://corcegacafe.com.ar/sitemap.txt
+# Páginas transaccionales (sin valor para indexar)
+Disallow: /checkout.html
+Disallow: /success.html
+Disallow: /seguimiento.html
+Disallow: /tienda-cuenta.html
+Disallow: /arrepentimiento.html
+Disallow: /cancelar.html
+Disallow: /estado.html
+Disallow: /estado-new.html
+Disallow: /consulta-cliente.html
+Disallow: /clientes-lista.html
+Disallow: /graficos.html
+Disallow: /graficos2.html
+Disallow: /filtros.html
+Disallow: /menu-upload.html
+
+Sitemap: https://corcegacafe.com.ar/sitemap.xml
