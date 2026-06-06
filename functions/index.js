@@ -91,6 +91,8 @@ const renderStepperHtml = (estadoActual) => {
 const emailUser = defineSecret("EMAIL_USER");
 const emailPass = defineSecret("EMAIL_PASS");
 const STOCKOS_API_KEY = defineSecret("STOCKOS_API_KEY");
+const TELEGRAM_BOT_TOKEN = defineSecret("TELEGRAM_BOT_TOKEN");
+const TELEGRAM_CHAT_ID = "4755184";
 
 exports.enviarMailRegistro = onRequest(
   { region: "us-central1", secrets: [emailUser, emailPass] },
@@ -1195,7 +1197,7 @@ exports.webhookMP = onRequest(
 exports.onOrderCreated = onDocumentCreated({
     document: "ordenes/{orderId}",
     region: "us-central1",
-    secrets: [emailUser, emailPass],
+    secrets: [emailUser, emailPass, TELEGRAM_BOT_TOKEN],
 }, async (event) => {
     const snapshot = event.data;
     if (!snapshot) return;
@@ -1328,7 +1330,26 @@ exports.onOrderCreated = onDocumentCreated({
     });
     logger.info(`Orden #${orderNumber} inicializada.`);
 
-    // 3. Preparar Detalle de Pedido para el Mail
+    // 4. Notificación Telegram
+    try {
+        const itemsTexto = (orderData.items || [])
+            .map(i => `  • ${i.qty}x ${i.nombre}${i.variantLabel ? ` (${i.variantLabel})` : ''}`)
+            .join('\n');
+        const metodoPago = orderData.metodoPago === 'transferencia' ? '🏦 Transferencia' : '💳 MercadoPago';
+        const entrega = orderData.metodoEntrega === 'delivery' ? '🛵 Delivery' : '🏠 Retiro en local';
+        const total = (orderData.total || 0).toLocaleString('es-AR');
+        const tgMsg = `🛒 *Nuevo pedido #${orderNumber}*\n👤 ${orderData.cliente?.nombre || 'Sin nombre'}\n\n${itemsTexto}\n\n💰 $${total}\n${metodoPago} · ${entrega}`;
+
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN.value()}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: tgMsg, parse_mode: 'Markdown' })
+        });
+    } catch (tgErr) {
+        logger.warn("Telegram notification failed:", tgErr.message);
+    }
+
+    // 5. Preparar detalle de pedido para el Mail
     const itemsHtml = orderData.items.map(item => {
         const masInfoRow = (item.masInfo?.activo && item.masInfo?.texto)
             ? `<tr><td colspan="2" style="padding:0 0 12px; border-bottom:1px solid #f0f0f0;"><span style="font-size:12px;color:#888;line-height:1.5;">${item.masInfo.texto}</span></td></tr>`
