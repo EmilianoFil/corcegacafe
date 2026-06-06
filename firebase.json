@@ -16,6 +16,9 @@
       "**/node_modules/**",
       "functions/**"
     ],
+    "redirects": [
+      { "source": "/index.html", "destination": "/", "type": 301 }
+    ],
     "headers": [
       {
         "source": "**/*.html",
