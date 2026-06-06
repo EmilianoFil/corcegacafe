@@ -756,6 +756,49 @@ export async function verDetalleOrden(id) {
                         </div>
                     </div>
 
+                    ${(() => {
+                        const ESTADOS_LABELS = {
+                            recibido:             'Pedido recibido',
+                            pendiente_pago:       'Pendiente de pago',
+                            transferencia:        'Pago por transferencia',
+                            pagado:               'Pago confirmado',
+                            en_preparacion:       'En preparación',
+                            listo:                'Listo para retirar',
+                            en_camino:            'En camino',
+                            entregado:            'Entregado',
+                            cancelado:            'Cancelado',
+                            pendiente_devolucion: 'Devolución pendiente',
+                        };
+                        const ESTADOS_COLORS = {
+                            recibido: '#aaa', pendiente_pago: '#f59e0b', transferencia: '#f59e0b',
+                            pagado: '#22c55e', en_preparacion: '#d86634', listo: '#d86634',
+                            en_camino: '#d86634', entregado: '#22c55e',
+                            cancelado: '#ef4444', pendiente_devolucion: '#f59e0b',
+                        };
+                        const hist = (orden.historial || [])
+                            .slice()
+                            .sort((a, b) => (a.fecha?.seconds || 0) - (b.fecha?.seconds || 0));
+                        if (!hist.length) return '';
+                        const rows = hist.map(h => {
+                            const d = h.fecha?.toDate ? h.fecha.toDate() : new Date((h.fecha?.seconds || 0) * 1000);
+                            const fecha = d.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' });
+                            const hora  = d.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+                            const label = ESTADOS_LABELS[h.estado] || h.estado;
+                            const color = ESTADOS_COLORS[h.estado] || '#888';
+                            return `<div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px dashed #f0ede6;">
+                                <div style="width:8px; height:8px; min-width:8px; border-radius:50%; background:${color};"></div>
+                                <span style="font-size:12px; font-weight:700; flex:1;">${label}</span>
+                                <span style="font-size:11px; color:#999; white-space:nowrap;">${fecha} · ${hora}</span>
+                            </div>`;
+                        }).join('');
+                        return `<div style="margin-bottom:20px;">
+                            <p style="font-weight:700; margin-bottom:10px; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; color:#aaa;">Historial de estados</p>
+                            <div style="background:#fdfcf7; border-radius:14px; padding:12px 16px; border:1px solid #f0ede6;">
+                                ${rows}
+                            </div>
+                        </div>`;
+                    })()}
+
                     <button onclick="window.tiendaAdmin.notificarWhatsApp('${id}')" class="btn-primary" style="width:100%; background:#25d366; margin-bottom:15px; border:none; display:flex; align-items:center; justify-content:center; gap:8px;">
                         <i class="fab fa-whatsapp"></i> Notificar Cliente por WhatsApp
                     </button>
