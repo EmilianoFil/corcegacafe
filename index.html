@@ -24,6 +24,48 @@
   <meta name="twitter:description" content="Café de especialidad, pastelería artesanal y tortas de encargo en Caballito, Buenos Aires." />
   <meta name="twitter:image" content="https://corcegacafe.com.ar/css/img/Corcega_Logo_Original.png" />
 
+  <!-- FAQ Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "¿Qué días y horarios abre Córcega Café?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Abrimos de martes a domingo de 8 a 20hs. Los lunes permanecemos cerrados."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "¿Dónde está Córcega Café?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Estamos en Av. Donato Álvarez 309, Caballito, Buenos Aires."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "¿Hacen tortas de encargo?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sí, hacemos tortas y pastelería de encargo. Podés pedirlas desde nuestra tienda online en corcegacafe.com.ar/tienda.html"
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "¿Tienen delivery?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sí, hacemos delivery y también podés pasar a retirar tu pedido por el local en Av. Donato Álvarez 309, Caballito."
+        }
+      }
+    ]
+  }
+  </script>
+
   <!-- JSON-LD LocalBusiness -->
   <script type="application/ld+json">
   {
@@ -57,7 +99,10 @@
     "hasMap": "https://maps.google.com/?q=Av+Donato+Alvarez+309+Caballito+Buenos+Aires"
   }
   </script>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Syncopate&display=swap" rel="stylesheet"> <!-- Tipografías personalizadas --> <!--//Agrego para uso de letra -->
+  <!-- Preconnect fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Syncopate&display=swap" rel="stylesheet">
   <!-- Manifest PWA -->
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#935736">
@@ -376,6 +421,7 @@ body::before {
   </script>
 </head>
 <body>
+  <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">Córcega Café — Café de Especialidad en Caballito, Buenos Aires</h1>
   <div class="contenido">
     <div class="menu-style">
       <img src="css/img/Corcega_Logo_Letras_Blanco.png" alt="Córcega Café" class="logo" />
