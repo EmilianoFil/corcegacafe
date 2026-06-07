@@ -878,7 +878,6 @@
                 <li><a href="#dashboard" class="active"><span class="icon">📊</span> Resumen General</a></li>
                 <li><a href="#puntos"><span class="icon">☕</span> Sumar Cafecito</a></li>
                 <li><a href="#clientes"><span class="icon">👥</span> Clientes</a></li>
-                <li><a href="admin-badges.html"><span class="icon">🎖️</span> Insignias</a></li>
             </ul>
 
             <div class="nav-label">Tienda Online</div>
@@ -2236,7 +2235,6 @@
         import {
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
-        import { fetchActiveBadges, computeAutoBadgesForClient, assignBadgeToClient } from './js/badges-engine.js';
         import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=20';
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=8';
@@ -2256,7 +2254,6 @@
         // Dashboard Cache
         let cachedLogs = [];
         let cachedStartWeek = null;
-        let cachedActiveBadges = [];
 
 
         // --- AUTH & INITIALIZATION ---
@@ -3142,14 +3139,11 @@
             const queryAñoPasado = query(logsRef, where("timestamp", ">=", startMesPasadoLastYear), where("timestamp", "<=", endMesPasadoLastYear));
 
 
-            const [recentSnap, lastYearSnap, clientesSnap, activeBadges] = await Promise.all([
+            const [recentSnap, lastYearSnap, clientesSnap] = await Promise.all([
                 getDocs(queryReciente),
                 getDocs(queryAñoPasado),
-                getDocs(collection(db, "clientes")),
-                fetchActiveBadges(db)
+                getDocs(collection(db, "clientes"))
             ]);
-
-            cachedActiveBadges = activeBadges;
 
             const logsRecientes = recentSnap.docs.map(d => ({ ...d.data(), ts: d.data().timestamp?.toDate() }));
             const logsLastYear = lastYearSnap.docs.map(d => ({ ...d.data(), ts: d.data().timestamp?.toDate() }));
@@ -3468,17 +3462,11 @@
 
                 listEl.innerHTML = top.map((c, i) => {
                     const fullClient = clientesData.find(cl => cl.dni == c.dni || cl.nombre == c.nombre);
-                    const clientLogs = logs.filter(l => l.detalles.includes(c.dni));
-                    const badge = getBadgeInfo(fullClient, clientLogs);
-
                     return `
                         <li style="padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
                             <div style="display:flex; align-items:center; gap:8px">
                                 <span style="font-weight:700; color:${badgeColor}; width:24px">#${i + 1}</span>
-                                <div>
-                                    <span style="font-weight:500; display:block">${c.nombre}</span>
-                                    ${badge ? `<small style="background:${badge.bg}; color:${badge.color}; padding:1px 6px; border-radius:4px; font-weight:700; font-size:0.65rem; text-transform:uppercase; margin-top:2px; display:inline-block">${badge.text}</small>` : ''}
-                                </div>
+                                <span style="font-weight:500;">${c.nombre}</span>
                             </div>
                             <span style="font-size:0.9rem; font-weight:700; background:${badgeBg}; padding:2px 8px; border-radius:12px; color:${badgeColor}">${c.count} ☕</span>
                         </li>
@@ -3493,16 +3481,11 @@
                     .slice(0, 10);
 
                 listEl.innerHTML = topAll.map((c, i) => {
-                    const clientLogs = cachedLogs.filter(l => l.detalles.includes(c.dni));
-                    const badge = getBadgeInfo(c, clientLogs);
                     return `
                         <li style="padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
                             <div style="display:flex; align-items:center; gap:8px">
                                 <span style="font-weight:700; color:var(--secondary); width:24px">#${i + 1}</span>
-                                <div>
-                                    <span style="font-weight:500; display:block">${c.nombre || c.dni}</span>
-                                    ${badge ? `<small style="background:${badge.bg}; color:${badge.color}; padding:1px 6px; border-radius:4px; font-weight:700; font-size:0.65rem; text-transform:uppercase; margin-top:2px; display:inline-block">${badge.text}</small>` : ''}
-                                </div>
+                                <span style="font-weight:500;">${c.nombre || c.dni}</span>
                             </div>
                             <span style="font-size:0.9rem; font-weight:700; background:rgba(13, 43, 55, 0.08); padding:2px 8px; border-radius:12px; color:var(--secondary)">${c.cafes_acumulados_total || 0} ☕</span>
                         </li>
@@ -3834,8 +3817,6 @@
                 // Refresh stats and table if in background
                 loadDashboardStats();
 
-                // Badges Auto-Assignment
-                checkAndAssignBadges(dni);
 
             } catch (err) {
                 console.error(err);
@@ -3880,7 +3861,6 @@
                 resBox.innerHTML += "<br>📸 ¡Promo Instagram aplicada (+1 sello)!";
 
                 loadDashboardStats();
-                checkAndAssignBadges(lastOp.dni);
             } catch (e) {
                 console.error(e);
                 alert("Error aplicando promo Instagram");
@@ -4233,45 +4213,6 @@
             renderLogsDataTable(filters);
         };
 
-        async function checkAndAssignBadges(dni) {
-            try {
-                const clientSnap = await getDoc(doc(db, "clientes", dni));
-                if (!clientSnap.exists()) return;
-
-                const clienteData = clientSnap.data();
-                const activeBadges = await fetchActiveBadges(db);
-
-                // Fetch recent logs for frequency rules (e.g. last 30 days)
-                const logsQ = query(
-                    collection(db, "logs"),
-                    where("dni", "==", dni),
-                    orderBy("timestamp", "desc"),
-                    limit(50)
-                );
-                const logsSnap = await getDocs(logsQ);
-                const recentLogs = logsSnap.docs.map(d => d.data());
-
-                const eligible = computeAutoBadgesForClient({
-                    clienteData,
-                    badges: activeBadges,
-                    rulesLibrary: {}, // Not using separate library for now
-                    recentLogs: recentLogs,
-                    now: new Date()
-                });
-
-                for (const badge of eligible) {
-                    await assignBadgeToClient({
-                        db,
-                        dni,
-                        badgeDoc: badge,
-                        origen: 'auto',
-                        asignadoPor: 'system'
-                    });
-                }
-            } catch (err) {
-                console.error("Error auto-assigning badges:", err);
-            }
-        }
 
         function calculateLivePace(logs) {
             const hoy = new Date();
@@ -4326,30 +4267,6 @@
             `;
         }
 
-        function getBadgeInfo(client, clientLogs = []) {
-            if (!client || !cachedActiveBadges) return null;
-
-            // Usamos el motor de badges para evaluar qué badges le corresponden "en vivo"
-            const eligible = computeAutoBadgesForClient({
-                clienteData: client,
-                badges: cachedActiveBadges,
-                rulesLibrary: {},
-                recentLogs: clientLogs,
-                now: new Date()
-            });
-
-            if (eligible.length > 0) {
-                // Devolvemos el primero para mostrar en el ranking (estética)
-                const b = eligible[eligible.length - 1]; // El más reciente añadido suele ser el más específico
-                return {
-                    text: `${b.icono || '☕'} ${b.nombre}`,
-                    color: '#B8542A',
-                    bg: 'rgba(184, 84, 42, 0.1)'
-                };
-            }
-
-            return null;
-        }
     </script>
     
     <!-- MODAL NUEVO ADMIN -->
