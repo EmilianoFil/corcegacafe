@@ -1,6 +1,6 @@
 import { db, storage } from '../firebase-config.js';
 import {
-    collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy, setDoc, onSnapshot
+    collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy, setDoc, onSnapshot, limit, where, Timestamp
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import {
     ref, uploadBytes, getDownloadURL
@@ -609,7 +609,7 @@ export function loadOrdenesTable(filtro = 'todos') {
     // Cancelar listener anterior si existe
     if (_unsubOrdenes) { _unsubOrdenes(); _unsubOrdenes = null; }
 
-    const q = query(collection(db, "ordenes"), orderBy("timestamp", "desc"));
+    const q = query(collection(db, "ordenes"), orderBy("timestamp", "desc"), limit(150));
 
     _unsubOrdenes = onSnapshot(q, (snap) => {
         let ordenes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
