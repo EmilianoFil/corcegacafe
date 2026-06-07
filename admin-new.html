@@ -883,6 +883,7 @@
 
             <div class="nav-label">Tienda Online</div>
             <ul>
+                <li><a href="#tienda-dashboard"><span class="icon">📈</span> Dashboard</a></li>
                 <li><a href="#tienda-productos"><span class="icon">🛒</span> Productos</a></li>
                 <li><a href="#tienda-categorias"><span class="icon">🏷️</span> Categorías</a></li>
                 <li><a href="#tienda-ordenes"><span class="icon">📦</span> Órdenes</a></li>
@@ -1469,6 +1470,87 @@
         </section>
 
         <!-- TIENDA ORDENES SECTION -->
+        <!-- ══════════════════════════════════════════
+             TIENDA DASHBOARD
+        ══════════════════════════════════════════ -->
+        <section id="tienda-dashboard" class="section-content">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:25px; border-bottom:1px solid var(--border); padding-bottom:15px;">
+                <h3 style="margin:0; font-size:1.5rem;">Dashboard Tienda 📈</h3>
+                <span id="tienda-dash-updated" style="font-size:0.75rem; color:var(--text-muted); font-weight:500;"></span>
+            </div>
+
+            <!-- Alertas de pendientes -->
+            <div id="tienda-dash-alertas" style="margin-bottom:20px;"></div>
+
+            <!-- KPIs -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:24px;">
+                <div class="card" style="padding:18px 20px; text-align:center; border:1px solid var(--border);">
+                    <p style="font-size:1.6rem; font-weight:800; color:var(--primary); margin:0;" id="td-ventas-hoy">—</p>
+                    <p style="font-size:0.7rem; color:var(--text-muted); font-weight:600; margin:5px 0 0; text-transform:uppercase;">Ventas hoy</p>
+                </div>
+                <div class="card" style="padding:18px 20px; text-align:center; border:1px solid var(--border);">
+                    <p style="font-size:1.6rem; font-weight:800; color:var(--primary); margin:0;" id="td-ventas-semana">—</p>
+                    <p style="font-size:0.7rem; color:var(--text-muted); font-weight:600; margin:5px 0 0; text-transform:uppercase;">Esta semana</p>
+                </div>
+                <div class="card" style="padding:18px 20px; text-align:center; border:1px solid var(--border);">
+                    <p style="font-size:1.6rem; font-weight:800; color:var(--primary); margin:0;" id="td-ventas-mes">—</p>
+                    <p style="font-size:0.7rem; color:var(--text-muted); font-weight:600; margin:5px 0 0; text-transform:uppercase;">Este mes</p>
+                </div>
+                <div class="card" style="padding:18px 20px; text-align:center; border:1px solid var(--border);">
+                    <p style="font-size:1.6rem; font-weight:800; color:var(--secondary); margin:0;" id="td-pedidos-hoy">—</p>
+                    <p style="font-size:0.7rem; color:var(--text-muted); font-weight:600; margin:5px 0 0; text-transform:uppercase;">Pedidos hoy</p>
+                </div>
+                <div class="card" style="padding:18px 20px; text-align:center; border:1px solid var(--border);">
+                    <p style="font-size:1.6rem; font-weight:800; color:var(--secondary); margin:0;" id="td-pedidos-mes">—</p>
+                    <p style="font-size:0.7rem; color:var(--text-muted); font-weight:600; margin:5px 0 0; text-transform:uppercase;">Pedidos mes</p>
+                </div>
+                <div class="card" style="padding:18px 20px; text-align:center; border:1px solid var(--border);">
+                    <p style="font-size:1.6rem; font-weight:800; color:#22c55e; margin:0;" id="td-ticket-promedio">—</p>
+                    <p style="font-size:0.7rem; color:var(--text-muted); font-weight:600; margin:5px 0 0; text-transform:uppercase;">Ticket promedio</p>
+                </div>
+            </div>
+
+            <!-- Gráfico ventas 7 días + donuts -->
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr; gap:16px; margin-bottom:24px;">
+                <div class="card" style="padding:20px; border:1px solid var(--border);">
+                    <h4 style="margin:0 0 16px; font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px;">Ventas últimos 7 días</h4>
+                    <div style="position:relative; height:200px;">
+                        <canvas id="td-chart-ventas7d"></canvas>
+                    </div>
+                </div>
+                <div class="card" style="padding:20px; border:1px solid var(--border); text-align:center;">
+                    <h4 style="margin:0 0 12px; font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px;">Método de pago</h4>
+                    <div style="position:relative; height:160px;">
+                        <canvas id="td-chart-pago"></canvas>
+                    </div>
+                    <div id="td-legend-pago" style="font-size:0.75rem; margin-top:10px; color:var(--text-muted);"></div>
+                </div>
+                <div class="card" style="padding:20px; border:1px solid var(--border); text-align:center;">
+                    <h4 style="margin:0 0 12px; font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px;">Tipo de entrega</h4>
+                    <div style="position:relative; height:160px;">
+                        <canvas id="td-chart-entrega"></canvas>
+                    </div>
+                    <div id="td-legend-entrega" style="font-size:0.75rem; margin-top:10px; color:var(--text-muted);"></div>
+                </div>
+            </div>
+
+            <!-- Top productos + estados -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="card" style="padding:20px; border:1px solid var(--border);">
+                    <h4 style="margin:0 0 16px; font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px;">🏆 Top productos (este mes)</h4>
+                    <div id="td-top-productos">
+                        <p style="color:var(--text-muted); font-size:0.85rem;">Cargando...</p>
+                    </div>
+                </div>
+                <div class="card" style="padding:20px; border:1px solid var(--border);">
+                    <h4 style="margin:0 0 16px; font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px;">Estado de órdenes (mes)</h4>
+                    <div id="td-estados-ordenes">
+                        <p style="color:var(--text-muted); font-size:0.85rem;">Cargando...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section id="tienda-ordenes" class="section-content">
             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
                 <div style="display:flex; align-items:center; gap:15px;">
@@ -2238,6 +2320,7 @@
 
             if (target === 'logs' && (typeof logsData !== 'undefined' && logsData.length === 0)) loadLogsTable();
             if (target === 'mails') loadCampanasHistory();
+            if (target === 'tienda-dashboard') _cargarTiendaDashboard();
             if (target === 'tienda-productos') window.tiendaAdmin.loadProductosTable();
             if (target === 'tienda-categorias') window.tiendaAdmin.loadCategoriasTable();
             if (target === 'tienda-ordenes') window.tiendaAdmin.loadOrdenesTable();
@@ -2249,6 +2332,141 @@
         }
 
         window._navigateTo = navigateTo;
+
+        // ── Dashboard Tienda ──────────────────────────────────────────────────
+        let _tdChartVentas = null, _tdChartPago = null, _tdChartEntrega = null;
+
+        async function _cargarTiendaDashboard() {
+            document.getElementById('tienda-dash-updated').textContent = 'Cargando...';
+
+            const snap = await getDocs(query(collection(db, 'ordenes'), orderBy('timestamp', 'desc')));
+            const ordenes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            const ahora   = new Date();
+            const hoyStr  = ahora.toDateString();
+            const lunEs   = new Date(ahora); lunEs.setDate(ahora.getDate() - ((ahora.getDay()+6)%7)); lunEs.setHours(0,0,0,0);
+            const mesIni  = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+
+            const pagadas = ordenes.filter(o => !['cancelado','pendiente_pago','pendiente_devolucion'].includes(o.estado));
+
+            const enFecha = (o, desde) => {
+                const t = o.timestamp?.toDate?.() || new Date((o.timestamp?.seconds||0)*1000);
+                return t >= desde;
+            };
+
+            const suma = (arr) => arr.reduce((s,o) => s + (o.total||0), 0);
+            const fmt  = (n) => '$' + Math.round(n).toLocaleString('es-AR');
+
+            const hoy   = pagadas.filter(o => enFecha(o, new Date(ahora.toDateString())));
+            const semana = pagadas.filter(o => enFecha(o, lunEs));
+            const mes    = pagadas.filter(o => enFecha(o, mesIni));
+            const todosHoy = ordenes.filter(o => enFecha(o, new Date(ahora.toDateString())));
+            const todosMes = ordenes.filter(o => enFecha(o, mesIni));
+
+            // KPIs
+            document.getElementById('td-ventas-hoy').textContent      = fmt(suma(hoy));
+            document.getElementById('td-ventas-semana').textContent    = fmt(suma(semana));
+            document.getElementById('td-ventas-mes').textContent       = fmt(suma(mes));
+            document.getElementById('td-pedidos-hoy').textContent      = todosHoy.length;
+            document.getElementById('td-pedidos-mes').textContent      = todosMes.length;
+            document.getElementById('td-ticket-promedio').textContent  = mes.length ? fmt(suma(mes)/mes.length) : '$0';
+
+            // Alertas pendientes
+            const pendientes = ordenes.filter(o => ['pendiente_pago','recibido','pagado','en_preparacion','listo'].includes(o.estado));
+            const alertasEl = document.getElementById('tienda-dash-alertas');
+            if (pendientes.length) {
+                const grupos = {};
+                pendientes.forEach(o => { grupos[o.estado] = (grupos[o.estado]||0)+1; });
+                const labels = { pendiente_pago:'Pendiente pago', recibido:'Recibidos', pagado:'Pagados', en_preparacion:'En preparación', listo:'Listos para retirar' };
+                alertasEl.innerHTML = `<div style="background:#fff8e1; border:1.5px solid #ffe082; border-radius:14px; padding:14px 18px; display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+                    <span style="font-weight:800; font-size:0.85rem; color:#7a5000;">⚠️ Órdenes activas:</span>
+                    ${Object.entries(grupos).map(([e,n]) => `<span style="background:white; border:1px solid #ffe082; border-radius:8px; padding:4px 12px; font-size:0.8rem; font-weight:700; color:#7a5000;">${labels[e]||e}: ${n}</span>`).join('')}
+                    <a href="#tienda-ordenes" onclick="window._navigateTo('tienda-ordenes')" style="margin-left:auto; font-size:0.8rem; font-weight:700; color:var(--primary); text-decoration:none;">Ver todas →</a>
+                </div>`;
+            } else {
+                alertasEl.innerHTML = '';
+            }
+
+            // Gráfico 7 días
+            const dias7 = Array.from({length:7}, (_,i) => {
+                const d = new Date(ahora); d.setDate(ahora.getDate()-6+i); return d;
+            });
+            const labels7 = dias7.map(d => d.toLocaleDateString('es-AR',{weekday:'short',day:'numeric'}));
+            const data7   = dias7.map(d => {
+                const ini = new Date(d.toDateString()); const fin = new Date(ini); fin.setDate(fin.getDate()+1);
+                return suma(pagadas.filter(o => { const t = o.timestamp?.toDate?.() || new Date((o.timestamp?.seconds||0)*1000); return t>=ini && t<fin; }));
+            });
+            if (_tdChartVentas) _tdChartVentas.destroy();
+            _tdChartVentas = new Chart(document.getElementById('td-chart-ventas7d'), {
+                type: 'bar',
+                data: { labels: labels7, datasets: [{ data: data7, backgroundColor: '#d86634cc', borderRadius: 8, borderSkipped: false }] },
+                options: { plugins:{ legend:{display:false} }, scales:{ y:{ ticks:{ callback: v => '$'+v.toLocaleString('es-AR') }, grid:{ color:'#f0ede6' } }, x:{ grid:{display:false} } }, responsive:true, maintainAspectRatio:false }
+            });
+
+            // Donut método de pago
+            const mpCount = mes.filter(o => o.metodoPago !== 'transferencia').length;
+            const trCount = mes.filter(o => o.metodoPago === 'transferencia').length;
+            if (_tdChartPago) _tdChartPago.destroy();
+            _tdChartPago = new Chart(document.getElementById('td-chart-pago'), {
+                type: 'doughnut',
+                data: { labels: ['MercadoPago','Transferencia'], datasets: [{ data: [mpCount, trCount], backgroundColor: ['#009ee3','#22c55e'], borderWidth: 0, hoverOffset: 4 }] },
+                options: { plugins:{ legend:{display:false} }, cutout:'70%', responsive:true, maintainAspectRatio:false }
+            });
+            document.getElementById('td-legend-pago').innerHTML = `<span style="color:#009ee3">■</span> MP: ${mpCount} &nbsp; <span style="color:#22c55e">■</span> Transf: ${trCount}`;
+
+            // Donut entrega
+            const retiroCount   = mes.filter(o => o.metodoEntrega !== 'delivery').length;
+            const deliveryCount = mes.filter(o => o.metodoEntrega === 'delivery').length;
+            if (_tdChartEntrega) _tdChartEntrega.destroy();
+            _tdChartEntrega = new Chart(document.getElementById('td-chart-entrega'), {
+                type: 'doughnut',
+                data: { labels: ['Retiro','Delivery'], datasets: [{ data: [retiroCount, deliveryCount], backgroundColor: ['#d86634','#8b5cf6'], borderWidth: 0, hoverOffset: 4 }] },
+                options: { plugins:{ legend:{display:false} }, cutout:'70%', responsive:true, maintainAspectRatio:false }
+            });
+            document.getElementById('td-legend-entrega').innerHTML = `<span style="color:#d86634">■</span> Retiro: ${retiroCount} &nbsp; <span style="color:#8b5cf6">■</span> Delivery: ${deliveryCount}`;
+
+            // Top productos
+            const prodMap = {};
+            mes.forEach(o => (o.items||[]).forEach(i => {
+                const k = i.nombre + (i.variantLabel ? ` (${i.variantLabel})` : '');
+                if (!prodMap[k]) prodMap[k] = { qty:0, total:0 };
+                prodMap[k].qty   += i.qty||1;
+                prodMap[k].total += (i.precio||0)*(i.qty||1);
+            }));
+            const topProds = Object.entries(prodMap).sort((a,b) => b[1].qty - a[1].qty).slice(0,5);
+            const maxQty   = topProds[0]?.[1].qty || 1;
+            document.getElementById('td-top-productos').innerHTML = topProds.length
+                ? topProds.map(([nombre,{qty,total}],i) => `
+                    <div style="margin-bottom:12px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:4px;">
+                            <span style="font-weight:700;">${i+1}. ${nombre}</span>
+                            <span style="color:var(--text-muted);">${qty} uds · ${fmt(total)}</span>
+                        </div>
+                        <div style="height:6px; background:#f0ede6; border-radius:4px; overflow:hidden;">
+                            <div style="height:100%; width:${(qty/maxQty*100).toFixed(0)}%; background:#d86634; border-radius:4px; transition:width .4s;"></div>
+                        </div>
+                    </div>`).join('')
+                : '<p style="color:var(--text-muted); font-size:0.85rem;">Sin ventas este mes aún.</p>';
+
+            // Estados del mes
+            const estadosMes = {};
+            todosMes.forEach(o => { estadosMes[o.estado] = (estadosMes[o.estado]||0)+1; });
+            const estadoColors = { pendiente_pago:'#f59e0b', pagado:'#22c55e', en_preparacion:'#d86634', listo:'#8b5cf6', entregado:'#16a34a', cancelado:'#ef4444', pendiente_devolucion:'#f59e0b' };
+            const estadoLabels = { pendiente_pago:'Pendiente pago', pagado:'Pagado', en_preparacion:'En preparación', listo:'Listo', entregado:'Entregado', cancelado:'Cancelado', pendiente_devolucion:'Dev. pendiente' };
+            document.getElementById('td-estados-ordenes').innerHTML = Object.entries(estadosMes)
+                .sort((a,b) => b[1]-a[1])
+                .map(([e,n]) => `
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                        <div style="width:10px; height:10px; border-radius:50%; background:${estadoColors[e]||'#aaa'}; flex-shrink:0;"></div>
+                        <span style="font-size:0.82rem; flex:1; font-weight:600;">${estadoLabels[e]||e}</span>
+                        <span style="font-size:0.82rem; font-weight:800; color:var(--primary);">${n}</span>
+                        <div style="width:80px; height:5px; background:#f0ede6; border-radius:4px; overflow:hidden;">
+                            <div style="height:100%; width:${(n/todosMes.length*100).toFixed(0)}%; background:${estadoColors[e]||'#aaa'}; border-radius:4px;"></div>
+                        </div>
+                    </div>`).join('') || '<p style="color:var(--text-muted); font-size:0.85rem;">Sin órdenes este mes.</p>';
+
+            document.getElementById('tienda-dash-updated').textContent = `Actualizado ${ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}`;
+        }
 
         // ── Toggle funciones sociales de la carta ─────────────────────────────
         async function _cargarToggleSocial() {
