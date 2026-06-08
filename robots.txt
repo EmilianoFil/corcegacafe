@@ -28,4 +28,4 @@ Disallow: /graficos2.html
 Disallow: /filtros.html
 Disallow: /menu-upload.html
 
-Sitemap: https://corcegacafe.com.ar/sitemap.txt
+Sitemap: https://corcegacafe.com.ar/sitemap.xml
