@@ -22,7 +22,7 @@ export function initHeader() {
         <div class="header-left">
             <!-- Desktop: logo -->
             <a href="tienda.html" id="header-logo-link">
-                <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="mini-logo logo-tienda">
+                <img src="css/img/og-imagen.jpg" alt="Córcega Café" class="mini-logo logo-tienda">
             </a>
             <!-- Mobile: hamburguesa -->
             <button class="header-hamburger" id="header-hamburger" aria-label="Menú" aria-expanded="false">
@@ -33,7 +33,7 @@ export function initHeader() {
             <div class="header-center-inner">
                 <!-- Mobile: logo aparece junto al brand -->
                 <a href="tienda.html" class="center-logo-wrap" id="header-center-logo" aria-label="Inicio">
-                    <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="mini-logo">
+                    <img src="css/img/og-imagen.jpg" alt="Córcega Café" class="mini-logo">
                 </a>
                 <div class="brand">
                     <span class="brand-top">${titleLines[0]}</span>
