@@ -137,10 +137,8 @@ header {
 }
 
 .mini-logo {
-    width: 55px;
-    height: 55px;
-    object-fit: contain;
-    border-radius: 8px;
+    width: 45px;
+    height: auto;
     transition: transform 0.3s;
 }
 
