@@ -2257,6 +2257,7 @@
 
 
         // --- AUTH & INITIALIZATION ---
+        let currentRankingType = 'week'; // declarado acá para evitar TDZ al llamar loadDashboardStats
         requireAdmin(async (user, data) => {
             try {
                 adminData = data || {};
@@ -2316,7 +2317,7 @@
             history.replaceState(null, '', '#' + target);
 
             if (target === 'logs' && (typeof logsData !== 'undefined' && logsData.length === 0)) loadLogsTable();
-            if (target === 'mails') loadCampanasHistory();
+            if (target === 'mails') window.loadCampanasHistory?.();
             if (target === 'tienda-dashboard') _cargarTiendaDashboard();
             if (target === 'tienda-productos') window.tiendaAdmin.loadProductosTable();
             if (target === 'tienda-categorias') window.tiendaAdmin.loadCategoriasTable();
@@ -3104,8 +3105,6 @@
 
 
         // --- DASHBOARD LOGIC ---
-        let currentRankingType = 'week';
-
         async function loadDashboardStats() {
             // Fechas clave
             const hoy = new Date();
