@@ -91,6 +91,23 @@ function _setupEvents() {
 
     document.getElementById('btn-go-to-checkout')?.addEventListener('click', () => {
         if (cart.length === 0) { window.location.href = 'tienda.html'; return; }
+
+        // GA4: begin_checkout
+        if (typeof gtag === 'function') {
+            const total = cart.reduce((s, i) => s + (i.precio * i.qty), 0);
+            gtag('event', 'begin_checkout', {
+                currency: 'ARS',
+                value: total,
+                items: cart.map(i => ({
+                    item_id: i.id,
+                    item_name: i.nombre,
+                    item_category: i.categoria || '',
+                    price: i.precio,
+                    quantity: i.qty
+                }))
+            });
+        }
+
         if (userIsLogged) { window.location.href = 'checkout.html'; return; }
         const modal = document.getElementById('checkout-modal');
         if (modal) {

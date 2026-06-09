@@ -500,6 +500,22 @@ async function handleOrderSubmission() {
         // 2. Limpiar reservas de sesión
         try { await deleteAllSessionReservas(); } catch(e) { console.warn('Error clearing reservas:', e); }
 
+        // GA4: purchase
+        if (typeof gtag === 'function') {
+            gtag('event', 'purchase', {
+                transaction_id: orderId,
+                currency: 'ARS',
+                value: total,
+                items: cart.map(i => ({
+                    item_id: i.id,
+                    item_name: i.nombre,
+                    item_category: i.categoria || '',
+                    price: i.precio,
+                    quantity: i.qty
+                }))
+            });
+        }
+
         // 3. Lógica según método de pago
         if (metodoPago === 'transferencia') {
             // Limpiar carrito y redirigir a éxito directamente
