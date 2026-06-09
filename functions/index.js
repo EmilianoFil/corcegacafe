@@ -976,6 +976,14 @@ exports.enviarMailCampana = onRequest(
             const token = Buffer.from(target.dni).toString("base64");
             const unsubscribeUrl = `https://emilianofil.github.io/corcegacafe/cancelar.html?id=${token}`;
 
+            // URLs de tracking
+            const pixelUrl = campanaId
+              ? `https://trackopen-ioo4dzpz2a-uc.a.run.app?c=${campanaId}&u=${encodeURIComponent(target.dni)}`
+              : null;
+            const clickUrl = campanaId
+              ? `https://trackclick-ioo4dzpz2a-uc.a.run.app?c=${campanaId}&u=${encodeURIComponent(target.dni)}&dest=${encodeURIComponent('https://corcegacafe.com.ar')}`
+              : imagenUrl;
+
             const mailOptions = {
               from: `Córcega Café <${emailUser.value()}>`,
               to: target.email,
@@ -1001,7 +1009,9 @@ exports.enviarMailCampana = onRequest(
             <tr>
               <td align="center" style="padding:30px 20px;">
                  ${cuerpo ? `<div style="font-size:16px; line-height:1.6; color:#2b2b2b; text-align:left; margin-bottom:25px;">${cuerpo.replace(/\n/g, "<br>")}</div>` : ""}
-                 <img src="${imagenUrl}" alt="Flyer" style="display:block; width:100%; border-radius:8px;">
+                 <a href="${clickUrl}" style="display:block;">
+                   <img src="${imagenUrl}" alt="Flyer" style="display:block; width:100%; border-radius:8px;">
+                 </a>
               </td>
             </tr>
             <tr>
@@ -1014,7 +1024,7 @@ exports.enviarMailCampana = onRequest(
                 <div style="margin-top:25px; padding-top:15px; border-top:1px solid #eee;">
                   <p style="font-size:11px; color:#999; line-height:1.4;">
                     Recibís este correo por ser cliente de Córcega Café.<br>
-                    Si no deseás recibir más promociones o novedades por este medio, podés 
+                    Si no deseás recibir más promociones o novedades por este medio, podés
                     <a href="${unsubscribeUrl}" style="color:#d86634; text-decoration:underline;">gestionar tus preferencias aquí</a>.
                   </p>
                 </div>
@@ -1024,6 +1034,7 @@ exports.enviarMailCampana = onRequest(
         </td>
       </tr>
     </table>
+    ${pixelUrl ? `<img src="${pixelUrl}" width="1" height="1" border="0" style="display:none;" alt="">` : ''}
   </body>
 </html>`,
             };
@@ -1032,20 +1043,43 @@ exports.enviarMailCampana = onRequest(
               await transporter.sendMail(mailOptions);
 
               if (campanaId) {
+                // Marcar en cliente (comportamiento previo)
                 await db.collection("clientes").doc(target.dni).set({
-                  campanasRecibidas: {
-                    [campanaId]: true
-                  },
-                  timestamp_campanas: {
-                    [campanaId]: admin.firestore.FieldValue.serverTimestamp()
-                  }
+                  campanasRecibidas: { [campanaId]: true },
+                  timestamp_campanas: { [campanaId]: admin.firestore.FieldValue.serverTimestamp() }
                 }, { merge: true });
+
+                // Guardar destinatario con tracking
+                await db.collection("campanas").doc(campanaId)
+                  .collection("destinatarios").doc(target.dni).set({
+                    email: target.email,
+                    nombre: target.nombre,
+                    estado: 'enviado',
+                    abierto: false,
+                    abiertaEn: null,
+                    clickeo: false,
+                    clickeadoEn: null,
+                    enviadoEn: admin.firestore.FieldValue.serverTimestamp()
+                  });
               }
 
               resultados.exitosos++;
             } catch (err) {
               resultados.fallidos++;
               resultados.errores.push({ email: target.email, error: err.message });
+
+              if (campanaId) {
+                await db.collection("campanas").doc(campanaId)
+                  .collection("destinatarios").doc(target.dni).set({
+                    email: target.email,
+                    nombre: target.nombre,
+                    estado: 'error',
+                    errorMsg: err.message,
+                    abierto: false,
+                    clickeo: false,
+                    enviadoEn: admin.firestore.FieldValue.serverTimestamp()
+                  });
+              }
             }
           }));
         }
@@ -1057,12 +1091,73 @@ exports.enviarMailCampana = onRequest(
           timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
 
+        // Guardar resumen de envío en el documento de campaña
+        if (campanaId) {
+          await db.collection("campanas").doc(campanaId).update({
+            status: 'sent',
+            totalEnviados: resultados.exitosos,
+            totalErrores: resultados.fallidos,
+            enviadaEn: admin.firestore.FieldValue.serverTimestamp()
+          });
+        }
+
         res.status(200).send(resultados);
       } catch (error) {
         logger.error("Error en mail personalizado:", error);
         res.status(500).send({ error: error.message });
       }
     });
+  }
+);
+
+// ─── TRACKING: Pixel de apertura ───────────────────────────────────────────
+const TRANSPARENT_GIF = Buffer.from(
+  'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64'
+);
+
+exports.trackOpen = onRequest(
+  { region: "us-central1", invoker: "public" },
+  async (req, res) => {
+    const { c: campanaId, u: clientDni } = req.query;
+    if (campanaId && clientDni) {
+      try {
+        const ref = db.collection("campanas").doc(campanaId)
+                      .collection("destinatarios").doc(clientDni);
+        const snap = await ref.get();
+        if (snap.exists && !snap.data().abierto) {
+          await ref.update({
+            abierto: true,
+            abiertaEn: admin.firestore.FieldValue.serverTimestamp()
+          });
+        }
+      } catch (e) { /* silencioso */ }
+    }
+    res.set('Content-Type', 'image/gif');
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.send(TRANSPARENT_GIF);
+  }
+);
+
+// ─── TRACKING: Click en links ───────────────────────────────────────────────
+exports.trackClick = onRequest(
+  { region: "us-central1", invoker: "public" },
+  async (req, res) => {
+    const { c: campanaId, u: clientDni, dest } = req.query;
+    if (campanaId && clientDni) {
+      try {
+        const ref = db.collection("campanas").doc(campanaId)
+                      .collection("destinatarios").doc(clientDni);
+        const snap = await ref.get();
+        if (snap.exists && !snap.data().clickeo) {
+          await ref.update({
+            clickeo: true,
+            clickeadoEn: admin.firestore.FieldValue.serverTimestamp()
+          });
+        }
+      } catch (e) { /* silencioso */ }
+    }
+    const destUrl = dest ? decodeURIComponent(dest) : 'https://corcegacafe.com.ar';
+    res.redirect(302, destUrl);
   }
 );
 
@@ -1418,7 +1513,7 @@ exports.onOrderCreated = onDocumentCreated({
     const mailOptions = {
         from: `Córcega Café <${emailUser.value()}>`,
         to: orderData.cliente.email,
-        bcc: "emilianofilgueira@gmail.com",
+        bcc: "emilianofilgueira@gmail.com, lemacafesrl@gmail.com",
         subject: `🐎 ¡Pedido Recibido! #${orderNumber}`,
         html: `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
@@ -1552,7 +1647,7 @@ exports.onOrderUpdated = onDocumentUpdated(
       const mailOptions = {
         from: `Córcega Café <${emailUser.value()}>`,
         to: afterData.cliente.email,
-        bcc: "emilianofilgueira@gmail.com",
+        bcc: "emilianofilgueira@gmail.com, lemacafesrl@gmail.com",
         subject: subject,
         html: `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
@@ -1835,7 +1930,7 @@ exports.solicitarArrepentimiento = onRequest(
         // Mail al admin
         await transporter.sendMail({
           from: `Córcega Café <${emailUser.value()}>`,
-          to: "emilianofilgueira@gmail.com",
+          to: "emilianofilgueira@gmail.com, lemacafesrl@gmail.com",
           subject: `↩️ Cancelación sin pago ${codigo} — Pedido #${order.orderNumber}`,
           html: `
             <div style="font-family:sans-serif; max-width:500px; margin:auto; padding:24px; border:1px solid #eee; border-radius:16px;">
@@ -1917,7 +2012,7 @@ exports.solicitarArrepentimiento = onRequest(
       // Mail al admin — acción requerida
       await transporter.sendMail({
         from: `Córcega Café <${emailUser.value()}>`,
-        to: "emilianofilgueira@gmail.com",
+        to: "emilianofilgueira@gmail.com, lemacafesrl@gmail.com",
         subject: `⚠️ Arrepentimiento pendiente — ${codigo} — Pedido #${order.orderNumber} ($${order.total?.toLocaleString('es-AR')})`,
         html: `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; padding:24px; border:1px solid #eee; border-radius:16px;">

@@ -2878,9 +2878,10 @@
                             <span class="campaign-status ${statusClass}">${statusLabel}</span>
                         </div>
                         <div class="title" style="padding-right: 25px;">${data.asunto || '(Sin Asunto)'}</div>
-                        <button class="btn-delete-item" onclick="event.stopPropagation(); eliminarCampana('${doc.id}', '${data.asunto || ''}')" title="Borrar campaña">
-                            🗑️
-                        </button>
+                        <div style="display:flex; gap:6px; position:absolute; right:10px; top:50%; transform:translateY(-50%);">
+                            ${data.status === 'sent' ? `<button class="btn-delete-item" style="background:var(--primary-light);color:var(--primary);font-size:11px;padding:3px 8px;border-radius:6px;border:none;cursor:pointer;font-weight:700;" onclick="event.stopPropagation(); verDetalleCampana('${doc.id}', '${(data.asunto||'').replace(/'/g,"\\'")}', ${data.totalEnviados||0}, ${data.totalErrores||0})" title="Ver detalle">📊</button>` : ''}
+                            <button class="btn-delete-item" onclick="event.stopPropagation(); eliminarCampana('${doc.id}', '${data.asunto || ''}')" title="Borrar campaña">🗑️</button>
+                        </div>
                     `;
                     container.appendChild(item);
                 });
@@ -2914,6 +2915,79 @@
                 console.error(err);
                 alert("Error al eliminar la campaña.");
             }
+        };
+
+        // ─── DETALLE DE CAMPAÑA ───────────────────────────────────────
+        window.verDetalleCampana = async (campanaId, asunto, totalEnviados, totalErrores) => {
+            const modal = document.getElementById('modal-detalle-campana');
+            const body = document.getElementById('detalle-campana-body');
+            modal.style.display = 'flex';
+            body.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:30px;">Cargando...</p>';
+
+            try {
+                const snap = await getDocs(collection(db, "campanas", campanaId, "destinatarios"));
+                const destinatarios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                const abiertos = destinatarios.filter(d => d.abierto).length;
+                const clickeos = destinatarios.filter(d => d.clickeo).length;
+                const enviados = destinatarios.filter(d => d.estado === 'enviado').length;
+                const errores = destinatarios.filter(d => d.estado === 'error').length;
+                const total = destinatarios.length;
+                const pctAbiertos = total > 0 ? Math.round((abiertos / enviados) * 100) : 0;
+                const pctClicks = total > 0 ? Math.round((clickeos / enviados) * 100) : 0;
+
+                const filas = destinatarios.map(d => `
+                    <tr style="border-bottom:1px solid #f0f0f0;">
+                        <td style="padding:8px 10px;font-size:12px;">${d.nombre || '-'}</td>
+                        <td style="padding:8px 10px;font-size:11px;color:var(--text-muted);">${d.email || '-'}</td>
+                        <td style="padding:8px 10px;text-align:center;">${d.estado === 'enviado' ? '✅' : '❌'}</td>
+                        <td style="padding:8px 10px;text-align:center;">${d.abierto ? '👁' : '—'}</td>
+                        <td style="padding:8px 10px;text-align:center;">${d.clickeo ? '🖱' : '—'}</td>
+                    </tr>
+                `).join('');
+
+                body.innerHTML = `
+                    <h3 style="margin:0 0 16px;font-size:1rem;color:var(--panel-oscuro);">📧 ${asunto}</h3>
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
+                        <div style="background:#f9f9f9;border-radius:10px;padding:12px;text-align:center;">
+                            <div style="font-size:1.6rem;font-weight:800;color:var(--panel-oscuro);">${enviados}</div>
+                            <div style="font-size:11px;color:var(--text-muted);">Enviados</div>
+                        </div>
+                        <div style="background:#fff5f5;border-radius:10px;padding:12px;text-align:center;">
+                            <div style="font-size:1.6rem;font-weight:800;color:#e05;">${errores}</div>
+                            <div style="font-size:11px;color:var(--text-muted);">Errores</div>
+                        </div>
+                        <div style="background:#f0f9ff;border-radius:10px;padding:12px;text-align:center;">
+                            <div style="font-size:1.6rem;font-weight:800;color:#0077cc;">${abiertos} <span style="font-size:12px;font-weight:400;">(${pctAbiertos}%)</span></div>
+                            <div style="font-size:11px;color:var(--text-muted);">Abiertos ⚠️iOS</div>
+                        </div>
+                        <div style="background:#f0fff4;border-radius:10px;padding:12px;text-align:center;">
+                            <div style="font-size:1.6rem;font-weight:800;color:#00885a;">${clickeos} <span style="font-size:12px;font-weight:400;">(${pctClicks}%)</span></div>
+                            <div style="font-size:11px;color:var(--text-muted);">Clicks</div>
+                        </div>
+                    </div>
+                    <div style="overflow-x:auto;max-height:320px;overflow-y:auto;">
+                        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                            <thead>
+                                <tr style="background:#f5f5f5;position:sticky;top:0;">
+                                    <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);">Nombre</th>
+                                    <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);">Email</th>
+                                    <th style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text-muted);">Enviado</th>
+                                    <th style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text-muted);">Abrió</th>
+                                    <th style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text-muted);">Clickeó</th>
+                                </tr>
+                            </thead>
+                            <tbody>${filas || '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">Sin datos de destinatarios aún</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                `;
+            } catch (err) {
+                body.innerHTML = `<p style="color:var(--error);text-align:center;">Error al cargar detalle: ${err.message}</p>`;
+            }
+        };
+
+        window.cerrarDetalleCampana = () => {
+            document.getElementById('modal-detalle-campana').style.display = 'none';
         };
 
         window.confirmarEliminarActual = () => {
@@ -4383,5 +4457,13 @@
         </div>
     </div>
     </script>
+
+    <!-- Modal: Detalle de campaña -->
+    <div id="modal-detalle-campana" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+        <div style="background:#fff;border-radius:16px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;padding:24px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <button onclick="cerrarDetalleCampana()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.4rem;cursor:pointer;color:#999;line-height:1;">×</button>
+            <div id="detalle-campana-body"></div>
+        </div>
+    </div>
 </body>
 </html>
