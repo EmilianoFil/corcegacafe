@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prueba Botón Tienda</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Syncopate&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Syncopate', serif;
+      background-color: #fdfcf7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      padding: 40px 20px;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: url('css/img/wallpaper.png');
+      background-repeat: repeat;
+      background-size: 600px;
+      background-position: center;
+      opacity: 0.75;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    h2 {
+      font-family: 'Syncopate', serif;
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+      margin: 0 0 12px;
+      text-align: center;
+    }
+
+    .card {
+      background: #01323f;
+      border-radius: 16px;
+      padding: 28px 24px;
+      width: 90%;
+      max-width: 340px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Base botón tienda compartido ── */
+    .boton-tienda {
+      display: block;
+      font-family: 'Syncopate', serif;
+      width: 100%;
+      max-width: 300px;
+      padding: 12px 24px 10px;
+      background-color: #ed7053;
+      color: white;
+      font-weight: bold;
+      border-radius: 10px;
+      font-size: 12px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: background-color 0.3s;
+      text-decoration: none;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .boton-tienda:hover { background-color: #b7542c; }
+
+    .boton-tienda small {
+      display: block;
+      font-size: 8px;
+      letter-spacing: 1.5px;
+      color: rgba(255,255,255,0.75);
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* ════════════════════════════════
+       OPCIÓN A — Badge flotante esquina
+    ════════════════════════════════ */
+    .wrapper-a {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    .wrapper-a .boton-tienda {
+      border: 2px solid rgba(255,255,255,0.35);
+    }
+
+    .badge-nuevo-a {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      background: #f5c842;
+      color: #01323f;
+      font-family: 'Syncopate', serif;
+      font-size: 7px;
+      font-weight: bold;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      pointer-events: none;
+    }
+
+    /* ════════════════════════════════
+       OPCIÓN B — Badge inline adentro
+    ════════════════════════════════ */
+    .boton-b {
+      border: 2px dashed rgba(255,255,255,0.35);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .boton-b .top-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-nuevo-b {
+      background: #f5c842;
+      color: #01323f;
+      font-family: 'Syncopate', serif;
+      font-size: 6.5px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 10px;
+      line-height: 1.4;
+    }
+
+    /* ════════════════════════════════
+       OPCIÓN C — Borde sólido + badge pulsante
+    ════════════════════════════════ */
+    .wrapper-c {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    .boton-c {
+      border: 2px solid rgba(255,255,255,0.7);
+      opacity: 1;
+    }
+
+    .badge-nuevo-c {
+      position: absolute;
+      top: -11px;
+      right: -11px;
+      background: #f5c842;
+      color: #01323f;
+      font-family: 'Syncopate', serif;
+      font-size: 7px;
+      font-weight: bold;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 20px;
+      box-shadow: 0 0 0 0 rgba(245,200,66, 0.7);
+      animation: pulso 2s infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulso {
+      0%   { box-shadow: 0 0 0 0 rgba(245,200,66, 0.7); }
+      60%  { box-shadow: 0 0 0 8px rgba(245,200,66, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245,200,66, 0); }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- ── OPCIÓN A ── -->
+  <div class="card">
+    <h2>Opción A · Badge flotante</h2>
+    <div class="wrapper-a">
+      <span class="badge-nuevo-a">Nuevo</span>
+      <a href="/tienda" class="boton-tienda">
+        Tienda Córcega
+        <small>✦ Para llevar a casa ✦</small>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── OPCIÓN B ── -->
+  <div class="card">
+    <h2>Opción B · Badge inline</h2>
+    <a href="/tienda" class="boton-tienda boton-b">
+      <span class="top-line">
+        Tienda Córcega
+        <span class="badge-nuevo-b">Nuevo</span>
+      </span>
+      <small>✦ Para llevar a casa ✦</small>
+    </a>
+  </div>
+
+  <!-- ── OPCIÓN C ── -->
+  <div class="card">
+    <h2>Opción C · Borde sólido + pulso</h2>
+    <div class="wrapper-c">
+      <span class="badge-nuevo-c">Nuevo</span>
+      <a href="/tienda" class="boton-tienda boton-c">
+        Tienda Córcega
+        <small>✦ Para llevar a casa ✦</small>
+      </a>
+    </div>
+  </div>
+
+</body>
+</html>
