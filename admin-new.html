@@ -1839,6 +1839,11 @@
                         <button class="btn-secondary" onclick="guardarCampana()" id="btn-save-draft" style="flex: 1;">
                             <span>💾</span> Guardar Borrador
                         </button>
+                        <button class="btn-secondary" id="btn-stats-campaign"
+                            style="flex: 0 0 60px; color: var(--primary); border-color: var(--primary-light); display: none; padding: 0;"
+                            title="Ver estadísticas de la campaña">
+                            <span>📊</span>
+                        </button>
                         <button class="btn-secondary" onclick="confirmarEliminarActual()" id="btn-delete-campaign"
                             style="flex: 0 0 60px; color: var(--error); border-color: #ffccc7; display: none; padding: 0;">
                             <span>🗑️</span>
@@ -2878,10 +2883,9 @@
                             <span class="campaign-status ${statusClass}">${statusLabel}</span>
                         </div>
                         <div class="title" style="padding-right: 25px;">${data.asunto || '(Sin Asunto)'}</div>
-                        <div style="display:flex; gap:6px; position:absolute; right:10px; top:50%; transform:translateY(-50%);">
-                            ${data.status === 'sent' ? `<button class="btn-delete-item" style="background:var(--primary-light);color:var(--primary);font-size:11px;padding:3px 8px;border-radius:6px;border:none;cursor:pointer;font-weight:700;" onclick="event.stopPropagation(); verDetalleCampana('${doc.id}', '${(data.asunto||'').replace(/'/g,"\\'")}', ${data.totalEnviados||0}, ${data.totalErrores||0})" title="Ver detalle">📊</button>` : ''}
-                            <button class="btn-delete-item" onclick="event.stopPropagation(); eliminarCampana('${doc.id}', '${data.asunto || ''}')" title="Borrar campaña">🗑️</button>
-                        </div>
+                        <button class="btn-delete-item" onclick="event.stopPropagation(); eliminarCampana('${doc.id}', '${data.asunto || ''}')" title="Borrar campaña">
+                            🗑️
+                        </button>
                     `;
                     container.appendChild(item);
                 });
@@ -2902,6 +2906,7 @@
 
             document.querySelectorAll('.campaign-item').forEach(i => i.classList.remove('active'));
             document.getElementById('btn-delete-campaign').style.display = 'none';
+            document.getElementById('btn-stats-campaign').style.display = 'none';
         };
 
         window.eliminarCampana = async (id, asunto) => {
@@ -3016,6 +3021,16 @@
             document.querySelectorAll('.campaign-item').forEach(i => i.classList.remove('active'));
 
             document.getElementById('btn-delete-campaign').style.display = 'flex';
+
+            // Mostrar botón 📊 solo si la campaña fue enviada
+            const btnStats = document.getElementById('btn-stats-campaign');
+            if (data.status === 'sent') {
+                btnStats.style.display = 'flex';
+                btnStats.onclick = () => verDetalleCampana(id, data.asunto || '', data.totalEnviados || 0, data.totalErrores || 0);
+            } else {
+                btnStats.style.display = 'none';
+                btnStats.onclick = null;
+            }
         };
 
         window.guardarCampana = async () => {
