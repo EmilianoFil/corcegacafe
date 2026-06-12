@@ -1367,9 +1367,9 @@
                             <tr style="border-bottom:2px solid var(--border);text-align:left;">
                                 <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">DNI</th>
                                 <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Nombre</th>
-                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Cafés Acum.</th>
+                                <th id="dorm-th-cafes" onclick="window._dormidosSortBy('cafes')" style="padding:10px 14px;font-weight:700;color:var(--primary);font-size:0.75rem;text-transform:uppercase;cursor:pointer;user-select:none;white-space:nowrap;">Cafés Acum. <span id="dorm-sort-cafes">↓</span></th>
                                 <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Última Visita</th>
-                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Días Ausente</th>
+                                <th id="dorm-th-dias" onclick="window._dormidosSortBy('dias')" style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;cursor:pointer;user-select:none;white-space:nowrap;">Días Ausente <span id="dorm-sort-dias"></span></th>
                                 <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;"></th>
                             </tr>
                         </thead>
@@ -2639,6 +2639,7 @@
         let _sociosCharts = {};
         let _ceroOffset = 0, _dormidosOffset = 0;
         let _ceroTab = 'viejos';
+        let _dormidosSort = { key: 'cafes', dir: -1 }; // -1 = desc
         const SOCIOS_PAGE = 20;
 
         // --- AUTH & INITIALIZATION ---
@@ -4831,8 +4832,8 @@
             const da = toDate(a.creado), db2 = toDate(b.creado);
             return (db2 || 0) - (da || 0);
         });
-        window._sociosDormidosAll = clients.filter(c => c._diasAusente !== null && c._diasAusente > 60)
-            .sort((a, b) => b._diasAusente - a._diasAusente);
+        window._sociosDormidosAll = clients.filter(c => c._diasAusente !== null && c._diasAusente > 60);
+        _dormidosSort = { key: 'cafes', dir: -1 };
 
         _ceroTab = 'viejos';
         _renderCeroTable();
@@ -5114,22 +5115,44 @@
 
     function _renderDormidosTable() {
         const umbral = parseInt(document.getElementById('dormidos-umbral')?.value || 60);
-        const toDate = ts => ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
-        const today = new Date();
-        const all = (window._sociosDormidosAll || []).filter(c => c._diasAusente > umbral);
-        const page = all.slice(0, _dormidosOffset + SOCIOS_PAGE);
-        document.getElementById('dormidos-count-label').textContent = `${all.length} socios`;
+        const base = (window._sociosDormidosAll || []).filter(c => c._diasAusente > umbral);
+
+        // Sort
+        const { key, dir } = _dormidosSort;
+        const sorted = [...base].sort((a, b) =>
+            key === 'cafes'
+                ? (b._freq - a._freq) * -dir
+                : (b._diasAusente - a._diasAusente) * -dir
+        );
+
+        // Update header indicators
+        const thCafes = document.getElementById('dorm-th-cafes');
+        const thDias  = document.getElementById('dorm-th-dias');
+        const spanCafes = document.getElementById('dorm-sort-cafes');
+        const spanDias  = document.getElementById('dorm-sort-dias');
+        if (thCafes && thDias) {
+            const activeStyle = 'color:var(--primary)';
+            const inactiveStyle = 'color:var(--text-muted)';
+            thCafes.style.color = key === 'cafes' ? 'var(--primary)' : 'var(--text-muted)';
+            thDias.style.color  = key === 'dias'  ? 'var(--primary)' : 'var(--text-muted)';
+            spanCafes.textContent = key === 'cafes' ? (dir === -1 ? ' ↓' : ' ↑') : '';
+            spanDias.textContent  = key === 'dias'  ? (dir === -1 ? ' ↓' : ' ↑') : '';
+        }
+
+        const page = sorted.slice(0, _dormidosOffset + SOCIOS_PAGE);
+        document.getElementById('dormidos-count-label').textContent = `${sorted.length} socios`;
         const tbody = document.getElementById('dormidos-tbody');
         tbody.innerHTML = page.map(c => {
             const fechaStr = c._lastVisit ? c._lastVisit.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—';
             const urgency = c._diasAusente > 180 ? '#dc2626' : c._diasAusente > 90 ? '#ea580c' : '#c47a00';
+            const freqColor = c._freq >= 10 ? '#15803d' : c._freq >= 5 ? '#c47a00' : 'inherit';
             return `<tr style="border-bottom:1px solid var(--border);">
                 <td style="padding:10px 14px;font-family:monospace;font-size:0.85rem;">${c.dni}</td>
                 <td style="padding:10px 14px;font-weight:600;">${c.nombre || '—'}</td>
-                <td style="padding:10px 14px;text-align:center;">${c._freq}</td>
+                <td style="padding:10px 14px;font-weight:700;color:${freqColor};">${c._freq}</td>
                 <td style="padding:10px 14px;color:var(--text-muted);font-size:0.85rem;">${fechaStr}</td>
                 <td style="padding:10px 14px;">
-                    <span style="font-weight:700;color:${urgency};">${c._diasAusente}d</span>
+                    <span style="font-weight:600;color:${urgency};">${c._diasAusente}d</span>
                 </td>
                 <td style="padding:10px 14px;text-align:right;">
                     <a href="cliente.html?dni=${c.dni}" target="_blank" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:white;font-size:0.78rem;font-weight:600;cursor:pointer;text-decoration:none;color:var(--secondary);">Ver →</a>
@@ -5137,10 +5160,19 @@
             </tr>`;
         }).join('') || '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-muted);">No hay socios dormidos en este período.</td></tr>';
         const moreBtn = document.getElementById('dormidos-more');
-        moreBtn.style.display = all.length > page.length ? 'block' : 'none';
+        moreBtn.style.display = sorted.length > page.length ? 'block' : 'none';
         _dormidosOffset += SOCIOS_PAGE;
     }
 
+    window._dormidosSortBy = function(key) {
+        if (_dormidosSort.key === key) {
+            _dormidosSort.dir *= -1; // invertir dirección
+        } else {
+            _dormidosSort = { key, dir: -1 }; // nueva columna: siempre desc primero
+        }
+        _dormidosOffset = 0;
+        _renderDormidosTable();
+    };
     window._sociosUpdateDormidos = function() { _dormidosOffset = 0; _renderDormidosTable(); };
     window._sociosShowMoreDormidos = function() { _renderDormidosTable(); };
 
