@@ -92,10 +92,35 @@ const emailUser = defineSecret("EMAIL_USER");
 const emailPass = defineSecret("EMAIL_PASS");
 const STOCKOS_API_KEY = defineSecret("STOCKOS_API_KEY");
 const TELEGRAM_BOT_TOKEN = defineSecret("TELEGRAM_BOT_TOKEN");
+const MAILERLITE_API_KEY = defineSecret("MAILERLITE_API_KEY");
+
+const agregarAMailerLite = async (email, nombre, dni, apiKey) => {
+  try {
+    const res = await fetch("https://connect.mailerlite.com/api/subscribers", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        fields: { name: nombre, last_name: String(dni) },
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      logger.warn("MailerLite no pudo agregar suscriptor:", err);
+    }
+  } catch (e) {
+    logger.warn("Error llamando a MailerLite:", e.message);
+  }
+};
 const TELEGRAM_CHAT_ID = "4755184";
+const TELEGRAM_GROUP_ID = "-5218118104";
+const TELEGRAM_CHAT_IDS = [TELEGRAM_CHAT_ID, TELEGRAM_GROUP_ID];
 
 exports.enviarMailRegistro = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass] },
+  { region: "us-central1", secrets: [emailUser, emailPass, MAILERLITE_API_KEY] },
   (req, res) => {
     corsHandler(req, res, async () => {
       const { nombre, mail, dni } = req.body;
@@ -144,6 +169,7 @@ exports.enviarMailRegistro = onRequest(
 
       try {
         await transporter.sendMail(mailOptions);
+        await agregarAMailerLite(email, nombre, dni, MAILERLITE_API_KEY.value());
         const logRef = await db.collection("logs").add({
           accion: "enviar_mail_bienvenida",
           detalles: `DNI: ${dni} - ${nombre} - ${email}`,
@@ -162,7 +188,7 @@ exports.enviarMailRegistro = onRequest(
 );
 
 exports.enviarMailRegistroTA = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass] },
+  { region: "us-central1", secrets: [emailUser, emailPass, MAILERLITE_API_KEY] },
   (req, res) => {
     corsHandler(req, res, async () => {
       const { nombre, mail, dni } = req.body;
@@ -211,6 +237,7 @@ exports.enviarMailRegistroTA = onRequest(
 
       try {
         await transporter.sendMail(mailOptions);
+        await agregarAMailerLite(email, nombre, dni, MAILERLITE_API_KEY.value());
         const logRef = await db.collection("logs").add({
           accion: "enviar_mail_bienvenida_ig",
           detalles: `DNI: ${dni} - ${nombre} - ${email}`,
@@ -229,7 +256,7 @@ exports.enviarMailRegistroTA = onRequest(
 );
 
 exports.enviarMailRegistroIG = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass] },
+  { region: "us-central1", secrets: [emailUser, emailPass, MAILERLITE_API_KEY] },
   (req, res) => {
     corsHandler(req, res, async () => {
       const { nombre, mail, dni } = req.body;
@@ -278,6 +305,7 @@ exports.enviarMailRegistroIG = onRequest(
 
       try {
         await transporter.sendMail(mailOptions);
+        await agregarAMailerLite(email, nombre, dni, MAILERLITE_API_KEY.value());
         const logRef = await db.collection("logs").add({
           accion: "enviar_mail_bienvenida_ig",
           detalles: `DNI: ${dni} - ${nombre} - ${email}`,
@@ -1436,11 +1464,13 @@ exports.onOrderCreated = onDocumentCreated({
         const horarioLinea = orderData.horario ? `\n📅 Retiro: ${orderData.horario}` : '';
         const tgMsg = `🛒 *Nuevo pedido #${orderNumber}*\n👤 ${orderData.cliente?.nombre || 'Sin nombre'}\n\n${itemsTexto}\n\n💰 $${total}\n${metodoPago} · ${entrega}${horarioLinea}`;
 
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN.value()}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: tgMsg, parse_mode: 'Markdown' })
-        });
+        await Promise.all(TELEGRAM_CHAT_IDS.map(chatId =>
+            fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN.value()}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text: tgMsg, parse_mode: 'Markdown' })
+            })
+        ));
     } catch (tgErr) {
         logger.warn("Telegram notification failed:", tgErr.message);
     }
@@ -1513,7 +1543,6 @@ exports.onOrderCreated = onDocumentCreated({
     const mailOptions = {
         from: `Córcega Café <${emailUser.value()}>`,
         to: orderData.cliente.email,
-        bcc: "emilianofilgueira@gmail.com, lemacafesrl@gmail.com",
         subject: `🐎 ¡Pedido Recibido! #${orderNumber}`,
         html: `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
@@ -1554,6 +1583,44 @@ exports.onOrderCreated = onDocumentCreated({
         await transporter.sendMail(mailOptions);
     } catch (err) {
         logger.error(`Error enviando mail inicial para #${orderNumber}:`, err);
+    }
+
+    // 6. Mail interno de nuevo pedido
+    try {
+        const metodoPagoTxt = orderData.metodoPago === 'transferencia' ? '🏦 Transferencia' : '💳 MercadoPago';
+        const entregaTxt = orderData.metodoEntrega === 'delivery' ? '🛵 Delivery' : '🏠 Retiro en local';
+        const itemsAdminHtml = (orderData.items || []).map(i => `
+            <tr>
+                <td style="padding:6px 0; border-bottom:1px solid #f0f0f0; font-size:14px;"><strong style="color:#d86634;">${i.qty}x</strong> ${i.nombre}${i.variantLabel ? ` (${i.variantLabel})` : ''}</td>
+                <td style="padding:6px 0; border-bottom:1px solid #f0f0f0; text-align:right; font-size:14px;">$${((i.precio||0)*(i.qty||1)).toLocaleString('es-AR')}</td>
+            </tr>`).join('');
+        await transporter.sendMail({
+            from: `Córcega Café <${emailUser.value()}>`,
+            to: "emilianofilgueira@gmail.com, lemacafesrl@gmail.com",
+            subject: `🛒 Nuevo pedido #${orderNumber} — ${orderData.cliente?.nombre || 'Sin nombre'} ($${(orderData.total||0).toLocaleString('es-AR')})`,
+            html: `
+              <div style="font-family:sans-serif; max-width:500px; margin:auto; padding:24px; border:1px solid #eee; border-radius:16px;">
+                <h2 style="color:#d86634; margin:0 0 16px 0;">🛒 Nuevo pedido #${orderNumber}</h2>
+                <table style="width:100%; font-size:14px; border-collapse:collapse;">
+                  <tr><td style="padding:6px 0; color:#666; width:40%;">Cliente</td><td><strong>${orderData.cliente?.nombre || 'Sin nombre'}</strong></td></tr>
+                  <tr><td style="padding:6px 0; color:#666;">Email</td><td>${orderData.cliente?.email || '—'}</td></tr>
+                  <tr><td style="padding:6px 0; color:#666;">Teléfono</td><td>${orderData.cliente?.telefono || '—'}</td></tr>
+                  <tr><td style="padding:6px 0; color:#666;">Pago</td><td>${metodoPagoTxt}</td></tr>
+                  <tr><td style="padding:6px 0; color:#666;">Entrega</td><td>${entregaTxt}</td></tr>
+                  ${orderData.horario ? `<tr><td style="padding:6px 0; color:#666;">Retiro</td><td>${orderData.horario}</td></tr>` : ''}
+                </table>
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px; border-top:2px solid #f0f0f0;">
+                  ${itemsAdminHtml}
+                  <tr>
+                    <td style="padding:12px 0; font-size:16px; font-weight:800;">TOTAL</td>
+                    <td style="padding:12px 0; font-size:16px; font-weight:800; text-align:right; color:#d86634;">$${(orderData.total||0).toLocaleString('es-AR')}</td>
+                  </tr>
+                </table>
+              </div>
+            `,
+        });
+    } catch (err) {
+        logger.error(`Error enviando mail interno de nuevo pedido #${orderNumber}:`, err);
     }
 });
 
@@ -1647,7 +1714,6 @@ exports.onOrderUpdated = onDocumentUpdated(
       const mailOptions = {
         from: `Córcega Café <${emailUser.value()}>`,
         to: afterData.cliente.email,
-        bcc: "emilianofilgueira@gmail.com, lemacafesrl@gmail.com",
         subject: subject,
         html: `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
@@ -2189,5 +2255,279 @@ exports.getStockosPrice = onRequest(
         res.status(500).json({ ok: false, error: e.message });
       }
     });
+  }
+);
+
+// Carga inicial y sincronización manual de socios a MailerLite (batch)
+exports.sincronizarSociosMailerLite = onRequest(
+  { region: "us-central1", secrets: [MAILERLITE_API_KEY], timeoutSeconds: 300 },
+  async (req, res) => {
+    const { autorizado } = req.body;
+    if (autorizado !== "corcega2025") {
+      return res.status(403).send("No autorizado");
+    }
+
+    const snapshot = await db.collection("clientes").get();
+    const subscribers = [];
+    let sinEmail = 0;
+
+    for (const doc of snapshot.docs) {
+      const { nombre, email, dni } = doc.data();
+      if (!email) { sinEmail++; continue; }
+      subscribers.push({ email, fields: { name: nombre || "", last_name: String(dni || "") } });
+    }
+
+    const headers = {
+      "Authorization": `Bearer ${MAILERLITE_API_KEY.value()}`,
+      "Content-Type": "application/json",
+    };
+
+    const chunkSize = 50;
+    let importados = 0, errores = 0;
+
+    for (let i = 0; i < subscribers.length; i += chunkSize) {
+      const chunk = subscribers.slice(i, i + chunkSize);
+      const requests = chunk.map(sub => ({
+        method: "POST",
+        path: "/api/subscribers",
+        body: sub,
+      }));
+      const r = await fetch("https://connect.mailerlite.com/api/batch", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ requests }),
+      });
+      if (r.ok) {
+        importados += chunk.length;
+      } else {
+        errores += chunk.length;
+        logger.warn("Batch error:", await r.text());
+      }
+    }
+
+    res.json({ total: snapshot.size, sinEmail, importados, errores });
+  }
+);
+// ═══════════════════════════════════════════════════════════════════════════
+// REVIEWS GOOGLE — AGENTE IA (Claude)
+// Fase 2: generación de respuestas con manual de marca + análisis de reviews.
+// Fase 3 conectará la colección "google_reviews" con la Business Profile API.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const Anthropic = require("@anthropic-ai/sdk");
+const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
+
+const REVIEWS_MODEL = "claude-opus-4-8";
+const REVIEWS_NOTIFY = ["emilianofilgueira@gmail.com", "lemacafesrl@gmail.com"];
+
+// Identidad verbal extraída del manual de marca de Córcega.
+// Puede sobreescribirse sin deploy editando el doc Firestore config/manual_marca (campo "texto").
+const MANUAL_MARCA_DEFAULT = `IDENTIDAD DE MARCA — CÓRCEGA, REBELDÍA CAFETERA
+Córcega es una cafetería de especialidad inspirada en una isla salvaje y paradisíaca.
+Su símbolo es el caballo corso que corre por costas vírgenes hacia un norte claro: la libertad.
+Promesa: café de especialidad cuidadosamente seleccionado y tostado, pastelería fresca y casera,
+brunch y almuerzos, servido por un equipo cálido, conversador, presente y atento.
+Tagline: "Rebeldía Cafetera" — somos rebeldes con una gran causa: la cafetera.
+
+VOZ DE MARCA: desinhibida, espontánea y alegre. Habla SIEMPRE en primera persona del plural
+(nosotros), representando a un colectivo que busca contagiar su rebeldía cafetera.
+TONO: de bienvenida y de arenga, aguerrido y valiente, buscando adhesión entre los futuros fieles.
+ATRIBUTOS: sociable, curiosa, despreocupada, cálida, botánica.
+LÉXICO DE MARCA (usar con naturalidad, nunca forzado): rebeldía cafetera, reglas propias,
+bandera, conquista, valentía, honestidad, caballo corso, libertad, mar, isla, costa, orilla.
+REGISTRO: español rioplatense (vos / ustedes).`;
+
+const REGLAS_RESPUESTA = `
+REGLAS PARA RESPONDER RESEÑAS DE GOOGLE:
+1. Saludá a la persona por su primer nombre.
+2. Reseñas positivas (4-5 estrellas): agradecé con alegría, mencioná algo ESPECÍFICO de su reseña,
+   invitala a volver. Podés usar 0 a 2 emojis.
+3. Reseñas neutras (3 estrellas): agradecé y reconocé el punto de mejora con honestidad.
+4. Reseñas negativas (1-2 estrellas): tono sobrio y empático, SIN emojis festivos.
+   Disculpas honestas y sin excusas, reconociendo el problema puntual. Invitá a seguir la
+   conversación por mensaje directo de Instagram @corcegacafe.
+   NUNCA prometas reembolsos, regalos ni compensaciones.
+5. Nunca discutas con el cliente ni culpes al equipo o a otros clientes.
+6. Nunca inventes datos (horarios, precios, promociones, direcciones).
+7. Máximo 60 palabras.
+Respondé ÚNICAMENTE con el texto de la respuesta, sin comillas ni explicaciones.`;
+
+const getManualMarca = async () => {
+  try {
+    const snap = await db.doc("config/manual_marca").get();
+    if (snap.exists && snap.data().texto) return snap.data().texto;
+  } catch (e) {
+    logger.warn("No se pudo leer config/manual_marca, uso default:", e.message);
+  }
+  return MANUAL_MARCA_DEFAULT;
+};
+
+const generarBorradorReview = async (apiKey, manual, review, previas = []) => {
+  const client = new Anthropic({ apiKey });
+  let pedido = `Escribí la respuesta oficial de Córcega a esta reseña de Google:\n` +
+    `Autor: ${review.autor}\nEstrellas: ${review.rating} de 5\nReseña: "${review.texto}"`;
+  if (previas.length) {
+    pedido += `\n\nYa se generaron estas versiones; escribí una alternativa DISTINTA en enfoque o tono:\n` +
+      previas.map((p, i) => `${i + 1}. ${p}`).join("\n");
+  }
+  const response = await client.messages.create({
+    model: REVIEWS_MODEL,
+    max_tokens: 600,
+    system: manual + "\n" + REGLAS_RESPUESTA,
+    messages: [{ role: "user", content: pedido }],
+  });
+  const texto = response.content.find((b) => b.type === "text")?.text?.trim();
+  if (!texto) throw new Error("Claude no devolvió texto");
+  return texto;
+};
+
+// Genera (o regenera) la respuesta sugerida para una review. La llama el admin.
+exports.generarRespuestaReview = onRequest(
+  { region: "us-central1", secrets: [ANTHROPIC_API_KEY] },
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      if (!(await verificarAuthAdmin(req, res))) return;
+      const { autor, rating, texto, previas } = req.body || {};
+      if (!autor || !rating || !texto) {
+        res.status(400).json({ error: "Faltan datos de la review (autor, rating, texto)." });
+        return;
+      }
+      try {
+        const manual = await getManualMarca();
+        const respuesta = await generarBorradorReview(
+          ANTHROPIC_API_KEY.value(), manual,
+          { autor, rating, texto },
+          Array.isArray(previas) ? previas.slice(0, 5) : []
+        );
+        res.json({ respuesta });
+      } catch (e) {
+        logger.error("generarRespuestaReview:", e);
+        res.status(500).json({ error: "No se pudo generar la respuesta." });
+      }
+    });
+  }
+);
+
+// Analiza un lote de reviews: ventajas, desventajas y citas. La llama el admin
+// (Fase 2 le manda las reviews; en Fase 3 podrá leer "google_reviews" si no recibe lote).
+exports.analizarReviews = onRequest(
+  { region: "us-central1", secrets: [ANTHROPIC_API_KEY] },
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      if (!(await verificarAuthAdmin(req, res))) return;
+      let reviews = Array.isArray(req.body?.reviews) ? req.body.reviews : null;
+      if (!reviews) {
+        const snap = await db.collection("google_reviews").orderBy("fecha", "desc").limit(200).get();
+        reviews = snap.docs.map((d) => d.data());
+      }
+      if (!reviews.length) {
+        res.status(400).json({ error: "No hay reviews para analizar." });
+        return;
+      }
+      try {
+        const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
+        const itemSchema = {
+          type: "object",
+          properties: {
+            tema: { type: "string" },
+            menciones: { type: "integer" },
+            cita: { type: "string", description: "Cita textual breve de una reseña que ilustra el tema" },
+          },
+          required: ["tema", "menciones", "cita"],
+          additionalProperties: false,
+        };
+        const response = await client.messages.create({
+          model: REVIEWS_MODEL,
+          max_tokens: 4000,
+          thinking: { type: "adaptive" },
+          system: "Sos un analista de experiencia de cliente para Córcega Café (cafetería de especialidad). " +
+            "Analizá las reseñas de Google y extraé los temas recurrentes, positivos y negativos, " +
+            "ordenados por cantidad de menciones. Escribí los temas en español rioplatense.",
+          messages: [{
+            role: "user",
+            content: "Reseñas a analizar (JSON):\n" + JSON.stringify(
+              reviews.map((r) => ({ rating: r.rating, texto: r.texto, fecha: r.fecha }))
+            ),
+          }],
+          output_config: {
+            format: {
+              type: "json_schema",
+              schema: {
+                type: "object",
+                properties: {
+                  ventajas: { type: "array", items: itemSchema },
+                  desventajas: { type: "array", items: itemSchema },
+                },
+                required: ["ventajas", "desventajas"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+        const texto = response.content.find((b) => b.type === "text")?.text;
+        const analisis = JSON.parse(texto);
+        await db.doc("config/reviews_insights").set({
+          ...analisis,
+          totalReviews: reviews.length,
+          generadoEl: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        res.json(analisis);
+      } catch (e) {
+        logger.error("analizarReviews:", e);
+        res.status(500).json({ error: "No se pudo analizar las reviews." });
+      }
+    });
+  }
+);
+
+// Agente programado: cada 6 horas busca reviews sin responder y sin borrador,
+// genera la respuesta sugerida y avisa por mail. Hasta que la Fase 3 sincronice
+// "google_reviews" desde la Business Profile API, la colección estará vacía y sale sin hacer nada.
+exports.agenteReviews = onSchedule(
+  { schedule: "every 6 hours", region: "us-central1", secrets: [ANTHROPIC_API_KEY, emailUser, emailPass] },
+  async () => {
+    const snap = await db.collection("google_reviews")
+      .where("respondida", "==", false).limit(50).get();
+    const pendientes = snap.docs.filter((d) => !d.data().borrador);
+    if (!pendientes.length) {
+      logger.info("agenteReviews: sin reviews pendientes de borrador.");
+      return;
+    }
+
+    const manual = await getManualMarca();
+    const generadas = [];
+    for (const doc of pendientes.slice(0, 10)) {
+      const r = doc.data();
+      try {
+        const borrador = await generarBorradorReview(ANTHROPIC_API_KEY.value(), manual, r);
+        await doc.ref.update({
+          borrador,
+          borradorGeneradoEl: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        generadas.push({ ...r, borrador });
+      } catch (e) {
+        logger.error(`agenteReviews: falló review ${doc.id}:`, e.message);
+      }
+    }
+    if (!generadas.length) return;
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: emailUser.value(), pass: emailPass.value() },
+    });
+    const filas = generadas.map((g) =>
+      `<li style="margin-bottom:14px;"><strong>${g.autor}</strong> (${g.rating}★): "${(g.texto || "").slice(0, 120)}..."<br>
+       <em style="color:#2d6a4f;">Respuesta sugerida: ${g.borrador}</em></li>`).join("");
+    await transporter.sendMail({
+      from: `Agente de Reviews Córcega <${emailUser.value()}>`,
+      to: REVIEWS_NOTIFY.join(","),
+      subject: `🤖 ${generadas.length} respuesta(s) de reviews listas para aprobar`,
+      html: `<div style="font-family:sans-serif; max-width:560px; margin:auto; color:#2b2b2b;">
+        <h2>☕ El agente preparó ${generadas.length} respuesta(s)</h2>
+        <ul style="padding-left:18px;">${filas}</ul>
+        <p><a href="https://corcegacafe.com.ar/admin-new.html#reviews" style="display:inline-block; padding:12px 24px; background:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">Revisar y publicar</a></p>
+      </div>`,
+    });
+    logger.info(`agenteReviews: ${generadas.length} borradores generados y notificados.`);
   }
 );

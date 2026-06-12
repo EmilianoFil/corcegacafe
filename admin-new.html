@@ -809,6 +809,13 @@
         .prod-tab-pane { display:none; }
         .prod-tab-pane.active { display:block; }
 
+        /* Reviews Google */
+        .btn-rev { padding:9px 16px; border:none; border-radius:10px; font-weight:700; font-size:0.78rem; cursor:pointer; font-family:inherit; }
+        .btn-rev:hover { transform:translateY(-1px); filter:brightness(1.05); }
+        .rev-filter-star, .rev-filter-estado { padding:6px 12px; border:1px solid var(--border); background:var(--white); border-radius:20px; font-size:0.75rem; font-weight:600; cursor:pointer; color:var(--text-muted); font-family:inherit; }
+        .rev-filter-star.active, .rev-filter-estado.active { background:var(--secondary); color:white; border-color:var(--secondary); }
+        #rev-nube { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:2px; padding:10px; min-height:180px; }
+
         /* La card del form de puntos necesita dejar pasar el dropdown */
         #puntos .form-container {
             overflow: visible;
@@ -900,6 +907,7 @@
             <div class="nav-label">Marketing y Sistema</div>
             <ul>
                 <li><a href="#mails"><span class="icon">📧</span> Mails Masivos</a></li>
+                <li><a href="#reviews"><span class="icon">⭐</span> Reviews Google</a></li>
                 <li><a href="#logs"><span class="icon">📜</span> Auditoría</a></li>
                 <li><a href="#tools"><span class="icon">🛠️</span> Herramientas</a></li>
             </ul>
@@ -1779,6 +1787,82 @@
         </section>
 
         <!-- MAILS SECTION -->
+        <!-- REVIEWS GOOGLE SECTION -->
+        <section id="reviews" class="section-content">
+            <h3>⭐ Reviews de Google</h3>
+
+            <div id="rev-demo-banner" style="display:none; align-items:center; gap:10px; background:#fff8e6; border:1px solid #f0d890; border-radius:12px; padding:12px 18px; margin-bottom:20px; font-size:0.82rem; color:#7a5c00;">
+                🧪 <strong>Modo demo:</strong>&nbsp;estás viendo datos de prueba. Cuando Google apruebe el acceso a la Business Profile API, acá van a aparecer las reviews reales del local.
+            </div>
+
+            <div id="rev-alert-negativas" style="display:none; background:#fff5f5; border:1px solid #ffd7d7; border-radius:12px; padding:12px 18px; margin-bottom:20px; font-size:0.85rem; color:var(--error); font-weight:600;">
+                ⚠️ Tenés <span id="rev-alert-negativas-num">0</span> review(s) negativa(s) sin responder. Las respuestas rápidas a reviews negativas mejoran tu reputación.
+            </div>
+
+            <div class="stats-grid" style="margin-bottom:24px;">
+                <div class="card stat-card">
+                    <span class="label">Rating Promedio</span>
+                    <span class="value" id="rev-stat-avg">-</span>
+                </div>
+                <div class="card stat-card">
+                    <span class="label">Total Reviews</span>
+                    <span class="value" id="rev-stat-total">-</span>
+                </div>
+                <div class="card stat-card">
+                    <span class="label">% Respondidas</span>
+                    <span class="value" id="rev-stat-respondidas">-</span>
+                </div>
+                <div class="card stat-card">
+                    <span class="label">Pendientes de Respuesta</span>
+                    <span class="value" id="rev-stat-pendientes">-</span>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom:24px;">
+                <h4 style="margin-top:0;">🤖 Bandeja del agente <span style="background:var(--primary); color:white; font-size:0.7rem; padding:3px 10px; border-radius:20px; vertical-align:middle;" id="rev-bandeja-count">0</span></h4>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:-8px;">El agente lee cada review nueva y redacta una respuesta con el tono de la marca. Vos la revisás, la editás si querés, y con un click se publica en Google.</p>
+                <div id="rev-bandeja"></div>
+            </div>
+
+            <div class="dashboard-grid" style="margin-bottom:24px;">
+                <div class="card">
+                    <h4 style="margin-top:0;">☁️ Nube de palabras</h4>
+                    <div id="rev-nube"></div>
+                </div>
+                <div class="card">
+                    <h4 style="margin-top:0;">📊 Análisis del agente</h4>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                        <div>
+                            <div style="font-size:0.75rem; font-weight:800; color:var(--success); text-transform:uppercase; margin-bottom:10px;">Ventajas</div>
+                            <ul id="rev-ventajas" style="padding:0; margin:0;"></ul>
+                        </div>
+                        <div>
+                            <div style="font-size:0.75rem; font-weight:800; color:var(--error); text-transform:uppercase; margin-bottom:10px;">A mejorar</div>
+                            <ul id="rev-desventajas" style="padding:0; margin:0;"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                    <h4 style="margin:0;">Todas las reviews</h4>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button class="rev-filter-estado active" onclick="window.reviewsAdmin.filtrarEstado('todas', this)">Todas</button>
+                        <button class="rev-filter-estado" onclick="window.reviewsAdmin.filtrarEstado('pendientes', this)">⏳ Pendientes</button>
+                        <button class="rev-filter-estado" onclick="window.reviewsAdmin.filtrarEstado('respondidas', this)">✓ Respondidas</button>
+                        <span style="border-left:1px solid var(--border); margin:0 4px;"></span>
+                        <button class="rev-filter-star" onclick="window.reviewsAdmin.filtrarEstrellas(5, this)">5★</button>
+                        <button class="rev-filter-star" onclick="window.reviewsAdmin.filtrarEstrellas(4, this)">4★</button>
+                        <button class="rev-filter-star" onclick="window.reviewsAdmin.filtrarEstrellas(3, this)">3★</button>
+                        <button class="rev-filter-star" onclick="window.reviewsAdmin.filtrarEstrellas(2, this)">2★</button>
+                        <button class="rev-filter-star" onclick="window.reviewsAdmin.filtrarEstrellas(1, this)">1★</button>
+                    </div>
+                </div>
+                <div id="rev-lista"></div>
+            </div>
+        </section>
+
         <section id="mails" class="section-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
                 <h3 style="margin:0">Envío de Campañas 📧</h3>
@@ -2244,6 +2328,8 @@
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=8';
         window.cartaAdmin = cartaAdmin;
+        import * as reviewsAdmin from './js/reviews/admin-reviews.js?v=2';
+        window.reviewsAdmin = reviewsAdmin;
 
         let adminData = null;
         let chartInstance = null;
@@ -2312,6 +2398,9 @@
                 window.tiendaAdmin.detenerListenerOrdenes();
             }
 
+            // Detener el listener del dashboard si navegamos a otra sección
+            if (target !== 'tienda-dashboard') _detenerTiendaDashboardListener();
+
             document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
             section.classList.add('active');
 
@@ -2332,27 +2421,41 @@
             if (target === 'carta-secciones') { window.cartaAdmin.loadSecciones(); _cargarToggleSocial(); }
             if (target === 'carta-platos') window.cartaAdmin.loadPlatos();
             if (target === 'carta-stats') _cargarStats();
+            if (target === 'reviews') window.reviewsAdmin.load();
         }
 
         window._navigateTo = navigateTo;
 
         // ── Dashboard Tienda ──────────────────────────────────────────────────
         let _tdChartVentas = null, _tdChartPago = null, _tdChartEntrega = null;
+        let _tdUnsub = null;
 
-        async function _cargarTiendaDashboard() {
+        function _detenerTiendaDashboardListener() {
+            if (_tdUnsub) { _tdUnsub(); _tdUnsub = null; }
+        }
+
+        function _cargarTiendaDashboard() {
+            if (_tdUnsub) return; // listener ya activo: se actualiza solo
             document.getElementById('tienda-dash-updated').textContent = 'Cargando...';
 
-            const ahora   = new Date();
-            const lunEs   = new Date(ahora); lunEs.setDate(ahora.getDate() - ((ahora.getDay()+6)%7)); lunEs.setHours(0,0,0,0);
-            const mesIni  = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
             // Solo traemos órdenes de los últimos 60 días (performance)
-            const hace60  = new Date(ahora); hace60.setDate(ahora.getDate() - 60);
-            const snap = await getDocs(query(
+            const hace60 = new Date(); hace60.setDate(hace60.getDate() - 60);
+            _tdUnsub = onSnapshot(query(
                 collection(db, 'ordenes'),
                 where('timestamp', '>=', Timestamp.fromDate(hace60)),
                 orderBy('timestamp', 'desc')
-            ));
-            const ordenes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            ), (snap) => {
+                _renderTiendaDashboard(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+            }, (err) => {
+                console.error('Error en listener del dashboard:', err);
+                document.getElementById('tienda-dash-updated').textContent = 'Error al cargar';
+            });
+        }
+
+        function _renderTiendaDashboard(ordenes) {
+            const ahora   = new Date();
+            const lunEs   = new Date(ahora); lunEs.setDate(ahora.getDate() - ((ahora.getDay()+6)%7)); lunEs.setHours(0,0,0,0);
+            const mesIni  = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
 
             const pagadas = ordenes.filter(o => !['cancelado','pendiente_pago','pendiente_devolucion'].includes(o.estado));
 
