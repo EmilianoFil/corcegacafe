@@ -2642,6 +2642,7 @@
 
         // Socios analytics — declarados acá para evitar TDZ si el hash inicial apunta a #socios
         let _sociosData = null;
+        let _sociosEnriched = null;
         let _sociosCharts = {};
         let _ceroOffset = 0, _dormidosOffset = 0;
         let _ceroTab = 'viejos';
@@ -4841,6 +4842,8 @@
         window._sociosDormidosAll = clients.filter(c => c._diasAusente !== null && c._diasAusente > 60);
         _dormidosSort = { key: 'cafes', dir: -1 };
 
+        _sociosEnriched = clients; // guardar con campos computados para campañas
+
         _ceroTab = 'viejos';
         _renderCeroTable();
         _renderDormidosTable();
@@ -5337,7 +5340,7 @@
     }
 
     window._abrirCampanas = function() {
-        const clients = _sociosData;
+        const clients = _sociosEnriched;
         if (!clients) { alert('Cargá primero la sección de Análisis de Socios.'); return; }
         const campanas = _generarCampanas(clients);
         window._campanaData = campanas;
