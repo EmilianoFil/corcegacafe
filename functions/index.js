@@ -2233,6 +2233,7 @@ exports.getStockosPrice = onRequest(
       if (!authed) return;
 
       const recipeId = req.query.recipeId || req.body?.recipeId || null;
+      const tipo     = req.query.tipo     || null; // 'final' | 'promo' | 'all'
       const apiKey   = STOCKOS_API_KEY.value();
 
       try {
@@ -2244,10 +2245,9 @@ exports.getStockosPrice = onRequest(
           if (!r.ok) { res.status(502).json({ ok: false, error: "StockOS no respondió." }); return; }
           res.json(await r.json());
         } else {
-          const r = await fetch(
-            "https://apigetrecipes-pw75n3yyma-uc.a.run.app",
-            { headers: { "x-api-key": apiKey } }
-          );
+          const stockosUrl = new URL("https://apigetrecipes-pw75n3yyma-uc.a.run.app");
+          if (tipo) stockosUrl.searchParams.set('tipo', tipo);
+          const r = await fetch(stockosUrl.toString(), { headers: { "x-api-key": apiKey } });
           if (!r.ok) { res.status(502).json({ ok: false, error: "StockOS no respondió." }); return; }
           res.json(await r.json());
         }
@@ -2531,3 +2531,7 @@ exports.agenteReviews = onSchedule(
     logger.info(`agenteReviews: ${generadas.length} borradores generados y notificados.`);
   }
 );
+
+// ZeptoMail — infraestructura nueva (no reemplaza Gmail todavía)
+const zeptoFunctions = require("./zepto-functions");
+exports.testZeptoMail = zeptoFunctions.testZeptoMail;

@@ -19,11 +19,12 @@ let stockosRecipeId    = null; // ID de la receta vinculada en StockOS
 // ─── StockOS fetch helper ─────────────────────────────────────────────────────
 const STOCKOS_URL = 'https://us-central1-corcega-loyalty-club.cloudfunctions.net/getStockosPrice';
 
-async function _fetchStockos(recipeId = null) {
+async function _fetchStockos(recipeId = null, tipo = null) {
     const token = await auth.currentUser?.getIdToken();
     if (!token) throw new Error('No autenticado');
     const url = new URL(STOCKOS_URL);
     if (recipeId) url.searchParams.set('recipeId', recipeId);
+    if (tipo)     url.searchParams.set('tipo', tipo);
     const resp = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
     if (!resp.ok) throw new Error(`Error ${resp.status} al consultar StockOS`);
     return resp.json();
@@ -37,7 +38,7 @@ async function _cargarPreciosStockos(platos) {
     if (!ids.length) return;
     if (ids.every(id => id in _stockosPriceCache)) return; // ya cargado
     try {
-        const data = await _fetchStockos();
+        const data = await _fetchStockos(null, 'all');
         (data.recipes ?? []).forEach(r => { _stockosPriceCache[r.id] = r; });
     } catch (_) { /* StockOS no disponible, continúa sin precios */ }
 }
@@ -257,13 +258,37 @@ export async function vincularStockos() {
 
     let recipes = [];
     try {
-        const result = await _fetchStockos();
+        const result = await _fetchStockos(null, 'all');
         recipes = result.recipes ?? [];
     } catch (e) {
         alert('No se pudo conectar con StockOS: ' + e.message);
         if (btn) { btn.textContent = '+ Vincular con StockOS'; btn.disabled = false; }
         return;
     }
+
+    const finales = recipes.filter(r => r.recipeType !== 'promo');
+    const promos  = recipes.filter(r => r.recipeType === 'promo');
+
+    const _fila = r => {
+        const badge = r.recipeType === 'promo'
+            ? `<span style="font-size:0.65rem;font-weight:800;background:#fff3e0;color:#e65100;padding:1px 6px;border-radius:20px;margin-left:5px;vertical-align:middle;white-space:nowrap;">PROMO</span>`
+            : '';
+        return `
+        <tr style="border-bottom:1px solid #f0f0f0; cursor:pointer;" onclick="window.cartaAdmin._elegirRecetaStockos('${r.id}')"
+            onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
+            <td style="padding:10px 12px; font-weight:600; font-size:0.88rem;">${r.name}${badge}</td>
+            <td style="padding:10px 12px; text-align:right; font-weight:700; color:#1a6bc4; font-size:0.88rem;">$${Number(r.salePrice).toLocaleString('es-AR')}</td>
+            <td style="padding:10px 12px; text-align:right; color:#2d7a4f; font-size:0.82rem;">${r.profitability != null ? r.profitability.toFixed(1) + '%' : '—'}</td>
+            <td style="padding:10px 12px; font-size:0.75rem; color:#aaa;">${r.code ?? ''}</td>
+        </tr>`;
+    };
+
+    const separador = promos.length ? `
+        <tr style="background:#fff8f2;pointer-events:none;">
+            <td colspan="4" style="padding:6px 12px;font-size:0.7rem;font-weight:800;color:#e65100;text-transform:uppercase;letter-spacing:0.6px;">— Promos —</td>
+        </tr>` : '';
+
+    const filas = [...finales.map(_fila), separador, ...promos.map(_fila)].join('');
 
     // Modal de búsqueda
     let modal = document.getElementById('modal-stockos-vincular');
@@ -272,27 +297,18 @@ export async function vincularStockos() {
     modal.id = 'modal-stockos-vincular';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
 
-    const filas = recipes.map(r => `
-        <tr style="border-bottom:1px solid #f0f0f0; cursor:pointer;" onclick="window.cartaAdmin._elegirRecetaStockos('${r.id}')"
-            onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
-            <td style="padding:10px 12px; font-weight:600; font-size:0.88rem;">${r.name}</td>
-            <td style="padding:10px 12px; text-align:right; font-weight:700; color:#1a6bc4; font-size:0.88rem;">$${Number(r.salePrice).toLocaleString('es-AR')}</td>
-            <td style="padding:10px 12px; text-align:right; color:#2d7a4f; font-size:0.82rem;">${r.profitability != null ? r.profitability.toFixed(1) + '%' : '—'}</td>
-            <td style="padding:10px 12px; font-size:0.75rem; color:#aaa;">${r.code ?? ''}</td>
-        </tr>`).join('');
-
     modal.innerHTML = `
     <div style="background:white;border-radius:18px;width:100%;max-width:640px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.35);overflow:hidden;">
         <div style="background:#0d2b37;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
             <div>
-                <p style="margin:0;font-weight:800;font-size:1rem;color:white;">Vincular con receta de StockOS</p>
-                <p style="margin:4px 0 0;font-size:0.75rem;color:rgba(255,255,255,0.55);">${recipes.length} recetas disponibles</p>
+                <p style="margin:0;font-weight:800;font-size:1rem;color:white;">Vincular con StockOS</p>
+                <p style="margin:4px 0 0;font-size:0.75rem;color:rgba(255,255,255,0.55);">${finales.length} receta${finales.length !== 1 ? 's' : ''} · ${promos.length} promo${promos.length !== 1 ? 's' : ''}</p>
             </div>
             <button onclick="document.getElementById('modal-stockos-vincular').remove()"
                 style="background:rgba(255,255,255,0.12);border:none;border-radius:8px;color:white;font-size:1.2rem;width:34px;height:34px;cursor:pointer;">✕</button>
         </div>
         <div style="padding:14px 18px;border-bottom:1px solid #f0f0f0;flex-shrink:0;">
-            <input type="text" id="stockos-buscar" placeholder="Buscar receta..." oninput="window.cartaAdmin._filtrarRecetasStockos(this.value)"
+            <input type="text" id="stockos-buscar" placeholder="Buscar receta o promo..." oninput="window.cartaAdmin._filtrarRecetasStockos(this.value)"
                 style="width:100%;padding:9px 14px;border-radius:9px;border:1px solid #ddd;font-size:0.9rem;font-family:inherit;box-sizing:border-box;outline:none;">
         </div>
         <div style="overflow-y:auto;flex:1;">

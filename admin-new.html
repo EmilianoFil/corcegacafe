@@ -2315,7 +2315,73 @@
                         style="text-decoration:none; display:block; text-align:center">Ver Historial</a>
                 </div>
             </div>
+
+            <!-- ZeptoMail Test Panel -->
+            <div style="margin-top:30px; border:2px dashed #d0ccc5; border-radius:16px; padding:24px; background:#fafaf8;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                    <span style="font-size:1.2rem;">⚡</span>
+                    <h4 style="margin:0; font-size:1rem; font-weight:700;">Test ZeptoMail</h4>
+                    <span style="font-size:10px; font-weight:700; background:#fff3cd; color:#856404; padding:2px 8px; border-radius:10px;">DESARROLLO</span>
+                </div>
+                <p style="font-size:0.82rem; color:var(--text-muted); margin:0 0 18px;">
+                    Probá el envío desde las dos direcciones antes de migrar. No toca el sistema actual.
+                </p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+                    <div class="input-group" style="margin:0;">
+                        <label style="font-size:0.78rem;">Desde</label>
+                        <select id="zepto-from" style="background:white; border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:0.9rem; width:100%;">
+                            <option value="tienda">tienda@corcegacafe.com.ar</option>
+                            <option value="hola">hola@corcegacafe.com.ar</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="margin:0;">
+                        <label style="font-size:0.78rem;">Para (email)</label>
+                        <input type="email" id="zepto-to" value="emilianofilgueira@gmail.com"
+                            style="background:white; border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:0.9rem; width:100%;">
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <button onclick="testZeptoMail()" id="btn-zepto-test"
+                        style="background:#2b2b2b; color:white; border:none; border-radius:10px; padding:10px 22px; font-weight:700; font-size:0.85rem; cursor:pointer;">
+                        Enviar test ⚡
+                    </button>
+                    <span id="zepto-result" style="font-size:0.82rem; color:var(--text-muted);"></span>
+                </div>
+            </div>
         </section>
+
+        <script>
+        async function testZeptoMail() {
+            const btn = document.getElementById('btn-zepto-test');
+            const result = document.getElementById('zepto-result');
+            const fromKey = document.getElementById('zepto-from').value;
+            const to = document.getElementById('zepto-to').value.trim();
+            if (!to) { result.textContent = '⚠ Ingresá un email destino'; result.style.color = '#e5a020'; return; }
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            result.textContent = '';
+            try {
+                const res = await fetch('https://us-central1-corcega-loyalty-club.cloudfunctions.net/testZeptoMail', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fromKey, to }),
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    result.textContent = `✅ Enviado desde ${data.from} → ${data.to}`;
+                    result.style.color = '#2e7d52';
+                } else {
+                    result.textContent = `✗ Error: ${data.error}`;
+                    result.style.color = '#c0392b';
+                }
+            } catch(e) {
+                result.textContent = `✗ ${e.message}`;
+                result.style.color = '#c0392b';
+            }
+            btn.disabled = false;
+            btn.textContent = 'Enviar test ⚡';
+        }
+        </script>
 
         <!-- CARTA SECCIONES -->
         <section id="carta-secciones" class="section-content">
@@ -2619,7 +2685,7 @@
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
         import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=20';
         window.tiendaAdmin = tiendaAdmin;
-        import * as cartaAdmin from './js/carta/admin-carta.js?v=8';
+        import * as cartaAdmin from './js/carta/admin-carta.js?v=9';
         window.cartaAdmin = cartaAdmin;
         import * as reviewsAdmin from './js/reviews/admin-reviews.js?v=2';
         window.reviewsAdmin = reviewsAdmin;
