@@ -2634,6 +2634,13 @@
         let cachedStartWeek = null;
 
 
+        // Socios analytics — declarados acá para evitar TDZ si el hash inicial apunta a #socios
+        let _sociosData = null;
+        let _sociosCharts = {};
+        let _ceroOffset = 0, _dormidosOffset = 0;
+        let _ceroTab = 'viejos';
+        const SOCIOS_PAGE = 20;
+
         // --- AUTH & INITIALIZATION ---
         let currentRankingType = 'week'; // declarado acá para evitar TDZ al llamar loadDashboardStats
         requireAdmin(async (user, data) => {
@@ -4754,12 +4761,6 @@
         }
 
     // ── ANÁLISIS DE SOCIOS ─────────────────────────────────────────────────────
-    let _sociosData = null;
-    let _sociosCharts = {};
-    let _ceroOffset = 0, _dormidosOffset = 0;
-    let _ceroTab = 'viejos';
-    const SOCIOS_PAGE = 20;
-
     async function loadSociosAnalytics(force = false) {
         if (_sociosData && !force) { _renderSocios(_sociosData); return; }
         document.getElementById('socios-last-update').textContent = 'Cargando...';
