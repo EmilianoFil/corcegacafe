@@ -868,6 +868,7 @@
            MOBILE — reglas 100% aditivas dentro de media queries.
            Nada de esto afecta pantallas mayores al breakpoint.
            ══════════════════════════════════════════════════════════════════ */
+        #mobile-topbar, #drawer-backdrop { display: none; }
         @media (max-width: 950px) {
             /* El panel de mails apila historial + editor */
             .mails-container { grid-template-columns: 1fr; }
@@ -875,12 +876,46 @@
         }
 
         @media (max-width: 700px) {
-            /* El menú deja de ser sticky (ocupaba media pantalla fija)
-               y las pastillas se compactan en filas horizontales */
-            aside { position: static; box-shadow: none; border-bottom: 1px solid var(--border); padding: 8px 0; }
-            .nav-label { padding: 12px 16px 6px; }
-            nav a { flex-direction: row; gap: 8px; padding: 8px 14px; font-size: 0.8rem; }
-            nav a .icon { font-size: 1rem; }
+            /* Barra superior fija con hamburguesa */
+            #mobile-topbar {
+                display: flex; position: fixed; top: 0; left: 0; right: 0; height: 56px;
+                background: var(--white); border-bottom: 1px solid var(--border);
+                z-index: 1000; align-items: center; gap: 10px; padding: 0 14px;
+            }
+            #mobile-topbar img { width: 32px; }
+            #mobile-topbar span {
+                font-weight: 800; font-size: 0.72rem; letter-spacing: 1.5px;
+                text-transform: uppercase; color: var(--secondary);
+            }
+            #btn-hamburger {
+                margin-left: auto; background: none; border: none; font-size: 1.7rem;
+                color: var(--secondary); cursor: pointer; padding: 4px 10px; line-height: 1;
+            }
+            body { padding-top: 56px; }
+
+            /* El menú pasa a ser un drawer lateral oculto */
+            aside {
+                position: fixed; top: 0; left: 0; bottom: 0; height: 100%;
+                width: min(82vw, 320px); padding: 16px 0;
+                transform: translateX(-105%); transition: transform 0.3s ease;
+                z-index: 1200; overflow-y: auto; box-shadow: none;
+            }
+            body.drawer-open aside {
+                transform: translateX(0);
+                box-shadow: 10px 0 40px rgba(0, 0, 0, 0.25);
+            }
+            body.drawer-open #drawer-backdrop {
+                display: block; position: fixed; inset: 0;
+                background: rgba(0, 0, 0, 0.45); z-index: 1100;
+            }
+
+            /* Dentro del drawer el menú vuelve a su layout vertical original,
+               con header y footer (logout) visibles */
+            .sidebar-header { display: flex; }
+            .sidebar-footer { display: block; }
+            nav ul { display: block; overflow-x: visible; gap: 0; padding-bottom: 0; }
+            nav li { margin-bottom: 4px; }
+            nav a { flex-direction: row; gap: 12px; padding: 11px 16px; font-size: 0.9rem; white-space: normal; }
 
             main { padding: 16px 14px 40px; }
 
@@ -926,6 +961,14 @@
 </head>
 
 <body>
+
+    <!-- Barra superior + drawer: solo visibles en mobile (CSS) -->
+    <header id="mobile-topbar">
+        <img src="css/img/Corcega_Logo_Original.png" alt="Logo">
+        <span>Admin Dash</span>
+        <button id="btn-hamburger" aria-label="Abrir menú" onclick="window._toggleDrawer()">☰</button>
+    </header>
+    <div id="drawer-backdrop" onclick="window._toggleDrawer(false)"></div>
 
     <div id="loader-global">
         <img src="css/img/Corcega_Logo_Original.png" class="galope">
@@ -2958,11 +3001,17 @@
             window._expandResenas(platoId);
         };
 
+        window._toggleDrawer = (force) => {
+            const open = force !== undefined ? force : !document.body.classList.contains('drawer-open');
+            document.body.classList.toggle('drawer-open', open);
+        };
+
         document.querySelectorAll('#main-nav a').forEach(link => {
             link.addEventListener('click', (e) => {
                 const href = link.getAttribute('href');
                 if (!href.startsWith('#')) return;
                 e.preventDefault();
+                if (window.innerWidth <= 700) window._toggleDrawer(false);
                 navigateTo(href.substring(1));
             });
         });
