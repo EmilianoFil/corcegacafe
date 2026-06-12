@@ -16,7 +16,7 @@ exports.testZeptoMail = onRequest(
     const { fromKey, to, toName } = req.body;
     if (!to) { res.status(400).json({ error: "Falta destinatario" }); return; }
 
-    const from = ["tienda", "hola"].includes(fromKey) ? fromKey : "tienda";
+    const from = ["tienda", "hola", "club"].includes(fromKey) ? fromKey : "tienda";
 
     try {
       await sendZeptoMail({
