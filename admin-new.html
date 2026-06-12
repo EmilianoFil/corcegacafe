@@ -1291,22 +1291,48 @@
                 </div>
             </div>
 
-            <!-- Tabla 0 cafés -->
+            <!-- Tabla 0 cafés: dos paneles -->
             <div class="card" style="margin-bottom:24px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:10px;">
                     <div>
                         <h4 style="margin:0 0 4px 0;">🚫 Socios sin Actividad (0 cafés acumulados)</h4>
                         <p style="font-size:0.8rem;color:var(--text-muted);margin:0;">Se registraron pero nunca sumaron un café. <span id="cero-count-label"></span></p>
                     </div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <label style="font-size:0.8rem;color:var(--text-muted);">Antigüedad mínima:</label>
+                        <select id="cero-umbral" onchange="window._sociosUpdateCero()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);font-size:0.85rem;cursor:pointer;">
+                            <option value="7">7 días</option>
+                            <option value="30" selected>30 días</option>
+                            <option value="60">60 días</option>
+                            <option value="90">90 días</option>
+                        </select>
+                    </div>
                 </div>
+
+                <!-- Tabs -->
+                <div style="display:flex;gap:0;margin:16px 0 0 0;border-bottom:2px solid var(--border);">
+                    <button id="cero-tab-viejos" onclick="window._ceroSwitchTab('viejos')"
+                        style="padding:9px 20px;font-size:0.85rem;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:3px solid var(--primary);margin-bottom:-2px;color:var(--primary);">
+                        ⚠️ Oportunidad perdida <span id="cero-tab-viejos-count" style="font-size:0.75rem;margin-left:4px;opacity:0.7;"></span>
+                    </button>
+                    <button id="cero-tab-nuevos" onclick="window._ceroSwitchTab('nuevos')"
+                        style="padding:9px 20px;font-size:0.85rem;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;color:var(--text-muted);">
+                        🌱 Registros recientes <span id="cero-tab-nuevos-count" style="font-size:0.75rem;margin-left:4px;opacity:0.7;"></span>
+                    </button>
+                </div>
+
+                <!-- Descripción contextual -->
+                <div id="cero-tab-desc" style="margin:10px 0 14px 0;font-size:0.8rem;color:var(--text-muted);padding:8px 12px;background:#fafafa;border-radius:8px;border-left:3px solid var(--primary);"></div>
+
                 <div style="overflow-x:auto;">
-                    <table style="width:100%;border-collapse:collapse;font-size:0.875rem;" id="cero-cafes-table">
+                    <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
                         <thead>
                             <tr style="border-bottom:2px solid var(--border);text-align:left;">
                                 <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">DNI</th>
                                 <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Nombre</th>
                                 <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Email</th>
                                 <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Registrado</th>
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Hace</th>
                                 <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;"></th>
                             </tr>
                         </thead>
@@ -4731,6 +4757,7 @@
     let _sociosData = null;
     let _sociosCharts = {};
     let _ceroOffset = 0, _dormidosOffset = 0;
+    let _ceroTab = 'viejos';
     const SOCIOS_PAGE = 20;
 
     async function loadSociosAnalytics(force = false) {
@@ -4806,6 +4833,7 @@
         window._sociosDormidosAll = clients.filter(c => c._diasAusente !== null && c._diasAusente > 60)
             .sort((a, b) => b._diasAusente - a._diasAusente);
 
+        _ceroTab = 'viejos';
         _renderCeroTable();
         _renderDormidosTable();
     }
@@ -5019,28 +5047,68 @@
 
     function _renderCeroTable() {
         const all = window._sociosCeroAll || [];
-        const page = all.slice(0, _ceroOffset + SOCIOS_PAGE);
-        document.getElementById('cero-count-label').textContent = `${all.length} socios`;
-        const tbody = document.getElementById('cero-cafes-tbody');
+        const umbral = parseInt(document.getElementById('cero-umbral')?.value || 30);
+        const today = new Date();
         const toDate = ts => ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+
+        const viejos = all.filter(c => {
+            const d = toDate(c.creado);
+            return d && Math.floor((today - d) / 86400000) >= umbral;
+        });
+        const nuevos = all.filter(c => {
+            const d = toDate(c.creado);
+            return !d || Math.floor((today - d) / 86400000) < umbral;
+        });
+
+        document.getElementById('cero-count-label').textContent = `${all.length} socios en total`;
+        document.getElementById('cero-tab-viejos-count').textContent = `(${viejos.length})`;
+        document.getElementById('cero-tab-nuevos-count').textContent = `(${nuevos.length})`;
+
+        const activeList = _ceroTab === 'viejos' ? viejos : nuevos;
+        const desc = document.getElementById('cero-tab-desc');
+        if (_ceroTab === 'viejos') {
+            desc.style.borderLeftColor = '#ea580c';
+            desc.innerHTML = `<strong>Oportunidad perdida real.</strong> Se registraron hace más de ${umbral} días y nunca sumaron un café. Son candidatos ideales para una campaña de reactivación.`;
+        } else {
+            desc.style.borderLeftColor = '#22c55e';
+            desc.innerHTML = `<strong>Período de gracia.</strong> Se registraron hace menos de ${umbral} días. Es normal que aún no hayan vuelto — dejales tiempo o enviá un recordatorio suave de bienvenida.`;
+        }
+
+        const page = activeList.slice(0, _ceroOffset + SOCIOS_PAGE);
+        const tbody = document.getElementById('cero-cafes-tbody');
         tbody.innerHTML = page.map(c => {
             const fecha = toDate(c.creado);
             const fechaStr = fecha ? fecha.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—';
+            const diasReg = fecha ? Math.floor((today - fecha) / 86400000) : null;
+            const diasStr = diasReg !== null ? `${diasReg}d` : '—';
+            const urgColor = _ceroTab === 'viejos' && diasReg > 180 ? '#dc2626' : _ceroTab === 'viejos' && diasReg > 90 ? '#ea580c' : 'var(--text-muted)';
             return `<tr style="border-bottom:1px solid var(--border);">
                 <td style="padding:10px 14px;font-family:monospace;font-size:0.85rem;">${c.dni}</td>
                 <td style="padding:10px 14px;font-weight:600;">${c.nombre || '—'}</td>
                 <td style="padding:10px 14px;color:var(--text-muted);font-size:0.85rem;">${c.email || '—'}</td>
                 <td style="padding:10px 14px;color:var(--text-muted);font-size:0.85rem;">${fechaStr}</td>
+                <td style="padding:10px 14px;font-weight:700;color:${urgColor};">${diasStr}</td>
                 <td style="padding:10px 14px;text-align:right;">
                     <a href="cliente.html?dni=${c.dni}" target="_blank" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:white;font-size:0.78rem;font-weight:600;cursor:pointer;text-decoration:none;color:var(--secondary);">Ver →</a>
                 </td>
             </tr>`;
-        }).join('') || '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted);">¡Todos los socios tienen al menos un café! 🎉</td></tr>';
+        }).join('') || `<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-muted);">${_ceroTab === 'viejos' ? '¡Sin oportunidades perdidas en este período! 🎉' : 'No hay registros recientes sin actividad.'}</td></tr>`;
+
         const moreBtn = document.getElementById('cero-cafes-more');
-        moreBtn.style.display = all.length > page.length ? 'block' : 'none';
+        moreBtn.style.display = activeList.length > page.length ? 'block' : 'none';
         _ceroOffset += SOCIOS_PAGE;
     }
 
+    window._ceroSwitchTab = function(tab) {
+        _ceroTab = tab;
+        _ceroOffset = 0;
+        document.getElementById('cero-tab-viejos').style.borderBottomColor = tab === 'viejos' ? 'var(--primary)' : 'transparent';
+        document.getElementById('cero-tab-viejos').style.color = tab === 'viejos' ? 'var(--primary)' : 'var(--text-muted)';
+        document.getElementById('cero-tab-nuevos').style.borderBottomColor = tab === 'nuevos' ? 'var(--primary)' : 'transparent';
+        document.getElementById('cero-tab-nuevos').style.color = tab === 'nuevos' ? 'var(--primary)' : 'var(--text-muted)';
+        _renderCeroTable();
+    };
+    window._sociosUpdateCero = function() { _ceroOffset = 0; _renderCeroTable(); };
     window._sociosShowMoreCero = function() { _renderCeroTable(); };
 
     function _renderDormidosTable() {
