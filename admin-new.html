@@ -891,14 +891,19 @@
                 margin-left: auto; background: none; border: none; font-size: 1.7rem;
                 color: var(--secondary); cursor: pointer; padding: 4px 10px; line-height: 1;
             }
-            body { padding-top: 56px; }
+            /* Liberar las restricciones de overflow del desktop para que
+               position:fixed funcione bien en iOS Safari. El scroll natural
+               ocurre en el viewport, no en main ni en body. */
+            html { overflow-y: auto; }
+            body { height: auto; min-height: 100svh; overflow: visible; padding-top: 56px; }
+            main { overflow-y: visible; height: auto; flex: none; }
 
             /* El menú pasa a ser un drawer lateral oculto */
             aside {
                 position: fixed; top: 0; left: 0; bottom: 0; height: 100%;
                 width: min(82vw, 320px); padding: 16px 0;
                 transform: translateX(-105%); transition: transform 0.3s ease;
-                z-index: 1200; overflow-y: auto; box-shadow: none;
+                z-index: 9000; overflow-y: auto; box-shadow: none;
             }
             body.drawer-open aside {
                 transform: translateX(0);
@@ -906,8 +911,9 @@
             }
             body.drawer-open #drawer-backdrop {
                 display: block; position: fixed; inset: 0;
-                background: rgba(0, 0, 0, 0.45); z-index: 1100;
+                background: rgba(0, 0, 0, 0.45); z-index: 8900;
             }
+            #mobile-topbar { z-index: 8800; }
 
             /* Dentro del drawer el menú vuelve a su layout vertical original,
                con header y footer (logout) visibles */
@@ -932,9 +938,15 @@
             .stat-card .value, .card .value { font-size: 1.4rem; }
             .dashboard-grid { gap: 14px; }
 
-            /* Tablas (DataTables y demás): scroll horizontal en vez de desborde */
+            /* Tablas: scroll horizontal en vez de desborde.
+               min-width fuerza el overflow para que el scroll aparezca. */
             .dataTables_wrapper, #table-clientes-wrapper,
             #combinaciones-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .dataTables_wrapper table,
+            #table-clientes-wrapper table,
+            #combinaciones-table-wrapper table { min-width: 560px; }
+            /* Tablas sueltas (no envueltas por DataTables) */
+            .section-content table:not(.dataTable) { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
             table.dataTable { font-size: 0.78rem; }
             .dataTables_length, .dataTables_filter { float: none; text-align: left; margin-bottom: 8px; }
             .dataTables_filter input { width: 100%; max-width: 220px; }
@@ -2511,6 +2523,7 @@
             });
 
             history.replaceState(null, '', '#' + target);
+            if (window.innerWidth <= 700) window.scrollTo(0, 0);
 
             if (target === 'logs' && (typeof logsData !== 'undefined' && logsData.length === 0)) loadLogsTable();
             if (target === 'mails') window.loadCampanasHistory?.();
