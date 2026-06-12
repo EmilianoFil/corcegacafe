@@ -999,6 +999,7 @@
                 <li><a href="#dashboard" class="active"><span class="icon">📊</span> Resumen General</a></li>
                 <li><a href="#puntos"><span class="icon">☕</span> Sumar Cafecito</a></li>
                 <li><a href="#clientes"><span class="icon">👥</span> Clientes</a></li>
+                <li><a href="#socios"><span class="icon">🔍</span> Análisis de Socios</a></li>
             </ul>
 
             <div class="nav-label">Tienda Online</div>
@@ -1206,6 +1207,152 @@
                     </thead>
                     <tbody></tbody>
                 </table>
+            </div>
+        </section>
+
+        <!-- ANÁLISIS DE SOCIOS -->
+        <section id="socios" class="section-content">
+            <h3>🔍 Análisis de Socios <span id="socios-last-update" style="font-size:0.8rem;color:var(--text-muted);font-family:'Inter',sans-serif;font-weight:400;margin-left:12px;vertical-align:middle;"></span></h3>
+
+            <!-- KPIs -->
+            <div class="stats-grid" id="socios-kpi-grid" style="margin-bottom:24px;">
+                <div class="card stat-card"><span class="label">Socios Totales</span><span class="value" id="sk-total">-</span></div>
+                <div class="card stat-card"><span class="label">Activos (30d)</span><span class="value" id="sk-activos">-</span><div class="trend" id="sk-activos-pct"></div></div>
+                <div class="card stat-card" style="border-color:#f5a623;"><span class="label" style="color:#c47a00;">⚠️ En Riesgo</span><span class="value" id="sk-riesgo">-</span><div class="trend" id="sk-riesgo-pct"></div></div>
+                <div class="card stat-card" style="border-color:#22c55e;"><span class="label" style="color:#15803d;">🏆 Champions</span><span class="value" id="sk-champions">-</span><div class="trend" id="sk-champ-pct"></div></div>
+                <div class="card stat-card" style="border-color:#9ca3af;"><span class="label" style="color:#6b7280;">😴 Dormidos</span><span class="value" id="sk-dormidos">-</span><div class="trend" id="sk-dorm-pct"></div></div>
+                <div class="card stat-card"><span class="label">0 Cafés (sin actividad)</span><span class="value" id="sk-cero">-</span><div class="trend" id="sk-cero-pct"></div></div>
+                <div class="card stat-card"><span class="label">🎂 Cumpleaños Cargados</span><span class="value" id="sk-cumple">-</span><div class="trend" id="sk-cumple-pct"></div></div>
+                <div class="card stat-card"><span class="label">📸 Siguen Instagram</span><span class="value" id="sk-ig">-</span><div class="trend" id="sk-ig-pct"></div></div>
+            </div>
+
+            <!-- Cuadrante RFM + Histograma -->
+            <div class="dashboard-grid" style="margin-bottom:24px;">
+                <div class="card">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+                        <div>
+                            <h4 style="margin:0 0 4px 0;">Cuadrante de Socios (RFM)</h4>
+                            <p style="font-size:0.8rem;color:var(--text-muted);margin:0;">Frecuencia vs Recencia. Cada punto = 1 socio. Hover para ver nombre.</p>
+                        </div>
+                        <div id="rfm-legend" style="display:flex;flex-wrap:wrap;gap:8px;font-size:0.75rem;"></div>
+                    </div>
+                    <div style="position:relative;height:320px;">
+                        <canvas id="rfmChart"></canvas>
+                    </div>
+                    <div style="display:flex;gap:12px;margin-top:10px;font-size:0.75rem;color:var(--text-muted);flex-wrap:wrap;">
+                        <span>↔ Eje X: Cafés acumulados (frecuencia)</span>
+                        <span>↕ Eje Y: Días desde última visita (recencia)</span>
+                        <span>Umbral frecuencia: <strong id="rfm-freq-th">5</strong> cafés · Umbral recencia: <strong>30 días</strong></span>
+                    </div>
+                </div>
+                <div class="card">
+                    <h4 style="margin:0 0 4px 0;">Distribución de Cafés Acumulados</h4>
+                    <p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 16px 0;">Cuántos socios tienen cada rango de visitas totales.</p>
+                    <div style="position:relative;height:300px;">
+                        <canvas id="histoChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Crecimiento + Cumpleaños -->
+            <div class="dashboard-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;margin-bottom:24px;">
+                <div class="card">
+                    <h4 style="margin:0 0 4px 0;">📈 Crecimiento de Registros</h4>
+                    <p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 16px 0;">Nuevos socios por mes (últimos 18 meses).</p>
+                    <div style="position:relative;height:220px;">
+                        <canvas id="growthSociosChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h4 style="margin:0 0 4px 0;">🎂 Socios por Mes de Cumpleaños</h4>
+                    <p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 16px 0;">Distribución de cumpleaños (socios con fecha cargada).</p>
+                    <div style="position:relative;height:220px;">
+                        <canvas id="cumpleChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen por segmento -->
+            <div class="card" style="margin-bottom:24px;">
+                <h4 style="margin:0 0 16px 0;">📋 Resumen por Segmento</h4>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:0.875rem;" id="socios-seg-table">
+                        <thead>
+                            <tr style="border-bottom:2px solid var(--border);text-align:left;">
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;font-size:0.75rem;letter-spacing:0.05em;">Segmento</th>
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;font-size:0.75rem;letter-spacing:0.05em;">Socios</th>
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;font-size:0.75rem;letter-spacing:0.05em;">% del Total</th>
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;font-size:0.75rem;letter-spacing:0.05em;">Avg Cafés Acum.</th>
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;font-size:0.75rem;letter-spacing:0.05em;">Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="socios-seg-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tabla 0 cafés -->
+            <div class="card" style="margin-bottom:24px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <div>
+                        <h4 style="margin:0 0 4px 0;">🚫 Socios sin Actividad (0 cafés acumulados)</h4>
+                        <p style="font-size:0.8rem;color:var(--text-muted);margin:0;">Se registraron pero nunca sumaron un café. <span id="cero-count-label"></span></p>
+                    </div>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:0.875rem;" id="cero-cafes-table">
+                        <thead>
+                            <tr style="border-bottom:2px solid var(--border);text-align:left;">
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">DNI</th>
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Nombre</th>
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Email</th>
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Registrado</th>
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cero-cafes-tbody"></tbody>
+                    </table>
+                    <div id="cero-cafes-more" style="text-align:center;padding:12px;display:none;">
+                        <button onclick="window._sociosShowMoreCero()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 20px;cursor:pointer;font-size:0.85rem;color:var(--secondary);">Ver más →</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla dormidos -->
+            <div class="card" style="margin-bottom:40px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <div>
+                        <h4 style="margin:0 0 4px 0;">😴 Socios Dormidos (sin visitas hace +60 días)</h4>
+                        <p style="font-size:0.8rem;color:var(--text-muted);margin:0;">Habían visitado antes, pero no aparecen más. <span id="dormidos-count-label"></span></p>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <label style="font-size:0.8rem;color:var(--text-muted);">Umbral:</label>
+                        <select id="dormidos-umbral" onchange="window._sociosUpdateDormidos()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);font-size:0.85rem;cursor:pointer;">
+                            <option value="30">30 días</option>
+                            <option value="60" selected>60 días</option>
+                            <option value="90">90 días</option>
+                            <option value="180">180 días</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:0.875rem;" id="dormidos-table">
+                        <thead>
+                            <tr style="border-bottom:2px solid var(--border);text-align:left;">
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">DNI</th>
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Nombre</th>
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Cafés Acum.</th>
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Última Visita</th>
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;">Días Ausente</th>
+                                <th style="padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="dormidos-tbody"></tbody>
+                    </table>
+                    <div id="dormidos-more" style="text-align:center;padding:12px;display:none;">
+                        <button onclick="window._sociosShowMoreDormidos()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 20px;cursor:pointer;font-size:0.85rem;color:var(--secondary);">Ver más →</button>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -2537,6 +2684,7 @@
             if (target === 'carta-platos') window.cartaAdmin.loadPlatos();
             if (target === 'carta-stats') _cargarStats();
             if (target === 'reviews') window.reviewsAdmin.load();
+            if (target === 'socios') loadSociosAnalytics();
         }
 
         window._navigateTo = navigateTo;
@@ -4579,8 +4727,356 @@
             `;
         }
 
+    // ── ANÁLISIS DE SOCIOS ─────────────────────────────────────────────────────
+    let _sociosData = null;
+    let _sociosCharts = {};
+    let _ceroOffset = 0, _dormidosOffset = 0;
+    const SOCIOS_PAGE = 20;
+
+    async function loadSociosAnalytics(force = false) {
+        if (_sociosData && !force) { _renderSocios(_sociosData); return; }
+        document.getElementById('socios-last-update').textContent = 'Cargando...';
+        const snap = await getDocs(collection(db, 'clientes'));
+        _sociosData = snap.docs.map(d => ({ dni: d.id, ...d.data() }));
+        _renderSocios(_sociosData);
+    }
+
+    function _renderSocios(data) {
+        const today = new Date();
+        const FREQ_TH = 5;
+        const RECENCY_TH = 30;
+
+        const toDate = ts => ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+        const daysSince = d => d ? Math.floor((today - d) / 86400000) : null;
+
+        // Enriquecer datos
+        const clients = data.map(c => {
+            const lastVisit = toDate(c.ultimo_cafe);
+            const diasAusente = daysSince(lastVisit);
+            const freq = c.cafes_acumulados_total || 0;
+            let segmento;
+            if (freq === 0) segmento = 'sin_actividad';
+            else if (freq >= FREQ_TH && diasAusente !== null && diasAusente <= RECENCY_TH) segmento = 'champions';
+            else if (freq >= FREQ_TH && (diasAusente === null || diasAusente > RECENCY_TH)) segmento = 'riesgo';
+            else if (freq < FREQ_TH && diasAusente !== null && diasAusente <= RECENCY_TH) segmento = 'nuevos';
+            else segmento = 'dormidos';
+            return { ...c, _lastVisit: lastVisit, _diasAusente: diasAusente, _freq: freq, _segmento: segmento };
+        });
+
+        const total = clients.length;
+        const activos30 = clients.filter(c => c._diasAusente !== null && c._diasAusente <= 30).length;
+        const champions = clients.filter(c => c._segmento === 'champions').length;
+        const riesgo = clients.filter(c => c._segmento === 'riesgo').length;
+        const dormidos60 = clients.filter(c => c._segmento === 'dormidos' || (c._diasAusente !== null && c._diasAusente > 60)).length;
+        const cero = clients.filter(c => c._freq === 0).length;
+        const conCumple = clients.filter(c => c.cumple_mes >= 1 && c.cumple_mes <= 12).length;
+        const conIg = clients.filter(c => c.sigue_instagram).length;
+
+        const pct = (n, d) => d > 0 ? `${((n / d) * 100).toFixed(1)}%` : '0%';
+        const setKpi = (id, val, sub) => {
+            document.getElementById(id).textContent = val;
+            const s = document.getElementById(id + '-pct');
+            if (s) s.innerHTML = `<span style="color:var(--text-muted);font-size:0.82rem;">${sub}</span>`;
+        };
+
+        setKpi('sk-total', total, '100% del club');
+        setKpi('sk-activos', activos30, `${pct(activos30, total)} del total`);
+        setKpi('sk-riesgo', riesgo, `${pct(riesgo, total)} del total`);
+        setKpi('sk-champions', champions, `${pct(champions, total)} del total`);
+        setKpi('sk-dormidos', dormidos60, `${pct(dormidos60, total)} del total`);
+        setKpi('sk-cero', cero, `${pct(cero, total)} del total`);
+        setKpi('sk-cumple', conCumple, `${pct(conCumple, total)} cargados`);
+        setKpi('sk-ig', conIg, `${pct(conIg, total)} del total`);
+
+        document.getElementById('socios-last-update').textContent =
+            'Actualizado ' + new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+        _buildRFMChart(clients, FREQ_TH, RECENCY_TH);
+        _buildHistoChart(clients);
+        _buildGrowthSociosChart(clients);
+        _buildCumpleChart(clients);
+        _buildSegTable(clients, total);
+
+        _ceroOffset = 0;
+        _dormidosOffset = 0;
+        window._sociosCeroAll = clients.filter(c => c._freq === 0).sort((a, b) => {
+            const da = toDate(a.creado), db2 = toDate(b.creado);
+            return (db2 || 0) - (da || 0);
+        });
+        window._sociosDormidosAll = clients.filter(c => c._diasAusente !== null && c._diasAusente > 60)
+            .sort((a, b) => b._diasAusente - a._diasAusente);
+
+        _renderCeroTable();
+        _renderDormidosTable();
+    }
+
+    function _buildRFMChart(clients, FREQ_TH, RECENCY_TH) {
+        const segs = {
+            champions: { label: '🏆 Champions', color: 'rgba(34,197,94,0.75)', border: '#16a34a', data: [] },
+            riesgo:    { label: '⚠️ En Riesgo', color: 'rgba(251,146,60,0.8)',  border: '#ea580c', data: [] },
+            nuevos:    { label: '🌱 Nuevos',     color: 'rgba(59,130,246,0.75)', border: '#2563eb', data: [] },
+            dormidos:  { label: '😴 Dormidos',   color: 'rgba(156,163,175,0.6)', border: '#6b7280', data: [] },
+        };
+        clients.forEach(c => {
+            if (c._freq === 0) return;
+            const yVal = c._diasAusente !== null ? Math.min(c._diasAusente, 400) : 400;
+            const seg = c._segmento === 'sin_actividad' ? 'dormidos' : c._segmento;
+            segs[seg].data.push({ x: Math.min(c._freq, 60), y: yVal, r: 6, _nombre: c.nombre || c.dni, _dni: c.dni, _dias: c._diasAusente });
+        });
+
+        document.getElementById('rfm-legend').innerHTML = Object.values(segs).map(s =>
+            `<span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:${s.color};display:inline-block;flex-shrink:0;"></span>${s.label.split(' ')[1]}</span>`
+        ).join('');
+
+        if (_sociosCharts.rfm) _sociosCharts.rfm.destroy();
+        const ctx = document.getElementById('rfmChart').getContext('2d');
+        _sociosCharts.rfm = new Chart(ctx, {
+            type: 'bubble',
+            data: { datasets: Object.values(segs).map(s => ({ label: s.label, data: s.data, backgroundColor: s.color, borderColor: s.border, borderWidth: 1.5 })) },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 12, padding: 10 } },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const p = ctx.raw;
+                                return [`${p._nombre}`, `Cafés: ${p.x} · Ausente: ${p._dias !== null ? p._dias + 'd' : 'sin registro'}`];
+                            }
+                        }
+                    },
+                    annotation: {
+                        annotations: {
+                            vLine: { type: 'line', xMin: FREQ_TH, xMax: FREQ_TH, borderColor: 'rgba(0,0,0,0.2)', borderWidth: 1.5, borderDash: [5,4] },
+                            hLine: { type: 'line', yMin: RECENCY_TH, yMax: RECENCY_TH, borderColor: 'rgba(0,0,0,0.2)', borderWidth: 1.5, borderDash: [5,4] },
+                        }
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Cafés Acumulados (frecuencia)', font: { size: 11 } }, min: 0, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    y: { title: { display: true, text: 'Días desde última visita (↑ = más ausente)', font: { size: 11 } }, min: 0, grid: { color: 'rgba(0,0,0,0.05)' } }
+                },
+                onClick: (evt, elements) => {
+                    if (!elements.length) return;
+                    const pt = _sociosCharts.rfm.data.datasets[elements[0].datasetIndex].data[elements[0].index];
+                    if (pt._dni) window.open(`cliente.html?dni=${pt._dni}`, '_blank');
+                }
+            }
+        });
+    }
+
+    function _buildHistoChart(clients) {
+        const buckets = [
+            { label: '1',    min: 1,  max: 1 },
+            { label: '2',    min: 2,  max: 2 },
+            { label: '3',    min: 3,  max: 3 },
+            { label: '4',    min: 4,  max: 4 },
+            { label: '5',    min: 5,  max: 5 },
+            { label: '6-10', min: 6,  max: 10 },
+            { label: '11-20',min: 11, max: 20 },
+            { label: '21-50',min: 21, max: 50 },
+            { label: '51+',  min: 51, max: Infinity },
+        ];
+        const counts = buckets.map(b => clients.filter(c => c._freq >= b.min && c._freq <= b.max).length);
+        const maxCount = Math.max(...counts);
+        const colors = counts.map((v, i) => {
+            const ratio = maxCount > 0 ? v / maxCount : 0;
+            const r = Math.round(216 + (255 - 216) * (1 - ratio));
+            const g = Math.round(102 + (200 - 102) * (1 - ratio));
+            const b = Math.round(52 + (100 - 52) * (1 - ratio));
+            return `rgba(${r},${g},${b},0.85)`;
+        });
+
+        if (_sociosCharts.histo) _sociosCharts.histo.destroy();
+        const ctx = document.getElementById('histoChart').getContext('2d');
+        _sociosCharts.histo = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: buckets.map(b => b.label),
+                datasets: [{ label: 'Socios', data: counts, backgroundColor: colors, borderRadius: 8, borderSkipped: false }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { callbacks: { title: ctx => `${ctx[0].label} cafés`, label: ctx => ` ${ctx.raw} socios` } } },
+                scales: {
+                    x: { title: { display: true, text: 'Cafés acumulados', font: { size: 11 } }, grid: { display: false } },
+                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                }
+            }
+        });
+    }
+
+    function _buildGrowthSociosChart(clients) {
+        const byMonth = {};
+        const toDate = ts => ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+        clients.forEach(c => {
+            const d = toDate(c.creado);
+            if (!d) return;
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            byMonth[key] = (byMonth[key] || 0) + 1;
+        });
+
+        const today = new Date();
+        const labels = [], values = [];
+        for (let i = 17; i >= 0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            labels.push(d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' }));
+            values.push(byMonth[key] || 0);
+        }
+
+        if (_sociosCharts.growth) _sociosCharts.growth.destroy();
+        const ctx = document.getElementById('growthSociosChart').getContext('2d');
+        _sociosCharts.growth = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Nuevos socios',
+                    data: values,
+                    backgroundColor: 'rgba(216,102,52,0.75)',
+                    borderColor: '#d86634',
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { callbacks: { title: c => c[0].label, label: c => ` ${c.raw} nuevos socios` } } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                }
+            }
+        });
+    }
+
+    function _buildCumpleChart(clients) {
+        const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        const counts = new Array(12).fill(0);
+        clients.forEach(c => { if (c.cumple_mes >= 1 && c.cumple_mes <= 12) counts[c.cumple_mes - 1]++; });
+        const currentMonth = new Date().getMonth();
+        const colors = counts.map((_, i) =>
+            i === currentMonth ? 'rgba(216,102,52,0.9)' : 'rgba(216,102,52,0.35)'
+        );
+
+        if (_sociosCharts.cumple) _sociosCharts.cumple.destroy();
+        const ctx = document.getElementById('cumpleChart').getContext('2d');
+        _sociosCharts.cumple = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: MESES,
+                datasets: [{ label: 'Socios', data: counts, backgroundColor: colors, borderRadius: 6, borderSkipped: false }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { callbacks: { title: c => `${c[0].label}: ${c[0].raw} socios` } } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                }
+            }
+        });
+    }
+
+    function _buildSegTable(clients, total) {
+        const segs = [
+            { key: 'champions',    emoji: '🏆', label: 'Champions',       color: '#15803d', bg: '#f0fdf4', desc: 'Alta frecuencia + visita reciente (≤30d)' },
+            { key: 'riesgo',       emoji: '⚠️', label: 'En Riesgo',       color: '#c47a00', bg: '#fffbeb', desc: 'Alta frecuencia pero ausentes hace +30d' },
+            { key: 'nuevos',       emoji: '🌱', label: 'Nuevos / Ocasionales', color: '#1d4ed8', bg: '#eff6ff', desc: 'Baja frecuencia pero vinieron reciente' },
+            { key: 'dormidos',     emoji: '😴', label: 'Dormidos',         color: '#6b7280', bg: '#f9fafb', desc: 'Baja frecuencia y sin visitas recientes' },
+            { key: 'sin_actividad',emoji: '🚫', label: 'Sin Actividad',    color: '#dc2626', bg: '#fef2f2', desc: 'Se registraron pero nunca sumaron un café' },
+        ];
+        const tbody = document.getElementById('socios-seg-tbody');
+        tbody.innerHTML = segs.map(s => {
+            const list = clients.filter(c => c._segmento === s.key);
+            const avg = list.length > 0
+                ? (list.reduce((a, c) => a + c._freq, 0) / list.length).toFixed(1)
+                : '—';
+            const pct = total > 0 ? ((list.length / total) * 100).toFixed(1) : 0;
+            const barW = total > 0 ? ((list.length / total) * 100).toFixed(1) : 0;
+            return `<tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:12px 14px;">
+                    <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;color:${s.color};background:${s.bg};padding:4px 10px;border-radius:20px;font-size:0.82rem;">
+                        ${s.emoji} ${s.label}
+                    </span>
+                </td>
+                <td style="padding:12px 14px;font-weight:700;font-size:1.05rem;">${list.length}</td>
+                <td style="padding:12px 14px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="flex:1;background:#f1f1f1;border-radius:4px;height:8px;min-width:80px;">
+                            <div style="width:${barW}%;background:${s.color};height:8px;border-radius:4px;transition:width 0.4s;"></div>
+                        </div>
+                        <span style="font-size:0.82rem;color:var(--text-muted);min-width:38px;">${pct}%</span>
+                    </div>
+                </td>
+                <td style="padding:12px 14px;color:var(--text-muted);">${avg}</td>
+                <td style="padding:12px 14px;font-size:0.82rem;color:var(--text-muted);">${s.desc}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function _renderCeroTable() {
+        const all = window._sociosCeroAll || [];
+        const page = all.slice(0, _ceroOffset + SOCIOS_PAGE);
+        document.getElementById('cero-count-label').textContent = `${all.length} socios`;
+        const tbody = document.getElementById('cero-cafes-tbody');
+        const toDate = ts => ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+        tbody.innerHTML = page.map(c => {
+            const fecha = toDate(c.creado);
+            const fechaStr = fecha ? fecha.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—';
+            return `<tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:10px 14px;font-family:monospace;font-size:0.85rem;">${c.dni}</td>
+                <td style="padding:10px 14px;font-weight:600;">${c.nombre || '—'}</td>
+                <td style="padding:10px 14px;color:var(--text-muted);font-size:0.85rem;">${c.email || '—'}</td>
+                <td style="padding:10px 14px;color:var(--text-muted);font-size:0.85rem;">${fechaStr}</td>
+                <td style="padding:10px 14px;text-align:right;">
+                    <a href="cliente.html?dni=${c.dni}" target="_blank" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:white;font-size:0.78rem;font-weight:600;cursor:pointer;text-decoration:none;color:var(--secondary);">Ver →</a>
+                </td>
+            </tr>`;
+        }).join('') || '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted);">¡Todos los socios tienen al menos un café! 🎉</td></tr>';
+        const moreBtn = document.getElementById('cero-cafes-more');
+        moreBtn.style.display = all.length > page.length ? 'block' : 'none';
+        _ceroOffset += SOCIOS_PAGE;
+    }
+
+    window._sociosShowMoreCero = function() { _renderCeroTable(); };
+
+    function _renderDormidosTable() {
+        const umbral = parseInt(document.getElementById('dormidos-umbral')?.value || 60);
+        const toDate = ts => ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+        const today = new Date();
+        const all = (window._sociosDormidosAll || []).filter(c => c._diasAusente > umbral);
+        const page = all.slice(0, _dormidosOffset + SOCIOS_PAGE);
+        document.getElementById('dormidos-count-label').textContent = `${all.length} socios`;
+        const tbody = document.getElementById('dormidos-tbody');
+        tbody.innerHTML = page.map(c => {
+            const fechaStr = c._lastVisit ? c._lastVisit.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—';
+            const urgency = c._diasAusente > 180 ? '#dc2626' : c._diasAusente > 90 ? '#ea580c' : '#c47a00';
+            return `<tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:10px 14px;font-family:monospace;font-size:0.85rem;">${c.dni}</td>
+                <td style="padding:10px 14px;font-weight:600;">${c.nombre || '—'}</td>
+                <td style="padding:10px 14px;text-align:center;">${c._freq}</td>
+                <td style="padding:10px 14px;color:var(--text-muted);font-size:0.85rem;">${fechaStr}</td>
+                <td style="padding:10px 14px;">
+                    <span style="font-weight:700;color:${urgency};">${c._diasAusente}d</span>
+                </td>
+                <td style="padding:10px 14px;text-align:right;">
+                    <a href="cliente.html?dni=${c.dni}" target="_blank" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:white;font-size:0.78rem;font-weight:600;cursor:pointer;text-decoration:none;color:var(--secondary);">Ver →</a>
+                </td>
+            </tr>`;
+        }).join('') || '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-muted);">No hay socios dormidos en este período.</td></tr>';
+        const moreBtn = document.getElementById('dormidos-more');
+        moreBtn.style.display = all.length > page.length ? 'block' : 'none';
+        _dormidosOffset += SOCIOS_PAGE;
+    }
+
+    window._sociosUpdateDormidos = function() { _dormidosOffset = 0; _renderDormidosTable(); };
+    window._sociosShowMoreDormidos = function() { _renderDormidosTable(); };
+
     </script>
-    
+
     <!-- MODAL NUEVO ADMIN -->
     <div id="modal-nuevo-admin" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center; padding:20px;">
         <div class="card" style="width:100%; max-width:440px; position:relative; padding:36px 32px;">
