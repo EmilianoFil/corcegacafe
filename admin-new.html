@@ -1212,7 +1212,13 @@
 
         <!-- ANÁLISIS DE SOCIOS -->
         <section id="socios" class="section-content">
-            <h3>🔍 Análisis de Socios <span id="socios-last-update" style="font-size:0.8rem;color:var(--text-muted);font-family:'Inter',sans-serif;font-weight:400;margin-left:12px;vertical-align:middle;"></span></h3>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0;flex-wrap:wrap;gap:12px;">
+                <h3 style="margin:0;">🔍 Análisis de Socios <span id="socios-last-update" style="font-size:0.8rem;color:var(--text-muted);font-family:'Inter',sans-serif;font-weight:400;margin-left:12px;vertical-align:middle;"></span></h3>
+                <button onclick="window._abrirCampanas()" id="btn-campanas" style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(216,102,52,0.3);transition:opacity 0.15s;" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+                    ✨ Campañas Sugeridas
+                </button>
+            </div>
+            <div style="margin-bottom:24px;"></div>
 
             <!-- KPIs -->
             <div class="stats-grid" id="socios-kpi-grid" style="margin-bottom:24px;">
@@ -5176,6 +5182,196 @@
     window._sociosUpdateDormidos = function() { _dormidosOffset = 0; _renderDormidosTable(); };
     window._sociosShowMoreDormidos = function() { _renderDormidosTable(); };
 
+    // ── CAMPAÑAS SUGERIDAS ──────────────────────────────────────────────────────
+    function _generarCampanas(clients) {
+        const today = new Date();
+        const toDate = ts => ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+        const daysSince = d => d ? Math.floor((today - d) / 86400000) : null;
+
+        // Próximos cumpleaños (14 días)
+        const proximosCumples = clients.filter(c => {
+            if (!c.cumple_dia || !c.cumple_mes) return false;
+            const thisYear  = new Date(today.getFullYear(), c.cumple_mes - 1, c.cumple_dia);
+            const nextYear  = new Date(today.getFullYear() + 1, c.cumple_mes - 1, c.cumple_dia);
+            const target    = thisYear >= today ? thisYear : nextYear;
+            const diff      = Math.floor((target - today) / 86400000);
+            return diff >= 0 && diff <= 14;
+        }).sort((a, b) => {
+            const d = d => { const t = new Date(today.getFullYear(), d.cumple_mes - 1, d.cumple_dia); return t >= today ? t : new Date(today.getFullYear()+1, d.cumple_mes-1, d.cumple_dia); };
+            return d(a) - d(b);
+        });
+
+        return [
+            {
+                id: 'vip',
+                emoji: '🏆',
+                titulo: 'Champions: Reconocé a tus mejores socios',
+                por_que: 'Son tus embajadores. Ya vienen seguido y reciente — un gesto los convierte en promotores activos del club.',
+                accion: 'Invitación a evento especial, regalo sorpresa, o simplemente un "gracias por ser parte". Son los más fáciles de deleitar.',
+                color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0',
+                lista: clients.filter(c => c._segmento === 'champions').sort((a, b) => b._freq - a._freq),
+            },
+            {
+                id: 'sos',
+                emoji: '⚠️',
+                titulo: 'En Riesgo: Recuperá a los valiosos antes de perderlos',
+                por_que: 'Eran frecuentes pero dejaron de aparecer. Todavía es recuperable — el vínculo está fresco en su memoria.',
+                accion: 'Mail o DM personalizado: "¡Te extrañamos! Tus sellos te esperan + beneficio exclusivo por volver esta semana."',
+                color: '#c47a00', bg: '#fffbeb', border: '#fde68a',
+                lista: clients.filter(c => c._segmento === 'riesgo').sort((a, b) => b._freq - a._freq),
+            },
+            {
+                id: 'casi',
+                emoji: '🎯',
+                titulo: 'A 1 sello del café gratis',
+                por_que: 'Tienen 7 sellos. Un solo café los lleva al premio. Son los más fáciles de activar — el incentivo ya está puesto.',
+                accion: 'Mensaje corto: "¡Hola [nombre]! ¿Sabías que te falta 1 solo sello para tu café gratis? Te esperamos 🫶"',
+                color: '#6d28d9', bg: '#f5f3ff', border: '#ddd6fe',
+                lista: clients.filter(c => (c.cafes || 0) === 7).sort((a, b) => b._freq - a._freq),
+            },
+            {
+                id: 'fantasmas',
+                emoji: '👻',
+                titulo: 'Fantasmas con Historia: El intento vale',
+                por_que: 'Tenían historial real (3+ cafés) pero se fueron hace más de 180 días. Recuperarlos es difícil pero no imposible.',
+                accion: '"¿Te acordás de nosotros? El Club Córcega sigue acá, con novedades. Tu historia con nosotros no se borró."',
+                color: '#dc2626', bg: '#fef2f2', border: '#fecaca',
+                lista: clients.filter(c => c._freq >= 3 && c._diasAusente !== null && c._diasAusente > 180).sort((a, b) => b._freq - a._freq),
+            },
+            {
+                id: 'primera',
+                emoji: '🌱',
+                titulo: 'Primera visita pendiente',
+                por_que: 'Se registraron hace más de 30 días pero nunca sumaron un café. La barrera de la primera vez es real — un empujón puede romperla.',
+                accion: '"Hola [nombre], ¡gracias por sumarte al Club! ¿Sabías que tu primer café suma 1 sello automáticamente? Te esperamos."',
+                color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd',
+                lista: (() => {
+                    const registradosViejos = clients.filter(c => {
+                        if (c._freq > 0) return false;
+                        const d = toDate(c.creado);
+                        return d && daysSince(d) >= 30;
+                    });
+                    return registradosViejos.sort((a, b) => {
+                        const da = toDate(a.creado), db = toDate(b.creado);
+                        return (da || 0) - (db || 0);
+                    });
+                })(),
+            },
+            {
+                id: 'cumple',
+                emoji: '🎂',
+                titulo: `Cumpleaños en los próximos 14 días`,
+                por_que: 'El cumpleaños es el momento de mayor receptividad del año. Un mensaje personalizado genera amor genuino por la marca.',
+                accion: '"¡Feliz cumple [nombre]! En Córcega te esperamos con un cafecito de regalo 🎁☕ ¡Tu día merece festejarse!"',
+                color: '#be185d', bg: '#fdf2f8', border: '#fbcfe8',
+                lista: proximosCumples,
+            },
+        ];
+    }
+
+    function _renderCampanaCard(camp, idx) {
+        const listaConEmail = camp.lista.filter(c => c.email);
+        const listaSinEmail = camp.lista.filter(c => !c.email);
+        const emailsStr = listaConEmail.map(c => c.email).join(', ');
+        const nombresStr = camp.lista.map(c => c.nombre || c.dni).join('\n');
+
+        const filas = camp.lista.slice(0, 5).map(c => {
+            const dias = c._diasAusente !== null ? `${c._diasAusente}d ausente` : c._freq === 0 ? 'sin visitas' : '';
+            const tag = dias ? `<span style="font-size:0.72rem;color:#888;background:#f3f3f3;padding:2px 6px;border-radius:10px;">${dias}</span>` : '';
+            const cumpleStr = (c.cumple_dia && c.cumple_mes) ? ` · 🎂 ${c.cumple_dia}/${c.cumple_mes}` : '';
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${camp.border};">
+                <div>
+                    <span style="font-weight:600;font-size:0.88rem;">${c.nombre || c.dni}</span>
+                    <span style="color:#999;font-size:0.78rem;">${cumpleStr}${c.email ? ' · ' + c.email : ''}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    ${tag}
+                    ${c._freq > 0 ? `<span style="font-size:0.72rem;font-weight:700;color:${camp.color};background:${camp.bg};padding:2px 7px;border-radius:10px;">${c._freq} ☕</span>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+
+        const masLabel = camp.lista.length > 5 ? `<div style="text-align:center;padding:8px 0;font-size:0.8rem;color:#999;">... y ${camp.lista.length - 5} más</div>` : '';
+
+        return `
+        <div class="campana-card" style="border:1.5px solid ${camp.border};border-radius:16px;background:${camp.bg};overflow:hidden;margin-bottom:16px;">
+            <div style="padding:18px 20px 14px;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:200px;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                            <span style="font-size:1.5rem;">${camp.emoji}</span>
+                            <h4 style="margin:0;font-size:0.95rem;color:${camp.color};">${camp.titulo}</h4>
+                        </div>
+                        <p style="margin:0 0 6px 0;font-size:0.82rem;color:#555;line-height:1.5;"><strong>Por qué funciona:</strong> ${camp.por_que}</p>
+                        <div style="background:white;border-radius:8px;padding:10px 12px;margin-top:8px;border:1px solid ${camp.border};">
+                            <p style="margin:0;font-size:0.82rem;color:#333;line-height:1.5;">💬 <em>${camp.accion}</em></p>
+                        </div>
+                    </div>
+                    <div style="text-align:center;padding:10px 16px;background:white;border-radius:12px;border:1px solid ${camp.border};min-width:80px;">
+                        <div style="font-size:1.8rem;font-weight:800;color:${camp.color};">${camp.lista.length}</div>
+                        <div style="font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:0.04em;">socios</div>
+                    </div>
+                </div>
+
+                ${camp.lista.length === 0 ? `<p style="margin:12px 0 0;font-size:0.82rem;color:#aaa;text-align:center;">🎉 No hay socios en este segmento ahora mismo.</p>` : `
+                <!-- Lista preview -->
+                <div style="margin-top:14px;">
+                    ${filas}
+                    ${masLabel}
+                </div>
+
+                <!-- Botones -->
+                <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                    ${listaConEmail.length > 0 ? `
+                    <button onclick="window._copiarCampana('emails','${camp.id}')" style="padding:7px 14px;border-radius:8px;border:1.5px solid ${camp.color};background:white;color:${camp.color};font-size:0.8rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;">
+                        📋 Copiar emails (${listaConEmail.length})
+                    </button>` : ''}
+                    <button onclick="window._copiarCampana('nombres','${camp.id}')" style="padding:7px 14px;border-radius:8px;border:1.5px solid #ddd;background:white;color:#555;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;">
+                        📋 Copiar lista de nombres
+                    </button>
+                    ${listaSinEmail.length > 0 ? `<span style="font-size:0.75rem;color:#aaa;align-self:center;">${listaSinEmail.length} sin email cargado</span>` : ''}
+                </div>
+                `}
+            </div>
+        </div>`;
+    }
+
+    window._abrirCampanas = function() {
+        const clients = _sociosData;
+        if (!clients) { alert('Cargá primero la sección de Análisis de Socios.'); return; }
+        const campanas = _generarCampanas(clients);
+        window._campanaData = campanas;
+
+        const modal = document.getElementById('modal-campanas');
+        const body  = document.getElementById('modal-campanas-body');
+        body.innerHTML = campanas.map((c, i) => _renderCampanaCard(c, i)).join('');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    };
+
+    window._cerrarCampanas = function() {
+        document.getElementById('modal-campanas').style.display = 'none';
+        document.body.style.overflow = '';
+    };
+
+    window._copiarCampana = function(tipo, id) {
+        const camp = (window._campanaData || []).find(c => c.id === id);
+        if (!camp) return;
+        let text = '';
+        if (tipo === 'emails') {
+            text = camp.lista.filter(c => c.email).map(c => c.email).join('\n');
+        } else {
+            text = camp.lista.map(c => `${c.nombre || c.dni}${c.email ? ' <' + c.email + '>' : ''}`).join('\n');
+        }
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = event.target.closest('button');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '✅ ¡Copiado!';
+            btn.style.background = '#f0fdf4';
+            setTimeout(() => { btn.innerHTML = orig; btn.style.background = 'white'; }, 2000);
+        });
+    };
+
     </script>
 
     <!-- MODAL NUEVO ADMIN -->
@@ -5293,6 +5489,20 @@
         </div>
     </div>
     </script>
+
+    <!-- Modal: Campañas Sugeridas -->
+    <div id="modal-campanas" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:99998;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;" onclick="if(event.target===this)window._cerrarCampanas()">
+        <div style="background:#fff;border-radius:20px;width:100%;max-width:780px;position:relative;padding:0;box-shadow:0 24px 80px rgba(0,0,0,0.25);margin:auto;">
+            <div style="padding:24px 28px 16px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:white;border-radius:20px 20px 0 0;z-index:1;">
+                <div>
+                    <h3 style="margin:0 0 3px 0;font-size:1.15rem;">✨ Campañas Sugeridas</h3>
+                    <p style="margin:0;font-size:0.8rem;color:#999;">Basadas en los datos reales de tus socios. Hacé click en "Copiar" para tener la lista lista.</p>
+                </div>
+                <button onclick="window._cerrarCampanas()" style="background:none;border:none;font-size:1.6rem;cursor:pointer;color:#aaa;line-height:1;padding:0 4px;">×</button>
+            </div>
+            <div id="modal-campanas-body" style="padding:20px 28px 28px;"></div>
+        </div>
+    </div>
 
     <!-- Modal: Detalle de campaña -->
     <div id="modal-detalle-campana" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
