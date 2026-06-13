@@ -2410,7 +2410,7 @@
             btn.textContent = 'Sincronizando...';
             result.textContent = '';
             try {
-                const token = await firebase.auth().currentUser?.getIdToken();
+                const token = await auth.currentUser?.getIdToken();
                 const res = await fetch('https://us-central1-corcega-loyalty-club.cloudfunctions.net/sincronizarSociosZoho', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
