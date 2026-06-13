@@ -2253,54 +2253,29 @@ exports.getStockosPrice = onRequest(
   }
 );
 
-// Carga inicial y sincronización manual de socios a MailerLite (batch)
-exports.sincronizarSociosMailerLite = onRequest(
-  { region: "us-central1", secrets: [MAILERLITE_API_KEY], timeoutSeconds: 300 },
+// Sincronización masiva de todos los socios a Zoho Campaigns
+exports.sincronizarSociosZoho = onRequest(
+  { region: "us-central1", secrets: [ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET], timeoutSeconds: 540 },
   async (req, res) => {
-    const { autorizado } = req.body;
-    if (autorizado !== "corcega2025") {
-      return res.status(403).send("No autorizado");
-    }
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+
+    const autorizado = await verificarAuthAdmin(req, res);
+    if (!autorizado) return;
 
     const snapshot = await db.collection("clientes").get();
-    const subscribers = [];
-    let sinEmail = 0;
+    const contactos = snapshot.docs.map(doc => ({ dni: doc.id, ...doc.data() }));
 
-    for (const doc of snapshot.docs) {
-      const { nombre, email, dni } = doc.data();
-      if (!email) { sinEmail++; continue; }
-      subscribers.push({ email, fields: { name: nombre || "", last_name: String(dni || "") } });
-    }
+    const { sincronizarTodosAZohoCampaigns } = require("./campaigns");
+    const resultado = await sincronizarTodosAZohoCampaigns(contactos, {
+      clientId: ZOHO_CAMPAIGNS_CLIENT_ID.value(),
+      clientSecret: ZOHO_CAMPAIGNS_CLIENT_SECRET.value(),
+      refreshToken: ZOHO_CAMPAIGNS_REFRESH_TOKEN.value(),
+    });
 
-    const headers = {
-      "Authorization": `Bearer ${MAILERLITE_API_KEY.value()}`,
-      "Content-Type": "application/json",
-    };
-
-    const chunkSize = 50;
-    let importados = 0, errores = 0;
-
-    for (let i = 0; i < subscribers.length; i += chunkSize) {
-      const chunk = subscribers.slice(i, i + chunkSize);
-      const requests = chunk.map(sub => ({
-        method: "POST",
-        path: "/api/subscribers",
-        body: sub,
-      }));
-      const r = await fetch("https://connect.mailerlite.com/api/batch", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ requests }),
-      });
-      if (r.ok) {
-        importados += chunk.length;
-      } else {
-        errores += chunk.length;
-        logger.warn("Batch error:", await r.text());
-      }
-    }
-
-    res.json({ total: snapshot.size, sinEmail, importados, errores });
+    logger.info("Sync Zoho Campaigns:", resultado);
+    res.json(resultado);
   }
 );
 // ═══════════════════════════════════════════════════════════════════════════

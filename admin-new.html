@@ -2316,6 +2316,25 @@
                 </div>
             </div>
 
+            <!-- Zoho Campaigns Sync Panel -->
+            <div style="margin-top:30px; border:2px solid #e8f4fd; border-radius:16px; padding:24px; background:#f8fcff;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                    <span style="font-size:1.2rem;">📣</span>
+                    <h4 style="margin:0; font-size:1rem; font-weight:700;">Zoho Campaigns — Socios</h4>
+                </div>
+                <p style="font-size:0.82rem; color:var(--text-muted); margin:0 0 18px;">
+                    Sincroniza todos los socios de Firestore a la lista "Club Corcega" en Zoho Campaigns,
+                    con nombre, DNI, teléfono, sellos, cafés acumulados y último café.
+                </p>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <button onclick="sincronizarSociosZoho()" id="btn-zoho-sync"
+                        style="background:#1a6fbf; color:white; border:none; border-radius:10px; padding:10px 22px; font-weight:700; font-size:0.85rem; cursor:pointer;">
+                        Sincronizar ahora
+                    </button>
+                    <span id="zoho-sync-result" style="font-size:0.82rem; color:var(--text-muted);"></span>
+                </div>
+            </div>
+
             <!-- ZeptoMail Test Panel -->
             <div style="margin-top:30px; border:2px dashed #d0ccc5; border-radius:16px; padding:24px; background:#fafaf8;">
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
@@ -2381,6 +2400,31 @@
             }
             btn.disabled = false;
             btn.textContent = 'Enviar test ⚡';
+        }
+
+        async function sincronizarSociosZoho() {
+            const btn = document.getElementById('btn-zoho-sync');
+            const result = document.getElementById('zoho-sync-result');
+            if (!confirm('¿Sincronizar todos los socios a Zoho Campaigns? Puede tardar unos minutos.')) return;
+            btn.disabled = true;
+            btn.textContent = 'Sincronizando...';
+            result.textContent = '';
+            try {
+                const token = await firebase.auth().currentUser?.getIdToken();
+                const res = await fetch('https://us-central1-corcega-loyalty-club.cloudfunctions.net/sincronizarSociosZoho', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({}),
+                });
+                const data = await res.json();
+                result.textContent = `✅ ${data.ok} sincronizados · ${data.errores} errores · ${data.sinEmail} sin email (total: ${data.total})`;
+                result.style.color = data.errores > 0 ? '#e5a020' : '#2e7d52';
+            } catch(e) {
+                result.textContent = `✗ ${e.message}`;
+                result.style.color = '#c0392b';
+            }
+            btn.disabled = false;
+            btn.textContent = 'Sincronizar ahora';
         }
         </script>
 

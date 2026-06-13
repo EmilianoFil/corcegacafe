@@ -16,11 +16,29 @@ async function getAccessToken(clientId, clientSecret, refreshToken) {
   return data.access_token;
 }
 
-async function agregarAZohoCampaigns(email, nombre, dni, { clientId, clientSecret, refreshToken }) {
-  const accessToken = await getAccessToken(clientId, clientSecret, refreshToken);
+function formatTimestamp(val) {
+  if (!val) return "";
+  try {
+    const d = val.toDate ? val.toDate() : new Date(val);
+    return d.toISOString().split("T")[0]; // YYYY-MM-DD
+  } catch {
+    return "";
+  }
+}
 
-  const contactinfo = JSON.stringify({ "Contact Email": email, "First Name": nombre, "DNI": dni });
+function buildContactInfo(contacto) {
+  return {
+    "Contact Email": contacto.email,
+    "First Name": contacto.nombre || "",
+    "Phone": contacto.whatsapp || contacto.telefono || "",
+    "DNI": String(contacto.dni || ""),
+    "Sellos Actuales": String(contacto.cafes || 0),
+    "Cafes Acumulados Total": String(contacto.cafes_acumulados_total || 0),
+    "Ultimo Cafe": formatTimestamp(contacto.ultimo_cafe),
+  };
+}
 
+async function suscribirContacto(contacto, accessToken) {
   const res = await fetch("https://campaigns.zoho.com/api/v1.1/json/listsubscribe", {
     method: "POST",
     headers: {
@@ -29,14 +47,40 @@ async function agregarAZohoCampaigns(email, nombre, dni, { clientId, clientSecre
     },
     body: new URLSearchParams({
       listkey: LIST_KEY,
-      contactinfo,
+      contactinfo: JSON.stringify(buildContactInfo(contacto)),
       source: "Firebase",
     }),
   });
-
   const data = await res.json();
-  if (data.status !== "success") throw new Error(`Zoho Campaigns error: ${JSON.stringify(data)}`);
+  if (data.status !== "success") throw new Error(JSON.stringify(data));
   return data;
 }
 
-module.exports = { agregarAZohoCampaigns };
+async function agregarAZohoCampaigns(contacto, credentials) {
+  const { clientId, clientSecret, refreshToken } = credentials;
+  const accessToken = await getAccessToken(clientId, clientSecret, refreshToken);
+  return suscribirContacto(contacto, accessToken);
+}
+
+async function sincronizarTodosAZohoCampaigns(contactos, credentials) {
+  const { clientId, clientSecret, refreshToken } = credentials;
+  const accessToken = await getAccessToken(clientId, clientSecret, refreshToken);
+
+  let ok = 0, errores = 0, sinEmail = 0;
+
+  for (const contacto of contactos) {
+    if (!contacto.email) { sinEmail++; continue; }
+    try {
+      await suscribirContacto(contacto, accessToken);
+      ok++;
+    } catch (e) {
+      errores++;
+    }
+    // pequeña pausa para no saturar la API
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  return { total: contactos.length, ok, errores, sinEmail };
+}
+
+module.exports = { agregarAZohoCampaigns, sincronizarTodosAZohoCampaigns };
