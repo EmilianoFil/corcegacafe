@@ -20,7 +20,10 @@ function formatTimestamp(val) {
   if (!val) return "";
   try {
     const d = val.toDate ? val.toDate() : new Date(val);
-    return d.toISOString().split("T")[0]; // YYYY-MM-DD
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    return `${mm}/${dd}/${yyyy}`; // MM/DD/YYYY — formato requerido por Zoho Date fields
   } catch {
     return "";
   }
@@ -32,8 +35,8 @@ function buildContactInfo(contacto) {
     "First Name": contacto.nombre || "",
     "Phone": contacto.whatsapp || contacto.telefono || "",
     "DNI": String(contacto.dni || ""),
-    "Sellos Actuales": String(contacto.cafes || 0),
-    "Cafes Acumulados Total": String(contacto.cafes_acumulados_total || 0),
+    "Sellos Actuales": Number(contacto.cafes || 0),
+    "Cafes Acumulados Total": Number(contacto.cafes_acumulados_total || 0),
     "Ultimo Cafe": formatTimestamp(contacto.ultimo_cafe),
   };
 }

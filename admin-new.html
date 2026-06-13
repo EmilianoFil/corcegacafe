@@ -2721,6 +2721,7 @@
         import { auth, signOut } from './js/firebase-auth.js';
         import { requireAdmin } from './js/admin-guard.js';
         import { db, storage } from './js/firebase-config.js';
+        window.auth = auth;
         import {
             doc, getDoc, getDocs, setDoc, collection, query, where, orderBy, limit,
             updateDoc, increment, serverTimestamp, addDoc, onSnapshot, deleteDoc, Timestamp
