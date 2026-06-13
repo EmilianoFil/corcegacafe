@@ -93,26 +93,21 @@ const emailPass = defineSecret("EMAIL_PASS");
 const STOCKOS_API_KEY = defineSecret("STOCKOS_API_KEY");
 const TELEGRAM_BOT_TOKEN = defineSecret("TELEGRAM_BOT_TOKEN");
 const MAILERLITE_API_KEY = defineSecret("MAILERLITE_API_KEY");
+const ZOHO_CAMPAIGNS_REFRESH_TOKEN = defineSecret("ZOHO_CAMPAIGNS_REFRESH_TOKEN");
+const ZOHO_CAMPAIGNS_CLIENT_ID = defineSecret("ZOHO_CAMPAIGNS_CLIENT_ID");
+const ZOHO_CAMPAIGNS_CLIENT_SECRET = defineSecret("ZOHO_CAMPAIGNS_CLIENT_SECRET");
 
-const agregarAMailerLite = async (email, nombre, dni, apiKey) => {
+const { agregarAZohoCampaigns } = require("./campaigns");
+
+const agregarASuscriptores = async (email, nombre, dni) => {
   try {
-    const res = await fetch("https://connect.mailerlite.com/api/subscribers", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        fields: { name: nombre, last_name: String(dni) },
-      }),
+    await agregarAZohoCampaigns(email, nombre, dni, {
+      clientId: ZOHO_CAMPAIGNS_CLIENT_ID.value(),
+      clientSecret: ZOHO_CAMPAIGNS_CLIENT_SECRET.value(),
+      refreshToken: ZOHO_CAMPAIGNS_REFRESH_TOKEN.value(),
     });
-    if (!res.ok) {
-      const err = await res.text();
-      logger.warn("MailerLite no pudo agregar suscriptor:", err);
-    }
   } catch (e) {
-    logger.warn("Error llamando a MailerLite:", e.message);
+    logger.warn("Error agregando a Zoho Campaigns:", e.message);
   }
 };
 const TELEGRAM_CHAT_ID = "4755184";
@@ -120,7 +115,7 @@ const TELEGRAM_GROUP_ID = "-5218118104";
 const TELEGRAM_CHAT_IDS = [TELEGRAM_CHAT_ID, TELEGRAM_GROUP_ID];
 
 exports.enviarMailRegistro = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass, MAILERLITE_API_KEY] },
+  { region: "us-central1", secrets: [emailUser, emailPass, ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET] },
   (req, res) => {
     corsHandler(req, res, async () => {
       const { nombre, mail, dni } = req.body;
@@ -169,7 +164,7 @@ exports.enviarMailRegistro = onRequest(
 
       try {
         await transporter.sendMail(mailOptions);
-        await agregarAMailerLite(email, nombre, dni, MAILERLITE_API_KEY.value());
+        await agregarASuscriptores(email, nombre, dni);
         const logRef = await db.collection("logs").add({
           accion: "enviar_mail_bienvenida",
           detalles: `DNI: ${dni} - ${nombre} - ${email}`,
@@ -188,7 +183,7 @@ exports.enviarMailRegistro = onRequest(
 );
 
 exports.enviarMailRegistroTA = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass, MAILERLITE_API_KEY] },
+  { region: "us-central1", secrets: [emailUser, emailPass, ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET] },
   (req, res) => {
     corsHandler(req, res, async () => {
       const { nombre, mail, dni } = req.body;
@@ -237,7 +232,7 @@ exports.enviarMailRegistroTA = onRequest(
 
       try {
         await transporter.sendMail(mailOptions);
-        await agregarAMailerLite(email, nombre, dni, MAILERLITE_API_KEY.value());
+        await agregarASuscriptores(email, nombre, dni);
         const logRef = await db.collection("logs").add({
           accion: "enviar_mail_bienvenida_ig",
           detalles: `DNI: ${dni} - ${nombre} - ${email}`,
@@ -256,7 +251,7 @@ exports.enviarMailRegistroTA = onRequest(
 );
 
 exports.enviarMailRegistroIG = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass, MAILERLITE_API_KEY] },
+  { region: "us-central1", secrets: [emailUser, emailPass, ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET] },
   (req, res) => {
     corsHandler(req, res, async () => {
       const { nombre, mail, dni } = req.body;
@@ -305,7 +300,7 @@ exports.enviarMailRegistroIG = onRequest(
 
       try {
         await transporter.sendMail(mailOptions);
-        await agregarAMailerLite(email, nombre, dni, MAILERLITE_API_KEY.value());
+        await agregarASuscriptores(email, nombre, dni);
         const logRef = await db.collection("logs").add({
           accion: "enviar_mail_bienvenida_ig",
           detalles: `DNI: ${dni} - ${nombre} - ${email}`,
