@@ -101,11 +101,14 @@ const { agregarAZohoCampaigns } = require("./campaigns");
 
 const agregarASuscriptores = async (email, nombre, dni) => {
   try {
-    await agregarAZohoCampaigns(email, nombre, dni, {
-      clientId: ZOHO_CAMPAIGNS_CLIENT_ID.value(),
-      clientSecret: ZOHO_CAMPAIGNS_CLIENT_SECRET.value(),
-      refreshToken: ZOHO_CAMPAIGNS_REFRESH_TOKEN.value(),
-    });
+    await agregarAZohoCampaigns(
+      { email, nombre, dni },
+      {
+        clientId: ZOHO_CAMPAIGNS_CLIENT_ID.value(),
+        clientSecret: ZOHO_CAMPAIGNS_CLIENT_SECRET.value(),
+        refreshToken: ZOHO_CAMPAIGNS_REFRESH_TOKEN.value(),
+      }
+    );
   } catch (e) {
     logger.warn("Error agregando a Zoho Campaigns:", e.message);
   }
@@ -2258,26 +2261,59 @@ exports.sincronizarSociosZoho = onRequest(
   { region: "us-central1", secrets: [ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET], timeoutSeconds: 540 },
   async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
     if (req.method === "OPTIONS") { res.status(204).send(""); return; }
 
     const autorizado = await verificarAuthAdmin(req, res);
     if (!autorizado) return;
 
+    logger.info("Zoho sync: auth ok, leyendo clientes...");
+    const { emailPrueba } = req.body;
     const snapshot = await db.collection("clientes").get();
-    const contactos = snapshot.docs.map(doc => ({ dni: doc.id, ...doc.data() }));
+    let contactos = snapshot.docs.map(doc => ({ dni: doc.id, ...doc.data() }));
+    if (emailPrueba) {
+      contactos = contactos.filter(c => c.email === emailPrueba);
+      logger.info(`Zoho sync: modo prueba para ${emailPrueba}`);
+    }
+    logger.info(`Zoho sync: ${contactos.length} clientes encontrados`);
 
     const { sincronizarTodosAZohoCampaigns } = require("./campaigns");
+    logger.info("Zoho sync: obteniendo access token...");
     const resultado = await sincronizarTodosAZohoCampaigns(contactos, {
       clientId: ZOHO_CAMPAIGNS_CLIENT_ID.value(),
       clientSecret: ZOHO_CAMPAIGNS_CLIENT_SECRET.value(),
       refreshToken: ZOHO_CAMPAIGNS_REFRESH_TOKEN.value(),
     });
 
-    logger.info("Sync Zoho Campaigns:", resultado);
+    logger.info("Zoho sync resultado:", JSON.stringify(resultado));
     res.json(resultado);
   }
 );
+
+// Sync automático a Zoho Campaigns cuando se actualiza un cliente
+exports.onClienteUpdated = onDocumentUpdated(
+  { document: "clientes/{dni}", secrets: [ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET] },
+  async (event) => {
+    const data = event.data.after.data();
+    if (!data.email) return;
+    logger.info(`Zoho sync trigger: ${data.email} (DNI ${event.params.dni})`);
+    try {
+      await agregarAZohoCampaigns(
+        { ...data, dni: event.params.dni },
+        {
+          clientId: ZOHO_CAMPAIGNS_CLIENT_ID.value(),
+          clientSecret: ZOHO_CAMPAIGNS_CLIENT_SECRET.value(),
+          refreshToken: ZOHO_CAMPAIGNS_REFRESH_TOKEN.value(),
+        }
+      );
+      logger.info(`Zoho sync ok: ${data.email}`);
+    } catch (e) {
+      logger.warn("Zoho sync on update error:", e.message);
+    }
+  }
+);
+
 // ═══════════════════════════════════════════════════════════════════════════
 // REVIEWS GOOGLE — AGENTE IA (Claude)
 // Fase 2: generación de respuestas con manual de marca + análisis de reviews.

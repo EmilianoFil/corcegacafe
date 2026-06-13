@@ -1,4 +1,4 @@
-const LIST_KEY = "3z135620534b882fe1903ff1abc6c81fdd954ad79e244657fbb4ce76a752123c54";
+const LIST_KEY = "3zcc33c3deabb1a59c426e38d5d16aa916fceaf17c7b01f847657597ab5eaca8e7";
 
 async function getAccessToken(clientId, clientSecret, refreshToken) {
   const res = await fetch("https://accounts.zoho.com/oauth/v2/token", {
@@ -54,9 +54,16 @@ async function suscribirContacto(contacto, accessToken) {
       source: "Firebase",
     }),
   });
-  const data = await res.json();
-  if (data.status !== "success") throw new Error(JSON.stringify(data));
-  return data;
+  const text = await res.text();
+  // Zoho a veces devuelve XML en vez de JSON — si el HTTP status es 200 lo tratamos como ok
+  if (res.ok) return { status: "success" };
+  try {
+    const data = JSON.parse(text);
+    if (data.status !== "success") throw new Error(JSON.stringify(data));
+    return data;
+  } catch {
+    throw new Error(text.slice(0, 200));
+  }
 }
 
 async function agregarAZohoCampaigns(contacto, credentials) {
@@ -77,6 +84,7 @@ async function sincronizarTodosAZohoCampaigns(contactos, credentials) {
       await suscribirContacto(contacto, accessToken);
       ok++;
     } catch (e) {
+      if (errores === 0) console.error("Primer error Zoho:", e.message);
       errores++;
     }
     // pequeña pausa para no saturar la API

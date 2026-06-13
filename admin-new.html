@@ -4408,6 +4408,7 @@
                 }
 
                 await updateDoc(ref, updates);
+                console.log(`[Zoho] Firestore update enviado para ${data.email} — trigger onClienteUpdated debería dispararse`);
                 await addDoc(collection(db, "logs"), {
                     usuario: auth.currentUser?.email,
                     accion: isInvitation ? "invitar_cafecito" : "sumar_cafecito",
