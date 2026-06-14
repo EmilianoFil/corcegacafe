@@ -29,6 +29,21 @@ function formatTimestamp(val) {
   }
 }
 
+function formatDateTime(val) {
+  if (!val) return "";
+  try {
+    const d = val.toDate ? val.toDate() : new Date(val);
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${mm}/${dd}/${yyyy} ${hh}:${min}`; // MM/DD/YYYY HH:MM
+  } catch {
+    return "";
+  }
+}
+
 function buildContactInfo(contacto) {
   return {
     "Contact Email": contacto.email,
@@ -38,6 +53,11 @@ function buildContactInfo(contacto) {
     "Sellos Actuales": Number(contacto.cafes || 0),
     "Cafes Acumulados Total": Number(contacto.cafes_acumulados_total || 0),
     "Ultimo Cafe": formatTimestamp(contacto.ultimo_cafe),
+    "Cafe Disponible": contacto.cafe_disponible ? "true" : "false",
+    "Cafecitos Invitados": Number(contacto.cafecitos_invitados || 0),
+    "Creado": formatDateTime(contacto.creado),
+    "Cumple Dia": Number(contacto.cumple_dia || 0),
+    "Cumple Mes": Number(contacto.cumple_mes || 0),
   };
 }
 
