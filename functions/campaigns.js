@@ -20,10 +20,12 @@ function formatTimestamp(val) {
   if (!val) return "";
   try {
     const d = val.toDate ? val.toDate() : new Date(val);
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    return `${mm}/${dd}/${yyyy}`; // MM/DD/YYYY — formato requerido por Zoho Date fields
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+    }).format(d); // MM/DD/YYYY en timezone Argentina
   } catch {
     return "";
   }
@@ -53,15 +55,17 @@ function buildContactInfo(contacto) {
     "Sellos Actuales": Number(contacto.cafes || 0),
     "Cafes Acumulados Total": Number(contacto.cafes_acumulados_total || 0),
     "Ultimo Cafe": formatTimestamp(contacto.ultimo_cafe),
-    "Cafe Disponible": contacto.cafe_disponible ? "true" : "false",
     "Cafecitos Invitados": Number(contacto.cafecitos_invitados || 0),
-    "Creado": formatDateTime(contacto.creado),
-    "Cumple Dia": Number(contacto.cumple_dia || 0),
-    "Cumple Mes": Number(contacto.cumple_mes || 0),
+    ...(contacto.cumple_dia ? { "Cumple Dia": Number(contacto.cumple_dia) } : {}),
+    ...(contacto.cumple_mes ? { "Cumple Mes": Number(contacto.cumple_mes) } : {}),
+    "Cafe Disponible": contacto.cafe_disponible ? "true" : "false",
+    ...(contacto.creado ? { "Creado": formatTimestamp(contacto.creado) } : {}),
   };
 }
 
 async function suscribirContacto(contacto, accessToken) {
+  const contactInfo = buildContactInfo(contacto);
+  console.log("[Zoho payload]", JSON.stringify(contactInfo));
   const res = await fetch("https://campaigns.zoho.com/api/v1.1/json/listsubscribe", {
     method: "POST",
     headers: {
@@ -70,19 +74,21 @@ async function suscribirContacto(contacto, accessToken) {
     },
     body: new URLSearchParams({
       listkey: LIST_KEY,
-      contactinfo: JSON.stringify(buildContactInfo(contacto)),
+      contactinfo: JSON.stringify(contactInfo),
       source: "Firebase",
     }),
   });
   const text = await res.text();
-  // Zoho a veces devuelve XML en vez de JSON — si el HTTP status es 200 lo tratamos como ok
-  if (res.ok) return { status: "success" };
+  console.log(`[Zoho API] status=${res.status} body=${text.slice(0, 400)}`);
+  // Zoho devuelve XML con <status>error</status> aun con HTTP 200
+  if (text.includes("<status>error</status>")) throw new Error(text.slice(0, 300));
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
   try {
     const data = JSON.parse(text);
     if (data.status !== "success") throw new Error(JSON.stringify(data));
     return data;
   } catch {
-    throw new Error(text.slice(0, 200));
+    return { status: "success" };
   }
 }
 
@@ -97,21 +103,25 @@ async function sincronizarTodosAZohoCampaigns(contactos, credentials) {
   const accessToken = await getAccessToken(clientId, clientSecret, refreshToken);
 
   let ok = 0, errores = 0, sinEmail = 0;
+  const listaErrores = [], listaSinEmail = [];
 
   for (const contacto of contactos) {
-    if (!contacto.email) { sinEmail++; continue; }
+    if (!contacto.email) {
+      sinEmail++;
+      listaSinEmail.push(`DNI ${contacto.dni}`);
+      continue;
+    }
     try {
       await suscribirContacto(contacto, accessToken);
       ok++;
     } catch (e) {
-      if (errores === 0) console.error("Primer error Zoho:", e.message);
       errores++;
+      listaErrores.push({ email: contacto.email, error: e.message.slice(0, 120) });
     }
-    // pequeña pausa para no saturar la API
     await new Promise(r => setTimeout(r, 100));
   }
 
-  return { total: contactos.length, ok, errores, sinEmail };
+  return { total: contactos.length, ok, errores, sinEmail, listaErrores, listaSinEmail };
 }
 
 module.exports = { agregarAZohoCampaigns, sincronizarTodosAZohoCampaigns };
