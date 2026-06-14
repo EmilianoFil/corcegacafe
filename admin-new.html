@@ -2326,12 +2326,22 @@
                     Sincroniza todos los socios de Firestore a la lista "Club Corcega" en Zoho Campaigns,
                     con nombre, DNI, teléfono, sellos, cafés acumulados y último café.
                 </p>
-                <div style="display:flex; align-items:center; gap:12px;">
+                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                     <button onclick="sincronizarSociosZoho()" id="btn-zoho-sync"
                         style="background:#1a6fbf; color:white; border:none; border-radius:10px; padding:10px 22px; font-weight:700; font-size:0.85rem; cursor:pointer;">
                         Sincronizar ahora
                     </button>
+                    <button onclick="cancelarSyncZoho()" id="btn-zoho-cancel"
+                        style="display:none; background:#c0392b; color:white; border:none; border-radius:10px; padding:10px 22px; font-weight:700; font-size:0.85rem; cursor:pointer;">
+                        ✋ Cancelar
+                    </button>
                     <span id="zoho-sync-result" style="font-size:0.82rem; color:var(--text-muted);"></span>
+                </div>
+                <div id="zoho-progress-wrap" style="display:none; margin-top:14px;">
+                    <div style="background:#e8f0fe; border-radius:8px; height:10px; overflow:hidden; margin-bottom:6px;">
+                        <div id="zoho-progress-bar" style="height:100%; width:0%; background:#1a6fbf; transition:width 0.4s;"></div>
+                    </div>
+                    <span id="zoho-progress-label" style="font-size:0.78rem; color:var(--text-muted);"></span>
                 </div>
             </div>
 
@@ -2402,29 +2412,75 @@
             btn.textContent = 'Enviar test ⚡';
         }
 
+        let _zohoSyncCancelled = false;
+
+        function cancelarSyncZoho() {
+            _zohoSyncCancelled = true;
+            document.getElementById('btn-zoho-cancel').textContent = 'Cancelando...';
+            document.getElementById('btn-zoho-cancel').disabled = true;
+        }
+
         async function sincronizarSociosZoho() {
             const btn = document.getElementById('btn-zoho-sync');
+            const btnCancel = document.getElementById('btn-zoho-cancel');
             const result = document.getElementById('zoho-sync-result');
+            const progressWrap = document.getElementById('zoho-progress-wrap');
+            const progressBar = document.getElementById('zoho-progress-bar');
+            const progressLabel = document.getElementById('zoho-progress-label');
             if (!confirm('¿Sincronizar todos los socios a Zoho Campaigns? Puede tardar unos minutos.')) return;
+
+            _zohoSyncCancelled = false;
             btn.disabled = true;
-            btn.textContent = 'Sincronizando...';
+            btnCancel.style.display = 'inline-block';
+            btnCancel.textContent = '✋ Cancelar';
+            btnCancel.disabled = false;
             result.textContent = '';
+            progressWrap.style.display = 'block';
+            progressBar.style.width = '0%';
+
+            let loteIndex = 0;
+            const loteSize = 50;
+            let okTotal = 0, erroresTotal = 0, sinEmailTotal = 0, totalGlobal = 0;
+
             try {
                 const token = await auth.currentUser?.getIdToken();
-                const res = await fetch('https://us-central1-corcega-loyalty-club.cloudfunctions.net/sincronizarSociosZoho', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({}),
-                });
-                const data = await res.json();
-                result.textContent = `✅ ${data.ok} sincronizados · ${data.errores} errores · ${data.sinEmail} sin email (total: ${data.total})`;
-                result.style.color = data.errores > 0 ? '#e5a020' : '#2e7d52';
+                while (true) {
+                    if (_zohoSyncCancelled) {
+                        result.textContent = `🛑 Cancelado en lote ${loteIndex + 1} — ✅ ${okTotal} ok · ⚠️ ${erroresTotal} errores (de ${totalGlobal} total)`;
+                        result.style.color = '#c0392b';
+                        break;
+                    }
+                    btn.textContent = `Lote ${loteIndex + 1}...`;
+                    const res = await fetch('https://us-central1-corcega-loyalty-club.cloudfunctions.net/sincronizarSociosZoho', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ loteIndex, loteSize }),
+                    });
+                    const data = await res.json();
+                    okTotal += data.ok;
+                    erroresTotal += data.errores;
+                    sinEmailTotal += data.sinEmail;
+                    totalGlobal = data.totalGlobal;
+
+                    const procesados = Math.min((loteIndex + 1) * loteSize, totalGlobal);
+                    const pct = Math.round((procesados / totalGlobal) * 100);
+                    progressBar.style.width = `${pct}%`;
+                    progressLabel.textContent = `${procesados} de ${totalGlobal} — ✅ ${okTotal} ok · ❌ ${erroresTotal} errores`;
+
+                    if (!data.hasMore) {
+                        result.textContent = `✅ ${okTotal} sincronizados · ${erroresTotal} errores · ${sinEmailTotal} sin email (total: ${totalGlobal})`;
+                        result.style.color = erroresTotal > 0 ? '#e5a020' : '#2e7d52';
+                        break;
+                    }
+                    loteIndex++;
+                }
             } catch(e) {
                 result.textContent = `✗ ${e.message}`;
                 result.style.color = '#c0392b';
             }
             btn.disabled = false;
             btn.textContent = 'Sincronizar ahora';
+            btnCancel.style.display = 'none';
         }
         </script>
 
