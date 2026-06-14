@@ -2476,6 +2476,12 @@
                         break;
                     }
                     loteIndex++;
+                    // Pausa entre lotes para no saturar el rate limit de Zoho OAuth
+                    for (let s = 5; s > 0; s--) {
+                        if (_zohoSyncCancelled) break;
+                        btn.textContent = `Esperando ${s}s...`;
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
                 }
             } catch(e) {
                 result.textContent = `✗ ${e.message}`;
