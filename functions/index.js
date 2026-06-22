@@ -91,6 +91,8 @@ const renderStepperHtml = (estadoActual) => {
 const emailUser = defineSecret("EMAIL_USER");
 const emailPass = defineSecret("EMAIL_PASS");
 const STOCKOS_API_KEY = defineSecret("STOCKOS_API_KEY");
+const CLARUS_API_KEY = defineSecret("CLARUS_API_KEY");
+const CLARUS_ENDPOINT = defineSecret("CLARUS_ENDPOINT");
 const TELEGRAM_BOT_TOKEN = defineSecret("TELEGRAM_BOT_TOKEN");
 const MAILERLITE_API_KEY = defineSecret("MAILERLITE_API_KEY");
 const ZOHO_CAMPAIGNS_REFRESH_TOKEN = defineSecret("ZOHO_CAMPAIGNS_REFRESH_TOKEN");
@@ -1626,7 +1628,7 @@ exports.onOrderUpdated = onDocumentUpdated(
   {
     document: "ordenes/{orderId}",
     region: "us-central1",
-    secrets: [emailUser, emailPass],
+    secrets: [emailUser, emailPass, CLARUS_API_KEY, CLARUS_ENDPOINT],
   },
   async (event) => {
     const beforeData = event.data.before.data();
@@ -1636,7 +1638,7 @@ exports.onOrderUpdated = onDocumentUpdated(
     // Solo si el estado cambió
     if (beforeData.estado !== afterData.estado) {
       const nuevoEstado = afterData.estado;
-      
+
       // 1. Actualizar historial en Firestore
       await event.data.after.ref.update({
         historial: admin.firestore.FieldValue.arrayUnion({
@@ -1645,7 +1647,23 @@ exports.onOrderUpdated = onDocumentUpdated(
         })
       });
 
-      // 2. Enviar Mail de Notificación
+      // 2. ClarusHub — registrar/revertir ingreso (fire-and-forget para no bloquear mail)
+      if (nuevoEstado === 'pagado') {
+        // Re-leemos afterData para que incluya el historial recién actualizado
+        const updatedSnap = await event.data.after.ref.get();
+        notifyClarusHub(orderId, updatedSnap.data()).catch(e =>
+          logger.warn('ClarusHub notifyClarusHub falló:', e.message)
+        );
+      } else if (nuevoEstado === 'cancelado') {
+        const wasPaid = (afterData.historial || []).some(h => h.estado === 'pagado');
+        if (wasPaid) {
+          reverseClarusHub(orderId, afterData).catch(e =>
+            logger.warn('ClarusHub reverseClarusHub falló:', e.message)
+          );
+        }
+      }
+
+      // 3. Enviar Mail de Notificación
       const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
@@ -2222,6 +2240,123 @@ exports.procesarDevolucion = onRequest(
   }
 );
 
+// ─── CLARUS HUB — helpers de integración ─────────────────────────────────────
+
+async function notifyClarusHub(orderId, orderData) {
+  const endpoint = CLARUS_ENDPOINT.value();
+  const apiKey = CLARUS_API_KEY.value();
+  if (!endpoint || !apiKey) {
+    logger.warn('ClarusHub: no configurado (CLARUS_ENDPOINT / CLARUS_API_KEY vacíos)');
+    return;
+  }
+
+  const [configSnap, categoriasSnap] = await Promise.all([
+    db.collection('configuracion').doc('clarus-integration').get(),
+    db.collection('categorias').get(),
+  ]);
+
+  const config = configSnap.data() || {};
+  const categorias = {};
+  categoriasSnap.docs.forEach(d => { categorias[d.id] = d.data(); });
+
+  const metodoPago = orderData.metodoPago || 'mercadopago';
+  const accountId = config.pagos?.[metodoPago]?.clarusAccountId;
+  if (!accountId) {
+    logger.warn(`ClarusHub: sin cuenta mapeada para metodoPago "${metodoPago}"`);
+    return;
+  }
+
+  // Fecha de pago confirmada desde el historial
+  const pagadoEntry = (orderData.historial || []).find(h => h.estado === 'pagado');
+  const paymentDate = pagadoEntry?.fecha?.toDate
+    ? pagadoEntry.fecha.toDate().toISOString().split('T')[0]
+    : new Date().toISOString().split('T')[0];
+
+  const items = [];
+  for (const item of (orderData.items || [])) {
+    const categoriaId = item.categoria || '';
+    const catDoc = categorias[categoriaId];
+    const clarusCategoryId = catDoc?.clarusCategoryId;
+    if (!clarusCategoryId) {
+      logger.warn(`ClarusHub: sin categoría mapeada para "${categoriaId}" (ítem: ${item.nombre})`);
+      continue;
+    }
+    items.push({
+      amount: (item.precio || 0) * (item.qty || 1),
+      categoryId: clarusCategoryId,
+      description: `Tienda #${orderData.orderNumber} — ${item.nombre} (${orderData.cliente?.nombre || ''})`,
+      externalRef: `${orderId}_${item._cartKey || item.id || item.nombre}`,
+    });
+  }
+
+  if (!items.length) {
+    logger.warn(`ClarusHub: ningún ítem con categoría mapeada para orden ${orderId}`);
+    return;
+  }
+
+  const resp = await fetch(`${endpoint}/receiveExternalIncome`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+    body: JSON.stringify({
+      items,
+      accountId,
+      date: paymentDate,
+      orderId,
+      orderNumber: orderData.orderNumber || '',
+      clientName: orderData.cliente?.nombre || '',
+    }),
+  });
+
+  const result = await resp.json();
+  if (!result.success) throw new Error(result.error || 'ClarusHub receiveExternalIncome falló');
+  logger.info(`ClarusHub: ${result.transactionIds?.length || 0} transacciones creadas para orden ${orderId}`);
+}
+
+async function reverseClarusHub(orderId, orderData) {
+  const endpoint = CLARUS_ENDPOINT.value();
+  const apiKey = CLARUS_API_KEY.value();
+  if (!endpoint || !apiKey) return;
+
+  const resp = await fetch(`${endpoint}/reverseExternalIncome`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+    body: JSON.stringify({
+      orderId,
+      reason: `Cancelación pedido #${orderData.orderNumber || orderId}`,
+    }),
+  });
+
+  const result = await resp.json();
+  logger.info(`ClarusHub: ${result.reversedCount || 0} reversales para orden ${orderId}`);
+}
+
+// Proxy para el panel admin — llama a getClarusConfig de ClarusHub sin exponer la key al browser
+exports.getClarusConfigProxy = onRequest(
+  { region: 'us-central1', secrets: [CLARUS_API_KEY, CLARUS_ENDPOINT] },
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      const authed = await verificarAuthAdmin(req, res);
+      if (!authed) return;
+
+      const endpoint = CLARUS_ENDPOINT.value();
+      const apiKey = CLARUS_API_KEY.value();
+      if (!endpoint || !apiKey) {
+        return res.status(503).json({ error: 'ClarusHub no configurado' });
+      }
+
+      try {
+        const r = await fetch(`${endpoint}/getClarusConfig`, {
+          headers: { 'x-api-key': apiKey },
+        });
+        if (!r.ok) return res.status(502).json({ error: 'ClarusHub no respondió' });
+        res.json(await r.json());
+      } catch (e) {
+        res.status(500).json({ error: e.message });
+      }
+    });
+  }
+);
+
 // ─── STOCKOS — proxy para no exponer la API key en el frontend ───────────────
 exports.getStockosPrice = onRequest(
   { region: "us-central1", secrets: [STOCKOS_API_KEY] },
@@ -2258,7 +2393,7 @@ exports.getStockosPrice = onRequest(
 
 // Sincronización masiva de todos los socios a Zoho Campaigns
 exports.sincronizarSociosZoho = onRequest(
-  { region: "us-central1", secrets: [ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET], timeoutSeconds: 540 },
+  { region: "us-central1", secrets: [ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET, TELEGRAM_BOT_TOKEN], timeoutSeconds: 540 },
   async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -2269,29 +2404,74 @@ exports.sincronizarSociosZoho = onRequest(
     if (!autorizado) return;
 
     logger.info("Zoho sync: auth ok, leyendo clientes...");
-    const { emailPrueba } = req.body;
+    const { emailPrueba, loteIndex = 0, loteSize = 100 } = req.body;
     const snapshot = await db.collection("clientes").get();
     let contactos = snapshot.docs.map(doc => ({ dni: doc.id, ...doc.data() }));
     if (emailPrueba) {
       contactos = contactos.filter(c => c.email === emailPrueba);
       logger.info(`Zoho sync: modo prueba para ${emailPrueba}`);
     }
-    logger.info(`Zoho sync: ${contactos.length} clientes encontrados`);
+    const totalGlobal = contactos.length;
+    const lote = contactos.slice(loteIndex * loteSize, (loteIndex + 1) * loteSize);
+    const hasMore = (loteIndex + 1) * loteSize < totalGlobal;
+    logger.info(`Zoho sync: lote ${loteIndex} — ${lote.length} de ${totalGlobal} clientes`);
 
     const { sincronizarTodosAZohoCampaigns } = require("./campaigns");
-    logger.info("Zoho sync: obteniendo access token...");
-    const resultado = await sincronizarTodosAZohoCampaigns(contactos, {
+    const resultado = await sincronizarTodosAZohoCampaigns(lote, {
       clientId: ZOHO_CAMPAIGNS_CLIENT_ID.value(),
       clientSecret: ZOHO_CAMPAIGNS_CLIENT_SECRET.value(),
       refreshToken: ZOHO_CAMPAIGNS_REFRESH_TOKEN.value(),
     });
 
-    logger.info("Zoho sync resultado:", JSON.stringify(resultado));
-    res.json(resultado);
+    logger.info("Zoho sync lote resultado:", JSON.stringify(resultado));
+
+    const desde = loteIndex * loteSize + 1;
+    const hasta = Math.min((loteIndex + 1) * loteSize, totalGlobal);
+    let msg = `📣 Zoho sync lote ${loteIndex + 1}\n${desde}-${hasta} de ${totalGlobal}\n✅ ${resultado.ok} ok · ❌ ${resultado.errores} errores · ⚠️ ${resultado.sinEmail} sin email`;
+    if (resultado.listaErrores?.length) {
+      msg += `\n\nErrores:\n` + resultado.listaErrores.map(e => `• ${e.email}`).join('\n');
+    }
+    if (resultado.listaSinEmail?.length) {
+      msg += `\n\nSin email:\n` + resultado.listaSinEmail.join(', ');
+    }
+    if (!hasMore) msg += '\n\n🏁 Sync completo!';
+    try {
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN.value()}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg }),
+      });
+    } catch (tgErr) {
+      logger.warn("Telegram notify failed:", tgErr.message);
+    }
+
+    res.json({ ...resultado, totalGlobal, loteIndex, hasMore });
   }
 );
 
 // Sync automático a Zoho Campaigns cuando se actualiza un cliente
+exports.onClienteCreated = onDocumentCreated(
+  { document: "clientes/{dni}", secrets: [ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET] },
+  async (event) => {
+    const data = event.data.data();
+    if (!data.email) return;
+    logger.info(`Zoho sync (nuevo cliente): ${data.email} (DNI ${event.params.dni})`);
+    try {
+      await agregarAZohoCampaigns(
+        { ...data, dni: event.params.dni },
+        {
+          clientId: ZOHO_CAMPAIGNS_CLIENT_ID.value(),
+          clientSecret: ZOHO_CAMPAIGNS_CLIENT_SECRET.value(),
+          refreshToken: ZOHO_CAMPAIGNS_REFRESH_TOKEN.value(),
+        }
+      );
+      logger.info(`Zoho sync ok (nuevo): ${data.email}`);
+    } catch (e) {
+      logger.warn("Zoho sync on create error:", e.message);
+    }
+  }
+);
+
 exports.onClienteUpdated = onDocumentUpdated(
   { document: "clientes/{dni}", secrets: [ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET] },
   async (event) => {

@@ -1,4 +1,4 @@
-import { db, storage } from '../firebase-config.js';
+import { db, storage, auth } from '../firebase-config.js';
 import {
     collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy, setDoc, onSnapshot, limit, where, Timestamp
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
@@ -1674,5 +1674,143 @@ export function verStockVariantesForm() {
         verStockVariantesProd(id, nombre);
     } else {
         alert('Guardá el producto primero para ver el historial de stock.');
+    }
+}
+
+// ─── CLARUS HUB — configuración de integración ────────────────────────────────
+
+const CLARUS_PROXY_URL = 'https://us-central1-corcega-loyalty-club.cloudfunctions.net/getClarusConfigProxy';
+
+let _clarusConfig = null; // { accounts, categories }
+let _corcegaCategorias = []; // docs de la colección categorias
+
+function _setClarusStatus(msg, isError = false) {
+    const el = document.getElementById('clarus-status-banner');
+    if (!el) return;
+    el.style.display = msg ? 'block' : 'none';
+    el.style.cssText = `display:${msg ? 'block' : 'none'}; padding:12px 18px; border-radius:10px; margin-bottom:20px; font-size:0.87rem;
+        background:${isError ? '#ffeaea' : '#eafff1'}; border:1px solid ${isError ? '#f5c6cb' : '#b2dfdb'}; color:${isError ? '#c0392b' : '#1b7a50'};`;
+    el.textContent = msg;
+}
+
+function _populateClarusAccountSelects(accounts) {
+    const methods = ['mercadopago', 'transferencia', 'efectivo'];
+    methods.forEach(m => {
+        const sel = document.getElementById(`clarus-account-${m}`);
+        if (!sel) return;
+        const current = sel.value;
+        sel.innerHTML = '<option value="">— sin asignar —</option>';
+        accounts.forEach(a => {
+            const opt = document.createElement('option');
+            opt.value = a.id;
+            opt.textContent = `${a.name} (${a.type})`;
+            if (a.id === current) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    });
+}
+
+function _buildClarusCategoryRows(corcegaCats, clarusCategories, savedMappings) {
+    const container = document.getElementById('clarus-category-rows');
+    if (!container) return;
+
+    // Only level-2 income categories in ClarusHub (actual bookable categories)
+    const leafCats = clarusCategories.filter(c => c.level === 2);
+
+    if (!corcegaCats.length) {
+        container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">No hay categorías en Corcega.</p>';
+        return;
+    }
+
+    container.innerHTML = corcegaCats.map(cat => `
+        <div class="input-group">
+            <label style="text-transform:capitalize;">🏷️ ${cat.id}</label>
+            <select id="clarus-cat-${cat.id}" data-corcega-cat="${cat.id}">
+                <option value="">— sin asignar —</option>
+                ${leafCats.map(c => `<option value="${c.id}" ${savedMappings[cat.id] === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
+            </select>
+        </div>
+    `).join('');
+}
+
+export async function loadClarusConfig() {
+    const statusEl = document.getElementById('clarus-load-status');
+    if (statusEl) statusEl.textContent = 'Cargando…';
+    _setClarusStatus('');
+
+    try {
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) throw new Error('No autenticado');
+
+        const [clarusResp, corcegaSnap] = await Promise.all([
+            fetch(CLARUS_PROXY_URL, { headers: { Authorization: `Bearer ${token}` } }),
+            getDocs(collection(db, 'categorias')),
+        ]);
+
+        if (!clarusResp.ok) throw new Error(`Error ${clarusResp.status} al consultar ClarusHub`);
+
+        _clarusConfig = await clarusResp.json();
+        _corcegaCategorias = corcegaSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // Cargar mapeo guardado
+        const integSnap = await getDoc(doc(db, 'configuracion', 'clarus-integration'));
+        const saved = integSnap.data() || {};
+        const savedPagos = saved.pagos || {};
+        const savedCats = saved.categorias || {};
+
+        _populateClarusAccountSelects(_clarusConfig.accounts);
+
+        // Pre-seleccionar cuentas guardadas
+        ['mercadopago', 'transferencia', 'efectivo'].forEach(m => {
+            const sel = document.getElementById(`clarus-account-${m}`);
+            if (sel && savedPagos[m]?.clarusAccountId) sel.value = savedPagos[m].clarusAccountId;
+        });
+
+        _buildClarusCategoryRows(_corcegaCategorias, _clarusConfig.categories, savedCats);
+
+        if (statusEl) statusEl.textContent = `✓ ${_clarusConfig.accounts.length} cuentas, ${_clarusConfig.categories.length} categorías cargadas`;
+        _setClarusStatus('Datos de ClarusHub cargados correctamente.');
+    } catch (err) {
+        console.error('loadClarusConfig:', err);
+        if (statusEl) statusEl.textContent = '✗ Error al cargar';
+        _setClarusStatus('Error al cargar datos de ClarusHub: ' + err.message, true);
+    }
+}
+
+export async function guardarClarusConfig() {
+    _setClarusStatus('');
+    try {
+        const pagos = {};
+        ['mercadopago', 'transferencia', 'efectivo'].forEach(m => {
+            const sel = document.getElementById(`clarus-account-${m}`);
+            pagos[m] = { clarusAccountId: sel?.value || '' };
+        });
+
+        // Guardar en configuracion/clarus-integration
+        await setDoc(doc(db, 'configuracion', 'clarus-integration'), { pagos }, { merge: true });
+
+        // Guardar clarusCategoryId en cada doc de categorias (merge para no perder otros campos)
+        const catSelects = document.querySelectorAll('[data-corcega-cat]');
+        const catPromises = [];
+        const catMapping = {};
+        catSelects.forEach(sel => {
+            const catId = sel.dataset.corcegaCat;
+            const clarusCategoryId = sel.value || '';
+            catMapping[catId] = clarusCategoryId;
+            catPromises.push(
+                updateDoc(doc(db, 'categorias', catId), { clarusCategoryId })
+            );
+        });
+
+        // Guardar snapshot del mapping en configuracion/clarus-integration también
+        await Promise.all([
+            ...catPromises,
+            setDoc(doc(db, 'configuracion', 'clarus-integration'), { categorias: catMapping }, { merge: true }),
+        ]);
+
+        _setClarusStatus('¡Integración guardada! Los nuevos pedidos pagados se registrarán en ClarusHub automáticamente.');
+    } catch (err) {
+        console.error('guardarClarusConfig:', err);
+        _setClarusStatus('Error al guardar: ' + err.message, true);
     }
 }

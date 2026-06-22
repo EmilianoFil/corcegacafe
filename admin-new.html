@@ -1010,6 +1010,7 @@
                 <li><a href="#tienda-ordenes"><span class="icon">📦</span> Órdenes</a></li>
                 <li><a href="#tienda-arrepentimientos"><span class="icon">↩️</span> Arrepentimientos</a></li>
                 <li><a href="#tienda-config"><span class="icon">⚙️</span> Configuración</a></li>
+                <li><a href="#tienda-clarus"><span class="icon">🔗</span> ClarusHub</a></li>
             </ul>
 
             <div class="nav-label">Carta Digital</div>
@@ -2079,6 +2080,72 @@
             </div>
         </section>
 
+        <!-- CLARUS HUB INTEGRATION SECTION -->
+        <section id="tienda-clarus" class="section-content">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                <h3 style="margin:0; font-size: 1.5rem;">Integración ClarusHub 🔗</h3>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">FINANZAS AUTOMÁTICAS</span>
+            </div>
+
+            <div id="clarus-status-banner" style="display:none; margin-bottom: 20px;"></div>
+
+            <div style="margin-bottom: 20px; display: flex; gap: 12px; align-items: center;">
+                <button class="btn-primary" onclick="window.tiendaAdmin.loadClarusConfig()" style="width:auto; padding: 10px 24px; height:auto; font-size:0.9rem;">
+                    🔄 Cargar cuentas y categorías de ClarusHub
+                </button>
+                <span id="clarus-load-status" style="font-size:0.82rem; color: var(--text-muted);"></span>
+            </div>
+
+            <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; gap: 24px;">
+
+                <!-- Métodos de pago → cuentas ClarusHub -->
+                <div class="card">
+                    <h4 style="margin-top:0; margin-bottom:6px;">Métodos de Pago → Cuenta ClarusHub</h4>
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:20px;">
+                        Cada método de pago de la tienda envía el ingreso a la cuenta ClarusHub seleccionada.
+                    </p>
+                    <div class="input-group">
+                        <label>💳 MercadoPago</label>
+                        <select id="clarus-account-mercadopago">
+                            <option value="">— sin asignar —</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>🏦 Transferencia</label>
+                        <select id="clarus-account-transferencia">
+                            <option value="">— sin asignar —</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>💵 Efectivo</label>
+                        <select id="clarus-account-efectivo">
+                            <option value="">— sin asignar —</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Categorías Corcega → categorías de ingreso ClarusHub -->
+                <div class="card">
+                    <h4 style="margin-top:0; margin-bottom:6px;">Categorías Corcega → Categoría ClarusHub</h4>
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:20px;">
+                        Los ítems de la tienda se registran en ClarusHub bajo la categoría de ingreso mapeada.
+                    </p>
+                    <div id="clarus-category-rows">
+                        <p style="color:var(--text-muted); font-size:0.85rem;">
+                            Hacé clic en "Cargar" para ver las categorías.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div style="margin-top: 30px; text-align: right;">
+                <button class="btn-primary" onclick="window.tiendaAdmin.guardarClarusConfig()" style="width:auto; padding: 15px 50px; font-size:1rem; height:auto;">
+                    💾 Guardar Integración
+                </button>
+            </div>
+        </section>
+
         <!-- MAILS SECTION -->
         <!-- REVIEWS GOOGLE SECTION -->
         <section id="reviews" class="section-content">
@@ -2794,7 +2861,7 @@
         import {
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
-        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=20';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=21';
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=9';
         window.cartaAdmin = cartaAdmin;
@@ -2898,6 +2965,7 @@
             if (target === 'tienda-ordenes') window.tiendaAdmin.loadOrdenesTable();
             if (target === 'tienda-arrepentimientos') loadArrepentimientos();
             if (target === 'tienda-config') window.tiendaAdmin.loadConfigStore();
+            if (target === 'tienda-clarus') window.tiendaAdmin.loadClarusConfig();
             if (target === 'carta-secciones') { window.cartaAdmin.loadSecciones(); _cargarToggleSocial(); }
             if (target === 'carta-platos') window.cartaAdmin.loadPlatos();
             if (target === 'carta-stats') _cargarStats();
