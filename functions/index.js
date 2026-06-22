@@ -1649,17 +1649,25 @@ exports.onOrderUpdated = onDocumentUpdated(
 
       // 2. ClarusHub — registrar/revertir ingreso (fire-and-forget para no bloquear mail)
       if (nuevoEstado === 'pagado') {
-        // Re-leemos afterData para que incluya el historial recién actualizado
-        const updatedSnap = await event.data.after.ref.get();
-        notifyClarusHub(orderId, updatedSnap.data()).catch(e =>
-          logger.warn('ClarusHub notifyClarusHub falló:', e.message)
-        );
+        const orderRef = event.data.after.ref;
+        await orderRef.update({ clarusStatus: 'pending' });
+        const updatedSnap = await orderRef.get();
+        notifyClarusHub(orderId, updatedSnap.data())
+          .then(() => orderRef.update({ clarusStatus: 'synced', clarusError: null }))
+          .catch(e => {
+            logger.warn('ClarusHub notifyClarusHub falló:', e.message);
+            return orderRef.update({ clarusStatus: 'failed', clarusError: e.message });
+          });
       } else if (nuevoEstado === 'cancelado') {
         const wasPaid = (afterData.historial || []).some(h => h.estado === 'pagado');
         if (wasPaid) {
-          reverseClarusHub(orderId, afterData).catch(e =>
-            logger.warn('ClarusHub reverseClarusHub falló:', e.message)
-          );
+          const orderRef = event.data.after.ref;
+          reverseClarusHub(orderId, afterData)
+            .then(() => orderRef.update({ clarusStatus: 'reversed', clarusError: null }))
+            .catch(e => {
+              logger.warn('ClarusHub reverseClarusHub falló:', e.message);
+              return orderRef.update({ clarusStatus: 'reversal_failed', clarusError: e.message });
+            });
         }
       }
 
@@ -2351,6 +2359,39 @@ exports.getClarusConfigProxy = onRequest(
         if (!r.ok) return res.status(502).json({ error: 'ClarusHub no respondió' });
         res.json(await r.json());
       } catch (e) {
+        res.status(500).json({ error: e.message });
+      }
+    });
+  }
+);
+
+// Reenvío manual de una orden a ClarusHub (o de todas las no sincronizadas)
+exports.reenviarAClarusHub = onRequest(
+  { region: 'us-central1', secrets: [CLARUS_API_KEY, CLARUS_ENDPOINT] },
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      const authed = await verificarAuthAdmin(req, res);
+      if (!authed) return;
+
+      const { orderId } = req.body;
+      if (!orderId) return res.status(400).json({ error: 'orderId requerido' });
+
+      const orderRef = db.collection('ordenes').doc(orderId);
+      const orderSnap = await orderRef.get();
+      if (!orderSnap.exists) return res.status(404).json({ error: 'Orden no encontrada' });
+
+      const orderData = orderSnap.data();
+      if (orderData.estado !== 'pagado') {
+        return res.status(400).json({ error: 'La orden no está en estado pagado' });
+      }
+
+      try {
+        await orderRef.update({ clarusStatus: 'pending', clarusError: null });
+        await notifyClarusHub(orderId, orderData);
+        await orderRef.update({ clarusStatus: 'synced', clarusError: null });
+        res.json({ ok: true });
+      } catch (e) {
+        await orderRef.update({ clarusStatus: 'failed', clarusError: e.message });
         res.status(500).json({ error: e.message });
       }
     });

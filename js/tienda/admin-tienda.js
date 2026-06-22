@@ -663,6 +663,9 @@ export function loadOrdenesTable(filtro = 'todos') {
                             </select>`
                         }
                     </td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03) !important; text-align: center; vertical-align: middle; background-color: ${rowBg} !important;">
+                        ${_clarusStatusBadge(o)}
+                    </td>
                     <td style="padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.03) !important; text-align: right; vertical-align: middle; background-color: ${rowBg} !important;">
                         <button class="btn-secondary" onclick="window.tiendaAdmin.verDetalleOrden('${o.id}')" style="padding:8px 15px; font-size:11px; font-weight:700; border-radius:8px; border:1px solid #eee; background:white; cursor:pointer; transition: all 0.2s;">🔍 DETALLES</button>
                     </td>
@@ -1674,6 +1677,57 @@ export function verStockVariantesForm() {
         verStockVariantesProd(id, nombre);
     } else {
         alert('Guardá el producto primero para ver el historial de stock.');
+    }
+}
+
+// ─── CLARUS HUB — estado de sincronización en tabla de órdenes ───────────────
+
+const CLARUS_REENVIAR_URL = 'https://us-central1-corcega-loyalty-club.cloudfunctions.net/reenviarAClarusHub';
+
+function _clarusStatusBadge(orden) {
+    const status = orden.clarusStatus;
+    const esPagado = orden.estado === 'pagado';
+
+    if (status === 'synced') {
+        return `<span style="display:inline-flex;align-items:center;gap:4px;background:#eafff1;color:#1b7a50;border:1px solid #b2dfdb;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;">✓ Enviado</span>`;
+    }
+    if (status === 'reversed') {
+        return `<span style="display:inline-flex;align-items:center;gap:4px;background:#f5f5f5;color:#888;border:1px solid #ddd;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;">↩ Revertido</span>`;
+    }
+    if (status === 'pending') {
+        return `<span style="display:inline-flex;align-items:center;gap:4px;background:#fff8e1;color:#7a5000;border:1px solid #ffe082;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;">⏳ Enviando…</span>`;
+    }
+    if (!esPagado) {
+        return `<span style="color:#ccc;font-size:11px;">—</span>`;
+    }
+    // failed, reversal_failed, o sin campo (históricas)
+    const label = status === 'failed' || status === 'reversal_failed' ? '✗ Error' : '— No enviado';
+    const color = status === 'failed' || status === 'reversal_failed' ? '#c0392b' : '#666';
+    const bg    = status === 'failed' || status === 'reversal_failed' ? '#ffeaea' : '#f5f5f5';
+    const border= status === 'failed' || status === 'reversal_failed' ? '#f5c6cb' : '#ddd';
+    return `
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <span style="display:inline-flex;align-items:center;gap:4px;background:${bg};color:${color};border:1px solid ${border};border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;">${label}</span>
+            <button onclick="window.tiendaAdmin.reenviarOrdenAClarus('${orden.id}')" style="background:#d86634;color:white;border:none;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:800;cursor:pointer;">↑ Reenviar</button>
+        </div>`;
+}
+
+export async function reenviarOrdenAClarus(orderId) {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) { alert('No autenticado'); return; }
+
+    // Feedback inmediato: el badge cambia a "Enviando…" via Firestore listener (onSnapshot ya lo actualiza)
+    try {
+        const resp = await fetch(CLARUS_REENVIAR_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ orderId }),
+        });
+        const result = await resp.json();
+        if (!resp.ok) throw new Error(result.error || 'Error al reenviar');
+        // El onSnapshot de la tabla va a reflejar el nuevo clarusStatus automáticamente
+    } catch (e) {
+        alert('Error al reenviar a ClarusHub: ' + e.message);
     }
 }
 
