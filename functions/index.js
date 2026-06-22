@@ -2381,8 +2381,11 @@ exports.reenviarAClarusHub = onRequest(
       if (!orderSnap.exists) return res.status(404).json({ error: 'Orden no encontrada' });
 
       const orderData = orderSnap.data();
-      if (orderData.estado !== 'pagado') {
-        return res.status(400).json({ error: 'La orden no está en estado pagado' });
+      // Permitir reenvío si la orden alguna vez estuvo pagada (puede estar en entregado, etc.)
+      const fuePagado = orderData.estado === 'pagado' ||
+        (orderData.historial || []).some(h => h.estado === 'pagado');
+      if (!fuePagado) {
+        return res.status(400).json({ error: 'La orden nunca fue pagada' });
       }
 
       try {

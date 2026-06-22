@@ -1686,7 +1686,9 @@ const CLARUS_REENVIAR_URL = 'https://us-central1-corcega-loyalty-club.cloudfunct
 
 function _clarusStatusBadge(orden) {
     const status = orden.clarusStatus;
-    const esPagado = orden.estado === 'pagado';
+    // Una orden es candidata si alguna vez estuvo pagada (estado actual o en historial)
+    const fuePagado = orden.estado === 'pagado' ||
+        (orden.historial || []).some(h => h.estado === 'pagado');
 
     if (status === 'synced') {
         return `<span style="display:inline-flex;align-items:center;gap:4px;background:#eafff1;color:#1b7a50;border:1px solid #b2dfdb;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;">✓ Enviado</span>`;
@@ -1697,10 +1699,10 @@ function _clarusStatusBadge(orden) {
     if (status === 'pending') {
         return `<span style="display:inline-flex;align-items:center;gap:4px;background:#fff8e1;color:#7a5000;border:1px solid #ffe082;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;">⏳ Enviando…</span>`;
     }
-    if (!esPagado) {
+    if (!fuePagado) {
         return `<span style="color:#ccc;font-size:11px;">—</span>`;
     }
-    // failed, reversal_failed, o sin campo (históricas)
+    // failed, reversal_failed, o sin campo (históricas que nunca se enviaron)
     const label = status === 'failed' || status === 'reversal_failed' ? '✗ Error' : '— No enviado';
     const color = status === 'failed' || status === 'reversal_failed' ? '#c0392b' : '#666';
     const bg    = status === 'failed' || status === 'reversal_failed' ? '#ffeaea' : '#f5f5f5';
