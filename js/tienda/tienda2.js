@@ -29,7 +29,7 @@ window.setTiendaCategory = function(catId) {
         b.classList.toggle('active-cat', b.dataset.cat === catId);
     });
     renderProducts();
-    document.getElementById('products-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 window.tienda = {
