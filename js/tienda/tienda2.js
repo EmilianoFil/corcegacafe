@@ -106,7 +106,7 @@ async function init() {
 // --- DATA FETCHING ---
 async function fetchCategories() {
     try {
-        const snap = await getDocs(query(collection(db, "categorias"), orderBy("nombre", "asc")));
+        const snap = await getDocs(query(collection(db, "categorias"), orderBy("orden", "asc")));
         categories = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (err) {
         console.error("Error fetching categories:", err);

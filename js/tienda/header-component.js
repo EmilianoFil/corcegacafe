@@ -203,7 +203,7 @@ async function _loadCategories(closeMenu) {
     if (!list) return;
 
     try {
-        const snap = await getDocs(query(collection(db, "categorias"), orderBy("nombre", "asc")));
+        const snap = await getDocs(query(collection(db, "categorias"), orderBy("orden", "asc")));
         const cats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         // Determinar si estamos en tienda.html

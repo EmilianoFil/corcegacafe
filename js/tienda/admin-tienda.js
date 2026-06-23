@@ -531,16 +531,36 @@ export async function eliminarProducto(id) {
 // CATEGORIES MANAGEMENT
 // ============================================
 
-export async function loadCategoriasTable() {
+async function _fetchCatsOrdered() {
     try {
+        const q = query(collection(db, "categorias"), orderBy("orden", "asc"));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch {
         const q = query(collection(db, "categorias"), orderBy("nombre", "asc"));
         const snap = await getDocs(q);
-        const cats = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+}
 
+export async function loadCategoriasTable() {
+    try {
+        const cats = await _fetchCatsOrdered();
         const tbody = document.getElementById('lista-categorias-body');
-        if (tbody) {
-            tbody.innerHTML = cats.map(c => `
+        if (!tbody) return;
+
+        tbody.innerHTML = cats.map((c, i) => `
             <tr>
+                <td style="padding: 10px 15px; border-bottom: 1px solid #f5f5f5; width:44px;">
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                        <button onclick="window.tiendaAdmin.moverCategoria('${c.id}', -1)"
+                            ${i === 0 ? 'disabled' : ''}
+                            style="background:none; border:1px solid #ddd; border-radius:6px; cursor:pointer; font-size:11px; padding:2px 7px; line-height:1.4; color:${i === 0 ? '#ccc' : 'var(--primary)'};">▲</button>
+                        <button onclick="window.tiendaAdmin.moverCategoria('${c.id}', 1)"
+                            ${i === cats.length - 1 ? 'disabled' : ''}
+                            style="background:none; border:1px solid #ddd; border-radius:6px; cursor:pointer; font-size:11px; padding:2px 7px; line-height:1.4; color:${i === cats.length - 1 ? '#ccc' : 'var(--primary)'};">▼</button>
+                    </div>
+                </td>
                 <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
                     <span style="font-weight:700; color:var(--secondary);">${c.nombre}</span>
                 </td>
@@ -554,9 +574,31 @@ export async function loadCategoriasTable() {
                 </td>
             </tr>
         `).join('');
-        }
     } catch (err) {
         console.error("Error loading categories:", err);
+    }
+}
+
+export async function moverCategoria(id, delta) {
+    try {
+        const cats = await _fetchCatsOrdered();
+        const idx = cats.findIndex(c => c.id === id);
+        const swapIdx = idx + delta;
+        if (swapIdx < 0 || swapIdx >= cats.length) return;
+
+        const withOrden = cats.map((c, i) => ({ id: c.id, orden: i }));
+        const temp = withOrden[idx].orden;
+        withOrden[idx].orden = withOrden[swapIdx].orden;
+        withOrden[swapIdx].orden = temp;
+
+        await Promise.all([
+            updateDoc(doc(db, "categorias", withOrden[idx].id), { orden: withOrden[idx].orden }),
+            updateDoc(doc(db, "categorias", withOrden[swapIdx].id), { orden: withOrden[swapIdx].orden }),
+        ]);
+
+        loadCategoriasTable();
+    } catch (err) {
+        console.error("Error reordenando categoría:", err);
     }
 }
 
@@ -573,8 +615,15 @@ export async function guardarCategoria() {
         .replace(/^-|-$/g, "");
 
     try {
+        const snap = await getDocs(collection(db, "categorias"));
+        const maxOrden = snap.docs.reduce((max, d) => {
+            const o = d.data().orden ?? -1;
+            return o > max ? o : max;
+        }, -1);
+
         await setDoc(doc(db, "categorias", slug), {
             nombre: nombre,
+            orden: maxOrden + 1,
             creadoEn: serverTimestamp()
         });
 
