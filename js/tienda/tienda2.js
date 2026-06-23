@@ -18,26 +18,26 @@ let isAdminPreview = false;
 const productsGrid = document.getElementById('products-container');
 const catsNav = document.getElementById('categories-nav');
 
+// Función global propia — no depende de window.tienda para evitar sobreescrituras
+window.setTiendaCategory = function(catId) {
+    activeCategory = catId;
+    document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+    document.querySelector(`.category-chip[data-cat="${catId}"]`)?.classList.add('active');
+    document.querySelectorAll('.desktop-cat-chip').forEach(c => c.classList.remove('active'));
+    document.querySelector(`.desktop-cat-chip[data-cat="${catId}"]`)?.classList.add('active');
+    document.querySelectorAll('.mobile-menu-subitem').forEach(b => {
+        b.classList.toggle('active-cat', b.dataset.cat === catId);
+    });
+    renderProducts();
+    document.getElementById('products-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
 window.tienda = {
     toggleCart: () => {
         if (document.getElementById('cart-drawer')?.classList.contains('active')) closeCart();
         else openCart();
     },
-    setCategory: (catId) => {
-        activeCategory = catId;
-        // Actualizar chips mobile
-        document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
-        document.querySelector(`.category-chip[data-cat="${catId}"]`)?.classList.add('active');
-        // Actualizar chips desktop
-        document.querySelectorAll('.desktop-cat-chip').forEach(c => c.classList.remove('active'));
-        document.querySelector(`.desktop-cat-chip[data-cat="${catId}"]`)?.classList.add('active');
-        // Actualizar chips mobile menú lateral
-        document.querySelectorAll('.mobile-menu-subitem').forEach(b => {
-            b.classList.toggle('active-cat', b.dataset.cat === catId);
-        });
-        renderProducts();
-        document.getElementById('products-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    setCategory: window.setTiendaCategory
 };
 
 // --- INITIALIZATION ---
@@ -138,9 +138,7 @@ function renderCategories() {
         `).join('');
         catsNav.innerHTML = html;
         document.querySelectorAll('.category-chip').forEach(chip => {
-            chip.addEventListener('click', () => {
-                window.tienda.setCategory(chip.dataset.cat);
-            });
+            chip.addEventListener('click', () => window.setTiendaCategory(chip.dataset.cat));
         });
     }
 
@@ -151,7 +149,7 @@ function renderCategories() {
         desktopCats.innerHTML = all.map(c => `
             <button class="desktop-cat-chip ${activeCategory === c.id ? 'active' : ''}"
                     data-cat="${c.id}"
-                    onclick="window.tienda.setCategory('${c.id}')">${c.nombre}</button>
+                    onclick="window.setTiendaCategory('${c.id}')">${c.nombre}</button>
         `).join('');
     }
 }
