@@ -18,18 +18,26 @@ let isAdminPreview = false;
 const productsGrid = document.getElementById('products-container');
 const catsNav = document.getElementById('categories-nav');
 
+// Función global propia — no depende de window.tienda para evitar sobreescrituras
+window.setTiendaCategory = function(catId) {
+    activeCategory = catId;
+    document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+    document.querySelector(`.category-chip[data-cat="${catId}"]`)?.classList.add('active');
+    document.querySelectorAll('.desktop-cat-chip').forEach(c => c.classList.remove('active'));
+    document.querySelector(`.desktop-cat-chip[data-cat="${catId}"]`)?.classList.add('active');
+    document.querySelectorAll('.mobile-menu-subitem').forEach(b => {
+        b.classList.toggle('active-cat', b.dataset.cat === catId);
+    });
+    renderProducts();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
 window.tienda = {
     toggleCart: () => {
         if (document.getElementById('cart-drawer')?.classList.contains('active')) closeCart();
         else openCart();
     },
-    setCategory: (catId) => {
-        activeCategory = catId;
-        document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
-        document.querySelector(`.category-chip[data-cat="${catId}"]`)?.classList.add('active');
-        renderProducts();
-        document.getElementById('products-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    setCategory: window.setTiendaCategory
 };
 
 // --- INITIALIZATION ---
@@ -98,7 +106,7 @@ async function init() {
 // --- DATA FETCHING ---
 async function fetchCategories() {
     try {
-        const snap = await getDocs(query(collection(db, "categorias"), orderBy("nombre", "asc")));
+        const snap = await getDocs(query(collection(db, "categorias"), orderBy("orden", "asc")));
         categories = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (err) {
         console.error("Error fetching categories:", err);
@@ -122,113 +130,154 @@ async function fetchProducts() {
 
 // --- RENDERING ---
 function renderCategories() {
-    if (!catsNav) return;
-
-    let html = `<div class="category-chip ${activeCategory === 'todos' ? 'active' : ''}" data-cat="todos">Todos</div>`;
-
-    html += categories.map(c => `
-        <div class="category-chip ${activeCategory === c.id ? 'active' : ''}" data-cat="${c.id}">${c.nombre}</div>
-    `).join('');
-
-    catsNav.innerHTML = html;
-
-    // Eventos para los chips
-    document.querySelectorAll('.category-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            activeCategory = chip.dataset.cat;
-            document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-            renderProducts();
+    // Chips mobile (DOM oculto, usado por header-component)
+    if (catsNav) {
+        let html = `<div class="category-chip ${activeCategory === 'todos' ? 'active' : ''}" data-cat="todos">Todos</div>`;
+        html += categories.map(c => `
+            <div class="category-chip ${activeCategory === c.id ? 'active' : ''}" data-cat="${c.id}">${c.nombre}</div>
+        `).join('');
+        catsNav.innerHTML = html;
+        document.querySelectorAll('.category-chip').forEach(chip => {
+            chip.addEventListener('click', () => window.setTiendaCategory(chip.dataset.cat));
         });
-    });
+    }
+
+    // Barra de chips desktop — onclick inline para evitar problemas con ES modules
+    const desktopCats = document.getElementById('desktop-cats');
+    if (desktopCats) {
+        const all = [{ id: 'todos', nombre: 'Todos' }, ...categories];
+        desktopCats.innerHTML = all.map(c => `
+            <button class="desktop-cat-chip ${activeCategory === c.id ? 'active' : ''}"
+                    data-cat="${c.id}"
+                    onclick="window.setTiendaCategory('${c.id}')">${c.nombre}</button>
+        `).join('');
+    }
+}
+
+function buildProductCard(p, index) {
+    let imagenes = [];
+    if (p.imagenUrl) imagenes.push(p.imagenUrl);
+    if (p.imagenes && Array.isArray(p.imagenes)) {
+        imagenes = [...imagenes, ...p.imagenes];
+    }
+    if (imagenes.length === 0) imagenes.push('https://placehold.co/400x400/fdfcf7/01323f?text=Córcega');
+
+    let isAgotado;
+    if (p.tieneVariantes) {
+        const stocks = Object.entries(p.variantes || {});
+        isAgotado = stocks.length > 0 && stocks.every(([key, v]) => {
+            if (v.stockIlimitado) return false;
+            const reservaKey = `${p.id}_${key}`;
+            const reserved = reservedByOthers[reservaKey] || 0;
+            return (v.stock || 0) - reserved <= 0;
+        });
+    } else if (p.esCombo && p.componentIds?.length) {
+        const minStock = Math.min(...p.componentIds.map(cid => getCompStockAvailable(cid)));
+        isAgotado = minStock <= 0;
+    } else {
+        if (p.stockIlimitado === true) {
+            isAgotado = false;
+        } else {
+            const reservaKey = `${p.id}_base`;
+            const reserved = reservedByOthers[reservaKey] || 0;
+            isAgotado = (p.stock || 0) - reserved <= 0;
+        }
+    }
+
+    const inactivo = p.activo === false;
+    const catNombre = categories.find(c => c.id === p.categoria)?.nombre || '';
+
+    return `
+        <div class="product-card ${isAgotado ? 'agotado' : ''}" data-id="${p.id}" style="animation-delay: ${index * 0.05}s${inactivo ? '; opacity:0.55; outline:2px dashed #f59e0b; outline-offset:2px;' : ''}">
+            <div class="product-img-container" onclick="window.location.href='producto.html?id=${p.id}'">
+                ${catNombre ? `<span class="badge-categoria">${catNombre}</span>` : ''}
+                ${inactivo ? '<div style="position:absolute;top:8px;right:8px;z-index:5;background:#f59e0b;color:white;font-size:0.65rem;font-weight:800;padding:3px 8px;border-radius:20px;letter-spacing:0.05em;">INACTIVO</div>' : ''}
+                ${isAgotado ? '<div class="badge-agotado">AGOTADO</div>' : ''}
+                <div class="card-carousel" id="carousel-${p.id}">
+                    ${imagenes.map((img, i) => `
+                        <img src="${img}" class="${i === 0 ? 'active' : ''}" alt="${p.nombre}" onload="this.classList.add('img-loaded'); if(${i===0}) this.closest('.product-img-container')?.classList.add('img-loaded');">
+                    `).join('')}
+                </div>
+                ${imagenes.length > 1 ? `
+                    <button class="card-carousel-btn prev" onclick="event.stopPropagation(); window.moveGridCarousel('${p.id}', -1)">&#8249;</button>
+                    <button class="card-carousel-btn next" onclick="event.stopPropagation(); window.moveGridCarousel('${p.id}', 1)">&#8250;</button>
+                ` : ''}
+            </div>
+            <div class="product-info" onclick="window.location.href='producto.html?id=${p.id}'">
+                <h3 class="product-title">
+                    ${p.nombre}
+                    ${p.retiroInmediato ? `<span class="badge-retiro" onmouseenter="window._showRetiroTip(event,'${(p.textoRetiroInmediato || 'Disponible poco tiempo después de tu compra.').replace(/'/g, '&#39;')}')" onmouseleave="window._hideRetiroTip()">⚡ Retiro rápido</span>` : ''}
+                </h3>
+                <p class="product-desc">${p.descripcion || ''}</p>
+                <div class="product-footer">
+                    <span class="product-price">$${p.precio.toLocaleString('es-AR')}</span>
+                    <button class="btn-add-cart" onclick="event.stopPropagation(); window.addToCart('${p.id}')" ${isAgotado ? 'disabled' : ''}>
+                        ${isAgotado
+                            ? '<i class="fas fa-times"></i>'
+                            : '<span class="cart-plus-icon"><i class="fas fa-shopping-cart"></i><i class="fas fa-plus"></i></span>'
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 function renderProducts() {
     if (!productsGrid) return;
 
-    const filtered = activeCategory === 'todos'
-        ? products
-        : products.filter(p => p.categoria === activeCategory);
-
-    if (filtered.length === 0) {
-        productsGrid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; color: var(--texto-muted); text-align:center;">No hay productos en esta categoría.</div>`;
+    if (activeCategory !== 'todos') {
+        // Filtro simple — una grilla plana
+        productsGrid.className = 'products-grid';
+        const filtered = products.filter(p => p.categoria === activeCategory);
+        if (filtered.length === 0) {
+            productsGrid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; color: var(--texto-muted); text-align:center;">No hay productos en esta categoría.</div>`;
+        } else {
+            productsGrid.innerHTML = filtered.map((p, i) => buildProductCard(p, i)).join('');
+        }
+        afterRender(filtered);
         return;
     }
 
-    productsGrid.innerHTML = filtered.map((p, index) => {
-        let imagenes = [];
-        if (p.imagenUrl) imagenes.push(p.imagenUrl);
-        if (p.imagenes && Array.isArray(p.imagenes)) {
-            imagenes = [...imagenes, ...p.imagenes];
-        }
-        if (imagenes.length === 0) imagenes.push('https://placehold.co/400x400/fdfcf7/01323f?text=Córcega');
+    // Vista "todos" — agrupar por categoría con secciones
+    productsGrid.className = 'products-sections';
 
-        let isAgotado;
-        if (p.tieneVariantes) {
-            // Para variantes: agotado solo si TODAS las combinaciones tienen stock efectivo 0
-            const stocks = Object.entries(p.variantes || {});
-            isAgotado = stocks.length > 0 && stocks.every(([key, v]) => {
-                if (v.stockIlimitado) return false;
-                const reservaKey = `${p.id}_${key}`;
-                const reserved = reservedByOthers[reservaKey] || 0;
-                return (v.stock || 0) - reserved <= 0;
-            });
-        } else if (p.esCombo && p.componentIds?.length) {
-            // Combo: agotado si alguno de sus componentes no tiene stock
-            const minStock = Math.min(...p.componentIds.map(cid => getCompStockAvailable(cid)));
-            isAgotado = minStock <= 0;
-        } else {
-            if (p.stockIlimitado === true) {
-                isAgotado = false;
-            } else {
-                const reservaKey = `${p.id}_base`;
-                const reserved = reservedByOthers[reservaKey] || 0;
-                const effectiveStock = (p.stock || 0) - reserved;
-                isAgotado = effectiveStock <= 0;
-            }
-        }
+    // Ordenar categorías según el orden de `categories` (Firestore)
+    const sections = categories.map(cat => ({
+        cat,
+        prods: products.filter(p => p.categoria === cat.id)
+    })).filter(s => s.prods.length > 0);
 
-        const inactivo = p.activo === false;
+    // Productos sin categoría conocida al final
+    const sinCat = products.filter(p => !categories.find(c => c.id === p.categoria));
+
+    let globalIndex = 0;
+    productsGrid.innerHTML = sections.map(({ cat, prods }) => {
+        const cardsHtml = prods.map(p => buildProductCard(p, globalIndex++)).join('');
         return `
-            <div class="product-card ${isAgotado ? 'agotado' : ''}" data-id="${p.id}" style="animation-delay: ${index * 0.05}s${inactivo ? '; opacity:0.55; outline:2px dashed #f59e0b; outline-offset:2px;' : ''}">
-                <div class="product-img-container" onclick="window.location.href='producto.html?id=${p.id}'">
-                    ${inactivo ? '<div style="position:absolute;top:8px;left:8px;z-index:5;background:#f59e0b;color:white;font-size:0.65rem;font-weight:800;padding:3px 8px;border-radius:20px;letter-spacing:0.05em;">INACTIVO</div>' : ''}
-                    ${isAgotado ? '<div class="badge-agotado">AGOTADO</div>' : ''}
-                    <div class="card-carousel" id="carousel-${p.id}">
-                        ${imagenes.map((img, i) => `
-                            <img src="${img}" class="${i === 0 ? 'active' : ''}" alt="${p.nombre}" onload="this.classList.add('img-loaded'); if(${i===0}) this.closest('.product-img-container')?.classList.add('img-loaded');">
-                        `).join('')}
-                    </div>
-                    ${imagenes.length > 1 ? `
-                        <button class="card-carousel-btn prev" onclick="event.stopPropagation(); window.moveGridCarousel('${p.id}', -1)">&#8249;</button>
-                        <button class="card-carousel-btn next" onclick="event.stopPropagation(); window.moveGridCarousel('${p.id}', 1)">&#8250;</button>
-                    ` : ''}
+            <section class="cat-section">
+                <div class="cat-section-header">
+                    <h2 class="cat-section-title">${cat.nombre}</h2>
                 </div>
-                <div class="product-info" onclick="window.location.href='producto.html?id=${p.id}'">
-                    <h3 class="product-title">
-                        ${p.nombre}
-                        ${p.retiroInmediato ? `<span class="badge-retiro" onmouseenter="window._showRetiroTip(event,'${(p.textoRetiroInmediato || 'Disponible poco tiempo después de tu compra.').replace(/'/g, '&#39;')}')" onmouseleave="window._hideRetiroTip()">⚡ Retiro rápido</span>` : ''}
-                    </h3>
-                    <p class="product-desc">${p.descripcion || ''}</p>
-                    <div class="product-footer">
-                        <span class="product-price">$${p.precio.toLocaleString('es-AR')}</span>
-                        <button class="btn-add-cart" onclick="event.stopPropagation(); window.addToCart('${p.id}')" ${isAgotado ? 'disabled' : ''}>
-                            ${isAgotado
-                                ? '<i class="fas fa-times"></i>'
-                                : '<span class="cart-plus-icon"><i class="fas fa-shopping-cart"></i><i class="fas fa-plus"></i></span>'
-                            }
-                        </button>
-                    </div>
-                </div>
-            </div>
+                <div class="products-grid">${cardsHtml}</div>
+            </section>
         `;
-    }).join('');
+    }).join('') + (sinCat.length ? `
+        <section class="cat-section">
+            <div class="cat-section-header"><h2 class="cat-section-title">Otros</h2></div>
+            <div class="products-grid">${sinCat.map(p => buildProductCard(p, globalIndex++)).join('')}</div>
+        </section>
+    ` : '');
 
-    // GA4: view_item_list
+    afterRender(products);
+}
+
+function afterRender(list) {
+    // GA4
     if (typeof gtag === 'function') {
         gtag('event', 'view_item_list', {
             item_list_name: activeCategory === 'todos' ? 'Todos' : activeCategory,
-            items: filtered.map((p, i) => ({
+            items: list.map((p, i) => ({
                 item_id: p.id,
                 item_name: p.nombre,
                 item_category: p.categoria || '',
@@ -237,16 +286,13 @@ function renderProducts() {
             }))
         });
     }
-
-    // For cached images that fire onload synchronously (already complete)
+    // Imágenes ya cacheadas
     productsGrid.querySelectorAll('.card-carousel img.active').forEach(img => {
         if (img.complete && img.naturalHeight !== 0) {
             img.classList.add('img-loaded');
             img.closest('.product-img-container')?.classList.add('img-loaded');
         }
     });
-
-    // Swipe táctil en carruseles de la grilla
     setupSwipeOnCarousels();
 }
 
