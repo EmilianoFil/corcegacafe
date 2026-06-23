@@ -144,17 +144,15 @@ function renderCategories() {
         });
     }
 
-    // Barra de chips desktop
+    // Barra de chips desktop — onclick inline para evitar problemas con ES modules
     const desktopCats = document.getElementById('desktop-cats');
     if (desktopCats) {
         const all = [{ id: 'todos', nombre: 'Todos' }, ...categories];
         desktopCats.innerHTML = all.map(c => `
             <button class="desktop-cat-chip ${activeCategory === c.id ? 'active' : ''}"
-                    data-cat="${c.id}">${c.nombre}</button>
+                    data-cat="${c.id}"
+                    onclick="window.tienda.setCategory('${c.id}')">${c.nombre}</button>
         `).join('');
-        desktopCats.querySelectorAll('.desktop-cat-chip').forEach(chip => {
-            chip.addEventListener('click', () => window.tienda.setCategory(chip.dataset.cat));
-        });
     }
 }
 

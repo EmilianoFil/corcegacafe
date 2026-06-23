@@ -3,6 +3,7 @@
 /* ─── Desktop category chips bar ───────────────────────────────── */
 .desktop-cats {
     display: flex;
+    justify-content: center;
     gap: 8px;
     padding: 10px 40px;
     overflow-x: auto;
