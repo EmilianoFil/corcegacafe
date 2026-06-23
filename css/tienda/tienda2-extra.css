@@ -1,0 +1,113 @@
+/* ── TIENDA2 — estilos adicionales sobre tienda.css ── */
+
+/* ─── Desktop category chips bar ───────────────────────────────── */
+.desktop-cats {
+    display: flex;
+    gap: 8px;
+    padding: 10px 40px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-top: 1px solid rgba(1,50,63,0.08);
+    background: white;
+}
+.desktop-cats::-webkit-scrollbar { display: none; }
+
+.desktop-cat-chip {
+    flex-shrink: 0;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--font-sync);
+    letter-spacing: 0.5px;
+    border: 2px solid rgba(1,50,63,0.12);
+    background: white;
+    color: var(--panel-oscuro);
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+    text-transform: uppercase;
+}
+.desktop-cat-chip:hover {
+    border-color: var(--naranja-accent);
+    color: var(--naranja-accent);
+}
+.desktop-cat-chip.active {
+    background: var(--panel-oscuro);
+    border-color: var(--panel-oscuro);
+    color: white;
+}
+
+/* En mobile ocultamos la barra desktop */
+@media (max-width: 768px) {
+    .desktop-cats { display: none; }
+}
+
+/* ─── Badge de categoría en la card ────────────────────────────── */
+.badge-categoria {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 4;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: var(--panel-oscuro);
+    font-family: var(--font-sync);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    text-transform: uppercase;
+    border: 1px solid rgba(1,50,63,0.08);
+    pointer-events: none;
+    line-height: 1.4;
+}
+
+/* ─── Secciones por categoría (modo "todos") ────────────────────── */
+.products-sections {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.cat-section {
+    margin-bottom: 48px;
+}
+
+.cat-section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid rgba(1,50,63,0.08);
+}
+
+.cat-section-title {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--panel-oscuro);
+    margin: 0;
+}
+
+/* La .products-grid dentro de secciones hereda estilos existentes */
+.products-sections .products-grid {
+    padding: 0;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .products-sections {
+        padding: 20px 16px;
+    }
+    .cat-section-title { font-size: 20px; }
+    .cat-section { margin-bottom: 36px; }
+    .badge-categoria { font-size: 8px; padding: 3px 8px; }
+}

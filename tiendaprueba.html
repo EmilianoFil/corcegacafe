@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tienda Prueba | Córcega Café</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<style>
+/* ─── VARIABLES ─────────────────────────────────────────────── */
+:root {
+  --bg-crema: #fdfcf7;
+  --panel-oscuro: #01323f;
+  --naranja-accent: #ed7053;
+  --naranja-oscuro: #b7542c;
+  --texto-muted: #666;
+  --border: rgba(1,50,63,0.1);
+  --shadow: 0 10px 40px rgba(1,50,63,0.08);
+  --radio: 24px;
+  --font-base: 'Inter', sans-serif;
+  --font-display: 'Playfair Display', serif;
+  --font-sync: 'Syncopate', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg-crema);
+  font-family: var(--font-base);
+  color: var(--panel-oscuro);
+  overflow-x: hidden;
+}
+
+/* ─── TOP BAR (header + desktop nav) ────────────────────────── */
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2000;
+  background: white;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+/* ─── HEADER ─────────────────────────────────────────────────── */
+header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 70px;
+  padding: 0 32px;
+  background: white;
+}
+
+.header-left  { display:flex; align-items:center; gap:12px; }
+.header-center { display:flex; justify-content:center; }
+.header-right  { display:flex; justify-content:flex-end; gap:20px; align-items:center; }
+
+.mini-logo { width:38px; height:auto; }
+
+.brand { text-align:center; }
+.brand-top {
+  display:block;
+  font-family:var(--font-sync);
+  font-size:9px;
+  letter-spacing:4px;
+  color:var(--panel-oscuro);
+  font-weight:700;
+}
+.brand-bottom {
+  display:block;
+  font-family:var(--font-sync);
+  font-size:10px;
+  letter-spacing:5px;
+  color:var(--panel-oscuro);
+  font-weight:800;
+  margin-top:2px;
+}
+
+/* Hamburguesa – solo mobile */
+.header-hamburger {
+  display:none;
+  background:none;
+  border:none;
+  cursor:pointer;
+  flex-direction:column;
+  gap:5px;
+  padding:4px;
+}
+.header-hamburger span {
+  display:block;
+  width:22px;
+  height:2px;
+  background:var(--panel-oscuro);
+  border-radius:2px;
+  transition:all 0.3s;
+}
+
+/* Header actions */
+.header-actions { display:flex; gap:20px; align-items:center; }
+.header-actions a { color:var(--panel-oscuro); text-decoration:none; font-size:22px; }
+.cart-icon { color:var(--panel-oscuro); font-size:22px; cursor:pointer; position:relative; }
+.cart-count {
+  position:absolute;
+  top:-7px; right:-8px;
+  background:var(--naranja-accent);
+  color:white;
+  font-size:10px;
+  font-weight:800;
+  width:18px; height:18px;
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* ─── DESKTOP CATEGORY NAV ──────────────────────────────────── */
+/*
+  En desktop mostramos chips de categoría justo debajo del header.
+  En mobile los escondemos – el filtro vive en el menú lateral.
+*/
+.desktop-cats {
+  display:flex;
+  gap:8px;
+  padding:10px 32px;
+  overflow-x:auto;
+  scrollbar-width:none;
+  border-top:1px solid var(--border);
+  background:white;
+}
+.desktop-cats::-webkit-scrollbar { display:none; }
+
+.cat-chip {
+  flex-shrink:0;
+  padding:6px 16px;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:700;
+  font-family:var(--font-sync);
+  letter-spacing:0.5px;
+  border:2px solid var(--border);
+  background:white;
+  color:var(--panel-oscuro);
+  cursor:pointer;
+  transition:all 0.18s;
+  white-space:nowrap;
+}
+.cat-chip:hover { border-color:var(--naranja-accent); color:var(--naranja-accent); }
+.cat-chip.active {
+  background:var(--panel-oscuro);
+  border-color:var(--panel-oscuro);
+  color:white;
+}
+
+/* ─── PRODUCTS GRID ─────────────────────────────────────────── */
+.products-wrap {
+  max-width:1400px;
+  margin:0 auto;
+  padding:40px;
+}
+
+/* Encabezado de sección por categoría */
+.category-section { margin-bottom:48px; }
+
+.category-section-header {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  margin-bottom:24px;
+  padding-bottom:14px;
+  border-bottom:2px solid var(--border);
+}
+.category-section-title {
+  font-family:var(--font-display);
+  font-size:26px;
+  font-weight:700;
+  color:var(--panel-oscuro);
+}
+.category-section-count {
+  font-size:12px;
+  font-weight:700;
+  font-family:var(--font-sync);
+  color:var(--texto-muted);
+  letter-spacing:0.5px;
+}
+
+.products-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+  gap:28px;
+}
+
+/* ─── PRODUCT CARD ──────────────────────────────────────────── */
+.product-card {
+  background:white;
+  border-radius:var(--radio);
+  overflow:hidden;
+  box-shadow:var(--shadow);
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  transition:transform 0.2s, box-shadow 0.2s;
+  cursor:pointer;
+  animation:fadeInUp 0.4s ease backwards;
+}
+.product-card:hover {
+  transform:translateY(-6px);
+  box-shadow:0 20px 60px rgba(1,50,63,0.13);
+}
+
+@keyframes fadeInUp {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.product-img-container {
+  position:relative;
+  aspect-ratio:1/1;
+  overflow:hidden;
+  background:#f0efeb;
+}
+.product-img-container img {
+  width:100%; height:100%;
+  object-fit:cover;
+  transition:transform 0.4s;
+}
+.product-card:hover .product-img-container img { transform:scale(1.04); }
+
+/* ── BADGE CATEGORÍA (nuevo) ── */
+.badge-categoria {
+  position:absolute;
+  top:12px;
+  left:12px;
+  z-index:4;
+  background:rgba(255,255,255,0.92);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  color:var(--panel-oscuro);
+  font-family:var(--font-sync);
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:0.8px;
+  padding:4px 10px;
+  border-radius:20px;
+  box-shadow:0 2px 10px rgba(0,0,0,0.1);
+  text-transform:uppercase;
+  line-height:1.4;
+  border:1px solid rgba(1,50,63,0.08);
+}
+
+/* Colores por categoría – se asignan vía data-cat-color */
+.badge-categoria[data-color="cafe"]    { background:#01323f; color:white; border-color:transparent; }
+.badge-categoria[data-color="pastel"]  { background:#f9e8e2; color:#b7542c; border-color:rgba(183,84,44,0.15); }
+.badge-categoria[data-color="torta"]   { background:#fdf3d0; color:#8a6800; border-color:rgba(138,104,0,0.12); }
+.badge-categoria[data-color="promo"]   { background:var(--naranja-accent); color:white; border-color:transparent; }
+
+.badge-agotado {
+  position:absolute;
+  top:12px; right:12px;
+  background:white;
+  color:var(--panel-oscuro);
+  font-size:9px; font-weight:800;
+  padding:4px 10px;
+  border-radius:8px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.12);
+  letter-spacing:1px;
+  font-family:var(--font-sync);
+}
+
+.product-info {
+  padding:18px 20px 16px;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+.product-title {
+  font-family:var(--font-display);
+  font-size:17px;
+  margin-bottom:6px;
+  line-height:1.25;
+}
+
+.product-desc {
+  font-size:13px;
+  color:var(--texto-muted);
+  line-height:1.5;
+  flex:1;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
+.product-footer {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:14px;
+}
+
+.product-price {
+  font-size:20px;
+  font-weight:800;
+  color:var(--panel-oscuro);
+}
+
+.btn-add-cart {
+  width:40px; height:40px;
+  border-radius:12px;
+  border:none;
+  background:var(--panel-oscuro);
+  color:white;
+  font-size:14px;
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  gap:2px;
+  transition:background 0.18s, transform 0.12s;
+  flex-shrink:0;
+}
+.btn-add-cart:hover { background:var(--naranja-accent); transform:scale(1.08); }
+
+/* ─── FLOATING CART ─────────────────────────────────────────── */
+.cart-floating {
+  position:fixed;
+  bottom:28px; right:28px;
+  width:58px; height:58px;
+  border-radius:50%;
+  background:var(--panel-oscuro);
+  color:white;
+  border:none;
+  font-size:22px;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 8px 30px rgba(1,50,63,0.3);
+  cursor:pointer;
+  z-index:3000;
+  transition:transform 0.2s;
+}
+.cart-floating:hover { transform:scale(1.08); }
+.cart-floating .cart-count {
+  top:-5px; right:-4px;
+  width:20px; height:20px;
+  font-size:10px;
+}
+
+/* ─── MOBILE MENU ────────────────────────────────────────────── */
+.mobile-menu-overlay {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.4);
+  z-index:4000;
+  backdrop-filter:blur(2px);
+}
+.mobile-menu-overlay.open { display:block; }
+
+.mobile-menu {
+  position:fixed;
+  left:0; top:0; bottom:0;
+  width:min(320px, 85vw);
+  background:white;
+  z-index:4001;
+  transform:translateX(-100%);
+  transition:transform 0.32s cubic-bezier(0.25,0.8,0.25,1);
+  display:flex;
+  flex-direction:column;
+  overflow-y:auto;
+}
+.mobile-menu.open { transform:translateX(0); }
+
+.mobile-menu-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:20px 24px 16px;
+  border-bottom:1px solid var(--border);
+}
+.brand-menu {
+  font-family:var(--font-sync);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:3px;
+  color:var(--panel-oscuro);
+}
+.mobile-menu-close {
+  background:none;
+  border:none;
+  font-size:20px;
+  cursor:pointer;
+  color:var(--texto-muted);
+  line-height:1;
+}
+
+.mobile-menu-nav { padding:12px 0; }
+
+.mobile-menu-item {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 24px;
+  font-size:14px;
+  font-weight:600;
+  color:var(--panel-oscuro);
+  text-decoration:none;
+  background:none;
+  border:none;
+  width:100%;
+  text-align:left;
+  cursor:pointer;
+  font-family:var(--font-base);
+  transition:background 0.15s;
+}
+.mobile-menu-item:hover { background:#f7f8fa; }
+.mobile-menu-item i { width:18px; color:var(--naranja-accent); }
+
+.mobile-menu-divider { height:1px; background:var(--border); margin:8px 24px; }
+
+.mobile-menu-submenu {
+  overflow:hidden;
+  max-height:0;
+  transition:max-height 0.3s ease;
+}
+.mobile-menu-submenu.open { max-height:500px; }
+
+.mobile-cat-btn {
+  display:flex;
+  align-items:center;
+  width:100%;
+  padding:11px 24px 11px 52px;
+  font-size:13px;
+  font-weight:600;
+  color:var(--texto-muted);
+  background:none;
+  border:none;
+  cursor:pointer;
+  text-align:left;
+  font-family:var(--font-base);
+  transition:color 0.15s;
+}
+.mobile-cat-btn:hover { color:var(--panel-oscuro); }
+.mobile-cat-btn.active-cat {
+  color:var(--naranja-accent);
+  font-weight:700;
+}
+
+.mobile-chevron { transition:transform 0.25s; margin-left:auto; }
+.mobile-chevron.open { transform:rotate(180deg); }
+
+/* ─── RESPONSIVE ────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Mostrar hamburguesa, ocultar logo desktop en left */
+  .header-hamburger { display:flex; }
+  #header-logo-desktop { display:none; }
+
+  header { padding:0 16px; height:60px; }
+
+  /* Ocultar nav de categorías desktop */
+  .desktop-cats { display:none; }
+
+  .products-wrap { padding:20px 16px; }
+  .products-grid { grid-template-columns:repeat(2, 1fr); gap:12px; }
+
+  .category-section-title { font-size:20px; }
+  .product-title { font-size:15px; }
+  .product-price { font-size:17px; }
+  .product-info { padding:12px 14px 12px; }
+
+  .badge-categoria { font-size:8px; padding:3px 8px; }
+
+  .cart-floating { bottom:20px; right:16px; width:52px; height:52px; }
+}
+
+@media (max-width:380px) {
+  .products-grid { grid-template-columns:1fr; }
+}
+
+/* ─── ESTADO VACÍO ──────────────────────────────────────────── */
+.empty-state {
+  grid-column:1/-1;
+  text-align:center;
+  padding:60px 20px;
+  color:var(--texto-muted);
+  font-family:var(--font-display);
+  font-size:18px;
+}
+
+/* ─── BANNER PRUEBA ─────────────────────────────────────────── */
+.test-banner {
+  background:var(--naranja-accent);
+  color:white;
+  text-align:center;
+  padding:6px 16px;
+  font-size:11px;
+  font-weight:700;
+  font-family:var(--font-sync);
+  letter-spacing:1px;
+}
+
+/* ─── ACTIVE SECTION HIGHLIGHT (cuando se filtra) ──────────── */
+.category-section.hidden { display:none; }
+</style>
+</head>
+
+<body>
+
+<!-- BANNER MODO PRUEBA -->
+<div class="test-banner">⚠ ARCHIVO DE PRUEBA — datos simulados, no conectado a Firebase</div>
+
+<!-- ─── TOP BAR ───────────────────────────────────────────────── -->
+<div class="top-bar">
+  <header>
+    <div class="header-left">
+      <!-- Desktop: logo -->
+      <a href="tienda.html" id="header-logo-desktop">
+        <img src="css/img/Corcega_Logo_Original.png" alt="Logo" class="mini-logo">
+      </a>
+      <!-- Mobile: hamburguesa -->
+      <button class="header-hamburger" id="header-hamburger" aria-label="Menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+
+    <div class="header-center">
+      <div class="brand">
+        <span class="brand-top">TIENDA</span>
+        <span class="brand-bottom">CÓRCEGA</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="header-actions">
+        <a href="tienda-cuenta.html" title="Mi Cuenta"><i class="fas fa-user-circle"></i></a>
+        <div class="cart-icon">
+          <i class="fas fa-shopping-bag"></i>
+          <span class="cart-count" id="cart-count">0</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- DESKTOP CATEGORY NAV — visible en ≥769px -->
+  <div class="desktop-cats" id="desktop-cats">
+    <!-- Generado por JS -->
+  </div>
+</div>
+
+<!-- ─── PRODUCTOS ─────────────────────────────────────────────── -->
+<main class="products-wrap" id="products-wrap">
+  <!-- Generado por JS -->
+</main>
+
+<!-- Floating cart -->
+<button class="cart-floating">
+  <i class="fas fa-shopping-bag"></i>
+  <span class="cart-count" id="cart-badge">0</span>
+</button>
+
+<!-- ─── MOBILE MENU ───────────────────────────────────────────── -->
+<div class="mobile-menu-overlay" id="mobile-menu-overlay"></div>
+<div class="mobile-menu" id="mobile-menu" role="dialog" aria-label="Menú">
+  <div class="mobile-menu-header">
+    <span class="brand-menu">MENÚ</span>
+    <button class="mobile-menu-close" id="mobile-menu-close">✕</button>
+  </div>
+  <nav class="mobile-menu-nav">
+    <!-- Productos expandible -->
+    <button class="mobile-menu-item" id="mobile-products-toggle" type="button">
+      <i class="fas fa-th-large"></i>
+      <span>Productos</span>
+      <i class="fas fa-chevron-down mobile-chevron open" id="mobile-products-chevron"></i>
+    </button>
+    <div class="mobile-menu-submenu open" id="mobile-cats-list">
+      <!-- Generado por JS -->
+    </div>
+
+    <div class="mobile-menu-divider"></div>
+
+    <a href="tienda-cuenta.html" class="mobile-menu-item">
+      <i class="fas fa-user-circle"></i> Mi Cuenta
+    </a>
+  </nav>
+</div>
+
+<script>
+// ─── DATOS MOCK ────────────────────────────────────────────────
+const CATEGORIES = [
+  { id: 'cafe',    nombre: 'Café',             color: 'cafe'   },
+  { id: 'pastel',  nombre: 'Pastelería',        color: 'pastel' },
+  { id: 'torta',   nombre: 'Tortas de encargo', color: 'torta'  },
+  { id: 'promo',   nombre: 'Promos',            color: 'promo'  },
+];
+
+const PRODUCTS = [
+  // ── Café ──────────────────────────────────────────────────
+  {
+    id: 'p1', nombre: 'Blend Corcega 250g', categoria: 'cafe',
+    descripcion: 'Nuestro blend de autor, tostado medio, notas a chocolate amargo y frutos secos.',
+    precio: 4800, img: 'https://placehold.co/400x400/01323f/ffffff?text=Café+250g', agotado: false
+  },
+  {
+    id: 'p2', nombre: 'Blend Corcega 500g', categoria: 'cafe',
+    descripcion: 'El mismo blend de siempre, formato familiar para los más cafeteros.',
+    precio: 8900, img: 'https://placehold.co/400x400/01323f/ffffff?text=Café+500g', agotado: false
+  },
+  {
+    id: 'p3', nombre: 'Monoorigen Etiopía', categoria: 'cafe',
+    descripcion: 'Café lavado de Yirgacheffe. Floral, cítrico, muy aromático.',
+    precio: 6200, img: 'https://placehold.co/400x400/2a5c6e/ffffff?text=Etiopía', agotado: true
+  },
+  {
+    id: 'p4', nombre: 'Cápsulas x10 — Blend', categoria: 'cafe',
+    descripcion: 'Compatibles con Nespresso®. El sabor Córcega en tu cafetera.',
+    precio: 3200, img: 'https://placehold.co/400x400/01323f/ffffff?text=Cápsulas', agotado: false
+  },
+  // ── Pastelería ────────────────────────────────────────────
+  {
+    id: 'p5', nombre: 'Medialunas x6', categoria: 'pastel',
+    descripcion: 'Medialunas de manteca, tiernas y doradas. Receta de la casa.',
+    precio: 2400, img: 'https://placehold.co/400x400/f9e8e2/b7542c?text=Medialunas', agotado: false
+  },
+  {
+    id: 'p6', nombre: 'Scones de queso x4', categoria: 'pastel',
+    descripcion: 'Con queso cheddar y romero. Perfectos para acompañar el café.',
+    precio: 2800, img: 'https://placehold.co/400x400/f9e8e2/b7542c?text=Scones', agotado: false
+  },
+  {
+    id: 'p7', nombre: 'Brownie de chocolate', categoria: 'pastel',
+    descripcion: 'Intenso, húmedo, con trozos de chocolate amargo y nueces pecán.',
+    precio: 1800, img: 'https://placehold.co/400x400/f9e8e2/b7542c?text=Brownie', agotado: false
+  },
+  {
+    id: 'p8', nombre: 'Cheesecake New York', categoria: 'pastel',
+    descripcion: 'Cremoso, con base de galleta y coulis de frutos rojos.',
+    precio: 2600, img: 'https://placehold.co/400x400/f9e8e2/b7542c?text=Cheesecake', agotado: true
+  },
+  // ── Tortas ────────────────────────────────────────────────
+  {
+    id: 'p9', nombre: 'Torta de cumpleaños — Clásica', categoria: 'torta',
+    descripcion: 'Génoise de vainilla, crema chantilly y frutas frescas de temporada. Por encargo con 48 hs.',
+    precio: 18500, img: 'https://placehold.co/400x400/fdf3d0/8a6800?text=Torta+Clásica', agotado: false
+  },
+  {
+    id: 'p10', nombre: 'Torta de chocolate — Fondant', categoria: 'torta',
+    descripcion: 'Tres pisos de bizcochuelo húmedo con ganache de chocolate belga. Por encargo.',
+    precio: 24000, img: 'https://placehold.co/400x400/fdf3d0/8a6800?text=Torta+Fondant', agotado: false
+  },
+  {
+    id: 'p11', nombre: 'Mini tortas individuales x4', categoria: 'torta',
+    descripcion: 'Cuatro mini tortas del sabor que elijas. Perfectas para reuniones chicas.',
+    precio: 9800, img: 'https://placehold.co/400x400/fdf3d0/8a6800?text=Mini+Tortas', agotado: false
+  },
+  // ── Promos ────────────────────────────────────────────────
+  {
+    id: 'p12', nombre: 'Combo Café + Scones', categoria: 'promo',
+    descripcion: 'Blend 250g + 4 scones de queso. El pack del desayuno ideal.',
+    precio: 6500, img: 'https://placehold.co/400x400/ed7053/ffffff?text=Combo+Desayuno', agotado: false
+  },
+  {
+    id: 'p13', nombre: 'Kit Cafetero — regalo', categoria: 'promo',
+    descripcion: 'Blend 500g + cápsulas x10 + brownie. Presentación en caja kraft.',
+    precio: 14200, img: 'https://placehold.co/400x400/ed7053/ffffff?text=Kit+Cafetero', agotado: false
+  },
+];
+
+// ─── STATE ─────────────────────────────────────────────────────
+let activeCat = 'todos';
+
+// ─── RENDER ────────────────────────────────────────────────────
+function getCatColor(catId) {
+  return CATEGORIES.find(c => c.id === catId)?.color || 'default';
+}
+function getCatName(catId) {
+  return CATEGORIES.find(c => c.id === catId)?.nombre || catId;
+}
+
+function buildDesktopCats() {
+  const el = document.getElementById('desktop-cats');
+  const all = [{ id:'todos', nombre:'Todos' }, ...CATEGORIES];
+  el.innerHTML = all.map(c => `
+    <button class="cat-chip ${activeCat === c.id ? 'active' : ''}"
+            data-cat="${c.id}" onclick="setCategory('${c.id}')">
+      ${c.nombre}
+    </button>
+  `).join('');
+}
+
+function buildMobileCats() {
+  const el = document.getElementById('mobile-cats-list');
+  const all = [{ id:'todos', nombre:'Todos los productos' }, ...CATEGORIES];
+  el.innerHTML = all.map(c => `
+    <button class="mobile-cat-btn ${activeCat === c.id ? 'active-cat' : ''}"
+            data-cat="${c.id}" onclick="setCategory('${c.id}'); closeMenu();">
+      ${c.nombre}
+    </button>
+  `).join('');
+}
+
+function renderProducts() {
+  const wrap = document.getElementById('products-wrap');
+
+  if (activeCat === 'todos') {
+    // Agrupar por categoría con encabezados de sección
+    wrap.innerHTML = CATEGORIES.map(cat => {
+      const prods = PRODUCTS.filter(p => p.categoria === cat.id);
+      if (prods.length === 0) return '';
+      return `
+        <section class="category-section" data-cat="${cat.id}">
+          <div class="category-section-header">
+            <h2 class="category-section-title">${cat.nombre}</h2>
+            <span class="category-section-count">${prods.length} producto${prods.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="products-grid">
+            ${prods.map((p, i) => productCard(p, i)).join('')}
+          </div>
+        </section>
+      `;
+    }).join('');
+  } else {
+    // Filtro por categoría — una sola sección sin header
+    const prods = PRODUCTS.filter(p => p.categoria === activeCat);
+    if (prods.length === 0) {
+      wrap.innerHTML = `<p class="empty-state">No hay productos en esta categoría.</p>`;
+      return;
+    }
+    wrap.innerHTML = `
+      <div class="products-grid">
+        ${prods.map((p, i) => productCard(p, i)).join('')}
+      </div>
+    `;
+  }
+}
+
+function productCard(p, index) {
+  const color = getCatColor(p.categoria);
+  const catName = getCatName(p.categoria);
+  return `
+    <div class="product-card ${p.agotado ? 'agotado' : ''}"
+         style="animation-delay:${index * 0.06}s">
+      <div class="product-img-container">
+        <!-- Badge categoría -->
+        <span class="badge-categoria" data-color="${color}">${catName}</span>
+        ${p.agotado ? '<span class="badge-agotado">AGOTADO</span>' : ''}
+        <img src="${p.img}" alt="${p.nombre}" loading="lazy">
+      </div>
+      <div class="product-info">
+        <h3 class="product-title">${p.nombre}</h3>
+        <p class="product-desc">${p.descripcion}</p>
+        <div class="product-footer">
+          <span class="product-price">$${p.precio.toLocaleString('es-AR')}</span>
+          <button class="btn-add-cart" ${p.agotado ? 'disabled' : ''}
+                  title="${p.agotado ? 'Sin stock' : 'Agregar al carrito'}">
+            ${p.agotado
+              ? '<i class="fas fa-times"></i>'
+              : '<i class="fas fa-shopping-cart"></i>'}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+window.setCategory = function(catId) {
+  activeCat = catId;
+  // Actualizar chips desktop
+  document.querySelectorAll('.cat-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.cat === catId);
+  });
+  // Actualizar chips mobile
+  document.querySelectorAll('.mobile-cat-btn').forEach(b => {
+    b.classList.toggle('active-cat', b.dataset.cat === catId);
+  });
+  renderProducts();
+  document.getElementById('products-wrap')
+    ?.scrollIntoView({ behavior:'smooth', block:'start' });
+};
+
+// ─── MOBILE MENU ────────────────────────────────────────────────
+const hamburger  = document.getElementById('header-hamburger');
+const overlay    = document.getElementById('mobile-menu-overlay');
+const mobileMenu = document.getElementById('mobile-menu');
+const closeBtn   = document.getElementById('mobile-menu-close');
+
+function openMenu() {
+  mobileMenu.classList.add('open');
+  overlay.classList.add('open');
+  hamburger.setAttribute('aria-expanded','true');
+  document.body.style.overflow = 'hidden';
+}
+window.closeMenu = function() {
+  mobileMenu.classList.remove('open');
+  overlay.classList.remove('open');
+  hamburger.setAttribute('aria-expanded','false');
+  document.body.style.overflow = '';
+};
+
+hamburger.addEventListener('click', () =>
+  mobileMenu.classList.contains('open') ? closeMenu() : openMenu()
+);
+overlay.addEventListener('click', closeMenu);
+closeBtn.addEventListener('click', closeMenu);
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeMenu(); });
+
+// Toggle sub-menú productos en mobile
+document.getElementById('mobile-products-toggle').addEventListener('click', () => {
+  const sub  = document.getElementById('mobile-cats-list');
+  const chev = document.getElementById('mobile-products-chevron');
+  const open = sub.classList.toggle('open');
+  chev.classList.toggle('open', open);
+});
+
+// ─── INIT ───────────────────────────────────────────────────────
+buildDesktopCats();
+buildMobileCats();
+renderProducts();
+</script>
+
+</body>
+</html>
