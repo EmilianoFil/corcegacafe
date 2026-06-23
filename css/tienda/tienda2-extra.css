@@ -111,6 +111,7 @@
         padding: 20px 16px;
     }
     .cat-section-title { font-size: 20px; }
+    .cat-section-header { justify-content: center; }
     .cat-section { margin-bottom: 36px; }
     .badge-categoria { font-size: 8px; padding: 3px 8px; }
 }
