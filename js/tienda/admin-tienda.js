@@ -35,7 +35,7 @@ function openCropModal(file, callback) {
         setTimeout(() => {
             _cropperInstance = new Cropper(img, {
                 aspectRatio: 1,
-                viewMode: 2,
+                viewMode: 1,
                 dragMode: 'move',
                 autoCropArea: 1,
                 restore: false,
