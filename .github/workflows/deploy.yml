@@ -20,6 +20,19 @@ jobs:
         run: npm ci
         working-directory: functions
 
+      - name: Generate sitemap from Firestore
+        run: node scripts/generate-sitemap.js
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Commit sitemap
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sitemap.xml
+          git diff --staged --quiet || git commit -m "chore: regenerar sitemap [skip ci]"
+          git push
+
       - name: Deploy Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
