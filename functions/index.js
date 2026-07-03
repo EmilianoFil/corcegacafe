@@ -2762,6 +2762,21 @@ exports.agenteReviews = onSchedule(
   }
 );
 
+// Sitemap dinámico — genera XML con todos los productos activos de Firestore
+exports.sitemapXml = onRequest({ region: "us-central1" }, async (req, res) => {
+  const snap = await db.collection("productos").where("activo", "==", true).get();
+  const base = "https://corcegacafe.com.ar";
+  const hoy = new Date().toISOString().split("T")[0];
+  const urls = [
+    `  <url><loc>${base}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>`,
+    `  <url><loc>${base}/tienda.html</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>`,
+    ...snap.docs.map((d) => `  <url><loc>${base}/producto.html?id=${d.id}</loc><lastmod>${hoy}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`),
+  ];
+  res.set("Content-Type", "application/xml");
+  res.set("Cache-Control", "public, max-age=3600");
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>`);
+});
+
 // ZeptoMail — infraestructura nueva (no reemplaza Gmail todavía)
 const zeptoFunctions = require("./zepto-functions");
 exports.testZeptoMail = zeptoFunctions.testZeptoMail;

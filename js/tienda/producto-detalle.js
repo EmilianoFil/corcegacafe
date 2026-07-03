@@ -127,6 +127,11 @@ function renderProductDetail() {
     document.getElementById('prod-cat-tag').innerText = categoria.toUpperCase();
     document.getElementById('breadcrumb-name').innerText = p.nombre;
 
+    // SEO dinámico
+    document.title = `${p.nombre} | Córcega Café`;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.content = ((p.descripcion || p.nombre).slice(0, 140)) + ' — Pedí online en Córcega Café, Caballito.';
+
     // Titulo y Precio
     const isAgotado = (p.stock > 0 && p.stock <= 0);
     document.getElementById('prod-title').innerText = p.nombre + (isAgotado ? ' (Agotado)' : '');

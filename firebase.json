@@ -19,6 +19,9 @@
     "redirects": [
       { "source": "/index.html", "destination": "/", "type": 301 }
     ],
+    "rewrites": [
+      { "source": "/sitemap.xml", "function": "sitemapXml" }
+    ],
     "headers": [
       {
         "source": "**/*.html",
