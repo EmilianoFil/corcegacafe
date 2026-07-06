@@ -3,6 +3,7 @@ import { doc, getDoc, getDocs, collection, query, where } from 'https://www.gsta
 import { writeReserva, fetchReservedByOthers } from './cart-reservas.js';
 import { cart, initCart, openCart, closeCart, saveAndRefresh, updateCartUI, showToast, setMaxUnidadesPorPedido, getMaxUnidadesPorPedido } from './cart-component.js';
 import { initComboPicker } from './combo-picker.js';
+import { openDisponibilidadModal } from './agenda-disponibilidad.js';
 
 // --- STATE ---
 let currentProduct = null;
@@ -235,6 +236,24 @@ function renderProductDetail() {
             entregaInfo.style.display = 'block';
         } else {
             entregaInfo.style.display = 'none';
+        }
+    }
+
+    // Botón "Ver disponibilidad de retiro" (solo productos con agenda)
+    const dispoContainer = document.getElementById('prod-disponibilidad-container');
+    if (dispoContainer) {
+        if (p.requiereAgenda) {
+            dispoContainer.innerHTML = `
+                <button id="btn-ver-disponibilidad-prod" style="display:inline-flex;align-items:center;gap:6px;background:none;border:1.5px dashed var(--naranja-accent,#d86634);color:var(--naranja-accent,#d86634);border-radius:12px;padding:8px 16px;font-size:0.8rem;font-weight:700;cursor:pointer;">
+                    📅 Ver disponibilidad de retiro
+                </button>`;
+            dispoContainer.style.display = 'block';
+            document.getElementById('btn-ver-disponibilidad-prod').onclick = () => {
+                // Carrito actual + este producto (con la cantidad elegida) para el coloreo de capacidad
+                openDisponibilidadModal({ items: [...cart, { id: p.id, qty: currentQty }] });
+            };
+        } else {
+            dispoContainer.style.display = 'none';
         }
     }
 

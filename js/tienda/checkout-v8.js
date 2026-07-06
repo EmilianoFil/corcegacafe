@@ -1,8 +1,9 @@
 import { db, auth } from '../firebase-config.js';
 console.log("=== CHECKOUT V4 ACTIVE (NO ALERT) ===");
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { collection, addDoc, serverTimestamp, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { deleteAllSessionReservas } from './cart-reservas.js';
+import { computeAgendaMeta, fetchOrderCounts, buildCalendarConfig, isDateSelectable, getFechaRetiro, saveFechaRetiro, clearFechaRetiro, parseHorarioToISO, isoFromDate, dateFromISO } from './agenda-disponibilidad.js';
 
 // --- STATE ---
 let cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
@@ -139,44 +140,11 @@ async function applyStoreConfig() {
 
 async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
     // 1. Find the most restrictive agenda config across all cart products
-    let maxDias = agendaConfig?.minAnticipacion || 0;
-    let mensajeAgenda = null;
-
-    let anyRequiresAgenda = false;
-    const agendaCartIds = new Set(); // product IDs in cart that require agenda
-    const productIds = [...new Set(cart.map(item => item.id).filter(Boolean))];
-    if (productIds.length > 0) {
-        const results = await Promise.allSettled(productIds.map(id => getDoc(doc(db, "productos", id))));
-        for (const result of results) {
-            if (result.status !== 'fulfilled') {
-                console.warn("No se pudo leer producto para agenda:", result.reason);
-                continue;
-            }
-            const snap = result.value;
-            if (!snap.exists()) continue;
-            const p = snap.data();
-            if (!p.requiereAgenda) continue;
-
-            anyRequiresAgenda = true;
-            agendaCartIds.add(snap.id);
-            let dias = p.diasAnticipacion || 0;
-            // Apply cutoff time: if now is past the cutoff hour, add +1 day
-            if (p.horarioCorte) {
-                const [hStr, mStr] = p.horarioCorte.split(':');
-                const corte = new Date();
-                corte.setHours(parseInt(hStr), parseInt(mStr), 0, 0);
-                if (new Date() > corte) dias += 1;
-            }
-            // Update max days (most restrictive wins)
-            if (dias > maxDias) maxDias = dias;
-            // Collect the first mensaje from any agenda product that has one
-            if (p.mensajeAgenda && !mensajeAgenda) mensajeAgenda = p.mensajeAgenda;
-        }
-    }
+    const meta = await computeAgendaMeta(cart, agendaConfig);
 
     // If no product requires agenda, hide the calendar and exit
     const scheduleGroup = document.getElementById('schedule-group');
-    if (!anyRequiresAgenda) {
+    if (!meta.anyRequiresAgenda) {
         if (scheduleGroup) scheduleGroup.style.display = 'none';
         return;
     }
@@ -185,14 +153,14 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
     // 2. Show/hide agenda message
     const msgEl = document.getElementById('agenda-mensaje');
     if (msgEl) {
-        msgEl.innerText = mensajeAgenda || '';
-        msgEl.style.display = mensajeAgenda ? 'block' : 'none';
+        msgEl.innerText = meta.mensajeAgenda || '';
+        msgEl.style.display = meta.mensajeAgenda ? 'block' : 'none';
     }
 
     // 3. Calculate min date
     const minDate = new Date();
     minDate.setHours(0, 0, 0, 0);
-    minDate.setDate(minDate.getDate() + maxDias);
+    minDate.setDate(minDate.getDate() + meta.maxDias);
 
     const blockedDates = agendaConfig?.fechasBloqueadas || [];
     const workingDays = agendaConfig?.diasSemana || [0, 1, 2, 3, 4, 5, 6];
@@ -202,27 +170,13 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
     let cartAgendaQty = 0;
     if (pedidosMaximosDia > 0) {
         try {
-            // Solo contar ítems de productos que requieren agenda
-            const agendaSnap = await getDocs(query(collection(db, 'productos'), where('requiereAgenda', '==', true)));
-            const agendaIds = new Set(agendaSnap.docs.map(d => d.id));
+            ({ orderCountByDate } = await fetchOrderCounts());
 
             // Cuántos ítems de agenda trae el carrito actual (usa agendaCartIds del step 1)
             cartAgendaQty = cart
-                .filter(it => agendaCartIds.has(it.id))
+                .filter(it => meta.agendaCartIds.has(it.id))
                 .reduce((s, it) => s + (it.qty || 1), 0);
 
-            const ordersSnap = await getDocs(collection(db, "ordenes"));
-            ordersSnap.docs.forEach(d => {
-                const data = d.data();
-                if (data.estado === 'cancelado') return;
-                const iso = data.fechaISO || parseHorarioToISO(data.horario);
-                if (iso) {
-                    const totalItems = (data.items || [])
-                        .filter(it => agendaIds.has(it.id))
-                        .reduce((s, it) => s + (it.qty || 1), 0);
-                    if (totalItems > 0) orderCountByDate[iso] = (orderCountByDate[iso] || 0) + totalItems;
-                }
-            });
             // Show legend
             const leyenda = document.getElementById('agenda-leyenda');
             if (leyenda) leyenda.style.display = 'flex';
@@ -232,62 +186,23 @@ async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
     }
 
     // 5. Init flatpickr
-    flatpickr("#order-schedule", {
-        locale: "es",
-        minDate: minDate,
-        dateFormat: "l d/m/Y",
-        disable: [
-            function(date) {
-                return !workingDays.includes(date.getDay());
-            },
-            ...blockedDates
-        ],
-        onDayCreate: function(dObj, dStr, fp, dayElem) {
-            const d = dayElem.dateObj;
-            d.setHours(0, 0, 0, 0);
+    const rules = { minDate, workingDays, blockedDates, pedidosMaximosDia, orderCountByDate, extraQty: cartAgendaQty };
+    const config = buildCalendarConfig(rules);
+    // Mantener sincronizada la fecha guardada si la cambia acá
+    config.onChange = (dates, dStr) => {
+        if (dates[0]) saveFechaRetiro(isoFromDate(dates[0]), dStr);
+    };
+    const fp = flatpickr("#order-schedule", config);
 
-            // Skip: past or before minDate
-            if (d < minDate) return;
-            // Skip: day of week not in workingDays
-            if (!workingDays.includes(d.getDay())) return;
-            // Skip: explicitly blocked date
-            const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-            if (blockedDates.includes(iso)) return;
-
-            // Add a small colored dot below the day number
-            const dot = document.createElement('span');
-            dot.style.cssText = 'display:block; width:5px; height:5px; border-radius:50%; margin: 2px auto 0; flex-shrink:0;';
-
-            if (pedidosMaximosDia > 0) {
-                const count = orderCountByDate[iso] || 0;
-                const effective = count + cartAgendaQty;
-                const ratio = effective / pedidosMaximosDia;
-                if (ratio >= 1) {
-                    dot.style.background = '#ef4444';
-                    dayElem.classList.add('flatpickr-disabled');
-                    dayElem.title = cartAgendaQty > 0
-                        ? `Tu carrito tiene ${cartAgendaQty} producto${cartAgendaQty === 1 ? '' : 's'} con agenda y este día no tiene lugar`
-                        : 'Día completo';
-                } else if (ratio >= 0.7) {
-                    const remaining = pedidosMaximosDia - effective;
-                    dot.style.background = '#f59e0b';
-                    dayElem.title = `${remaining} lugar${remaining === 1 ? '' : 'es'} disponible${remaining === 1 ? '' : 's'}`;
-                } else {
-                    dot.style.background = '#22c55e';
-                }
-                dayElem.appendChild(dot);
-            }
+    // 6. Prefill: fecha elegida desde la página de producto o el carrito
+    const stored = getFechaRetiro();
+    if (stored) {
+        if (isDateSelectable(stored.iso, rules)) {
+            fp.setDate(dateFromISO(stored.iso), true);
+        } else {
+            clearFechaRetiro();
         }
-    });
-}
-
-function parseHorarioToISO(horario) {
-    // Parses flatpickr format "Lunes 21/04/2025" → "2025-04-21"
-    if (!horario) return null;
-    const match = horario.match(/(\d{1,2})\/(\d{2})\/(\d{4})/);
-    if (!match) return null;
-    const [, day, month, year] = match;
-    return `${year}-${month}-${day.padStart(2, '0')}`;
+    }
 }
 
 function lockField(id, value) {
@@ -497,8 +412,9 @@ async function handleOrderSubmission() {
         const docRef = await addDoc(collection(db, "ordenes"), orderData);
         const orderId = docRef.id;
 
-        // 2. Limpiar reservas de sesión
+        // 2. Limpiar reservas de sesión y fecha de retiro elegida
         try { await deleteAllSessionReservas(); } catch(e) { console.warn('Error clearing reservas:', e); }
+        try { clearFechaRetiro(); } catch(e) { console.warn('Error clearing fecha retiro:', e); }
 
         // GA4: purchase
         if (typeof gtag === 'function') {

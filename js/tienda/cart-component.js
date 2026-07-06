@@ -2,6 +2,7 @@ import { auth, db } from '../firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { writeReserva, deleteReserva, CART_TIMEOUT_MS } from './cart-reservas.js';
+import { openDisponibilidadModal, getFechaRetiro } from './agenda-disponibilidad.js';
 
 // --- STATE ---
 const cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
@@ -50,6 +51,7 @@ function _injectHTML() {
         <span class="total-label">Total estimado</span>
         <span class="total-amount" id="cart-total">$0.00</span>
       </div>
+      <button id="btn-ver-disponibilidad" style="display:none;width:100%;background:none;border:1.5px dashed var(--naranja-accent,#d86634);color:var(--naranja-accent,#d86634);border-radius:12px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:10px;">📅 Ver disponibilidad de retiro</button>
       <button class="btn-checkout" id="btn-go-to-checkout">IR A PAGAR</button>
       <button class="btn-keep-shopping" id="btn-keep-shopping" style="display:none;">SEGUIR COMPRANDO</button>
     </div>
@@ -130,6 +132,26 @@ function _setupEvents() {
     document.getElementById('modal-btn-guest')?.addEventListener('click', () => {
         window.location.href = 'checkout.html';
     });
+
+    document.getElementById('btn-ver-disponibilidad')?.addEventListener('click', () => {
+        openDisponibilidadModal({ items: cart });
+    });
+    // Refrescar el label del botón cuando cambia la fecha elegida (desde el modal)
+    window.addEventListener('corcega:fecha-retiro', _updateDisponibilidadBtn);
+}
+
+// --- BOTÓN DISPONIBILIDAD DE RETIRO ---
+function _updateDisponibilidadBtn() {
+    const btn = document.getElementById('btn-ver-disponibilidad');
+    if (!btn) return;
+    const hayAgenda = cart.some(i => i.requiereAgenda);
+    btn.style.display = hayAgenda ? 'block' : 'none';
+    if (hayAgenda) {
+        const stored = getFechaRetiro();
+        btn.innerHTML = stored
+            ? `📅 Retiro: <strong>${stored.fmt}</strong> · cambiar`
+            : '📅 Ver disponibilidad de retiro';
+    }
 }
 
 // --- OPEN / CLOSE ---
@@ -202,6 +224,7 @@ export function updateCartUI() {
 
     const checkoutBtn = document.getElementById('btn-go-to-checkout');
     const keepShoppingBtn = document.getElementById('btn-keep-shopping');
+    _updateDisponibilidadBtn();
 
     if (cart.length === 0) {
         if (cartItemsList) cartItemsList.innerHTML = `<div class="cart-empty"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío</p></div>`;
