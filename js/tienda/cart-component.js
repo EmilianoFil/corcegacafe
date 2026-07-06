@@ -52,7 +52,7 @@ function _injectHTML() {
         <span class="total-amount" id="cart-total">$0.00</span>
       </div>
       <button id="btn-ver-disponibilidad" style="display:none;width:100%;background:none;border:1.5px dashed var(--naranja-accent,#d86634);color:var(--naranja-accent,#d86634);border-radius:12px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:10px;">📅 Ver disponibilidad de retiro</button>
-      <button class="btn-checkout" id="btn-go-to-checkout">IR A PAGAR</button>
+      <button class="btn-checkout" id="btn-go-to-checkout">IR A FINALIZAR COMPRA</button>
       <button class="btn-keep-shopping" id="btn-keep-shopping" style="display:none;">SEGUIR COMPRANDO</button>
     </div>
   </div>
@@ -233,7 +233,7 @@ export function updateCartUI() {
         if (keepShoppingBtn) keepShoppingBtn.style.display = 'none';
         return;
     }
-    if (checkoutBtn) checkoutBtn.innerText = 'IR A PAGAR';
+    if (checkoutBtn) checkoutBtn.innerText = 'IR A FINALIZAR COMPRA';
     if (keepShoppingBtn) keepShoppingBtn.style.display = 'block';
 
     if (!cartItemsList) return;

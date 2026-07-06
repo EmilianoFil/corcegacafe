@@ -3,7 +3,7 @@ import { doc, getDoc, getDocs, collection, query, where } from 'https://www.gsta
 import { writeReserva, fetchReservedByOthers } from './cart-reservas.js';
 import { cart, initCart, openCart, closeCart, saveAndRefresh, updateCartUI, showToast, setMaxUnidadesPorPedido, getMaxUnidadesPorPedido } from './cart-component.js';
 import { initComboPicker } from './combo-picker.js';
-import { openDisponibilidadModal } from './agenda-disponibilidad.js';
+import { openDisponibilidadModal, getFechaRetiro } from './agenda-disponibilidad.js';
 
 // --- STATE ---
 let currentProduct = null;
@@ -197,7 +197,7 @@ function renderProductDetail() {
     if (masInfoContainer) {
         if (p.masInfo?.activo && p.masInfo?.texto) {
             masInfoContainer.innerHTML = `
-                <button onclick="window._openMasInfoModal()" style="background:none;border:2px solid var(--naranja-accent,#d86634);color:var(--naranja-accent,#d86634);border-radius:20px;padding:6px 18px;font-size:0.82rem;font-weight:700;cursor:pointer;margin-top:10px;">
+                <button onclick="window._openMasInfoModal()" style="background:none;border:2px solid var(--naranja-accent,#d86634);color:var(--naranja-accent,#d86634);border-radius:20px;padding:10px 22px;font-size:0.82rem;font-weight:700;cursor:pointer;margin-top:10px;margin-bottom:12px;">
                     ℹ️ Más info
                 </button>`;
             masInfoContainer.style.display = 'block';
@@ -248,10 +248,20 @@ function renderProductDetail() {
                     📅 Ver disponibilidad de retiro
                 </button>`;
             dispoContainer.style.display = 'block';
-            document.getElementById('btn-ver-disponibilidad-prod').onclick = () => {
+            const dispoBtn = document.getElementById('btn-ver-disponibilidad-prod');
+            dispoBtn.onclick = () => {
                 // Carrito actual + este producto (con la cantidad elegida) para el coloreo de capacidad
                 openDisponibilidadModal({ items: [...cart, { id: p.id, qty: currentQty }] });
             };
+            // Mostrar la fecha elegida en el botón (y refrescarlo si cambia desde el modal)
+            const refreshDispoBtn = () => {
+                const stored = getFechaRetiro();
+                dispoBtn.innerHTML = stored
+                    ? `📅 Retiro: <strong>${stored.fmt}</strong> · cambiar`
+                    : '📅 Ver disponibilidad de retiro';
+            };
+            refreshDispoBtn();
+            window.addEventListener('corcega:fecha-retiro', refreshDispoBtn);
         } else {
             dispoContainer.style.display = 'none';
         }
