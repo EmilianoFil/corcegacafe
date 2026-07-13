@@ -777,7 +777,7 @@ export async function abrirEditorPrecios() {
             </td>` : '';
 
         return `
-        <tr data-id="${p.id}" data-precio-original="${precioActual}" data-precio-py-original="${precioPYActual}" data-pct-py="${pctPY}" style="border-bottom:1px solid #f0f0f0;">
+        <tr data-id="${p.id}" data-precio-original="${precioActual}" data-precio-py-original="${precioPYActual}" data-pct-py="${pctPY}" data-precio-stockos="${precioStockos ?? ''}" style="border-bottom:1px solid #f0f0f0;">
             <td style="padding:10px 12px;text-align:center;">
                 <input type="checkbox" class="chk-plato" checked style="width:16px;height:16px;cursor:pointer;">
             </td>
@@ -828,6 +828,12 @@ export async function abrirEditorPrecios() {
                     Aplicar
                 </button>
             </div>
+            ${hayStockos ? `
+            <button onclick="window.cartaAdmin._nivelarConStockos()"
+                title="Copiar el precio de StockOS a todos los platos seleccionados que estén vinculados"
+                style="padding:8px 18px;border-radius:8px;border:none;background:#1a6bc4;color:white;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit;">
+                💰 Nivelar con StockOS
+            </button>` : ''}
             <div style="margin-left:auto;display:flex;gap:8px;">
                 <button onclick="window.cartaAdmin._seleccionarTodos(true)"
                     style="padding:6px 12px;border-radius:7px;border:1px solid #ddd;background:white;font-size:0.78rem;cursor:pointer;font-family:inherit;">
@@ -885,6 +891,19 @@ export function _copiarPrecioStockos(tr, precio) {
     if (!inp) return;
     inp.value = precio;
     _marcarCambio(inp);
+}
+
+export function _nivelarConStockos() {
+    document.querySelectorAll('#tabla-precios-body tr').forEach(tr => {
+        const chk = tr.querySelector('.chk-plato');
+        if (!chk?.checked) return;
+        const precioStockos = parseFloat(tr.dataset.precioStockos);
+        if (isNaN(precioStockos)) return; // sin vínculo StockOS o sin precio
+        const inp = tr.querySelector('.inp-precio-nuevo');
+        inp.value = precioStockos;
+        _marcarCambio(inp);
+    });
+    _actualizarContadorCambios();
 }
 
 export function _aplicarPorcentaje() {
