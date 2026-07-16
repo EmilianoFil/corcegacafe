@@ -6,10 +6,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { auth } from '../firebase-config.js';
+import { db } from '../firebase-config.js';
+import { collection, getDocs, orderBy, query } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-const MODO_DEMO = true;
-// Cloud Function que genera respuestas con Claude + manual de marca (Fase 2)
+const MODO_DEMO = false;
 const GENERAR_URL = 'https://us-central1-corcega-loyalty-club.cloudfunctions.net/generarRespuestaReview';
+const SINCRONIZAR_URL = 'https://us-central1-corcega-loyalty-club.cloudfunctions.net/sincronizarReviews';
+const PUBLICAR_URL = 'https://us-central1-corcega-loyalty-club.cloudfunctions.net/publicarRespuesta';
 
 // ── DATOS DE DEMO ────────────────────────────────────────────────────────────
 const DEMO_REVIEWS = [
@@ -93,13 +96,19 @@ function toast(msg, ok = true) {
     setTimeout(() => t.remove(), 3200);
 }
 
-// Simula la fuente de datos. Fase 3: leer de Firestore "google_reviews".
 async function fetchReviews() {
-    return DEMO_REVIEWS.map(r => ({
-        ...r,
-        borradores: DEMO_BORRADORES[r.id] || null,
-        borradorIdx: 0,
-    }));
+    const snap = await getDocs(query(collection(db, 'google_reviews'), orderBy('fecha', 'desc')));
+    return snap.docs.map(d => {
+        const r = { id: d.id, ...d.data() };
+        if (r.borrador && !r.respondida) {
+            r.borradores = [r.borrador];
+            r.borradorIdx = 0;
+        } else {
+            r.borradores = null;
+            r.borradorIdx = 0;
+        }
+        return r;
+    });
 }
 
 // ── KPIs ─────────────────────────────────────────────────────────────────────
@@ -245,21 +254,61 @@ export async function load() {
     if (_cargado) return;
     _cargado = true;
     _reviews = await fetchReviews();
-    $('rev-demo-banner').style.display = MODO_DEMO ? 'flex' : 'none';
-    renderTodo();
+    const banner = $('rev-demo-banner');
+    if (banner) banner.style.display = MODO_DEMO ? 'flex' : 'none';
+    if (!_reviews.length) {
+        await sincronizar(true);
+    } else {
+        renderTodo();
+    }
 }
 
-export function aprobar(id) {
+export async function sincronizar(silencioso = false) {
+    try {
+        const token = await auth.currentUser.getIdToken();
+        const res = await fetch(SINCRONIZAR_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({}),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || res.status);
+        _cargado = false;
+        _reviews = await fetchReviews();
+        renderTodo();
+        if (!silencioso) toast(`✅ Sincronizado: ${data.total} reviews (${data.nuevas} nuevas)`);
+    } catch (e) {
+        toast('Error al sincronizar: ' + e.message, false);
+    }
+}
+
+export async function aprobar(id) {
     const r = _reviews.find(x => x.id === id);
     if (!r) return;
     const texto = $(`draft-text-${id}`).value.trim();
     if (!texto) { toast('La respuesta no puede estar vacía', false); return; }
-    // FASE 3: acá se llama a la Cloud Function que publica vía Business Profile API
-    r.respondida = true;
-    r.respuesta = texto;
-    r.borradores = null;
-    toast(MODO_DEMO ? '✅ (Demo) Respuesta "publicada" en Google' : '✅ Respuesta publicada en Google');
-    renderTodo();
+
+    const btn = document.querySelector(`#draft-${id} button`);
+    if (btn) { btn.disabled = true; btn.textContent = 'Publicando...'; }
+
+    try {
+        const token = await auth.currentUser.getIdToken();
+        const res = await fetch(PUBLICAR_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ reviewId: id, texto }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || res.status);
+        r.respondida = true;
+        r.respuesta = texto;
+        r.borradores = null;
+        toast('✅ Respuesta publicada en Google');
+        renderTodo();
+    } catch (e) {
+        toast('Error al publicar: ' + e.message, false);
+        if (btn) { btn.disabled = false; btn.textContent = '✅ Aprobar y publicar'; }
+    }
 }
 
 export async function regenerar(id, btn) {

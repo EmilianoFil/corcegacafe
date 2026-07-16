@@ -10,6 +10,8 @@ const logger = require("firebase-functions/logger");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
 const corsHandler = cors({ origin: true });
+const https = require("https");
+const querystring = require("querystring");
 
 const admin = require("firebase-admin");
 admin.initializeApp();
@@ -2546,6 +2548,9 @@ exports.onClienteUpdated = onDocumentUpdated(
 
 const Anthropic = require("@anthropic-ai/sdk");
 const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
+const GBP_CLIENT_ID = defineSecret("GBP_CLIENT_ID");
+const GBP_CLIENT_SECRET = defineSecret("GBP_CLIENT_SECRET");
+const GBP_REFRESH_TOKEN = defineSecret("GBP_REFRESH_TOKEN");
 
 const REVIEWS_MODEL = "claude-opus-4-8";
 const REVIEWS_NOTIFY = ["emilianofilgueira@gmail.com", "lemacafesrl@gmail.com"];
@@ -2759,6 +2764,246 @@ exports.agenteReviews = onSchedule(
       </div>`,
     });
     logger.info(`agenteReviews: ${generadas.length} borradores generados y notificados.`);
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GBP REVIEWS — Sincronización y publicación de respuestas
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getGbpAccessToken = (clientId, clientSecret, refreshToken) =>
+  new Promise((resolve, reject) => {
+    const body = querystring.stringify({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    });
+    const req = https.request(
+      {
+        hostname: "oauth2.googleapis.com",
+        path: "/token",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Length": Buffer.byteLength(body),
+        },
+      },
+      (res) => {
+        let data = "";
+        res.on("data", (d) => (data += d));
+        res.on("end", () => {
+          const json = JSON.parse(data);
+          if (json.access_token) resolve(json.access_token);
+          else reject(new Error("GBP token error: " + JSON.stringify(json)));
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+
+const gbpGet = (hostname, path, token) =>
+  new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname,
+        path,
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      },
+      (res) => {
+        let data = "";
+        res.on("data", (d) => (data += d));
+        res.on("end", () => {
+          try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
+          catch { resolve({ status: res.statusCode, body: data }); }
+        });
+      }
+    );
+    req.on("error", reject);
+    req.end();
+  });
+
+const gbpPut = (hostname, path, token, payload) =>
+  new Promise((resolve, reject) => {
+    const body = JSON.stringify(payload);
+    const req = https.request(
+      {
+        hostname,
+        path,
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
+      },
+      (res) => {
+        let data = "";
+        res.on("data", (d) => (data += d));
+        res.on("end", () => {
+          try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
+          catch { resolve({ status: res.statusCode, body: data }); }
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+
+// Lee el locationName de Firestore config o lo descubre automáticamente desde la API
+const getLocationName = async (token) => {
+  const cfgSnap = await db.doc("config/gbp_config").get();
+  if (cfgSnap.exists && cfgSnap.data().locationName) return cfgSnap.data().locationName;
+
+  const acctRes = await gbpGet("mybusinessaccountmanagement.googleapis.com", "/v1/accounts", token);
+  if (!acctRes.body.accounts?.length) throw new Error("No GBP accounts found");
+  const accountName = acctRes.body.accounts[0].name;
+
+  const locRes = await gbpGet(
+    "mybusinessbusinessinformation.googleapis.com",
+    `/v1/${accountName}/locations?readMask=name,title&pageSize=100`,
+    token
+  );
+  const locations = locRes.body.locations || [];
+  if (!locations.length) throw new Error("No GBP locations found");
+  const corcega = locations.find((l) => l.title && /c[oó]rcega/i.test(l.title)) || locations[0];
+  const locationName = corcega.name;
+  await db.doc("config/gbp_config").set({ accountName, locationName, title: corcega.title || "" }, { merge: true });
+  logger.info(`GBP location descubierta: ${locationName}`);
+  return locationName;
+};
+
+const STAR_MAP = { ONE: 1, TWO: 2, THREE: 3, FOUR: 4, FIVE: 5 };
+
+const mapReview = (rev) => ({
+  reviewId: rev.name.split("/").pop(),
+  reviewName: rev.name,
+  autor: rev.reviewer?.displayName || "Anónimo",
+  rating: STAR_MAP[rev.starRating] ?? 0,
+  texto: rev.comment || "",
+  fecha: rev.createTime ? rev.createTime.split("T")[0] : "",
+  updateTime: rev.updateTime || rev.createTime || "",
+  respondida: !!rev.reviewReply?.comment,
+  respuesta: rev.reviewReply?.comment || null,
+  sincronizadoEl: admin.firestore.FieldValue.serverTimestamp(),
+});
+
+// Sincroniza reviews GBP → Firestore (llamado manual desde el admin)
+exports.sincronizarReviews = onRequest(
+  { region: "us-central1", secrets: [GBP_CLIENT_ID, GBP_CLIENT_SECRET, GBP_REFRESH_TOKEN] },
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      if (!(await verificarAuthAdmin(req, res))) return;
+      try {
+        const token = await getGbpAccessToken(
+          GBP_CLIENT_ID.value(), GBP_CLIENT_SECRET.value(), GBP_REFRESH_TOKEN.value()
+        );
+        const locationName = await getLocationName(token);
+        const revRes = await gbpGet(
+          "mybusinessreviews.googleapis.com",
+          `/v1/${locationName}/reviews?pageSize=50&orderBy=updateTime+desc`,
+          token
+        );
+        const reviews = revRes.body.reviews || [];
+        logger.info(`sincronizarReviews: ${reviews.length} reviews traídas`);
+
+        const batch = db.batch();
+        let nuevas = 0;
+        for (const rev of reviews) {
+          const data = mapReview(rev);
+          const docRef = db.collection("google_reviews").doc(data.reviewId);
+          const existe = await docRef.get();
+          if (!existe.exists) nuevas++;
+          batch.set(docRef, data, { merge: true });
+        }
+        await batch.commit();
+        res.json({ ok: true, total: reviews.length, nuevas });
+      } catch (e) {
+        logger.error("sincronizarReviews:", e);
+        res.status(500).json({ error: e.message });
+      }
+    });
+  }
+);
+
+// Sincronización programada cada 2 horas
+exports.sincronizarReviewsScheduled = onSchedule(
+  { schedule: "every 2 hours", region: "us-central1", secrets: [GBP_CLIENT_ID, GBP_CLIENT_SECRET, GBP_REFRESH_TOKEN] },
+  async () => {
+    try {
+      const token = await getGbpAccessToken(
+        GBP_CLIENT_ID.value(), GBP_CLIENT_SECRET.value(), GBP_REFRESH_TOKEN.value()
+      );
+      const locationName = await getLocationName(token);
+      const revRes = await gbpGet(
+        "mybusinessreviews.googleapis.com",
+        `/v1/${locationName}/reviews?pageSize=50&orderBy=updateTime+desc`,
+        token
+      );
+      const reviews = revRes.body.reviews || [];
+      const batch = db.batch();
+      let nuevas = 0;
+      for (const rev of reviews) {
+        const data = mapReview(rev);
+        const docRef = db.collection("google_reviews").doc(data.reviewId);
+        const existe = await docRef.get();
+        if (!existe.exists) nuevas++;
+        batch.set(docRef, data, { merge: true });
+      }
+      await batch.commit();
+      logger.info(`sincronizarReviewsScheduled: ${reviews.length} reviews, ${nuevas} nuevas`);
+    } catch (e) {
+      logger.error("sincronizarReviewsScheduled:", e);
+    }
+  }
+);
+
+// Publica una respuesta en Google Business Profile y actualiza Firestore
+exports.publicarRespuesta = onRequest(
+  { region: "us-central1", secrets: [GBP_CLIENT_ID, GBP_CLIENT_SECRET, GBP_REFRESH_TOKEN] },
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      if (!(await verificarAuthAdmin(req, res))) return;
+      const { reviewId, texto } = req.body || {};
+      if (!reviewId || !texto?.trim()) {
+        res.status(400).json({ error: "Faltan reviewId o texto" });
+        return;
+      }
+      try {
+        const token = await getGbpAccessToken(
+          GBP_CLIENT_ID.value(), GBP_CLIENT_SECRET.value(), GBP_REFRESH_TOKEN.value()
+        );
+        const docRef = db.collection("google_reviews").doc(reviewId);
+        const snap = await docRef.get();
+        if (!snap.exists) { res.status(404).json({ error: "Review no encontrada" }); return; }
+
+        const gbpRes = await gbpPut(
+          "mybusinessreviews.googleapis.com",
+          `/v1/${snap.data().reviewName}/reply`,
+          token,
+          { comment: texto.trim() }
+        );
+        if (gbpRes.status !== 200) {
+          logger.error("publicarRespuesta GBP error:", gbpRes.body);
+          res.status(502).json({ error: "GBP API error", detail: gbpRes.body });
+          return;
+        }
+        await docRef.update({
+          respondida: true,
+          respuesta: texto.trim(),
+          respondidaEl: admin.firestore.FieldValue.serverTimestamp(),
+          borrador: admin.firestore.FieldValue.delete(),
+        });
+        res.json({ ok: true });
+      } catch (e) {
+        logger.error("publicarRespuesta:", e);
+        res.status(500).json({ error: e.message });
+      }
+    });
   }
 );
 
