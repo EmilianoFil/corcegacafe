@@ -2857,7 +2857,9 @@ const gbpPut = (hostname, path, token, payload) =>
 // Lee el locationName de Firestore config o lo descubre automáticamente desde la API
 const getLocationName = async (token) => {
   const cfgSnap = await db.doc("config/gbp_config").get();
-  if (cfgSnap.exists && cfgSnap.data().locationName) return cfgSnap.data().locationName;
+  const cached = cfgSnap.exists ? cfgSnap.data() : null;
+  // Solo usamos el caché si el locationName ya tiene el formato completo accounts/.../locations/...
+  if (cached?.locationName?.startsWith("accounts/")) return cached.locationName;
 
   const acctRes = await gbpGet("mybusinessaccountmanagement.googleapis.com", "/v1/accounts", token);
   if (!acctRes.body.accounts?.length) throw new Error("No GBP accounts found");
@@ -2871,7 +2873,10 @@ const getLocationName = async (token) => {
   const locations = locRes.body.locations || [];
   if (!locations.length) throw new Error("No GBP locations found");
   const corcega = locations.find((l) => l.title && /c[oó]rcega/i.test(l.title)) || locations[0];
-  const locationName = corcega.name;
+  // Business Information API devuelve name = "locations/{id}" sin el account prefix.
+  // Reviews API necesita "accounts/{accountId}/locations/{locationId}".
+  const locationId = corcega.name.split("/").pop();
+  const locationName = `${accountName}/locations/${locationId}`;
   await db.doc("config/gbp_config").set({ accountName, locationName, title: corcega.title || "" }, { merge: true });
   logger.info(`GBP location descubierta: ${locationName}`);
   return locationName;
