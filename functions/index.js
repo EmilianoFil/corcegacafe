@@ -2908,12 +2908,16 @@ exports.sincronizarReviews = onRequest(
           GBP_CLIENT_ID.value(), GBP_CLIENT_SECRET.value(), GBP_REFRESH_TOKEN.value()
         );
         const locationName = await getLocationName(token);
+        // mybusiness.googleapis.com/v4 es la API de reviews que funciona con el acceso GBP actual
+        const locId = locationName.split("/").pop();
+        const acctId = locationName.split("/")[1];
         const revRes = await gbpGet(
-          "mybusinessreviews.googleapis.com",
-          `/v1/${locationName}/reviews?pageSize=50&orderBy=updateTime+desc`,
+          "mybusiness.googleapis.com",
+          `/v4/accounts/${acctId}/locations/${locId}/reviews?pageSize=50&orderBy=updateTime%20desc`,
           token
         );
         const reviews = revRes.body.reviews || [];
+        if (!reviews.length) logger.warn("sincronizarReviews: body =", JSON.stringify(revRes.body).slice(0, 500));
         logger.info(`sincronizarReviews: ${reviews.length} reviews traídas`);
 
         const batch = db.batch();
@@ -2944,9 +2948,11 @@ exports.sincronizarReviewsScheduled = onSchedule(
         GBP_CLIENT_ID.value(), GBP_CLIENT_SECRET.value(), GBP_REFRESH_TOKEN.value()
       );
       const locationName = await getLocationName(token);
+      const locId = locationName.split("/").pop();
+      const acctId = locationName.split("/")[1];
       const revRes = await gbpGet(
-        "mybusinessreviews.googleapis.com",
-        `/v1/${locationName}/reviews?pageSize=50&orderBy=updateTime+desc`,
+        "mybusiness.googleapis.com",
+        `/v4/accounts/${acctId}/locations/${locId}/reviews?pageSize=50&orderBy=updateTime%20desc`,
         token
       );
       const reviews = revRes.body.reviews || [];
@@ -2987,8 +2993,8 @@ exports.publicarRespuesta = onRequest(
         if (!snap.exists) { res.status(404).json({ error: "Review no encontrada" }); return; }
 
         const gbpRes = await gbpPut(
-          "mybusinessreviews.googleapis.com",
-          `/v1/${snap.data().reviewName}/reply`,
+          "mybusiness.googleapis.com",
+          `/v4/${snap.data().reviewName}/reply`,
           token,
           { comment: texto.trim() }
         );
