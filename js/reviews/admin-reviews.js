@@ -78,6 +78,7 @@ let _reviews = [];
 let _filtroEstrellas = 0;   // 0 = todas
 let _filtroEstado = 'todas'; // todas | pendientes | respondidas
 let _filtroPeriodo = 'todo'; // todo | año | mes — afecta KPIs, nube y lista
+let _listaLimite = 20;       // paginación de la lista completa
 let _cargado = false;
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -120,6 +121,8 @@ function reviewsPeriodo() {
     return _reviews.filter(r => (r.fecha || '') >= cutoff);
 }
 
+const enUltimoAño = (r) => (r.fecha || '') >= new Date(Date.now() - 365 * 864e5).toISOString().split('T')[0];
+
 // ── KPIs ─────────────────────────────────────────────────────────────────────
 function renderKPIs() {
     const lista = reviewsPeriodo();
@@ -143,12 +146,35 @@ function renderKPIs() {
     $('rev-stat-pendientes').textContent = pendientes;
     $('rev-alert-negativas').style.display = negativas > 0 ? 'block' : 'none';
     if (negativas > 0) $('rev-alert-negativas-num').textContent = negativas;
+    renderMetaRating();
+}
+
+// Cuántas reviews NUEVAS de 5★ hacen falta para que Google muestre el próximo
+// decimal. Siempre sobre el total histórico (es lo que promedia Google), sin
+// importar el filtro de período. Google redondea a 1 decimal: para mostrar
+// p.ej. 4.7 el promedio real tiene que llegar a 4.65.
+function renderMetaRating() {
+    const el = $('rev-stat-meta');
+    if (!el || !_reviews.length) return;
+    const n = _reviews.length;
+    const suma = _reviews.reduce((a, r) => a + r.rating, 0);
+    const avgReal = suma / n;
+    const mostrado = Math.round(avgReal * 10) / 10;
+    if (mostrado >= 5) { el.textContent = ''; return; }
+    const objetivo = Math.round(mostrado * 10 + 1) / 10;
+    const umbral = objetivo - 0.05;
+    const faltan = avgReal >= umbral ? 0 : Math.ceil(n * (umbral - avgReal) / (5 - umbral));
+    el.textContent = faltan > 0
+        ? `≈ ${faltan} reviews nuevas de 5★ para mostrar ${objetivo.toFixed(1)} ★`
+        : `¡A un pelito de mostrar ${objetivo.toFixed(1)} ★!`;
 }
 
 // ── BANDEJA DE BORRADORES (el corazón de la sección) ─────────────────────────
 function renderBandeja() {
     const cont = $('rev-bandeja');
-    const pendientes = _reviews.filter(r => !r.respondida && r.borradores);
+    // Entran a la bandeja: las que tienen borrador del agente + las negativas del
+    // último año aunque todavía no tengan borrador (urgentes, se genera a demanda)
+    const pendientes = _reviews.filter(r => !r.respondida && (r.borradores || (r.rating <= 2 && enUltimoAño(r))));
     $('rev-bandeja-count').textContent = pendientes.length;
 
     if (!pendientes.length) {
@@ -172,14 +198,14 @@ function renderBandeja() {
             </div>
             <p style="margin:12px 0; font-size:0.88rem; color:var(--text-main); background:var(--bg-color); padding:12px 16px; border-radius:12px;">${esc(r.texto)}</p>
             <div style="font-size:0.72rem; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
-                🤖 Respuesta sugerida por el agente
+                ${r.borradores ? '🤖 Respuesta sugerida por el agente' : '⏳ Sin borrador todavía — generalo o escribí el tuyo'}
             </div>
-            <textarea id="draft-text-${r.id}" style="width:100%; min-height:90px; padding:12px 14px; border:1px solid var(--border);
-                border-radius:12px; font-family:inherit; font-size:0.85rem; resize:vertical; background:var(--primary-light);">${esc(r.borradores[r.borradorIdx])}</textarea>
+            <textarea id="draft-text-${r.id}" placeholder="Escribí tu respuesta o tocá 🤖 Generar respuesta" style="width:100%; min-height:90px; padding:12px 14px; border:1px solid var(--border);
+                border-radius:12px; font-family:inherit; font-size:0.85rem; resize:vertical; background:var(--primary-light);">${r.borradores ? esc(r.borradores[r.borradorIdx]) : ''}</textarea>
             <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
                 <button class="btn-rev" style="background:var(--success); color:white;" onclick="window.reviewsAdmin.aprobar('${r.id}')">✅ Aprobar y publicar</button>
-                <button class="btn-rev" style="background:var(--white); border:1px solid var(--border);" onclick="window.reviewsAdmin.regenerar('${r.id}', this)">🔄 Otra versión</button>
-                <button class="btn-rev" style="background:var(--white); border:1px solid var(--border); color:var(--text-muted);" onclick="window.reviewsAdmin.descartar('${r.id}')">🗑️ Descartar</button>
+                <button class="btn-rev" style="background:var(--white); border:1px solid var(--border);" onclick="window.reviewsAdmin.regenerar('${r.id}', this)">${r.borradores ? '🔄 Otra versión' : '🤖 Generar respuesta'}</button>
+                ${r.borradores ? `<button class="btn-rev" style="background:var(--white); border:1px solid var(--border); color:var(--text-muted);" onclick="window.reviewsAdmin.descartar('${r.id}')">🗑️ Descartar</button>` : ''}
             </div>
         </div>`).join('');
 }
@@ -235,6 +261,10 @@ function renderLista() {
     if (_filtroEstado === 'pendientes') lista = lista.filter(r => !r.respondida);
     if (_filtroEstado === 'respondidas') lista = lista.filter(r => r.respondida);
 
+    const totalFiltradas = lista.length;
+    const restantes = totalFiltradas - _listaLimite;
+    lista = lista.slice(0, _listaLimite);
+
     $('rev-lista').innerHTML = lista.length ? lista.map(r => `
         <div style="padding:16px 0; border-bottom:1px solid var(--border);">
             <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
@@ -255,8 +285,17 @@ function renderLista() {
                     <div style="font-size:0.68rem; font-weight:700; color:var(--success); margin-bottom:3px;">RESPUESTA DE CÓRCEGA</div>
                     <span style="font-size:0.82rem; color:var(--text-muted);">${esc(r.respuesta)}</span>
                 </div>` : ''}
-        </div>`).join('')
+        </div>`).join('') + (restantes > 0 ? `
+        <div style="text-align:center; padding:18px 0 4px;">
+            <button class="btn-rev" style="background:var(--white); border:1px solid var(--border);"
+                onclick="window.reviewsAdmin.verMas()">Ver más (${restantes} restantes)</button>
+        </div>` : '')
         : '<div style="padding:30px; text-align:center; color:var(--text-muted);">No hay reviews con esos filtros.</div>';
+}
+
+export function verMas() {
+    _listaLimite += 50;
+    renderLista();
 }
 
 function renderTodo() {
@@ -331,7 +370,8 @@ export async function aprobar(id) {
 
 export async function regenerar(id, btn) {
     const r = _reviews.find(x => x.id === id);
-    if (!r || !r.borradores) return;
+    if (!r) return;
+    if (!r.borradores) r.borradores = [];
 
     if (btn) { btn.disabled = true; btn.textContent = '🤖 Generando...'; }
     try {
@@ -355,6 +395,7 @@ export async function regenerar(id, btn) {
             $(`draft-text-${id}`).value = r.borradores[r.borradorIdx];
             toast('🔄 Versión alternativa (local)');
         } else {
+            if (!r.borradores.length) r.borradores = null;
             toast('No se pudo generar otra versión', false);
         }
     } finally {
@@ -374,6 +415,7 @@ export function filtrarEstrellas(n, btn) {
     _filtroEstrellas = (_filtroEstrellas === n) ? 0 : n;
     document.querySelectorAll('.rev-filter-star').forEach(b => b.classList.remove('active'));
     if (_filtroEstrellas) btn.classList.add('active');
+    _listaLimite = 20;
     renderLista();
 }
 
@@ -381,6 +423,7 @@ export function filtrarEstado(estado, btn) {
     _filtroEstado = estado;
     document.querySelectorAll('.rev-filter-estado').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    _listaLimite = 20;
     renderLista();
 }
 
@@ -388,6 +431,7 @@ export function filtrarPeriodo(periodo, btn) {
     _filtroPeriodo = periodo;
     document.querySelectorAll('.rev-filter-periodo').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    _listaLimite = 20;
     renderKPIs();
     renderNube();
     renderLista();

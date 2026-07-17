@@ -2723,11 +2723,17 @@ exports.agenteReviews = onSchedule(
   async () => {
     const snap = await db.collection("google_reviews")
       .where("respondida", "==", false).get();
-    // Solo redactamos para reviews del último año, las más recientes primero
+    // Solo redactamos para reviews del último año: negativas primero, después las más recientes
     const cutoff = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const pendientes = snap.docs
       .filter((d) => !d.data().borrador && (d.data().fecha || "") >= cutoff)
-      .sort((a, b) => (b.data().fecha || "").localeCompare(a.data().fecha || ""));
+      .sort((a, b) => {
+        const ra = a.data(); const rb = b.data();
+        const negA = ra.rating <= 2 ? 0 : 1;
+        const negB = rb.rating <= 2 ? 0 : 1;
+        if (negA !== negB) return negA - negB;
+        return (rb.fecha || "").localeCompare(ra.fecha || "");
+      });
     if (!pendientes.length) {
       logger.info("agenteReviews: sin reviews pendientes de borrador.");
       return;
