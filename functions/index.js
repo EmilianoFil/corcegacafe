@@ -2884,16 +2884,27 @@ const getLocationName = async (token) => {
 
 const STAR_MAP = { ONE: 1, TWO: 2, THREE: 3, FOUR: 4, FIVE: 5 };
 
+// GBP adjunta la traducción automática al comentario. Nos quedamos solo con el
+// texto original: si viene "(Translated by Google) ... (Original) ...", tomamos
+// lo que sigue a (Original); si viene "original (Translated by Google) ...",
+// cortamos antes del marcador.
+const limpiarComentario = (c) => {
+  if (!c) return "";
+  const original = c.match(/\(Original\)\s*([\s\S]*)/);
+  if (original) return original[1].trim();
+  return c.split(/\(Translated by Google\)/)[0].trim();
+};
+
 const mapReview = (rev) => ({
   reviewId: rev.name.split("/").pop(),
   reviewName: rev.name,
   autor: rev.reviewer?.displayName || "Anónimo",
   rating: STAR_MAP[rev.starRating] ?? 0,
-  texto: rev.comment || "",
+  texto: limpiarComentario(rev.comment),
   fecha: rev.createTime ? rev.createTime.split("T")[0] : "",
   updateTime: rev.updateTime || rev.createTime || "",
   respondida: !!rev.reviewReply?.comment,
-  respuesta: rev.reviewReply?.comment || null,
+  respuesta: limpiarComentario(rev.reviewReply?.comment) || null,
   sincronizadoEl: admin.firestore.FieldValue.serverTimestamp(),
 });
 
