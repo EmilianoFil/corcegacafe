@@ -183,8 +183,9 @@ function renderBandeja() {
         return;
     }
 
-    // Las negativas primero: son las urgentes
-    pendientes.sort((a, b) => a.rating - b.rating || b.fecha.localeCompare(a.fecha));
+    // Ordenadas por fecha de publicación, las más recientes arriba
+    // (las negativas quedan igual destacadas con el borde rojo)
+    pendientes.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
 
     cont.innerHTML = pendientes.map(r => `
         <div class="card rev-draft-card" id="draft-${r.id}" style="margin-bottom:16px; ${r.rating <= 2 ? 'border-left:4px solid var(--error);' : ''}">
