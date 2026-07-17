@@ -2722,8 +2722,12 @@ exports.agenteReviews = onSchedule(
   { schedule: "every 6 hours", region: "us-central1", secrets: [ANTHROPIC_API_KEY, emailUser, emailPass] },
   async () => {
     const snap = await db.collection("google_reviews")
-      .where("respondida", "==", false).limit(50).get();
-    const pendientes = snap.docs.filter((d) => !d.data().borrador);
+      .where("respondida", "==", false).get();
+    // Solo redactamos para reviews del último año, las más recientes primero
+    const cutoff = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const pendientes = snap.docs
+      .filter((d) => !d.data().borrador && (d.data().fecha || "") >= cutoff)
+      .sort((a, b) => (b.data().fecha || "").localeCompare(a.data().fecha || ""));
     if (!pendientes.length) {
       logger.info("agenteReviews: sin reviews pendientes de borrador.");
       return;
@@ -2908,40 +2912,60 @@ const mapReview = (rev) => ({
   sincronizadoEl: admin.firestore.FieldValue.serverTimestamp(),
 });
 
+// Trae TODAS las reviews de GBP (paginado de a 50) y las graba en Firestore.
+// Compartido por la función HTTP y la programada.
+const sincronizarReviewsCore = async () => {
+  const token = await getGbpAccessToken(
+    GBP_CLIENT_ID.value(), GBP_CLIENT_SECRET.value(), GBP_REFRESH_TOKEN.value()
+  );
+  const locationName = await getLocationName(token);
+  // mybusiness.googleapis.com/v4 es la API de reviews que funciona con el acceso GBP actual
+  const locId = locationName.split("/").pop();
+  const acctId = locationName.split("/")[1];
+
+  const reviews = [];
+  let pageToken = "";
+  let paginas = 0;
+  do {
+    const path = `/v4/accounts/${acctId}/locations/${locId}/reviews?pageSize=50&orderBy=updateTime%20desc` +
+      (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "");
+    const revRes = await gbpGet("mybusiness.googleapis.com", path, token);
+    const lote = revRes.body.reviews || [];
+    if (!lote.length && !paginas) {
+      logger.warn("sincronizarReviews: body =", JSON.stringify(revRes.body).slice(0, 500));
+    }
+    reviews.push(...lote);
+    pageToken = revRes.body.nextPageToken || "";
+    paginas++;
+  } while (pageToken && paginas < 60);
+
+  const existentes = new Set(
+    (await db.collection("google_reviews").select().get()).docs.map((d) => d.id)
+  );
+  let nuevas = 0;
+  // Firestore admite hasta 500 operaciones por batch
+  for (let i = 0; i < reviews.length; i += 450) {
+    const batch = db.batch();
+    for (const rev of reviews.slice(i, i + 450)) {
+      const data = mapReview(rev);
+      if (!existentes.has(data.reviewId)) nuevas++;
+      batch.set(db.collection("google_reviews").doc(data.reviewId), data, { merge: true });
+    }
+    await batch.commit();
+  }
+  logger.info(`sincronizarReviews: ${reviews.length} reviews en ${paginas} páginas, ${nuevas} nuevas`);
+  return { total: reviews.length, nuevas };
+};
+
 // Sincroniza reviews GBP → Firestore (llamado manual desde el admin)
 exports.sincronizarReviews = onRequest(
-  { region: "us-central1", secrets: [GBP_CLIENT_ID, GBP_CLIENT_SECRET, GBP_REFRESH_TOKEN] },
+  { region: "us-central1", timeoutSeconds: 300, secrets: [GBP_CLIENT_ID, GBP_CLIENT_SECRET, GBP_REFRESH_TOKEN] },
   (req, res) => {
     corsHandler(req, res, async () => {
       if (!(await verificarAuthAdmin(req, res))) return;
       try {
-        const token = await getGbpAccessToken(
-          GBP_CLIENT_ID.value(), GBP_CLIENT_SECRET.value(), GBP_REFRESH_TOKEN.value()
-        );
-        const locationName = await getLocationName(token);
-        // mybusiness.googleapis.com/v4 es la API de reviews que funciona con el acceso GBP actual
-        const locId = locationName.split("/").pop();
-        const acctId = locationName.split("/")[1];
-        const revRes = await gbpGet(
-          "mybusiness.googleapis.com",
-          `/v4/accounts/${acctId}/locations/${locId}/reviews?pageSize=50&orderBy=updateTime%20desc`,
-          token
-        );
-        const reviews = revRes.body.reviews || [];
-        if (!reviews.length) logger.warn("sincronizarReviews: body =", JSON.stringify(revRes.body).slice(0, 500));
-        logger.info(`sincronizarReviews: ${reviews.length} reviews traídas`);
-
-        const batch = db.batch();
-        let nuevas = 0;
-        for (const rev of reviews) {
-          const data = mapReview(rev);
-          const docRef = db.collection("google_reviews").doc(data.reviewId);
-          const existe = await docRef.get();
-          if (!existe.exists) nuevas++;
-          batch.set(docRef, data, { merge: true });
-        }
-        await batch.commit();
-        res.json({ ok: true, total: reviews.length, nuevas });
+        const { total, nuevas } = await sincronizarReviewsCore();
+        res.json({ ok: true, total, nuevas });
       } catch (e) {
         logger.error("sincronizarReviews:", e);
         res.status(500).json({ error: e.message });
@@ -2952,32 +2976,10 @@ exports.sincronizarReviews = onRequest(
 
 // Sincronización programada cada 2 horas
 exports.sincronizarReviewsScheduled = onSchedule(
-  { schedule: "every 2 hours", region: "us-central1", secrets: [GBP_CLIENT_ID, GBP_CLIENT_SECRET, GBP_REFRESH_TOKEN] },
+  { schedule: "every 2 hours", region: "us-central1", timeoutSeconds: 300, secrets: [GBP_CLIENT_ID, GBP_CLIENT_SECRET, GBP_REFRESH_TOKEN] },
   async () => {
     try {
-      const token = await getGbpAccessToken(
-        GBP_CLIENT_ID.value(), GBP_CLIENT_SECRET.value(), GBP_REFRESH_TOKEN.value()
-      );
-      const locationName = await getLocationName(token);
-      const locId = locationName.split("/").pop();
-      const acctId = locationName.split("/")[1];
-      const revRes = await gbpGet(
-        "mybusiness.googleapis.com",
-        `/v4/accounts/${acctId}/locations/${locId}/reviews?pageSize=50&orderBy=updateTime%20desc`,
-        token
-      );
-      const reviews = revRes.body.reviews || [];
-      const batch = db.batch();
-      let nuevas = 0;
-      for (const rev of reviews) {
-        const data = mapReview(rev);
-        const docRef = db.collection("google_reviews").doc(data.reviewId);
-        const existe = await docRef.get();
-        if (!existe.exists) nuevas++;
-        batch.set(docRef, data, { merge: true });
-      }
-      await batch.commit();
-      logger.info(`sincronizarReviewsScheduled: ${reviews.length} reviews, ${nuevas} nuevas`);
+      await sincronizarReviewsCore();
     } catch (e) {
       logger.error("sincronizarReviewsScheduled:", e);
     }

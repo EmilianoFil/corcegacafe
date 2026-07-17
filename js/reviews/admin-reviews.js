@@ -77,6 +77,7 @@ const DEMO_ANALISIS = {
 let _reviews = [];
 let _filtroEstrellas = 0;   // 0 = todas
 let _filtroEstado = 'todas'; // todas | pendientes | respondidas
+let _filtroPeriodo = 'todo'; // todo | año | mes — afecta KPIs, nube y lista
 let _cargado = false;
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -111,13 +112,30 @@ async function fetchReviews() {
     });
 }
 
+// ── FILTRO DE PERÍODO ────────────────────────────────────────────────────────
+function reviewsPeriodo() {
+    if (_filtroPeriodo === 'todo') return _reviews;
+    const dias = _filtroPeriodo === 'mes' ? 30 : 365;
+    const cutoff = new Date(Date.now() - dias * 864e5).toISOString().split('T')[0];
+    return _reviews.filter(r => (r.fecha || '') >= cutoff);
+}
+
 // ── KPIs ─────────────────────────────────────────────────────────────────────
 function renderKPIs() {
-    const total = _reviews.length;
-    const avg = (_reviews.reduce((a, r) => a + r.rating, 0) / total).toFixed(1);
-    const respondidas = _reviews.filter(r => r.respondida).length;
+    const lista = reviewsPeriodo();
+    const total = lista.length;
+    if (!total) {
+        $('rev-stat-avg').textContent = '- ★';
+        $('rev-stat-total').textContent = '0';
+        $('rev-stat-respondidas').textContent = '-';
+        $('rev-stat-pendientes').textContent = '0';
+        $('rev-alert-negativas').style.display = 'none';
+        return;
+    }
+    const avg = (lista.reduce((a, r) => a + r.rating, 0) / total).toFixed(1);
+    const respondidas = lista.filter(r => r.respondida).length;
     const pendientes = total - respondidas;
-    const negativas = _reviews.filter(r => r.rating <= 2 && !r.respondida).length;
+    const negativas = lista.filter(r => r.rating <= 2 && !r.respondida).length;
 
     $('rev-stat-avg').textContent = avg + ' ★';
     $('rev-stat-total').textContent = total;
@@ -177,7 +195,7 @@ const STOPWORDS = new Set(('de la que el en y a los se del las un por con no una
 
 function renderNube() {
     const freq = {};
-    _reviews.forEach(r => {
+    reviewsPeriodo().forEach(r => {
         r.texto.toLowerCase().replace(/[^\wáéíóúüñ\s]/g, ' ').split(/\s+/).forEach(w => {
             if (w.length < 4 || STOPWORDS.has(w)) return;
             freq[w] = (freq[w] || 0) + 1;
@@ -212,7 +230,7 @@ function renderAnalisis() {
 
 // ── LISTA COMPLETA ───────────────────────────────────────────────────────────
 function renderLista() {
-    let lista = [..._reviews].sort((a, b) => b.fecha.localeCompare(a.fecha));
+    let lista = [...reviewsPeriodo()].sort((a, b) => b.fecha.localeCompare(a.fecha));
     if (_filtroEstrellas) lista = lista.filter(r => r.rating === _filtroEstrellas);
     if (_filtroEstado === 'pendientes') lista = lista.filter(r => !r.respondida);
     if (_filtroEstado === 'respondidas') lista = lista.filter(r => r.respondida);
@@ -363,5 +381,14 @@ export function filtrarEstado(estado, btn) {
     _filtroEstado = estado;
     document.querySelectorAll('.rev-filter-estado').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    renderLista();
+}
+
+export function filtrarPeriodo(periodo, btn) {
+    _filtroPeriodo = periodo;
+    document.querySelectorAll('.rev-filter-periodo').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderKPIs();
+    renderNube();
     renderLista();
 }

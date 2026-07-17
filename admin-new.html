@@ -812,8 +812,8 @@
         /* Reviews Google */
         .btn-rev { padding:9px 16px; border:none; border-radius:10px; font-weight:700; font-size:0.78rem; cursor:pointer; font-family:inherit; }
         .btn-rev:hover { transform:translateY(-1px); filter:brightness(1.05); }
-        .rev-filter-star, .rev-filter-estado { padding:6px 12px; border:1px solid var(--border); background:var(--white); border-radius:20px; font-size:0.75rem; font-weight:600; cursor:pointer; color:var(--text-muted); font-family:inherit; }
-        .rev-filter-star.active, .rev-filter-estado.active { background:var(--secondary); color:white; border-color:var(--secondary); }
+        .rev-filter-star, .rev-filter-estado, .rev-filter-periodo { padding:6px 12px; border:1px solid var(--border); background:var(--white); border-radius:20px; font-size:0.75rem; font-weight:600; cursor:pointer; color:var(--text-muted); font-family:inherit; }
+        .rev-filter-star.active, .rev-filter-estado.active, .rev-filter-periodo.active { background:var(--secondary); color:white; border-color:var(--secondary); }
         #rev-nube { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:2px; padding:10px; min-height:180px; }
 
         /* La card del form de puntos necesita dejar pasar el dropdown */
@@ -956,7 +956,7 @@
 
             /* Targets táctiles más cómodos */
             .btn-rev, .btn-rank-toggle, .rev-filter-star, .rev-filter-estado,
-            .prod-tab-btn { min-height: 40px; }
+            .rev-filter-periodo, .prod-tab-btn { min-height: 40px; }
             .prod-tabs-nav { flex-wrap: wrap; }
             .prod-tab-btn { flex: 1 1 45%; }
 
@@ -2161,6 +2161,13 @@
                 ⚠️ Tenés <span id="rev-alert-negativas-num">0</span> review(s) negativa(s) sin responder. Las respuestas rápidas a reviews negativas mejoran tu reputación.
             </div>
 
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+                <span style="font-size:0.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Período:</span>
+                <button class="rev-filter-periodo active" onclick="window.reviewsAdmin.filtrarPeriodo('todo', this)">Todas</button>
+                <button class="rev-filter-periodo" onclick="window.reviewsAdmin.filtrarPeriodo('año', this)">Último año</button>
+                <button class="rev-filter-periodo" onclick="window.reviewsAdmin.filtrarPeriodo('mes', this)">Último mes</button>
+            </div>
+
             <div class="stats-grid" style="margin-bottom:24px;">
                 <div class="card stat-card">
                     <span class="label">Rating Promedio</span>
@@ -2867,7 +2874,7 @@
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=10';
         window.cartaAdmin = cartaAdmin;
-        import * as reviewsAdmin from './js/reviews/admin-reviews.js?v=2';
+        import * as reviewsAdmin from './js/reviews/admin-reviews.js?v=3';
         window.reviewsAdmin = reviewsAdmin;
 
         let adminData = null;
