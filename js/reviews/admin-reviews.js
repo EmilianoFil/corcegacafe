@@ -199,14 +199,14 @@ function renderBandeja() {
             </div>
             <p style="margin:12px 0; font-size:0.88rem; color:var(--text-main); background:var(--bg-color); padding:12px 16px; border-radius:12px;">${esc(r.texto)}</p>
             <div style="font-size:0.72rem; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
-                ${r.borradores ? '🤖 Respuesta sugerida por el agente' : '⏳ Sin borrador todavía — generalo o escribí el tuyo'}
+                ${r.borradores?.length ? '🤖 Respuesta sugerida por el agente' : '⏳ Sin borrador todavía — generalo o escribí el tuyo'}
             </div>
             <textarea id="draft-text-${r.id}" placeholder="Escribí tu respuesta o tocá 🤖 Generar respuesta" style="width:100%; min-height:90px; padding:12px 14px; border:1px solid var(--border);
-                border-radius:12px; font-family:inherit; font-size:0.85rem; resize:vertical; background:var(--primary-light);">${r.borradores ? esc(r.borradores[r.borradorIdx]) : ''}</textarea>
+                border-radius:12px; font-family:inherit; font-size:0.85rem; resize:vertical; background:var(--primary-light);">${r.borradores?.length ? esc(r.borradores[r.borradorIdx]) : ''}</textarea>
             <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
                 <button class="btn-rev" style="background:var(--success); color:white;" onclick="window.reviewsAdmin.aprobar('${r.id}')">✅ Aprobar y publicar</button>
-                <button class="btn-rev" style="background:var(--white); border:1px solid var(--border);" onclick="window.reviewsAdmin.regenerar('${r.id}', this)">${r.borradores ? '🔄 Otra versión' : '🤖 Generar respuesta'}</button>
-                ${r.borradores ? `<button class="btn-rev" style="background:var(--white); border:1px solid var(--border); color:var(--text-muted);" onclick="window.reviewsAdmin.descartar('${r.id}')">🗑️ Descartar</button>` : ''}
+                <button class="btn-rev" style="background:var(--white); border:1px solid var(--border);" onclick="window.reviewsAdmin.regenerar('${r.id}', this)">${r.borradores?.length ? '🔄 Otra versión' : '🤖 Generar respuesta'}</button>
+                ${r.borradores?.length ? `<button class="btn-rev" style="background:var(--white); border:1px solid var(--border); color:var(--text-muted);" onclick="window.reviewsAdmin.descartar('${r.id}')">🗑️ Descartar</button>` : ''}
             </div>
         </div>`).join('');
 }
@@ -277,7 +277,8 @@ function renderLista() {
                     <span style="font-size:0.75rem; color:var(--text-muted);">${fechaLinda(r.fecha)}</span>
                     ${r.respondida
                         ? '<span style="font-size:0.68rem; font-weight:700; color:var(--success); background:#edf7f2; padding:3px 10px; border-radius:20px;">✓ RESPONDIDA</span>'
-                        : '<span style="font-size:0.68rem; font-weight:700; color:var(--primary); background:var(--primary-light); padding:3px 10px; border-radius:20px;">⏳ PENDIENTE</span>'}
+                        : `<span style="font-size:0.68rem; font-weight:700; color:var(--primary); background:var(--primary-light); padding:3px 10px; border-radius:20px;">⏳ PENDIENTE</span>
+                           <button class="btn-rev" style="background:var(--secondary); color:white; padding:4px 12px; font-size:0.72rem;" onclick="window.reviewsAdmin.responder('${r.id}')">✍️ Responder</button>`}
                 </div>
             </div>
             <p style="margin:8px 0 0; font-size:0.85rem; color:var(--text-main);">${esc(r.texto)}</p>
@@ -410,6 +411,22 @@ export function descartar(id) {
     r.borradores = null;
     toast('Borrador descartado — la review queda pendiente');
     renderTodo();
+}
+
+// Sube una review puntual de la lista a la bandeja para responderla ya
+export function responder(id) {
+    const r = _reviews.find(x => x.id === id);
+    if (!r || r.respondida) return;
+    if (!r.borradores) r.borradores = [];
+    renderBandeja();
+    const card = $(`draft-${id}`);
+    if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.style.boxShadow = '0 0 0 3px var(--secondary)';
+        setTimeout(() => { card.style.boxShadow = ''; }, 2200);
+        const ta = $(`draft-text-${id}`);
+        if (ta) setTimeout(() => ta.focus(), 500);
+    }
 }
 
 export function filtrarEstrellas(n, btn) {
