@@ -489,14 +489,14 @@ export async function eliminarSeccion(id) {
 export async function loadPlatos(seccionId = '') {
     if (!secciones.length) await loadSecciones();
     const tbody = document.getElementById('carta-platos-body');
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:#aaa;">Cargando...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:#aaa;">Cargando...</td></tr>`;
 
     const snap = await getDocs(query(collection(db, 'carta_platos'), orderBy('seccionId'), orderBy('orden')));
     let platos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if (seccionId) platos = platos.filter(p => p.seccionId === seccionId);
 
     if (!platos.length) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:#aaa;">Todavía no hay platos.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:#aaa;">Todavía no hay platos.</td></tr>`;
         return;
     }
 
@@ -551,7 +551,8 @@ export async function loadPlatos(seccionId = '') {
             ? `<span title="${dotTitle}" style="display:inline-flex;align-items:center;gap:3px;background:${preciosDifieren ? '#fff3e0' : '#e8f0fd'};color:${preciosDifieren ? '#e65100' : '#1a6bc4'};font-size:0.68rem;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle;white-space:nowrap;cursor:help;letter-spacing:0.2px;">${sInfo ? `${preciosDifieren ? '⚠ ' : ''}$${Number(sInfo.salePrice).toLocaleString('es-AR')}` : 'S'}</span>`
             : '';
         return `
-        <tr style="border-bottom:1px solid #f5f5f5;">
+        <tr data-id="${p.id}" data-seccion="${p.seccionId ?? ''}" style="border-bottom:1px solid #f5f5f5;">
+            <td class="drag-handle" style="padding:10px 6px 10px 12px; color:#ccc; cursor:grab; font-size:1.1rem; user-select:none; touch-action:none;">⠿</td>
             <td style="padding:10px 15px;">
                 ${foto
                     ? `<img src="${foto}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;">`
@@ -576,6 +577,34 @@ export async function loadPlatos(seccionId = '') {
             </td>
         </tr>`;
     }).join('');
+
+    _initSortablePlatos(tbody);
+}
+
+function _initSortablePlatos(tbody) {
+    if (typeof Sortable === 'undefined') return;
+    Sortable.create(tbody, {
+        handle: '.drag-handle',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: async () => {
+            // Reasignar orden por sección según el orden visual de las filas.
+            // El plato arrastrado nunca cambia de sección: solo su posición
+            // relativa dentro de la suya.
+            const rows = [...tbody.querySelectorAll('tr[data-id]')];
+            const porSeccion = {};
+            rows.forEach(row => {
+                (porSeccion[row.dataset.seccion] ??= []).push(row.dataset.id);
+            });
+            const batch = writeBatch(db);
+            Object.values(porSeccion).forEach(ids => {
+                ids.forEach((id, i) => {
+                    batch.update(doc(db, 'carta_platos', id), { orden: i + 1 });
+                });
+            });
+            await batch.commit();
+        }
+    });
 }
 
 export function filtrarPlatosPorSeccion(seccionId) { loadPlatos(seccionId); }
@@ -679,7 +708,6 @@ export async function guardarPlato() {
             fotos: fotosUrls,
             stockosRecipeId: stockosRecipeId ?? null,
             activo: true,
-            orden: 0,
             actualizadoEn: serverTimestamp()
         };
 
@@ -704,8 +732,10 @@ export async function guardarPlato() {
                 }
             }
         } else {
+            // Nuevo plato: va al final de su sección
             const snap = await getDocs(collection(db, 'carta_platos'));
-            data.orden    = snap.size;
+            const enSeccion = snap.docs.map(d => d.data()).filter(p => p.seccionId === seccionId);
+            data.orden    = enSeccion.length ? Math.max(...enSeccion.map(p => p.orden ?? 0)) + 1 : 1;
             data.creadoEn = serverTimestamp();
             await addDoc(collection(db, 'carta_platos'), data);
         }
