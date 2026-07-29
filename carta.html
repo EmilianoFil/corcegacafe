@@ -836,10 +836,20 @@
         const url    = `https://corcega-loyalty-club.web.app/p/${p.id}`;
         const precio = p.precio != null ? ` — $${Number(p.precio).toLocaleString('es-AR')}` : '';
         const texto  = `${p.nombre}${precio} · Córcega Café`;
+        // El contador se incrementa server-side: las reglas de Firestore no permiten
+        // writes anónimos en carta_plato_stats
+        const contarShare = () => fetch(
+            `https://us-central1-corcega-loyalty-club.cloudfunctions.net/contarShare?platoId=${p.id}`,
+            { method: 'POST' }
+        ).catch(() => {});
         if (navigator.share) {
-            try { await navigator.share({ title: p.nombre, text: texto, url }); } catch (_) { /* canceló */ }
+            try {
+                await navigator.share({ title: p.nombre, text: texto, url });
+                contarShare();   // solo si no canceló el share
+            } catch (_) { /* canceló */ }
         } else {
             window.open(`https://wa.me/?text=${encodeURIComponent(texto + '\n' + url)}`, '_blank');
+            contarShare();
         }
     };
 

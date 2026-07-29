@@ -3052,6 +3052,26 @@ exports.sitemapXml = onRequest({ region: "us-central1" }, async (req, res) => {
   res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>`);
 });
 
+// Contador de shares — las reglas de Firestore exigen login para escribir en
+// carta_plato_stats, pero compartir no requiere login: se incrementa server-side
+exports.contarShare = onRequest({ region: "us-central1" }, (req, res) => {
+  corsHandler(req, res, async () => {
+    const platoId = (req.body?.platoId || req.query.platoId || "").toString();
+    if (!/^[A-Za-z0-9_-]{5,40}$/.test(platoId)) {
+      res.status(400).json({ ok: false, error: "platoId inválido" });
+      return;
+    }
+    try {
+      await db.collection("carta_plato_stats").doc(platoId)
+        .set({ shareCount: admin.firestore.FieldValue.increment(1) }, { merge: true });
+      res.json({ ok: true });
+    } catch (e) {
+      logger.error("contarShare:", e);
+      res.status(500).json({ ok: false });
+    }
+  });
+});
+
 // Compartir plato — sirve OG tags con la foto del plato (WhatsApp/redes no ejecutan JS,
 // así que la preview necesita HTML server-side) y redirige a la carta
 exports.sharePlato = onRequest({ region: "us-central1" }, async (req, res) => {

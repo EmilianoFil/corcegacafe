@@ -2793,6 +2793,10 @@
                     <p style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:6px 0 0; text-transform:uppercase;">Aperturas totales</p>
                 </div>
                 <div class="card" style="padding:18px 20px; background:white; border:1px solid var(--border); text-align:center;">
+                    <p style="font-size:1.8rem; font-weight:800; color:var(--secondary); margin:0;" id="stat-total-shares">—</p>
+                    <p style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:6px 0 0; text-transform:uppercase;">📤 Compartidos</p>
+                </div>
+                <div class="card" style="padding:18px 20px; background:white; border:1px solid var(--border); text-align:center;">
                     <p style="font-size:1.8rem; font-weight:800; color:#eb6f53; margin:0;" id="stat-total-likes">—</p>
                     <p style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:6px 0 0; text-transform:uppercase;">❤️ Me gusta</p>
                 </div>
@@ -2821,6 +2825,7 @@
                         <tr>
                             <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Plato</th>
                             <th style="text-align:center; padding:12px 8px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">👁 Vistas</th>
+                            <th style="text-align:center; padding:12px 8px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">📤 Compartidos</th>
                             <th style="text-align:center; padding:12px 8px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">❤️ Me gusta</th>
                             <th style="text-align:center; padding:12px 8px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">🔖 Q. probar</th>
                             <th style="text-align:center; padding:12px 8px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">✓ Ya probaron</th>
@@ -2829,7 +2834,7 @@
                         </tr>
                     </thead>
                     <tbody id="carta-stats-body">
-                        <tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">Cargando...</td></tr>
+                        <tr><td colspan="8" style="text-align:center; padding:30px; color:var(--text-muted);">Cargando...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -3170,7 +3175,7 @@
         async function _cargarStats() {
             const tbody = document.getElementById('carta-stats-body');
             if (!tbody) return;
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">Cargando...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">Cargando...</td></tr>`;
 
             const [snapPlatos, snapStats, snapVal, snapFavs, snapQP, snapProbados, snapClientes, snapUsuarios] = await Promise.all([
                 getDocs(query(collection(db, 'carta_platos'), orderBy('orden'))),
@@ -3242,9 +3247,10 @@
                 .filter(p => p.activo !== false);
 
             // Totales para el resumen
-            let totalClicks = 0, totalLikes = 0, totalQP = 0, totalProbaron = 0, totalResenas = 0, sumRating = 0, countRating = 0;
+            let totalClicks = 0, totalShares = 0, totalLikes = 0, totalQP = 0, totalProbaron = 0, totalResenas = 0, sumRating = 0, countRating = 0;
             platos.forEach(p => {
                 totalClicks   += statsMap[p.id]?.clickCount ?? 0;
+                totalShares   += statsMap[p.id]?.shareCount ?? 0;
                 totalLikes    += _statsFavUsers[p.id]?.length ?? 0;
                 totalQP       += _statsQPUsers[p.id]?.length ?? 0;
                 totalProbaron += _statsProbadosUsers[p.id]?.length ?? 0;
@@ -3252,6 +3258,7 @@
                 if (valMap[p.id]) { sumRating += valMap[p.id].sum; countRating += valMap[p.id].count; }
             });
             document.getElementById('stat-total-clicks').textContent   = totalClicks;
+            document.getElementById('stat-total-shares').textContent   = totalShares;
             document.getElementById('stat-total-likes').textContent    = totalLikes;
             document.getElementById('stat-total-qp').textContent       = totalQP;
             document.getElementById('stat-total-probaron').textContent = totalProbaron;
@@ -3263,7 +3270,7 @@
             platos.sort((a, b) => (statsMap[b.id]?.clickCount ?? 0) - (statsMap[a.id]?.clickCount ?? 0));
 
             if (!platos.length) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">No hay datos todavía.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">No hay datos todavía.</td></tr>`;
                 return;
             }
 
@@ -3272,6 +3279,7 @@
 
             tbody.innerHTML = platos.map(p => {
                 const clicks    = statsMap[p.id]?.clickCount ?? 0;
+                const shares    = statsMap[p.id]?.shareCount ?? 0;
                 const likesN    = _statsFavUsers[p.id]?.length ?? 0;
                 const qpN       = _statsQPUsers[p.id]?.length ?? 0;
                 const probN     = _statsProbadosUsers[p.id]?.length ?? 0;
@@ -3282,6 +3290,7 @@
                 return `<tr data-plato-id="${p.id}" style="border-bottom:1px solid #f5f0ea;">
                     <td style="padding:11px 15px;font-weight:600;color:#222;">${p.nombre ?? p.id}</td>
                     <td style="padding:11px 8px;text-align:center;color:var(--text-muted);">${clicks || '—'}</td>
+                    <td style="padding:11px 8px;text-align:center;color:var(--text-muted);">${shares || '—'}</td>
                     <td style="padding:11px 8px;text-align:center;">
                         ${likesN ? _btnExpand(p.id, '❤️ ' + likesN, '#eb6f53', '_expandFavs') : '<span style="color:var(--text-muted);">—</span>'}
                     </td>
@@ -3309,7 +3318,7 @@
             const uids = _statsFavUsers[platoId] ?? [];
             const tr = document.createElement('tr');
             tr.id = `favs-row-${platoId}`;
-            tr.innerHTML = `<td colspan="7" style="padding:0;background:#fff8f5;border-bottom:2px solid #f5e8e4;">
+            tr.innerHTML = `<td colspan="8" style="padding:0;background:#fff8f5;border-bottom:2px solid #f5e8e4;">
                 <div style="padding:14px 20px 18px;">
                     <p style="font-size:0.75rem;font-weight:700;color:#eb6f53;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 10px;">❤️ Quieren probarlo (${uids.length})</p>
                     ${uids.map(uid => {
@@ -3355,7 +3364,7 @@
             if (!mainRow) return;
             const tr = document.createElement('tr');
             tr.id = `${suffix}-row-${id}`;
-            tr.innerHTML = `<td colspan="7" style="padding:0;background:${bgColor};border-bottom:2px solid ${borderColor};">
+            tr.innerHTML = `<td colspan="8" style="padding:0;background:${bgColor};border-bottom:2px solid ${borderColor};">
                 <div style="padding:14px 20px 18px;">
                     <p style="font-size:0.75rem;font-weight:700;color:${borderColor};text-transform:uppercase;letter-spacing:0.5px;margin:0 0 10px;">${titulo} (${uids.length})</p>
                     ${_buildUserList(uids, titulo, borderColor)}
@@ -3423,7 +3432,7 @@
             const docs = _statsValDocs[platoId] ?? [];
             const tr = document.createElement('tr');
             tr.id = `resenas-row-${platoId}`;
-            tr.innerHTML = `<td colspan="7" style="padding:0;background:#fdfcf7;border-bottom:2px solid #e8e4db;">
+            tr.innerHTML = `<td colspan="8" style="padding:0;background:#fdfcf7;border-bottom:2px solid #e8e4db;">
                 <div style="padding:14px 20px 18px;">
                     ${!docs.length
                         ? `<p style="color:#aaa;font-size:0.82rem;margin:0;">Sin reseñas con texto.</p>`
