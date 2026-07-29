@@ -831,7 +831,9 @@
     window.compartirPlato = async function() {
         const p = platos.find(pl => pl.id === _platoAbiertoId);
         if (!p) return;
-        const url    = `https://corcegacafe.com.ar/carta.html?plato=${p.id}`;
+        // URL de la Cloud Function que sirve la preview con la foto del plato
+        // (WhatsApp/redes no ejecutan JS: los OG tags deben venir del servidor)
+        const url    = `https://us-central1-corcega-loyalty-club.cloudfunctions.net/sharePlato?p=${p.id}`;
         const precio = p.precio != null ? ` — $${Number(p.precio).toLocaleString('es-AR')}` : '';
         const texto  = `${p.nombre}${precio} · Córcega Café`;
         if (navigator.share) {

@@ -3052,6 +3052,63 @@ exports.sitemapXml = onRequest({ region: "us-central1" }, async (req, res) => {
   res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>`);
 });
 
+// Compartir plato — sirve OG tags con la foto del plato (WhatsApp/redes no ejecutan JS,
+// así que la preview necesita HTML server-side) y redirige a la carta
+exports.sharePlato = onRequest({ region: "us-central1" }, async (req, res) => {
+  const id = (req.query.p || "").toString();
+  const cartaUrl = id
+    ? `https://corcegacafe.com.ar/carta.html?plato=${encodeURIComponent(id)}`
+    : "https://corcegacafe.com.ar/carta.html";
+
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
+
+  let titulo = "Carta y Menú | Córcega Café";
+  let desc   = "Cafés de especialidad, pastelería artesanal y brunch en Caballito, Buenos Aires.";
+  let imagen = "https://corcegacafe.com.ar/css/img/og-imagen.jpg";
+
+  if (id) {
+    try {
+      const snap = await db.collection("carta_platos").doc(id).get();
+      if (snap.exists) {
+        const p = snap.data();
+        const precio = p.precio != null ? ` — $${Number(p.precio).toLocaleString("es-AR")}` : "";
+        titulo = `${p.nombre}${precio} | Córcega Café`;
+        if (p.descripcion) desc = p.descripcion;
+        const f = (p.fotos ?? [])[0];
+        const foto = typeof f === "string" ? f : (f?.medium ?? f?.full ?? f?.thumb ?? null);
+        if (foto) imagen = foto;
+      }
+    } catch (e) {
+      logger.error("sharePlato:", e);
+    }
+  }
+
+  res.set("Cache-Control", "public, max-age=600");
+  res.set("Content-Type", "text/html; charset=utf-8");
+  res.send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>${esc(titulo)}</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Córcega Café">
+<meta property="og:title" content="${esc(titulo)}">
+<meta property="og:description" content="${esc(desc)}">
+<meta property="og:image" content="${esc(imagen)}">
+<meta property="og:url" content="${esc(cartaUrl)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(titulo)}">
+<meta name="twitter:image" content="${esc(imagen)}">
+<meta http-equiv="refresh" content="0;url=${esc(cartaUrl)}">
+</head>
+<body>
+<p>Redirigiendo a <a href="${esc(cartaUrl)}">la carta de Córcega</a>…</p>
+<script>location.replace(${JSON.stringify(cartaUrl)});</script>
+</body>
+</html>`);
+});
+
 // ZeptoMail — infraestructura nueva (no reemplaza Gmail todavía)
 const zeptoFunctions = require("./zepto-functions");
 exports.testZeptoMail = zeptoFunctions.testZeptoMail;
