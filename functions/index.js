@@ -3055,7 +3055,9 @@ exports.sitemapXml = onRequest({ region: "us-central1" }, async (req, res) => {
 // Compartir plato — sirve OG tags con la foto del plato (WhatsApp/redes no ejecutan JS,
 // así que la preview necesita HTML server-side) y redirige a la carta
 exports.sharePlato = onRequest({ region: "us-central1" }, async (req, res) => {
-  const id = (req.query.p || "").toString();
+  // Acepta /p/<id> (vía rewrite de Hosting) o ?p=<id> (URL directa de la función)
+  const pathMatch = req.path.match(/^\/p\/([^/]+)/);
+  const id = (pathMatch?.[1] || req.query.p || "").toString();
   const cartaUrl = id
     ? `https://corcegacafe.com.ar/carta.html?plato=${encodeURIComponent(id)}`
     : "https://corcegacafe.com.ar/carta.html";
