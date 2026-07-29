@@ -343,6 +343,69 @@
         .tag.sin-tacc     { background: white; color: #c0392b; border: 1px solid #eee; padding: 2px 6px 2px 2px; }
         .tag.sin-tacc img { height: 16px; width: auto; vertical-align: middle; margin-right: 3px; display: inline-block; }
         .tag.destacado    { background: #fff8e1; color: #c17900; }
+        .tag.nuevo        { background: #eaf4f7; color: #01546a; }
+
+        /* ── Barra de filtros por tag ── */
+        .filtros-bar {
+            display: none;
+            max-width: 640px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 16px 16px 0;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .filtros-bar::-webkit-scrollbar { display: none; }
+
+        .filtro-chip {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            background: var(--white);
+            font-family: inherit;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #555;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background .2s, color .2s, border-color .2s;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .filtro-chip img { height: 16px; width: auto; }
+        .filtro-chip.activo {
+            background: var(--dark);
+            border-color: var(--dark);
+            color: white;
+        }
+        .filtro-chip.activo img { filter: brightness(0) invert(1); }
+
+        /* ── Sección "Los que querías probar" ── */
+        .carta-seccion.qp .seccion-titulo {
+            color: var(--coral);
+            border-bottom-color: rgba(237,112,83,0.35);
+        }
+
+        /* ── Botón compartir en modal ── */
+        .btn-compartir {
+            border: 1.5px solid var(--border);
+            background: var(--white);
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-family: inherit;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--dark);
+            cursor: pointer;
+            white-space: nowrap;
+            touch-action: manipulation;
+        }
+        .btn-compartir:active { background: #f5f2ec; }
 
         .plato-foto {
             width: 110px;
@@ -536,6 +599,13 @@
     <div class="tabs-scroll" id="tabs-secciones"></div>
 </header>
 
+<!-- Filtros por tag -->
+<div class="filtros-bar" id="filtros-bar">
+    <button class="filtro-chip" data-tag="vegetariano" onclick="toggleFiltro('vegetariano')">🌱 Vegetariano</button>
+    <button class="filtro-chip" data-tag="vegano" onclick="toggleFiltro('vegano')">🌿 Vegano</button>
+    <button class="filtro-chip" data-tag="sin-tacc" onclick="toggleFiltro('sin-tacc')"><img src="css/img/sin-tacc.svg" alt=""> Sin T.A.C.C.</button>
+</div>
+
 <main id="main-content">
     <div id="loader">Cargando carta...</div>
 </main>
@@ -548,7 +618,10 @@
         <div class="modal-body">
             <p class="modal-nombre" id="modal-nombre"></p>
             <p class="modal-desc"   id="modal-desc"></p>
-            <p class="modal-precio" id="modal-precio"></p>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                <p class="modal-precio" id="modal-precio"></p>
+                <button class="btn-compartir" onclick="compartirPlato()" title="Compartir este plato">📤 Compartir</button>
+            </div>
             <div class="modal-tags" id="modal-tags"></div>
             <div id="modal-social"></div>
         </div>
@@ -574,6 +647,11 @@
     };
 
     let platos = [];
+    let seccionesGlobal = [];
+    let filtrosActivos  = new Set();
+    let _platoAbiertoId = null;
+    const FILTRO_TAGS = ['vegetariano', 'vegano', 'sin-tacc'];
+    const NUEVO_DIAS  = 21;   // días que un plato muestra el badge "✨ Nuevo"
     let fotoIdx = 0;
     let pausaObserver = false;  // evita que el observer pise el tab activo durante scroll programático
     let pausaTimer    = null;
@@ -602,17 +680,24 @@
                 return;
             }
 
-            renderTabs(secciones);
-            renderContenido(secciones);
+            seccionesGlobal = secciones;
             window.cartaSocial?.setPlatos(Object.fromEntries(platos.map(p => [p.id, p])));
-            window.cartaSocial?.onCartaRendered();
-            initScrollSpy(secciones);
+            aplicarVista();
 
-            // Ajustar scroll-margin-top dinámicamente según altura del header
-            const headerH = document.getElementById('main-header').offsetHeight;
-            document.querySelectorAll('.carta-seccion').forEach(el => {
-                el.style.scrollMarginTop = (headerH + 12) + 'px';
+            // Mostrar solo los chips de tags que algún plato tenga
+            const tagsPresentes = new Set(platos.flatMap(p => p.tags ?? []));
+            document.querySelectorAll('#filtros-bar .filtro-chip').forEach(chip => {
+                chip.style.display = tagsPresentes.has(chip.dataset.tag) ? '' : 'none';
             });
+            if (FILTRO_TAGS.some(t => tagsPresentes.has(t))) {
+                document.getElementById('filtros-bar').style.display = 'flex';
+            }
+
+            // Deep link: carta.html?plato=ID abre el modal de ese plato
+            const platoParam = new URLSearchParams(location.search).get('plato');
+            if (platoParam && platos.some(p => p.id === platoParam)) {
+                setTimeout(() => abrirModal(platoParam), 400);
+            }
 
         } catch (err) {
             console.error(err);
@@ -660,12 +745,16 @@
     };
 
     // ── Contenido único (scroll largo) ───────────────────────────────────────
-    function renderContenido(secciones) {
+    function renderContenido(secciones, lista = platos) {
         const main = document.getElementById('main-content');
+        if (filtrosActivos.size && !lista.length) {
+            main.innerHTML = `<div class="empty-state">No hay platos con esos filtros</div>`;
+            return;
+        }
         main.innerHTML = secciones.map(s => {
-            const lista = platos.filter(p => p.seccionId === s.id);
-            const items = lista.length
-                ? lista.map(p => cardPlato(p)).join('')
+            const enSec = lista.filter(p => p.seccionId === s.id);
+            const items = enSec.length
+                ? enSec.map(p => cardPlato(p)).join('')
                 : `<p style="color:var(--muted);font-size:0.8rem;padding:10px 0;">Sección en preparación.</p>`;
             return `
                 <section class="carta-seccion" id="sec-${s.id}" data-seccion-id="${s.id}">
@@ -675,9 +764,87 @@
         }).join('');
     }
 
+    // ── Filtros por tag ──────────────────────────────────────────────────────
+    function platosFiltrados() {
+        if (!filtrosActivos.size) return platos;
+        return platos.filter(p => [...filtrosActivos].every(t => (p.tags ?? []).includes(t)));
+    }
+
+    function aplicarVista() {
+        const visibles = platosFiltrados();
+        const secs = filtrosActivos.size
+            ? seccionesGlobal.filter(s => visibles.some(p => p.seccionId === s.id))
+            : seccionesGlobal;
+
+        renderTabs(secs);
+        renderContenido(secs, visibles);
+        renderSeccionQP(visibles);
+        initScrollSpy(secs);
+        window.cartaSocial?.onCartaRendered();
+        _ajustarScrollMargin();
+    }
+
+    function _ajustarScrollMargin() {
+        const headerH = document.getElementById('main-header').offsetHeight;
+        document.querySelectorAll('.carta-seccion').forEach(el => {
+            el.style.scrollMarginTop = (headerH + 12) + 'px';
+        });
+    }
+
+    window.toggleFiltro = function(tag) {
+        filtrosActivos.has(tag) ? filtrosActivos.delete(tag) : filtrosActivos.add(tag);
+        document.querySelectorAll('#filtros-bar .filtro-chip').forEach(chip => {
+            chip.classList.toggle('activo', filtrosActivos.has(chip.dataset.tag));
+        });
+        aplicarVista();
+    };
+
+    // ── Sección personalizada "Los que querías probar" ───────────────────────
+    function renderSeccionQP(visibles = platosFiltrados()) {
+        document.getElementById('sec-_qp')?.remove();
+        const ids = new Set(window.cartaSocial?.getQuieroProbar?.() ?? []);
+        if (!ids.size) return;
+        const mios = visibles.filter(p => ids.has(p.id));
+        if (!mios.length) return;
+        const sec = document.createElement('section');
+        sec.className = 'carta-seccion qp';
+        sec.id = 'sec-_qp';
+        sec.innerHTML = `
+            <h2 class="seccion-titulo">🔖 Los que querías probar</h2>
+            <div class="platos-grid">${mios.map(p => cardPlato(p)).join('')}</div>`;
+        document.getElementById('main-content').prepend(sec);
+        _ajustarScrollMargin();
+    }
+
+    document.addEventListener('carta-qp-changed', () => {
+        renderSeccionQP();
+        window.cartaSocial?.onCartaRendered();
+    });
+
+    // ── Badge "Nuevo" ────────────────────────────────────────────────────────
+    function esNuevo(p) {
+        const ms = p.creadoEn?.seconds ? p.creadoEn.seconds * 1000 : null;
+        return ms != null && (Date.now() - ms) < NUEVO_DIAS * 86400000;
+    }
+
+    // ── Compartir plato ──────────────────────────────────────────────────────
+    window.compartirPlato = async function() {
+        const p = platos.find(pl => pl.id === _platoAbiertoId);
+        if (!p) return;
+        const url    = `https://corcegacafe.com.ar/carta.html?plato=${p.id}`;
+        const precio = p.precio != null ? ` — $${Number(p.precio).toLocaleString('es-AR')}` : '';
+        const texto  = `${p.nombre}${precio} · Córcega Café`;
+        if (navigator.share) {
+            try { await navigator.share({ title: p.nombre, text: texto, url }); } catch (_) { /* canceló */ }
+        } else {
+            window.open(`https://wa.me/?text=${encodeURIComponent(texto + '\n' + url)}`, '_blank');
+        }
+    };
+
     function cardPlato(p) {
         const thumb  = fotoThumb(p.fotos?.[0]);
         const precio = p.precio != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '';
+        const tagNuevo = esNuevo(p) ? `<span class="tag nuevo">✨ Nuevo</span>` : '';
         const tags   = (p.tags ?? []).map(t => `<span class="tag ${t}">${TAG_LABELS[t] ?? t}</span>`).join('');
         return `
         <div class="plato-card" data-plato-id="${p.id}" onclick="abrirModal('${p.id}')">
@@ -686,6 +853,7 @@
                 ${p.descripcion ? `<p class="plato-desc">${p.descripcion}</p>` : ''}
                 <div class="plato-footer">
                     ${precio ? `<span class="plato-precio">${precio}</span>` : ''}
+                    ${tagNuevo}
                     ${tags}
                 </div>
                 <button class="btn-fav-carta" data-id="${p.id}"
@@ -699,8 +867,10 @@
     }
 
     // ── Scroll spy (actualiza tab activo al scrollear manualmente) ───────────
+    let _spyObserver = null;
     function initScrollSpy(secciones) {
-        const observer = new IntersectionObserver(entries => {
+        _spyObserver?.disconnect();
+        const observer = _spyObserver = new IntersectionObserver(entries => {
             if (pausaObserver) return;
             entries.forEach(entry => {
                 if (!entry.isIntersecting) return;
@@ -721,6 +891,7 @@
         const p = platos.find(pl => pl.id === id);
         if (!p) return;
 
+        _platoAbiertoId = id;
         fotoIdx    = 0;
         _fotosModal = p.fotos ?? [];
         const fotosEl = document.getElementById('modal-fotos');
@@ -743,6 +914,7 @@
         document.getElementById('modal-precio').textContent =
             p.precio != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '';
         document.getElementById('modal-tags').innerHTML =
+            (esNuevo(p) ? `<span class="tag nuevo">✨ Nuevo</span>` : '') +
             (p.tags ?? []).map(t => `<span class="tag ${t}">${TAG_LABELS[t] ?? t}</span>`).join('');
 
         document.getElementById('modal-overlay').classList.add('open');
@@ -862,7 +1034,7 @@
 </script>
 
 <script type="module">
-    import * as cartaSocial from './js/carta/carta-social.js?v=3';
+    import * as cartaSocial from './js/carta/carta-social.js?v=4';
     window.cartaSocial = cartaSocial;
     cartaSocial.init();
 </script>

@@ -38,6 +38,7 @@ export async function init() {
             await Promise.all([_cargarLikes(), _cargarQuieroProbar(), _cargarProbados()]);
             _actualizarHeaderUI(user);
             _actualizarTodosLosBotones();
+            _avisarQPCambio();
             if (_modalAbiertoPlatoId) await _renderSocialEnModal(_modalAbiertoPlatoId);
             if (_pendingAction) { _pendingAction(); _pendingAction = null; }
         } else {
@@ -46,6 +47,7 @@ export async function init() {
             _probados.clear();
             _actualizarHeaderUI(null);
             _actualizarTodosLosBotones();
+            _avisarQPCambio();
         }
     });
 
@@ -56,6 +58,15 @@ export async function init() {
 // ─── Recibe el mapa de platos desde carta.html ───────────────────────────────
 export function setPlatos(map) {
     _platosMap = map ?? {};
+}
+
+// ─── IDs de platos marcados "quiero probar" (para la sección personalizada) ──
+export function getQuieroProbar() {
+    return [..._quieroProbar];
+}
+
+function _avisarQPCambio() {
+    document.dispatchEvent(new Event('carta-qp-changed'));
 }
 
 // ─── Se llama desde carta.html tras renderizar las cards ─────────────────────
@@ -224,6 +235,7 @@ export function toggleQuieroProbar(platoId) {
 
     setDoc(doc(db, 'carta_quiero_probar', _user.uid), { platoIds: [..._quieroProbar] }, { merge: true });
     document.querySelectorAll(`.btn-qp-carta[data-id="${platoId}"]`).forEach(btn => _actualizarBtnQP(btn, platoId));
+    _avisarQPCambio();
 }
 
 // ─── Toggle ✓ Ya lo probé ─────────────────────────────────────────────────────
@@ -242,6 +254,7 @@ export function toggleProbado(platoId) {
         setDoc(doc(db, 'carta_quiero_probar', _user.uid), { platoIds: [..._quieroProbar] }, { merge: true });
         const btnQP = document.getElementById('modal-social-qp');
         if (btnQP) _actualizarBtnQP(btnQP, platoId);
+        _avisarQPCambio();
     }
 
     setDoc(doc(db, 'carta_probados', _user.uid), { platoIds: [..._probados] }, { merge: true });
