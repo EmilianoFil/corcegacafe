@@ -7,7 +7,7 @@ const { VertexAI } = require("@google-cloud/vertexai");
 
 const PROJECT_ID = "corcega-loyalty-club";
 const LOCATION   = "us-central1";
-const MODEL_ID   = "gemini-2.0-flash-001";
+const MODEL_ID   = "gemini-2.5-flash";
 
 // Mismo criterio que firestore.rules para carta_platos/carta_secciones:
 // cualquier usuario autenticado puede escribir la carta.
