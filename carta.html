@@ -627,6 +627,7 @@
     <button class="filtro-chip" data-tag="vegetariano" onclick="toggleFiltro('vegetariano')">🌱 Vegetariano</button>
     <button class="filtro-chip" data-tag="vegano" onclick="toggleFiltro('vegano')">🌿 Vegano</button>
     <button class="filtro-chip" data-tag="sin-tacc" onclick="toggleFiltro('sin-tacc')"><img src="css/img/sin-tacc.svg" alt=""> Sin T.A.C.C.</button>
+    <button class="filtro-chip" data-tag="nuevo" onclick="toggleFiltro('nuevo')">✨ Nuevo</button>
 </div>
 
 <main id="main-content">
@@ -675,7 +676,7 @@
     let seccionesGlobal = [];
     let filtrosActivos  = new Set();
     let _platoAbiertoId = null;
-    const FILTRO_TAGS = ['vegetariano', 'vegano', 'sin-tacc'];
+    const FILTRO_TAGS = ['vegetariano', 'vegano', 'sin-tacc', 'nuevo'];
     let fotoIdx = 0;
     let pausaObserver = false;  // evita que el observer pise el tab activo durante scroll programático
     let pausaTimer    = null;
