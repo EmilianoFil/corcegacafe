@@ -28,6 +28,7 @@ function _prompt(nombre, descripcion) {
   return `Sos traductor especializado en cartas de café/restaurante. Traducí este plato de una cafetería argentina a inglés (en), portugués de Brasil (pt) y coreano (ko).
 
 Reglas:
+- "Córcega" es nombre propio (el local se llama así) — dejalo SIEMPRE tal cual en los 3 idiomas, nunca lo traduzcas como el lugar geográfico (nada de "Corsica", "코르시카", etc.).
 - Traducción natural y apetitosa, no literal palabra por palabra.
 - Nombres de preparaciones típicas sin equivalente conocido (ej: "medialuna", "alfajor", "submarino") se mantienen tal cual, opcionalmente con una breve aclaración entre paréntesis.
 - Si la descripción está vacía, devolvé descripción vacía en los 3 idiomas.
