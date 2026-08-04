@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
@@ -17,9 +17,24 @@ export const firebaseConfig = {
 
 // Si querés seguir usando app y db desde este archivo, podés exportarlos también:
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
-const auth = getAuth(app);
+
+// Analytics y Auth dependen de IndexedDB/storage del browser. En Safari con
+// modo privado (o ITP restrictivo) pueden no estar disponibles y tirar error
+// al inicializar; sin este guard, ese error aborta la carga de todo el
+// módulo y con eso también db, dejando páginas como carta.html colgadas.
+let analytics = null;
+isSupported()
+    .then(supported => { if (supported) analytics = getAnalytics(app); })
+    .catch(err => console.warn('Firebase Analytics no disponible:', err));
+
+let auth;
+try {
+    auth = getAuth(app);
+} catch (err) {
+    console.warn('Firebase Auth no disponible:', err);
+    auth = null;
+}
 
 export { app, db, storage, auth };
