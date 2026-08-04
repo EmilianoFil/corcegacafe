@@ -610,13 +610,23 @@ function _initSortablePlatos(tbody) {
 export function filtrarPlatosPorSeccion(seccionId) { loadPlatos(seccionId); }
 
 const IDIOMAS_TRADUCCION = ['en', 'pt', 'ko'];
+const NOMBRES_IDIOMA = { en: '🇬🇧 English', pt: '🇧🇷 Português', ko: '🇰🇷 한국어' };
 
-function _limpiarCamposTraduccion() {
-    IDIOMAS_TRADUCCION.forEach(lang => {
-        document.getElementById(`plato-nombre-${lang}`).value      = '';
-        document.getElementById(`plato-descripcion-${lang}`).value = '';
-    });
-    document.getElementById('traducciones-error').style.display = 'none';
+// Estado en memoria de las traducciones del plato en edición — el modal solo
+// lee/escribe acá; se persiste en Firestore recién al guardar el plato.
+let traducciones = { en: { nombre: '', descripcion: '' }, pt: { nombre: '', descripcion: '' }, ko: { nombre: '', descripcion: '' } };
+
+function _limpiarTraducciones() {
+    traducciones = { en: { nombre: '', descripcion: '' }, pt: { nombre: '', descripcion: '' }, ko: { nombre: '', descripcion: '' } };
+    _actualizarBadgeTraducciones();
+}
+
+function _actualizarBadgeTraducciones() {
+    const badge = document.getElementById('badge-traducciones');
+    if (!badge) return;
+    const listas = IDIOMAS_TRADUCCION.filter(l => traducciones[l].nombre).length;
+    badge.textContent = `${listas}/3`;
+    badge.style.display = listas ? 'inline-block' : 'none';
 }
 
 export function mostrarFormPlato() {
@@ -632,7 +642,7 @@ export function mostrarFormPlato() {
     document.getElementById('plato-pct-py').value      = '';
     document.getElementById('plato-precio-py').value   = '';
     document.querySelectorAll('.plato-tag').forEach(cb => cb.checked = false);
-    _limpiarCamposTraduccion();
+    _limpiarTraducciones();
     document.getElementById('form-plato-titulo').textContent = 'Nuevo Plato';
     document.getElementById('plato-form-error').style.display = 'none';
     _renderFotosPreview();
@@ -672,11 +682,12 @@ export async function editarPlato(id) {
     document.getElementById('plato-pct-py').value      = p.pctPY ?? '';
     document.getElementById('plato-precio-py').value   = p.precioPY ?? '';
     document.querySelectorAll('.plato-tag').forEach(cb => { cb.checked = (p.tags ?? []).includes(cb.value); });
-    _limpiarCamposTraduccion();
-    IDIOMAS_TRADUCCION.forEach(lang => {
-        document.getElementById(`plato-nombre-${lang}`).value      = p[`nombre_${lang}`] ?? '';
-        document.getElementById(`plato-descripcion-${lang}`).value = p[`descripcion_${lang}`] ?? '';
-    });
+    traducciones = {
+        en: { nombre: p.nombre_en ?? '', descripcion: p.descripcion_en ?? '' },
+        pt: { nombre: p.nombre_pt ?? '', descripcion: p.descripcion_pt ?? '' },
+        ko: { nombre: p.nombre_ko ?? '', descripcion: p.descripcion_ko ?? '' },
+    };
+    _actualizarBadgeTraducciones();
     document.getElementById('form-plato-titulo').textContent = 'Editar Plato';
     document.getElementById('plato-form-error').style.display = 'none';
     _renderFotosPreview();
@@ -727,8 +738,8 @@ export async function guardarPlato() {
             actualizadoEn: serverTimestamp()
         };
         IDIOMAS_TRADUCCION.forEach(lang => {
-            data[`nombre_${lang}`]      = document.getElementById(`plato-nombre-${lang}`).value.trim();
-            data[`descripcion_${lang}`] = document.getElementById(`plato-descripcion-${lang}`).value.trim();
+            data[`nombre_${lang}`]      = traducciones[lang].nombre.trim();
+            data[`descripcion_${lang}`] = traducciones[lang].descripcion.trim();
         });
 
         if (platoEditando) {
@@ -770,6 +781,54 @@ export async function guardarPlato() {
 // ─── Traducciones (IA) ───────────────────────────────────────────────────────
 const TRADUCCIONES_URL = 'https://us-central1-corcega-loyalty-club.cloudfunctions.net/generarTraduccionesPlato';
 
+function _camposTraduccionesHtml() {
+    return IDIOMAS_TRADUCCION.map(lang => `
+        <div>
+            <label style="font-size:0.75rem;font-weight:800;color:#6a3fb5;display:block;margin-bottom:6px;">${NOMBRES_IDIOMA[lang]}</label>
+            <input type="text" value="${(traducciones[lang].nombre ?? '').replace(/"/g, '&quot;')}" placeholder="Nombre (sin traducir todavía)"
+                oninput="window.cartaAdmin._setTraduccion('${lang}','nombre',this.value)"
+                style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #e0d3f5;font-size:0.85rem;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:6px;">
+            <textarea rows="2" placeholder="Descripción (sin traducir todavía)"
+                oninput="window.cartaAdmin._setTraduccion('${lang}','descripcion',this.value)"
+                style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid #e0d3f5;font-size:0.85rem;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box;">${traducciones[lang].descripcion ?? ''}</textarea>
+        </div>`).join('');
+}
+
+export function _setTraduccion(lang, campo, valor) {
+    traducciones[lang][campo] = valor;
+    _actualizarBadgeTraducciones();
+}
+
+export function abrirModalTraducciones() {
+    document.getElementById('modal-traducciones')?.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'modal-traducciones';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    modal.innerHTML = `
+    <div style="background:white;border-radius:18px;width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.35);overflow:hidden;">
+        <div style="background:#3d2463;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+            <div>
+                <p style="margin:0;font-weight:800;font-size:1rem;color:white;">🌐 Traducciones</p>
+                <p style="margin:4px 0 0;font-size:0.75rem;color:rgba(255,255,255,0.6);">Se guardan recién al guardar el plato</p>
+            </div>
+            <button onclick="document.getElementById('modal-traducciones').remove()"
+                style="background:rgba(255,255,255,0.14);border:none;border-radius:8px;color:white;font-size:1.2rem;width:34px;height:34px;cursor:pointer;">✕</button>
+        </div>
+        <div style="padding:18px 22px;border-bottom:1px solid #f0f0f0;flex-shrink:0;">
+            <button type="button" id="btn-generar-traducciones" onclick="window.cartaAdmin.generarTraducciones()"
+                style="width:100%;padding:10px;border-radius:9px;border:none;background:#6a3fb5;color:white;font-size:0.85rem;font-weight:800;cursor:pointer;font-family:inherit;">
+                ✨ Generar en idiomas
+            </button>
+            <p id="traducciones-error" style="display:none;color:var(--error);font-size:0.78rem;margin:8px 0 0;"></p>
+        </div>
+        <div id="traducciones-campos" style="padding:18px 22px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;">
+            ${_camposTraduccionesHtml()}
+        </div>
+    </div>`;
+    document.body.appendChild(modal);
+}
+
 export async function generarTraducciones() {
     const errEl = document.getElementById('traducciones-error');
     const btn   = document.getElementById('btn-generar-traducciones');
@@ -797,9 +856,14 @@ export async function generarTraducciones() {
         if (!resp.ok) throw new Error(data.error || `Error ${resp.status}`);
 
         IDIOMAS_TRADUCCION.forEach(lang => {
-            document.getElementById(`plato-nombre-${lang}`).value      = data[lang]?.nombre      ?? '';
-            document.getElementById(`plato-descripcion-${lang}`).value = data[lang]?.descripcion ?? '';
+            traducciones[lang] = {
+                nombre:      data[lang]?.nombre      ?? '',
+                descripcion: data[lang]?.descripcion ?? '',
+            };
         });
+        _actualizarBadgeTraducciones();
+        const campos = document.getElementById('traducciones-campos');
+        if (campos) campos.innerHTML = _camposTraduccionesHtml();
     } catch (e) {
         errEl.textContent = 'No se pudo generar la traducción: ' + e.message;
         errEl.style.display = 'block';
