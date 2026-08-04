@@ -684,12 +684,30 @@
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
     // ── Carga ────────────────────────────────────────────────────────────────
-    async function init() {
+    // Los navegadores in-app (Instagram, TikTok) a veces tardan en abrir la
+    // conexión con Firestore la primera vez y se quedan colgados sin arrojar
+    // error. Le ponemos un timeout y reintentamos solos un par de veces antes
+    // de pedirle al usuario que actúe.
+    let _cartaLista = false;
+    let _cargando   = false;
+
+    function _conTimeout(promise, ms) {
+        return Promise.race([
+            promise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+        ]);
+    }
+
+    async function init(intento = 1) {
+        if (_cargando) return;
+        _cargando = true;
         try {
-            const [snapSec, snapPlatos] = await Promise.all([
+            const [snapSec, snapPlatos] = await _conTimeout(Promise.all([
                 getDocs(query(collection(db, 'carta_secciones'), orderBy('orden'))),
                 getDocs(query(collection(db, 'carta_platos'),    orderBy('orden')))
-            ]);
+            ]), 8000);
+            _cargando   = false;
+            _cartaLista = true;
 
             const secciones = snapSec.docs
                 .map(d => ({ id: d.id, ...d.data() }))
@@ -724,10 +742,24 @@
             }
 
         } catch (err) {
+            _cargando = false;
+            if (err?.message === 'timeout' && intento < 3) {
+                setTimeout(() => init(intento + 1), 500 * intento);
+                return;
+            }
             console.error(err);
-            document.getElementById('loader').textContent = 'Error al cargar la carta';
+            document.getElementById('loader').innerHTML =
+                'La carta está tardando más de lo normal.<br>' +
+                '<button onclick="location.reload()" style="margin-top:14px;padding:10px 22px;border:none;border-radius:10px;background:var(--coral);color:white;font-family:inherit;font-weight:700;font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;">Reintentar</button>';
         }
     }
+
+    // Los navegadores in-app suelen "congelar" la pestaña mientras está en
+    // segundo plano (precarga antes de que el usuario la abra); al volver a
+    // primer plano reintentamos si todavía no cargó nada.
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && !_cartaLista && !_cargando) init();
+    });
 
     // ── Tabs ─────────────────────────────────────────────────────────────────
     function renderTabs(secciones) {
