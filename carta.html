@@ -444,7 +444,30 @@
             max-height: 92vh;
             overflow-y: auto;
             animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+            position: relative;
         }
+
+        .modal-close {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            z-index: 10;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.45);
+            border: none;
+            color: white;
+            font-size: 1.05rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .modal-close:active { background: rgba(0,0,0,0.7); }
         @keyframes slideUp {
             from { transform: translateY(100%); }
             to   { transform: translateY(0); }
@@ -613,6 +636,7 @@
 <!-- Modal -->
 <div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
     <div class="modal-sheet">
+        <button class="modal-close" onclick="cerrarModalX()" title="Cerrar">✕</button>
         <div class="modal-handle"></div>
         <div class="modal-fotos" id="modal-fotos"></div>
         <div class="modal-body">
@@ -792,7 +816,10 @@
     }
 
     window.toggleFiltro = function(tag) {
-        filtrosActivos.has(tag) ? filtrosActivos.delete(tag) : filtrosActivos.add(tag);
+        // Selección única: tocar otro filtro reemplaza al activo; tocar el activo lo apaga
+        const yaActivo = filtrosActivos.has(tag);
+        filtrosActivos.clear();
+        if (!yaActivo) filtrosActivos.add(tag);
         document.querySelectorAll('#filtros-bar .filtro-chip').forEach(chip => {
             chip.classList.toggle('activo', filtrosActivos.has(chip.dataset.tag));
         });
@@ -959,6 +986,8 @@
     window.cerrarModal = function(e) {
         if (e.target === document.getElementById('modal-overlay')) _cerrarModalSheet();
     };
+
+    window.cerrarModalX = _cerrarModalSheet;
 
     // Swipe para cerrar — non-passive para poder preventDefault y evitar scroll
     (function() {
