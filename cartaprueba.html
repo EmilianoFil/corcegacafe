@@ -715,8 +715,14 @@
     }
 
     function aplicarI18nEstatico() {
-        document.getElementById('txt-entrar').textContent = tr('entrar');
-        document.getElementById('btn-compartir').innerHTML = tr('compartir');
+        // Optional chaining: "Entrar" puede haber sido reemplazado por el nombre
+        // del usuario logueado (carta-social.js reescribe #carta-user-btn), y
+        // si esa línea explota corta el resto de la función — incluido el
+        // re-render de los platos que dispara el listener del switch de idioma.
+        const txtEntrar = document.getElementById('txt-entrar');
+        if (txtEntrar) txtEntrar.textContent = tr('entrar');
+        const btnCompartir = document.getElementById('btn-compartir');
+        if (btnCompartir) btnCompartir.innerHTML = tr('compartir');
         document.querySelectorAll('[data-i18n]').forEach(el => {
             el.textContent = tr(el.dataset.i18n);
         });
