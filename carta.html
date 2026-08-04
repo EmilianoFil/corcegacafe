@@ -668,6 +668,7 @@
         'vegano':      '🌿 Vegano',
         'sin-tacc':    '<img src="css/img/sin-tacc.svg" alt="Sin TACC"> Sin T.A.C.C.',
         'destacado':   '⭐ Destacado',
+        'nuevo':       '✨ Nuevo',
     };
 
     let platos = [];
@@ -675,7 +676,6 @@
     let filtrosActivos  = new Set();
     let _platoAbiertoId = null;
     const FILTRO_TAGS = ['vegetariano', 'vegano', 'sin-tacc'];
-    const NUEVO_DIAS  = 21;   // días que un plato muestra el badge "✨ Nuevo"
     let fotoIdx = 0;
     let pausaObserver = false;  // evita que el observer pise el tab activo durante scroll programático
     let pausaTimer    = null;
@@ -848,12 +848,6 @@
         window.cartaSocial?.onCartaRendered();
     });
 
-    // ── Badge "Nuevo" ────────────────────────────────────────────────────────
-    function esNuevo(p) {
-        const ms = p.creadoEn?.seconds ? p.creadoEn.seconds * 1000 : null;
-        return ms != null && (Date.now() - ms) < NUEVO_DIAS * 86400000;
-    }
-
     // ── Compartir plato ──────────────────────────────────────────────────────
     window.compartirPlato = async function() {
         const p = platos.find(pl => pl.id === _platoAbiertoId);
@@ -883,7 +877,6 @@
     function cardPlato(p) {
         const thumb  = fotoThumb(p.fotos?.[0]);
         const precio = p.precio != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '';
-        const tagNuevo = esNuevo(p) ? `<span class="tag nuevo">✨ Nuevo</span>` : '';
         const tags   = (p.tags ?? []).map(t => `<span class="tag ${t}">${TAG_LABELS[t] ?? t}</span>`).join('');
         return `
         <div class="plato-card" data-plato-id="${p.id}" onclick="abrirModal('${p.id}')">
@@ -892,7 +885,6 @@
                 ${p.descripcion ? `<p class="plato-desc">${p.descripcion}</p>` : ''}
                 <div class="plato-footer">
                     ${precio ? `<span class="plato-precio">${precio}</span>` : ''}
-                    ${tagNuevo}
                     ${tags}
                 </div>
                 <button class="btn-fav-carta" data-id="${p.id}"
@@ -953,7 +945,6 @@
         document.getElementById('modal-precio').textContent =
             p.precio != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '';
         document.getElementById('modal-tags').innerHTML =
-            (esNuevo(p) ? `<span class="tag nuevo">✨ Nuevo</span>` : '') +
             (p.tags ?? []).map(t => `<span class="tag ${t}">${TAG_LABELS[t] ?? t}</span>`).join('');
 
         document.getElementById('modal-overlay').classList.add('open');
