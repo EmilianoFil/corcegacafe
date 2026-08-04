@@ -14,6 +14,7 @@ async function main() {
 
   const urls = [
     `  <url><loc>${base}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>`,
+    `  <url><loc>${base}/carta.html</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>`,
     `  <url><loc>${base}/tienda.html</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>`,
     ...snap.docs.map(d =>
       `  <url><loc>${base}/producto.html?id=${d.id}</loc><lastmod>${hoy}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`

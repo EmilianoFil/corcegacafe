@@ -132,6 +132,13 @@ function renderProductDetail() {
     document.title = `${p.nombre} | Córcega Café`;
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.content = ((p.descripcion || p.nombre).slice(0, 140)) + ' — Pedí online en Córcega Café, Caballito.';
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.rel = 'canonical';
+        document.head.appendChild(canonical);
+    }
+    canonical.href = `https://corcegacafe.com.ar/producto.html?id=${p.id}`;
 
     // Titulo y Precio
     const isAgotado = (p.stock > 0 && p.stock <= 0);
