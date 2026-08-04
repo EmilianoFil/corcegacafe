@@ -920,6 +920,7 @@ exports.enviarMailAniversario = onRequest(
 );
 
 exports.uploadMenuToGitHub = require('./upload').uploadMenuToGitHub;
+exports.generarTraduccionesPlato = require('./traducciones').generarTraduccionesPlato;
 
 exports.enviarMailCampana = onRequest(
   { region: "us-central1", secrets: [emailUser, emailPass], timeoutSeconds: 540, memory: "512MiB" },

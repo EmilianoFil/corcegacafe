@@ -2685,6 +2685,46 @@
                                 <option value="">— Elegir sección —</option>
                             </select>
                         </div>
+
+                        <!-- Traducciones (prototipo carta multi-idioma) -->
+                        <div style="grid-column:1/-1; background:#f4f0fb; border:1px solid #ddd0f5; border-radius:12px; padding:16px;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                                <label style="font-size:0.78rem; font-weight:800; color:#6a3fb5; letter-spacing:0.5px;">🌐 TRADUCCIONES — EN / PT / KO (opcional)</label>
+                                <button type="button" id="btn-generar-traducciones" onclick="window.cartaAdmin.generarTraducciones()"
+                                    style="padding:7px 14px; border-radius:8px; border:none; background:#6a3fb5; color:white; font-size:0.78rem; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap;">
+                                    ✨ Generar en idiomas
+                                </button>
+                            </div>
+                            <p id="traducciones-error" style="display:none; color:var(--error); font-size:0.78rem; margin:0 0 10px;"></p>
+                            <div style="display:flex; flex-direction:column; gap:10px;">
+                                <div>
+                                    <label style="font-size:0.72rem; font-weight:700; color:#999; display:block; margin-bottom:4px;">🇬🇧 EN — nombre</label>
+                                    <input type="text" id="plato-nombre-en" placeholder="(sin traducir todavía)"
+                                        style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid #e0d3f5; font-size:0.85rem; font-family:inherit; outline:none; box-sizing:border-box;">
+                                    <label style="font-size:0.72rem; font-weight:700; color:#999; display:block; margin:6px 0 4px;">🇬🇧 EN — descripción</label>
+                                    <textarea id="plato-descripcion-en" rows="2" placeholder="(sin traducir todavía)"
+                                        style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid #e0d3f5; font-size:0.85rem; font-family:inherit; outline:none; resize:vertical; box-sizing:border-box;"></textarea>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.72rem; font-weight:700; color:#999; display:block; margin-bottom:4px;">🇧🇷 PT — nombre</label>
+                                    <input type="text" id="plato-nombre-pt" placeholder="(sin traducir todavía)"
+                                        style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid #e0d3f5; font-size:0.85rem; font-family:inherit; outline:none; box-sizing:border-box;">
+                                    <label style="font-size:0.72rem; font-weight:700; color:#999; display:block; margin:6px 0 4px;">🇧🇷 PT — descripción</label>
+                                    <textarea id="plato-descripcion-pt" rows="2" placeholder="(sin traducir todavía)"
+                                        style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid #e0d3f5; font-size:0.85rem; font-family:inherit; outline:none; resize:vertical; box-sizing:border-box;"></textarea>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.72rem; font-weight:700; color:#999; display:block; margin-bottom:4px;">🇰🇷 KO — nombre</label>
+                                    <input type="text" id="plato-nombre-ko" placeholder="(sin traducir todavía)"
+                                        style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid #e0d3f5; font-size:0.85rem; font-family:inherit; outline:none; box-sizing:border-box;">
+                                    <label style="font-size:0.72rem; font-weight:700; color:#999; display:block; margin:6px 0 4px;">🇰🇷 KO — descripción</label>
+                                    <textarea id="plato-descripcion-ko" rows="2" placeholder="(sin traducir todavía)"
+                                        style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid #e0d3f5; font-size:0.85rem; font-family:inherit; outline:none; resize:vertical; box-sizing:border-box;"></textarea>
+                                </div>
+                            </div>
+                            <p style="font-size:0.72rem; color:#aaa; margin:10px 0 0;">Generado con IA — revisá antes de guardar. Podés editarlo a mano.</p>
+                        </div>
+
                         <!-- PedidosYa -->
                         <div style="grid-column:1/-1; background:#fff8f0; border:1px solid #f0ddd0; border-radius:12px; padding:16px;">
                             <label style="font-size:0.78rem; font-weight:800; color:#d86634; display:block; margin-bottom:12px; letter-spacing:0.5px;">🛵 PEDIDOSYA — uso interno</label>
@@ -2883,7 +2923,7 @@
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
         import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=24';
         window.tiendaAdmin = tiendaAdmin;
-        import * as cartaAdmin from './js/carta/admin-carta.js?v=10';
+        import * as cartaAdmin from './js/carta/admin-carta.js?v=11';
         window.cartaAdmin = cartaAdmin;
         import * as reviewsAdmin from './js/reviews/admin-reviews.js?v=6';
         window.reviewsAdmin = reviewsAdmin;

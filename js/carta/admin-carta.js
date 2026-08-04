@@ -609,6 +609,16 @@ function _initSortablePlatos(tbody) {
 
 export function filtrarPlatosPorSeccion(seccionId) { loadPlatos(seccionId); }
 
+const IDIOMAS_TRADUCCION = ['en', 'pt', 'ko'];
+
+function _limpiarCamposTraduccion() {
+    IDIOMAS_TRADUCCION.forEach(lang => {
+        document.getElementById(`plato-nombre-${lang}`).value      = '';
+        document.getElementById(`plato-descripcion-${lang}`).value = '';
+    });
+    document.getElementById('traducciones-error').style.display = 'none';
+}
+
 export function mostrarFormPlato() {
     platoEditando   = null;
     fotosPlato      = [];
@@ -622,6 +632,7 @@ export function mostrarFormPlato() {
     document.getElementById('plato-pct-py').value      = '';
     document.getElementById('plato-precio-py').value   = '';
     document.querySelectorAll('.plato-tag').forEach(cb => cb.checked = false);
+    _limpiarCamposTraduccion();
     document.getElementById('form-plato-titulo').textContent = 'Nuevo Plato';
     document.getElementById('plato-form-error').style.display = 'none';
     _renderFotosPreview();
@@ -661,6 +672,11 @@ export async function editarPlato(id) {
     document.getElementById('plato-pct-py').value      = p.pctPY ?? '';
     document.getElementById('plato-precio-py').value   = p.precioPY ?? '';
     document.querySelectorAll('.plato-tag').forEach(cb => { cb.checked = (p.tags ?? []).includes(cb.value); });
+    _limpiarCamposTraduccion();
+    IDIOMAS_TRADUCCION.forEach(lang => {
+        document.getElementById(`plato-nombre-${lang}`).value      = p[`nombre_${lang}`] ?? '';
+        document.getElementById(`plato-descripcion-${lang}`).value = p[`descripcion_${lang}`] ?? '';
+    });
     document.getElementById('form-plato-titulo').textContent = 'Editar Plato';
     document.getElementById('plato-form-error').style.display = 'none';
     _renderFotosPreview();
@@ -710,6 +726,10 @@ export async function guardarPlato() {
             activo: true,
             actualizadoEn: serverTimestamp()
         };
+        IDIOMAS_TRADUCCION.forEach(lang => {
+            data[`nombre_${lang}`]      = document.getElementById(`plato-nombre-${lang}`).value.trim();
+            data[`descripcion_${lang}`] = document.getElementById(`plato-descripcion-${lang}`).value.trim();
+        });
 
         if (platoEditando) {
             await updateDoc(doc(db, 'carta_platos', platoEditando), data);
@@ -744,6 +764,48 @@ export async function guardarPlato() {
         await loadPlatos();
     } finally {
         if (btn) { btn.textContent = 'Guardar Plato'; btn.disabled = false; }
+    }
+}
+
+// ─── Traducciones (IA) ───────────────────────────────────────────────────────
+const TRADUCCIONES_URL = 'https://us-central1-corcega-loyalty-club.cloudfunctions.net/generarTraduccionesPlato';
+
+export async function generarTraducciones() {
+    const errEl = document.getElementById('traducciones-error');
+    const btn   = document.getElementById('btn-generar-traducciones');
+    errEl.style.display = 'none';
+
+    const nombre     = document.getElementById('plato-nombre').value.trim();
+    const descripcion = document.getElementById('plato-descripcion').value.trim();
+    if (!nombre) {
+        errEl.textContent = 'Completá el nombre del plato antes de traducir.';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    btn.textContent = 'Generando...';
+    btn.disabled = true;
+    try {
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) throw new Error('No autenticado');
+        const resp = await fetch(TRADUCCIONES_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ nombre, descripcion }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || `Error ${resp.status}`);
+
+        IDIOMAS_TRADUCCION.forEach(lang => {
+            document.getElementById(`plato-nombre-${lang}`).value      = data[lang]?.nombre      ?? '';
+            document.getElementById(`plato-descripcion-${lang}`).value = data[lang]?.descripcion ?? '';
+        });
+    } catch (e) {
+        errEl.textContent = 'No se pudo generar la traducción: ' + e.message;
+        errEl.style.display = 'block';
+    } finally {
+        btn.textContent = '✨ Generar en idiomas';
+        btn.disabled = false;
     }
 }
 
