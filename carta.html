@@ -1210,6 +1210,10 @@
     });
 
     init();
+
+    // Cuenta cada carga real de la carta (botón Ver Menú, link compartido, QR, URL directa, etc.)
+    fetch('https://us-central1-corcega-loyalty-club.cloudfunctions.net/contarAperturaMenu', { method: 'POST' })
+        .catch(() => {});
 </script>
 
 <script type="module">

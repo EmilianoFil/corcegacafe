@@ -3261,9 +3261,8 @@
                 .filter(p => p.activo !== false);
 
             // Totales para el resumen
-            let totalClicks = 0, totalShares = 0, totalLikes = 0, totalQP = 0, totalProbaron = 0, totalResenas = 0, sumRating = 0, countRating = 0;
+            let totalShares = 0, totalLikes = 0, totalQP = 0, totalProbaron = 0, totalResenas = 0, sumRating = 0, countRating = 0;
             platos.forEach(p => {
-                totalClicks   += statsMap[p.id]?.clickCount ?? 0;
                 totalShares   += statsMap[p.id]?.shareCount ?? 0;
                 totalLikes    += _statsFavUsers[p.id]?.length ?? 0;
                 totalQP       += _statsQPUsers[p.id]?.length ?? 0;
@@ -3272,7 +3271,7 @@
                 if (valMap[p.id]) { sumRating += valMap[p.id].sum; countRating += valMap[p.id].count; }
             });
             const menuAperturas = snapGeneral.exists() ? (snapGeneral.data().menuAperturas ?? 0) : 0;
-            document.getElementById('stat-total-clicks').textContent   = totalClicks + menuAperturas;
+            document.getElementById('stat-total-clicks').textContent   = menuAperturas;
             document.getElementById('stat-total-shares').textContent   = totalShares;
             document.getElementById('stat-total-likes').textContent    = totalLikes;
             document.getElementById('stat-total-qp').textContent       = totalQP;
