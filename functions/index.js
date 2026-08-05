@@ -3073,6 +3073,26 @@ exports.contarShare = onRequest({ region: "us-central1" }, (req, res) => {
   });
 });
 
+// Contador de vistas de plato (clickCount) — mismo motivo que contarShare:
+// abrir el modal de un plato no requiere login, así que el increment va server-side
+exports.contarClick = onRequest({ region: "us-central1" }, (req, res) => {
+  corsHandler(req, res, async () => {
+    const platoId = (req.body?.platoId || req.query.platoId || "").toString();
+    if (!/^[A-Za-z0-9_-]{5,40}$/.test(platoId)) {
+      res.status(400).json({ ok: false, error: "platoId inválido" });
+      return;
+    }
+    try {
+      await db.collection("carta_plato_stats").doc(platoId)
+        .set({ clickCount: admin.firestore.FieldValue.increment(1) }, { merge: true });
+      res.json({ ok: true });
+    } catch (e) {
+      logger.error("contarClick:", e);
+      res.status(500).json({ ok: false });
+    }
+  });
+});
+
 // Compartir plato — sirve OG tags con la foto del plato (WhatsApp/redes no ejecutan JS,
 // así que la preview necesita HTML server-side) y redirige a la carta
 exports.sharePlato = onRequest({ region: "us-central1" }, async (req, res) => {

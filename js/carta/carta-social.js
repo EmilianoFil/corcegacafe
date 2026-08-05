@@ -78,10 +78,15 @@ export function onCartaRendered() {
 
 // ─── Se llama desde carta.html cuando se abre el modal ───────────────────────
 export function onModalAbierto(platoId) {
+    // El contador de vistas (clickCount) se incrementa server-side porque las reglas
+    // de Firestore exigen login para escribir en carta_plato_stats y la mayoría de
+    // quienes abren un plato son visitantes anónimos
+    fetch(`https://us-central1-corcega-loyalty-club.cloudfunctions.net/contarClick?platoId=${platoId}`, { method: 'POST' })
+        .catch(() => {});
+
     if (!_enabled) return;
     _modalAbiertoPlatoId = platoId;
     _renderSocialEnModal(platoId);
-    setDoc(doc(db, 'carta_plato_stats', platoId), { clickCount: increment(1) }, { merge: true });
 }
 
 export function onModalCerrado() {
