@@ -776,6 +776,19 @@ header {
   color: rgba(255,255,255,0.75);
   text-decoration: none;
 }
+.tienda-footer-nav {
+  display: flex;
+  gap: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.tienda-footer-nav a {
+  transition: color 0.2s;
+}
+.tienda-footer-nav a:hover {
+  color: var(--naranja-accent);
+}
 .footer-arrepentimiento-link {
   display: inline-flex;
   align-items: center;

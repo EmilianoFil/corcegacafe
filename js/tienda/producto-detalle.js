@@ -129,16 +129,39 @@ function renderProductDetail() {
     document.getElementById('breadcrumb-name').innerText = p.nombre;
 
     // SEO dinámico
-    document.title = `${p.nombre} | Córcega Café`;
+    const seoTitle = `${p.nombre} | Córcega Café`;
+    const seoDesc = ((p.descripcion || p.nombre).slice(0, 140)) + ' — Pedí online en Córcega Café, Caballito.';
+    const seoUrl = `https://corcegacafe.com.ar/producto.html?id=${p.id}`;
+    const seoImage = p.imagenUrl || 'https://corcegacafe.com.ar/css/img/og-imagen.jpg';
+
+    document.title = seoTitle;
     const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.content = ((p.descripcion || p.nombre).slice(0, 140)) + ' — Pedí online en Córcega Café, Caballito.';
+    if (metaDesc) metaDesc.content = seoDesc;
+
     let canonical = document.querySelector('link[rel="canonical"]');
     if (!canonical) {
         canonical = document.createElement('link');
         canonical.rel = 'canonical';
         document.head.appendChild(canonical);
     }
-    canonical.href = `https://corcegacafe.com.ar/producto.html?id=${p.id}`;
+    canonical.href = seoUrl;
+
+    const setMeta = (attr, value, content) => {
+        let el = document.querySelector(`meta[${attr}="${value}"]`);
+        if (!el) {
+            el = document.createElement('meta');
+            el.setAttribute(attr, value);
+            document.head.appendChild(el);
+        }
+        el.setAttribute('content', content);
+    };
+    setMeta('property', 'og:title', seoTitle);
+    setMeta('property', 'og:description', seoDesc);
+    setMeta('property', 'og:url', seoUrl);
+    setMeta('property', 'og:image', seoImage);
+    setMeta('name', 'twitter:title', seoTitle);
+    setMeta('name', 'twitter:description', seoDesc);
+    setMeta('name', 'twitter:image', seoImage);
 
     // Titulo y Precio
     const isAgotado = (p.stock > 0 && p.stock <= 0);

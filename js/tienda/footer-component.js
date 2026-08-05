@@ -73,6 +73,10 @@ function renderFooter(config) {
             </div>
             ${addressHTML}
             ${socialsHTML}
+            <nav class="tienda-footer-nav" aria-label="Enlaces del sitio">
+                <a href="index.html">Inicio</a>
+                <a href="carta.html">Carta y Menú</a>
+            </nav>
             <a href="arrepentimiento.html" class="footer-arrepentimiento-link" title="Botón de Arrepentimiento — Ley 24.240">
                 <i class="fas fa-undo-alt"></i> Botón de Arrepentimiento
             </a>
@@ -94,6 +98,10 @@ function renderMinimalFooter() {
                 <span class="footer-brand-name">CóRCEGA</span>
                 <span class="footer-brand-sub">REBELDÍA CAFETERA</span>
             </div>
+            <nav class="tienda-footer-nav" aria-label="Enlaces del sitio">
+                <a href="index.html">Inicio</a>
+                <a href="carta.html">Carta y Menú</a>
+            </nav>
         </div>
     </div>
     <div class="tienda-footer-bottom">
