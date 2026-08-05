@@ -3190,7 +3190,7 @@
             if (!tbody) return;
             tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">Cargando...</td></tr>`;
 
-            const [snapPlatos, snapStats, snapVal, snapFavs, snapQP, snapProbados, snapClientes, snapUsuarios] = await Promise.all([
+            const [snapPlatos, snapStats, snapVal, snapFavs, snapQP, snapProbados, snapClientes, snapUsuarios, snapGeneral] = await Promise.all([
                 getDocs(query(collection(db, 'carta_platos'), orderBy('orden'))),
                 getDocs(collection(db, 'carta_plato_stats')),
                 getDocs(collection(db, 'carta_valoraciones')),
@@ -3198,7 +3198,8 @@
                 getDocs(collection(db, 'carta_quiero_probar')),
                 getDocs(collection(db, 'carta_probados')),
                 getDocs(collection(db, 'clientes')),
-                getDocs(collection(db, 'usuarios_tienda'))
+                getDocs(collection(db, 'usuarios_tienda')),
+                getDoc(doc(db, 'carta_stats', 'general'))
             ]);
 
             // Indexar stats por platoId
@@ -3270,7 +3271,8 @@
                 totalResenas  += valMap[p.id]?.count ?? 0;
                 if (valMap[p.id]) { sumRating += valMap[p.id].sum; countRating += valMap[p.id].count; }
             });
-            document.getElementById('stat-total-clicks').textContent   = totalClicks;
+            const menuAperturas = snapGeneral.exists() ? (snapGeneral.data().menuAperturas ?? 0) : 0;
+            document.getElementById('stat-total-clicks').textContent   = totalClicks + menuAperturas;
             document.getElementById('stat-total-shares').textContent   = totalShares;
             document.getElementById('stat-total-likes').textContent    = totalLikes;
             document.getElementById('stat-total-qp').textContent       = totalQP;

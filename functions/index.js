@@ -3093,6 +3093,20 @@ exports.contarClick = onRequest({ region: "us-central1" }, (req, res) => {
   });
 });
 
+// Contador de aperturas del botón "Ver Menú" en el home — mismo motivo que contarClick
+exports.contarAperturaMenu = onRequest({ region: "us-central1" }, (req, res) => {
+  corsHandler(req, res, async () => {
+    try {
+      await db.collection("carta_stats").doc("general")
+        .set({ menuAperturas: admin.firestore.FieldValue.increment(1) }, { merge: true });
+      res.json({ ok: true });
+    } catch (e) {
+      logger.error("contarAperturaMenu:", e);
+      res.status(500).json({ ok: false });
+    }
+  });
+});
+
 // Compartir plato — sirve OG tags con la foto del plato (WhatsApp/redes no ejecutan JS,
 // así que la preview necesita HTML server-side) y redirige a la carta
 exports.sharePlato = onRequest({ region: "us-central1" }, async (req, res) => {
