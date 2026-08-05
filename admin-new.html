@@ -2909,6 +2909,19 @@
         let _statsFavUsers = {};  // { platoId: [uid] } — quiénes quieren probar cada plato
         let _statsUsersMap = {};  // { uid: { nombre, email, ... } } — datos de usuarios
 
+        // Estadísticas de carta en vivo (onSnapshot) — caches por fuente + flag de listo
+        let _statsUnsubs   = [];
+        let _statsPlatos   = [];
+        let _statsClickMap = {};  // { platoId: { clickCount, shareCount } }
+        let _statsMenuAperturas = 0;
+        let _statsReady = { platos: false, stats: false, val: false, favs: false, qp: false, probados: false, clientes: false, usuarios: false, general: false };
+
+        function _detenerStatsListeners() {
+            _statsUnsubs.forEach(unsub => unsub());
+            _statsUnsubs = [];
+            _statsReady = { platos: false, stats: false, val: false, favs: false, qp: false, probados: false, clientes: false, usuarios: false, general: false };
+        }
+
         // Dashboard Cache
         let cachedLogs = [];
         let cachedStartWeek = null;
@@ -2976,6 +2989,9 @@
 
             // Detener el listener del dashboard si navegamos a otra sección
             if (target !== 'tienda-dashboard') _detenerTiendaDashboardListener();
+
+            // Detener los listeners de estadísticas de carta si navegamos a otra sección
+            if (target !== 'carta-stats') _detenerStatsListeners();
 
             document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
             section.classList.add('active');
@@ -3184,81 +3200,119 @@
             await setDoc(doc(db, 'config', 'carta'), { loginHabilitado: nuevo }, { merge: true });
         };
 
-        // ── Estadísticas de carta ─────────────────────────────────────────────
-        async function _cargarStats() {
+        // ── Estadísticas de carta (en vivo, onSnapshot) ───────────────────────
+        function _cargarStats() {
             const tbody = document.getElementById('carta-stats-body');
             if (!tbody) return;
             tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">Cargando...</td></tr>`;
 
-            const [snapPlatos, snapStats, snapVal, snapFavs, snapQP, snapProbados, snapClientes, snapUsuarios, snapGeneral] = await Promise.all([
-                getDocs(query(collection(db, 'carta_platos'), orderBy('orden'))),
-                getDocs(collection(db, 'carta_plato_stats')),
-                getDocs(collection(db, 'carta_valoraciones')),
-                getDocs(collection(db, 'carta_favoritos')),
-                getDocs(collection(db, 'carta_quiero_probar')),
-                getDocs(collection(db, 'carta_probados')),
-                getDocs(collection(db, 'clientes')),
-                getDocs(collection(db, 'usuarios_tienda')),
-                getDoc(doc(db, 'carta_stats', 'general'))
-            ]);
+            _detenerStatsListeners(); // por si quedó algo de una entrada anterior a la sección
 
-            // Indexar stats por platoId
-            const statsMap = {};
-            snapStats.forEach(d => { statsMap[d.id] = d.data(); });
+            _statsUnsubs.push(onSnapshot(query(collection(db, 'carta_platos'), orderBy('orden')), snap => {
+                _statsPlatos = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.activo !== false);
+                _statsReady.platos = true;
+                _renderStats();
+            }));
 
-            // Indexar usuarios (clientes + usuarios_tienda)
-            _statsUsersMap = {};
-            snapClientes.forEach(d => { _statsUsersMap[d.id] = { ...d.data() }; });
-            snapUsuarios.forEach(d => { if (!_statsUsersMap[d.id]) _statsUsersMap[d.id] = { ...d.data() }; });
+            _statsUnsubs.push(onSnapshot(collection(db, 'carta_plato_stats'), snap => {
+                const m = {};
+                snap.forEach(d => { m[d.id] = d.data(); });
+                _statsClickMap = m;
+                _statsReady.stats = true;
+                _renderStats();
+            }));
 
-            // Índice inverso: platoId → [uid] para cada colección social
-            _statsFavUsers = {};
-            snapFavs.forEach(d => {
-                (d.data().platoIds ?? []).forEach(pid => {
-                    if (!_statsFavUsers[pid]) _statsFavUsers[pid] = [];
-                    _statsFavUsers[pid].push(d.id);
+            _statsUnsubs.push(onSnapshot(collection(db, 'carta_valoraciones'), snap => {
+                const valMap = {};
+                const valDocs = {};
+                snap.forEach(d => {
+                    const data = d.data();
+                    const { platoId, rating } = data;
+                    if (!platoId || !rating) return;
+                    if (!valMap[platoId]) valMap[platoId] = { sum: 0, count: 0 };
+                    valMap[platoId].sum   += rating;
+                    valMap[platoId].count += 1;
+                    if (!valDocs[platoId]) valDocs[platoId] = [];
+                    valDocs[platoId].push({ docId: d.id, ...data });
                 });
-            });
+                Object.values(valDocs).forEach(arr =>
+                    arr.sort((a, b) => (b.creadoEn?.seconds ?? 0) - (a.creadoEn?.seconds ?? 0))
+                );
+                window._statsValMap = valMap;
+                _statsValDocs = valDocs;
+                _statsReady.val = true;
+                _renderStats();
+            }));
 
-            const _statsQPUsers = {};
-            snapQP.forEach(d => {
-                (d.data().platoIds ?? []).forEach(pid => {
-                    if (!_statsQPUsers[pid]) _statsQPUsers[pid] = [];
-                    _statsQPUsers[pid].push(d.id);
+            _statsUnsubs.push(onSnapshot(collection(db, 'carta_favoritos'), snap => {
+                const favUsers = {};
+                snap.forEach(d => {
+                    (d.data().platoIds ?? []).forEach(pid => {
+                        if (!favUsers[pid]) favUsers[pid] = [];
+                        favUsers[pid].push(d.id);
+                    });
                 });
-            });
-            window._statsQPUsers = _statsQPUsers;
+                _statsFavUsers = favUsers;
+                _statsReady.favs = true;
+                _renderStats();
+            }));
 
-            const _statsProbadosUsers = {};
-            snapProbados.forEach(d => {
-                (d.data().platoIds ?? []).forEach(pid => {
-                    if (!_statsProbadosUsers[pid]) _statsProbadosUsers[pid] = [];
-                    _statsProbadosUsers[pid].push(d.id);
+            _statsUnsubs.push(onSnapshot(collection(db, 'carta_quiero_probar'), snap => {
+                const qpUsers = {};
+                snap.forEach(d => {
+                    (d.data().platoIds ?? []).forEach(pid => {
+                        if (!qpUsers[pid]) qpUsers[pid] = [];
+                        qpUsers[pid].push(d.id);
+                    });
                 });
-            });
-            window._statsProbadosUsers = _statsProbadosUsers;
+                window._statsQPUsers = qpUsers;
+                _statsReady.qp = true;
+                _renderStats();
+            }));
 
-            // Agrupar valoraciones por platoId → avg rating + guardar docs raw
-            const valMap = {};
-            _statsValDocs = {};
-            snapVal.forEach(d => {
-                const data = d.data();
-                const { platoId, rating } = data;
-                if (!platoId || !rating) return;
-                if (!valMap[platoId]) valMap[platoId] = { sum: 0, count: 0 };
-                valMap[platoId].sum   += rating;
-                valMap[platoId].count += 1;
-                if (!_statsValDocs[platoId]) _statsValDocs[platoId] = [];
-                _statsValDocs[platoId].push({ docId: d.id, ...data });
-            });
-            // Ordenar cada lista por fecha desc
-            Object.values(_statsValDocs).forEach(arr =>
-                arr.sort((a, b) => (b.creadoEn?.seconds ?? 0) - (a.creadoEn?.seconds ?? 0))
-            );
+            _statsUnsubs.push(onSnapshot(collection(db, 'carta_probados'), snap => {
+                const probUsers = {};
+                snap.forEach(d => {
+                    (d.data().platoIds ?? []).forEach(pid => {
+                        if (!probUsers[pid]) probUsers[pid] = [];
+                        probUsers[pid].push(d.id);
+                    });
+                });
+                window._statsProbadosUsers = probUsers;
+                _statsReady.probados = true;
+                _renderStats();
+            }));
 
-            const platos = snapPlatos.docs
-                .map(d => ({ id: d.id, ...d.data() }))
-                .filter(p => p.activo !== false);
+            _statsUnsubs.push(onSnapshot(collection(db, 'clientes'), snap => {
+                snap.forEach(d => { _statsUsersMap[d.id] = { ...d.data() }; });
+                _statsReady.clientes = true;
+                _renderStats();
+            }));
+
+            _statsUnsubs.push(onSnapshot(collection(db, 'usuarios_tienda'), snap => {
+                snap.forEach(d => { if (!_statsUsersMap[d.id]) _statsUsersMap[d.id] = { ...d.data() }; });
+                _statsReady.usuarios = true;
+                _renderStats();
+            }));
+
+            _statsUnsubs.push(onSnapshot(doc(db, 'carta_stats', 'general'), snap => {
+                _statsMenuAperturas = snap.exists() ? (snap.data().menuAperturas ?? 0) : 0;
+                _statsReady.general = true;
+                _renderStats();
+            }));
+        }
+
+        function _renderStats() {
+            const tbody = document.getElementById('carta-stats-body');
+            if (!tbody) return;
+            // Esperar a que llegue el primer snapshot de cada fuente antes de renderizar
+            if (!Object.values(_statsReady).every(Boolean)) return;
+
+            const statsMap  = _statsClickMap;
+            const valMap    = window._statsValMap ?? {};
+            const platos    = _statsPlatos;
+            const _statsQPUsers       = window._statsQPUsers ?? {};
+            const _statsProbadosUsers = window._statsProbadosUsers ?? {};
 
             // Totales para el resumen
             let totalShares = 0, totalLikes = 0, totalQP = 0, totalProbaron = 0, totalResenas = 0, sumRating = 0, countRating = 0;
@@ -3270,8 +3324,7 @@
                 totalResenas  += valMap[p.id]?.count ?? 0;
                 if (valMap[p.id]) { sumRating += valMap[p.id].sum; countRating += valMap[p.id].count; }
             });
-            const menuAperturas = snapGeneral.exists() ? (snapGeneral.data().menuAperturas ?? 0) : 0;
-            document.getElementById('stat-total-clicks').textContent   = menuAperturas;
+            document.getElementById('stat-total-clicks').textContent   = _statsMenuAperturas;
             document.getElementById('stat-total-shares').textContent   = totalShares;
             document.getElementById('stat-total-likes').textContent    = totalLikes;
             document.getElementById('stat-total-qp').textContent       = totalQP;
@@ -3281,9 +3334,9 @@
                 countRating ? (sumRating / countRating).toFixed(1) + ' ★' : '—';
 
             // Ordenar por clicks desc
-            platos.sort((a, b) => (statsMap[b.id]?.clickCount ?? 0) - (statsMap[a.id]?.clickCount ?? 0));
+            const platosOrdenados = [...platos].sort((a, b) => (statsMap[b.id]?.clickCount ?? 0) - (statsMap[a.id]?.clickCount ?? 0));
 
-            if (!platos.length) {
+            if (!platosOrdenados.length) {
                 tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">No hay datos todavía.</td></tr>`;
                 return;
             }
@@ -3291,7 +3344,7 @@
             const _btnExpand = (id, label, color, fn) =>
                 `<button onclick="window.${fn}('${id}')" style="padding:4px 10px;border-radius:8px;border:1px solid ${color};background:white;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;color:${color};">${label}</button>`;
 
-            tbody.innerHTML = platos.map(p => {
+            tbody.innerHTML = platosOrdenados.map(p => {
                 const clicks    = statsMap[p.id]?.clickCount ?? 0;
                 const shares    = statsMap[p.id]?.shareCount ?? 0;
                 const likesN    = _statsFavUsers[p.id]?.length ?? 0;
