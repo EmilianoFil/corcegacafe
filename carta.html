@@ -123,6 +123,44 @@
         }
         #lang-switcher option { color: #1d1d1d; }
 
+        /* ── Aviso de idioma sugerido (detección de navigator.language) ── */
+        .lang-hint-banner {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            background: var(--coral);
+            color: white;
+            padding: 10px 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .lang-hint-banner.show { display: flex; }
+        .lang-hint-btn {
+            background: var(--dark);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 5px 14px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .lang-hint-btn:hover { background: #012530; }
+        .lang-hint-close {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.85);
+            font-size: 1rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 2px 4px;
+        }
+        .lang-hint-close:hover { color: white; }
+
         #carta-user-btn {
             display: none;
             align-items: center;
@@ -631,6 +669,12 @@
 </head>
 <body>
 
+<div class="lang-hint-banner" id="lang-hint-banner" role="status">
+    <span id="lang-hint-text"></span>
+    <button type="button" id="lang-hint-switch" class="lang-hint-btn"></button>
+    <button type="button" id="lang-hint-close" class="lang-hint-close" aria-label="Cerrar">✕</button>
+</div>
+
 <header id="main-header">
     <div class="header-left">
         <img src="css/img/Corcega_Logo_Original.png" alt="Córcega">
@@ -774,6 +818,46 @@
     });
 
     aplicarI18nEstatico();
+
+    // ── Aviso de idioma sugerido ─────────────────────────────────────────────
+    // Si la persona nunca eligió idioma a mano y su navegador está en otro
+    // idioma que soportamos, le avisamos — pero no le cambiamos el contenido
+    // solo, sigue viendo la carta en español hasta que toque "Cambiar a...".
+    (function detectarIdiomaSugerido() {
+        if (localStorage.getItem('cartaLang')) return;           // ya eligió antes
+        if (localStorage.getItem('cartaLangHintDismissed')) return; // ya cerró el aviso
+
+        const navLang = (navigator.language || navigator.userLanguage || '').slice(0, 2).toLowerCase();
+        if (navLang === lang) return; // ya coincide con el default (es)
+
+        const HINT = {
+            en: { flag: '🇬🇧', text: 'This menu is also available in English', btn: 'Switch to English' },
+            pt: { flag: '🇧🇷', text: 'Este cardápio também está disponível em português', btn: 'Mudar para português' },
+            ko: { flag: '🇰🇷', text: '이 메뉴는 한국어로도 보실 수 있습니다', btn: '한국어로 보기' },
+        };
+        const h = HINT[navLang];
+        if (!h) return; // idioma del dispositivo no soportado en la carta
+
+        const banner = document.getElementById('lang-hint-banner');
+        document.getElementById('lang-hint-text').textContent = `${h.flag} ${h.text}`;
+
+        const btnSwitch = document.getElementById('lang-hint-switch');
+        btnSwitch.textContent = h.btn;
+        btnSwitch.onclick = () => {
+            lang = navLang;
+            localStorage.setItem('cartaLang', lang);
+            aplicarI18nEstatico();
+            if (_cartaLista) aplicarVista();
+            banner.classList.remove('show');
+        };
+
+        document.getElementById('lang-hint-close').onclick = () => {
+            localStorage.setItem('cartaLangHintDismissed', '1');
+            banner.classList.remove('show');
+        };
+
+        banner.classList.add('show');
+    })();
 
     function tagLabel(t) {
         if (t === 'vegetariano') return tr('tagVegetariano');
