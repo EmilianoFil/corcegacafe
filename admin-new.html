@@ -4772,6 +4772,16 @@
 
                 await updateDoc(ref, updates);
                 console.log(`[Zoho] Firestore update enviado para ${data.email} — trigger onClienteUpdated debería dispararse`);
+
+                // Mail de felicitaciones SOLO cuando se llega a 8/8 (no en la invitación de cortesía)
+                if (updates.cafes === 8) {
+                    fetch("https://us-central1-corcega-loyalty-club.cloudfunctions.net/enviarMailFelicitaciones", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ dni, nombre, mail: data.email || data.mail || "" })
+                    }).catch(err => console.error("Error enviando mail de felicitaciones:", err));
+                }
+
                 await addDoc(collection(db, "logs"), {
                     usuario: auth.currentUser?.email,
                     accion: isInvitation ? "invitar_cafecito" : "sumar_cafecito",

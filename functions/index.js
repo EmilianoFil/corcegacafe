@@ -343,18 +343,31 @@ exports.enviarMailFelicitaciones = onRequest(
       const mailOptions = {
         from: `Córcega Café <${emailUser.value()}>`,
         to: email,
-        subject: "¡Felicitaciones, juntaste todos los sellos! 🎉",
+        subject: "🎉 ¡Completaste tu tarjeta! Te invitamos tu próximo café",
         html: `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b;">
-            <h2>¡Felicitaciones, ${nombre}! 🎉</h2>
-            <p>Completaste tu tarjeta de cafecitos con el DNI <strong>${dni}</strong>.</p>
-            <p>Así se ve ahora tu tarjeta:</p>
-            <img src="https://emilianofil.github.io/corcegacafe/css/img/tarjeta-llena.png" alt="Tarjeta completa" style="max-width:100%; margin:20px 0; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:110px; margin-bottom:20px;">
+            <h2 style="margin:0 0 8px; color:#2b2b2b;">¡Lo lograste, ${nombre}! 🎉</h2>
+            <p style="margin:0 0 20px; color:#666; font-size:15px; line-height:1.6;">Completaste tu tarjeta de cafecitos — te invitamos tu próximo café.</p>
+
+            <div style="background:#f0f7ff; border:1.5px solid #cce0ff; border-radius:14px; padding:16px; margin:0 0 20px;">
+              <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Tu premio</div>
+              <div style="font-size:1.25rem; font-weight:900; color:#1a4a8a;">☕ Te invitamos tu próximo café</div>
+            </div>
+
+            <img src="https://emilianofil.github.io/corcegacafe/css/img/tarjeta-llena.png" alt="Tarjeta completa" style="max-width:100%; margin:0 0 20px; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+
             <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
               Ver mi estado
             </a>
-            <p style="margin-top:30px;">Pasá a buscar tu cafecito por la isla 🏝️.</p>
-            <hr style="margin:30px auto; max-width:80%; border:none; border-top:1px solid #ccc;" />
+
+            <p style="margin-top:26px; color:#999; font-size:13px;">Pasá cuando quieras, te esperamos en la isla 🏝️.</p>
+
+            <div style="margin-top:20px; padding-top:18px; border-top:1px dashed #eee; font-size:12.5px; color:#999; text-align:left;">
+              PD: mientras tanto, ¿ya conocés nuestra <a href="https://emilianofil.github.io/corcegacafe/tienda.html" style="color:#d86634; font-weight:700; text-decoration:none;">tienda online</a>? Café en grano, merch y pastelería para llevar.
+            </div>
+
+            <hr style="margin:26px auto; max-width:80%; border:none; border-top:1px solid #ccc;" />
             <p style="margin: 0;">Seguinos en Instagram</p>
             <a href="https://www.instagram.com/corcegacafe" target="_blank" style="display:inline-flex; align-items:center; color:#d86634; font-weight:bold; text-decoration:none; margin-top:5px;">
               <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" width="20" height="20" style="margin-right:8px;">
