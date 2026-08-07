@@ -3008,7 +3008,7 @@ exports.onUsuarioTiendaCreated = onDocumentCreated(
     document: "usuarios_tienda/{uid}",
     region: "us-central1",
     secrets: [zeptoFunctions.zeptoToken],
-    timeoutSeconds: 600,
+    timeoutSeconds: 540,
   },
   async (event) => {
     const data = event.data.data();
