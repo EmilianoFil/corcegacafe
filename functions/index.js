@@ -149,14 +149,14 @@ exports.enviarMailRegistro = onRequest(
             <h2>¡Bienvenido/a al Club de Cafecitos de Córcega! ☕</h2>
             <p>Hola <strong>${nombre}</strong>, ya estás registrado con el DNI <strong>${dni}</strong>.</p>
             <p>Esta es tu tarjeta, hay que empezar a llenarla:</p>
-            <img src="https://emilianofil.github.io/corcegacafe/css/img/tarjeta-vacia.png" alt="Tarjeta de cafecitos" style="max-width:100%; margin:20px 0; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <img src="https://corcegacafe.com.ar/css/img/tarjeta-vacia.png" alt="Tarjeta de cafecitos" style="max-width:100%; margin:20px 0; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
 
             <div style="margin-bottom: 30px;">
               <div style="margin-bottom: 12px;">
-                <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="display: block; margin: 0 auto; max-width: 120px;">
+                <img src="https://corcegacafe.com.ar/css/img/logo-corcega-color.png" alt="Logo Córcega" style="display: block; margin: 0 auto; max-width: 120px;">
               </div>
               <div>
-                <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
+                <a href="https://corcegacafe.com.ar/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
                   Ver mi tarjeta
                 </a>
               </div>
@@ -211,14 +211,14 @@ exports.enviarMailRegistroTA = onRequest(
             <h2>¡Bienvenido/a al Club de Cafecitos de Córcega! ☕</h2>
             <p>Hola <strong>${nombre}</strong>, ya estás registrado con el DNI <strong>${dni}</strong>.</p>
             <p>Esta es tu tarjeta, hay que empezar a llenarla:</p>
-            <img src="https://emilianofil.github.io/corcegacafe/css/img/tarjeta-vacia-TA.png" alt="Tarjeta de cafecitos" style="max-width:100%; margin:20px 0; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <img src="https://corcegacafe.com.ar/css/img/tarjeta-vacia-TA.png" alt="Tarjeta de cafecitos" style="max-width:100%; margin:20px 0; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
 
             <div style="margin-bottom: 30px;">
               <div style="margin-bottom: 12px;">
-                <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="display: block; margin: 0 auto; max-width: 120px;">
+                <img src="https://corcegacafe.com.ar/css/img/logo-corcega-color.png" alt="Logo Córcega" style="display: block; margin: 0 auto; max-width: 120px;">
               </div>
               <div>
-                <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
+                <a href="https://corcegacafe.com.ar/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
                   Ver mi tarjeta
                 </a>
               </div>
@@ -273,14 +273,14 @@ exports.enviarMailRegistroIG = onRequest(
             <h2>¡Bienvenido/a al Club de Cafecitos de Córcega! ☕</h2>
             <p>Hola <strong>${nombre}</strong>, ya estás registrado con el DNI <strong>${dni}</strong>.</p>
             <p>Esta es tu tarjeta, hay que empezar a llenarla:</p>
-            <img src="https://emilianofil.github.io/corcegacafe/css/img/tarjeta-vacia-IG.png" alt="Tarjeta de cafecitos" style="max-width:100%; margin:20px 0; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <img src="https://corcegacafe.com.ar/css/img/tarjeta-vacia-IG.png" alt="Tarjeta de cafecitos" style="max-width:100%; margin:20px 0; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
 
             <div style="margin-bottom: 30px;">
               <div style="margin-bottom: 12px;">
-                <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="display: block; margin: 0 auto; max-width: 120px;">
+                <img src="https://corcegacafe.com.ar/css/img/logo-corcega-color.png" alt="Logo Córcega" style="display: block; margin: 0 auto; max-width: 120px;">
               </div>
               <div>
-                <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
+                <a href="https://corcegacafe.com.ar/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
                   Ver mi tarjeta
                 </a>
               </div>
@@ -332,7 +332,7 @@ exports.enviarMailFelicitaciones = onRequest(
       const subject = "🎉 ¡Completaste tu tarjeta! Te invitamos tu próximo café";
       const html = `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b;">
-            <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:110px; margin-bottom:20px;">
+            <img src="https://corcegacafe.com.ar/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:110px; margin-bottom:20px;">
             <h2 style="margin:0 0 8px; color:#2b2b2b;">¡Lo lograste, ${nombre}! 🎉</h2>
             <p style="margin:0 0 20px; color:#666; font-size:15px; line-height:1.6;">Completaste tu tarjeta de cafecitos — te invitamos tu próximo café.</p>
 
@@ -341,9 +341,9 @@ exports.enviarMailFelicitaciones = onRequest(
               <div style="font-size:1.25rem; font-weight:900; color:#1a4a8a;">☕ Te invitamos tu próximo café</div>
             </div>
 
-            <img src="https://emilianofil.github.io/corcegacafe/css/img/tarjeta-llena.png" alt="Tarjeta completa" style="max-width:100%; margin:0 0 20px; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+            <img src="https://corcegacafe.com.ar/css/img/tarjeta-llena.png" alt="Tarjeta completa" style="max-width:100%; margin:0 0 20px; border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
 
-            <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
+            <a href="https://corcegacafe.com.ar/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
               Ver mi estado
             </a>
 
@@ -453,10 +453,10 @@ exports.selloCumpleaniosDiario = onSchedule(
 
   <div style="margin-bottom: 30px;">
     <div style="margin-bottom: 12px;">
-      <img src="https://emilianofil.github.io/corcegacafe/css/img/sello_cumpleanos.png" alt="Sello de cumpleaños" style="max-width:140px; margin:0 auto 16px; border-radius:50%; box-shadow:0 2px 10px rgba(0,0,0,0.1); display:block;">
+      <img src="https://corcegacafe.com.ar/css/img/sello_cumpleanos.png" alt="Sello de cumpleaños" style="max-width:140px; margin:0 auto 16px; border-radius:50%; box-shadow:0 2px 10px rgba(0,0,0,0.1); display:block;">
     </div>
     <div>
-      <a href="https://emilianofil.github.io/corcegacafe/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
+      <a href="https://corcegacafe.com.ar/estado.html?dni=${dni}" style="display:inline-block; padding:12px 24px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">
         Ver mi tarjeta
       </a>
     </div>
@@ -538,7 +538,7 @@ exports.enviarMailAniversario = onRequest(
             <tr>
               <td align="center" style="padding:0;">
                 <img
-                  src="https://emilianofil.github.io/corcegacafe/css/img/FlyerAniversario.jpg"
+                  src="https://corcegacafe.com.ar/css/img/FlyerAniversario.jpg"
                   alt="Aniversario Córcega"
                   style="display:block; width:100%; max-width:600px; height:auto; border:0;"
                 />
@@ -762,7 +762,7 @@ exports.enviarMailCampana = onRequest(
             }
 
             const token = Buffer.from(target.dni).toString("base64");
-            const unsubscribeUrl = `https://emilianofil.github.io/corcegacafe/cancelar.html?id=${token}`;
+            const unsubscribeUrl = `https://corcegacafe.com.ar/cancelar.html?id=${token}`;
 
             // URLs de tracking
             const pixelUrl = campanaId
@@ -804,7 +804,7 @@ exports.enviarMailCampana = onRequest(
                   Gracias por ser parte del Club Córcega 🏝️<br/>
                   <strong>Equipo Córcega 🐎</strong>
                 </p>
-                <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega" width="60" style="margin-top:15px; opacity:0.8;">
+                <img src="https://corcegacafe.com.ar/css/img/logo-corcega-color.png" alt="Córcega" width="60" style="margin-top:15px; opacity:0.8;">
                 <div style="margin-top:25px; padding-top:15px; border-top:1px solid #eee;">
                   <p style="font-size:11px; color:#999; line-height:1.4;">
                     Recibís este correo por ser cliente de Córcega Café.<br>
@@ -1283,7 +1283,7 @@ exports.onOrderCreated = onDocumentCreated({
                 <p style="font-size:14px; margin:5px 0; color:#1e4634; white-space: pre-wrap;">${transferInfo}</p>
                 
                 <a href="https://wa.me/54${waNumber}?text=${waMsg}" target="_blank" style="display:inline-flex; align-items:center; gap:10px; padding:14px 22px; background-color:#25d366; color:white; text-decoration:none; font-weight:bold; border-radius:12px; margin-top:20px; font-size:14px;">
-                   <img src="https://emilianofil.github.io/corcegacafe/icons/whatsapp-white.svg" width="20" height="20" style="vertical-align:middle; margin-right:8px;">
+                   <img src="https://corcegacafe.com.ar/icons/whatsapp-white.svg" width="20" height="20" style="vertical-align:middle; margin-right:8px;">
                    ENVIAR COMPROBANTE
                 </a>
             </div>
@@ -1311,7 +1311,7 @@ exports.onOrderCreated = onDocumentCreated({
     const subjectPedido = `🐎 ¡Pedido Recibido! #${orderNumber}`;
     const htmlPedido = `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
-            <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:140px; margin-bottom:30px;">
+            <img src="https://corcegacafe.com.ar/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:140px; margin-bottom:30px;">
             
             <h2 style="color:#d86634; margin:0 0 10px 0; font-size:24px;">¡Gracias por tu compra!</h2>
             <p style="font-size:16px; color:#666;">Hola <strong>${orderData.cliente.nombre}</strong>, recibimos tu pedido <strong>#${orderNumber}</strong>.</p>
@@ -1508,7 +1508,7 @@ exports.onOrderUpdated = onDocumentUpdated(
 
       const htmlEstado = `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
-            <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:140px; margin-bottom:30px;">
+            <img src="https://corcegacafe.com.ar/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:140px; margin-bottom:30px;">
             
             <h2 style="color:${color}; margin:0 0 10px 0; font-size:24px;">${statusMsg}</h2>
             <p style="font-size:16px; color:#666;">Hola <strong>${afterData.cliente.nombre}</strong>, tu pedido <strong>#${afterData.orderNumber || orderId.substring(0,8)}</strong> acaba de dar un paso más.</p>
@@ -1626,7 +1626,7 @@ exports.enviarMailRecupero = onRequest(
         const subjectRecupero = "☕ Recuperar tu contraseña - Córcega Café";
         const htmlRecupero = `
             <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:40px; border:1px solid #eee; border-radius:30px;">
-              <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:120px; margin-bottom:30px;">
+              <img src="https://corcegacafe.com.ar/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:120px; margin-bottom:30px;">
               
               <h2 style="color:#d86634; margin:0 0 15px 0; font-size:22px;">¿Te olvidaste la clave?</h2>
               <p style="font-size:16px; color:#666; line-height:1.5;">No te preocupes, a todos nos pasa. Hacé clic en el siguiente botón para crear una nueva contraseña y volver a disfrutar de tu café favorito.</p>
@@ -1773,7 +1773,7 @@ exports.solicitarArrepentimiento = onRequest(
         // Mail al cliente
         await _enviarArrep(email, nombre, `✅ Cancelación confirmada - ${codigo}`, `
             <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
-              <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega Café" style="max-width:120px; margin-bottom:24px;">
+              <img src="https://corcegacafe.com.ar/css/img/logo-corcega-color.png" alt="Córcega Café" style="max-width:120px; margin-bottom:24px;">
               <h2 style="color:#d86634; margin:0 0 8px 0;">Pedido cancelado</h2>
               <p style="color:#666; font-size:15px;">Hola <strong>${nombre}</strong>, cancelamos tu pedido <strong>#${order.orderNumber}</strong>.</p>
               <div style="background:#f0f7ff; border:1.5px solid #cce0ff; border-radius:14px; padding:16px; margin:20px 0; display:inline-block;">
@@ -1843,7 +1843,7 @@ exports.solicitarArrepentimiento = onRequest(
       // Mail al cliente — instrucciones de devolución
       await _enviarArrep(email, nombre, `📦 Solicitud registrada — necesitamos que devuelvas el producto (${codigo})`, `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
-            <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega Café" style="max-width:120px; margin-bottom:24px;">
+            <img src="https://corcegacafe.com.ar/css/img/logo-corcega-color.png" alt="Córcega Café" style="max-width:120px; margin-bottom:24px;">
             <h2 style="color:#d86634; margin:0 0 8px 0;">Solicitud recibida</h2>
             <p style="color:#666; font-size:15px;">Hola <strong>${nombre}</strong>, registramos tu solicitud de cancelación del pedido <strong>#${order.orderNumber}</strong>.</p>
             <div style="background:#f0f7ff; border:1.5px solid #cce0ff; border-radius:14px; padding:16px; margin:20px 0; display:inline-block;">
@@ -1974,7 +1974,7 @@ exports.procesarDevolucion = onRequest(
       const subjectDevolucion = `✅ Devolución confirmada — ${codigo}`;
       const htmlDevolucion = `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
-            <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega Café" style="max-width:120px; margin-bottom:24px;">
+            <img src="https://corcegacafe.com.ar/css/img/logo-corcega-color.png" alt="Córcega Café" style="max-width:120px; margin-bottom:24px;">
             <h2 style="color:#25a244; margin:0 0 8px 0;">¡Devolución recibida!</h2>
             <p style="color:#666; font-size:15px;">Hola <strong>${clienteNombre}</strong>, recibimos el producto del pedido <strong>#${orderNumber}</strong>.</p>
             <div style="background:#f0f7ff; border:1.5px solid #cce0ff; border-radius:14px; padding:16px; margin:20px 0; display:inline-block;">
@@ -2956,7 +2956,7 @@ function _descuentoTexto(cupon) {
 function _htmlBienvenidaCartaConCupon(nombre, cupon) {
   return `
     <div style="font-family:sans-serif; max-width:480px; margin:auto; text-align:center; color:#2b2b2b;">
-      <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:110px; margin-bottom:20px;">
+      <img src="https://corcegacafe.com.ar/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:110px; margin-bottom:20px;">
       <h2 style="margin:0 0 8px; color:#2b2b2b;">¡Bienvenido/a a Córcega, ${nombre}! 🐎</h2>
       <p style="margin:0 0 20px; color:#666; font-size:15px; line-height:1.6;">Gracias por sumarte y explorar nuestra carta. Si todavía no conocés nuestra <strong>tienda online</strong>, te dejamos un empujoncito.</p>
 
@@ -2992,7 +2992,7 @@ function _htmlBienvenidaTienda(nombre, cupon) {
   ` : "";
   return `
     <div style="font-family:sans-serif; max-width:480px; margin:auto; text-align:center; color:#2b2b2b;">
-      <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:110px; margin-bottom:20px;">
+      <img src="https://corcegacafe.com.ar/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:110px; margin-bottom:20px;">
       <h2 style="margin:0 0 8px; color:#2b2b2b;">¡Bienvenido/a, ${nombre}! 🛒</h2>
       <p style="margin:0 0 20px; color:#666; font-size:15px; line-height:1.6;">Ya tenés tu cuenta lista en la tienda de Córcega — café en grano, pastelería y merch, a un click.${cupon ? " Para arrancar con el pie derecho, tenés esto:" : ""}</p>
 
