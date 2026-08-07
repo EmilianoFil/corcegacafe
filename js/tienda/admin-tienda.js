@@ -2140,6 +2140,22 @@ export async function guardarCupon() {
     if (vencimientoTipo === 'fecha' && !vencimientoFechaStr) return alert('Elegí una fecha de vencimiento.');
     if (vencimientoTipo === 'diasRegistro' && !vencimientoDias) return alert('Ingresá la cantidad de días desde el registro.');
 
+    // Solo puede haber UN cupón público + solo-primera-compra activo a la vez
+    // (es el que se usa como cupón de bienvenida automático — no puede haber ambigüedad).
+    if (alcance === 'publico' && soloPrimeraCompra && activo) {
+        const qUnico = query(
+            collection(db, 'cupones'),
+            where('alcance', '==', 'publico'),
+            where('soloPrimeraCompra', '==', true),
+            where('activo', '==', true)
+        );
+        const snapUnico = await getDocs(qUnico);
+        const otroActivo = snapUnico.docs.find(d => d.id !== (idOriginal || codigo));
+        if (otroActivo) {
+            return alert(`Ya tenés un cupón público de "solo primera compra" activo: ${otroActivo.id}. Pausalo primero — solo puede haber uno a la vez (es el que usa el mail de bienvenida automático).`);
+        }
+    }
+
     if (!idOriginal) {
         const existe = await getDoc(doc(db, 'cupones', codigo));
         if (existe.exists()) return alert('Ya existe un cupón con ese código.');
