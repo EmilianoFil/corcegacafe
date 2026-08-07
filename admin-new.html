@@ -1952,8 +1952,21 @@
                         </select>
                     </div>
                     <div class="input-group">
-                        <label>Vencimiento (opcional)</label>
-                        <input type="date" id="cup-vencimiento">
+                        <label>Vencimiento</label>
+                        <select id="cup-vencimiento-tipo" class="form-control" onchange="window.tiendaAdmin.onVencimientoTipoChange(this.value)">
+                            <option value="ninguno">Sin vencimiento</option>
+                            <option value="fecha">Fecha fija</option>
+                            <option value="diasRegistro">X días desde el registro del cliente</option>
+                        </select>
+                    </div>
+                    <div class="input-group" id="cup-vencimiento-fecha-group" style="display:none;">
+                        <label>Fecha de vencimiento</label>
+                        <input type="date" id="cup-vencimiento-fecha">
+                    </div>
+                    <div class="input-group" id="cup-vencimiento-dias-group" style="display:none;">
+                        <label>Días desde el registro</label>
+                        <input type="number" id="cup-vencimiento-dias" placeholder="Ej: 30" min="1">
+                        <span style="font-size:0.72rem; color:var(--text-muted);">Cada cliente lo puede usar hasta N días después de haberse registrado en la tienda.</span>
                     </div>
                     <div class="input-group">
                         <label>Mínimo de compra $ (opcional)</label>

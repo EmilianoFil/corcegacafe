@@ -202,7 +202,17 @@ window.aplicarCupon = async function() {
         const subtotal = cart.reduce((s, i) => s + (i.precio * i.qty), 0);
 
         if (c.activo === false) { feedback.textContent = 'Ese cupón ya no está disponible.'; return; }
-        if (c.vencimiento?.toDate && c.vencimiento.toDate() < new Date()) { feedback.textContent = 'Ese cupón está vencido.'; return; }
+        if (c.vencimientoTipo === 'fecha' && c.vencimientoFecha?.toDate && c.vencimientoFecha.toDate() < new Date()) {
+            feedback.textContent = 'Ese cupón está vencido.'; return;
+        }
+        if (c.vencimientoTipo === 'diasRegistro' && c.vencimientoDias && authUser.metadata?.creationTime) {
+            const registro = new Date(authUser.metadata.creationTime);
+            const limite = new Date(registro.getTime() + c.vencimientoDias * 24 * 60 * 60 * 1000);
+            if (limite < new Date()) {
+                feedback.textContent = `Este cupón era válido solo los primeros ${c.vencimientoDias} días desde tu registro.`;
+                return;
+            }
+        }
         if (c.alcance !== 'publico' && !(c.uids || []).includes(authUser.uid)) { feedback.textContent = 'Ese cupón no está asignado a tu cuenta.'; return; }
         if (c.minimoCompra && subtotal < c.minimoCompra) { feedback.textContent = `Este cupón requiere una compra mínima de $${c.minimoCompra.toLocaleString('es-AR')}.`; return; }
 

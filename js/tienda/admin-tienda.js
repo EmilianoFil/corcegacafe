@@ -1949,7 +1949,7 @@ export async function toggleCuponesGlobal(checked) {
 
 function _estadoCupon(c) {
     if (c.activo === false) return { label: 'Pausado', color: '#aaa' };
-    if (c.vencimiento?.toDate && c.vencimiento.toDate() < new Date()) return { label: 'Vencido', color: 'var(--error)' };
+    if (c.vencimientoTipo === 'fecha' && c.vencimientoFecha?.toDate && c.vencimientoFecha.toDate() < new Date()) return { label: 'Vencido', color: 'var(--error)' };
     if (c.usoMaximoTotal && (c.usos || []).length >= c.usoMaximoTotal) return { label: 'Agotado', color: 'var(--error)' };
     return { label: 'Activo', color: 'var(--success)' };
 }
@@ -1971,7 +1971,11 @@ export async function loadCuponesTable() {
             const estado = _estadoCupon(c);
             const alcanceLabel = { publico: 'Público', individual: 'Individual', masivo: `Masivo (${(c.uids || []).length})` }[c.alcance] || c.alcance;
             const descuentoLabel = c.tipo === 'porcentaje' ? `${c.valor}%` : `$${Number(c.valor).toLocaleString('es-AR')}`;
-            const vencLabel = c.vencimiento?.toDate ? c.vencimiento.toDate().toLocaleDateString('es-AR') : 'Sin vencimiento';
+            const vencLabel = c.vencimientoTipo === 'fecha' && c.vencimientoFecha?.toDate
+                ? c.vencimientoFecha.toDate().toLocaleDateString('es-AR')
+                : c.vencimientoTipo === 'diasRegistro'
+                    ? `${c.vencimientoDias} días desde registro`
+                    : 'Sin vencimiento';
             const usosLabel = `${(c.usos || []).length}${c.usoMaximoTotal ? ' / ' + c.usoMaximoTotal : ''}`;
 
             return `
@@ -2009,7 +2013,10 @@ export function mostrarFormularioCupon() {
     document.getElementById('cup-tipo').value = 'porcentaje';
     document.getElementById('cup-valor').value = '';
     document.getElementById('cup-alcance').value = 'publico';
-    document.getElementById('cup-vencimiento').value = '';
+    document.getElementById('cup-vencimiento-tipo').value = 'ninguno';
+    document.getElementById('cup-vencimiento-fecha').value = '';
+    document.getElementById('cup-vencimiento-dias').value = '';
+    onVencimientoTipoChange('ninguno');
     document.getElementById('cup-minimo').value = '';
     document.getElementById('cup-uso-max-usuario').value = '1';
     document.getElementById('cup-uso-max-total').value = '';
@@ -2032,6 +2039,11 @@ export function onAlcanceCuponChange(alcance) {
     const block = document.getElementById('cup-clientes-block');
     block.style.display = alcance === 'publico' ? 'none' : 'block';
     document.getElementById('btn-cup-todos-clientes').style.display = alcance === 'masivo' ? 'inline-block' : 'none';
+}
+
+export function onVencimientoTipoChange(tipo) {
+    document.getElementById('cup-vencimiento-fecha-group').style.display = tipo === 'fecha' ? 'block' : 'none';
+    document.getElementById('cup-vencimiento-dias-group').style.display = tipo === 'diasRegistro' ? 'block' : 'none';
 }
 
 async function _fetchClientesTienda() {
@@ -2099,7 +2111,9 @@ export async function guardarCupon() {
     const tipo = document.getElementById('cup-tipo').value;
     const valor = Number(document.getElementById('cup-valor').value);
     const alcance = document.getElementById('cup-alcance').value;
-    const vencimientoStr = document.getElementById('cup-vencimiento').value;
+    const vencimientoTipo = document.getElementById('cup-vencimiento-tipo').value;
+    const vencimientoFechaStr = document.getElementById('cup-vencimiento-fecha').value;
+    const vencimientoDias = Number(document.getElementById('cup-vencimiento-dias').value) || null;
     const minimoCompra = Number(document.getElementById('cup-minimo').value) || 0;
     const usoMaximoPorUsuario = Number(document.getElementById('cup-uso-max-usuario').value) || 1;
     const usoMaximoTotalStr = document.getElementById('cup-uso-max-total').value;
@@ -2113,6 +2127,8 @@ export async function guardarCupon() {
     if ((alcance === 'individual' || alcance === 'masivo') && cuponClientesSeleccionados.length === 0) {
         return alert('Seleccioná al menos un cliente para este alcance.');
     }
+    if (vencimientoTipo === 'fecha' && !vencimientoFechaStr) return alert('Elegí una fecha de vencimiento.');
+    if (vencimientoTipo === 'diasRegistro' && !vencimientoDias) return alert('Ingresá la cantidad de días desde el registro.');
 
     if (!idOriginal) {
         const existe = await getDoc(doc(db, 'cupones', codigo));
@@ -2129,7 +2145,9 @@ export async function guardarCupon() {
         alcance,
         uids: alcance === 'publico' ? [] : cuponClientesSeleccionados.map(c => c.uid),
         soloPrimeraCompra,
-        vencimiento: vencimientoStr ? Timestamp.fromDate(new Date(vencimientoStr + 'T23:59:59')) : null,
+        vencimientoTipo,
+        vencimientoFecha: vencimientoTipo === 'fecha' ? Timestamp.fromDate(new Date(vencimientoFechaStr + 'T23:59:59')) : null,
+        vencimientoDias: vencimientoTipo === 'diasRegistro' ? vencimientoDias : null,
         minimoCompra,
         usoMaximoPorUsuario,
         usoMaximoTotal: usoMaximoTotalStr ? Number(usoMaximoTotalStr) : null,
@@ -2174,7 +2192,10 @@ export async function editarCupon(id) {
     document.getElementById('cup-tipo').value = c.tipo || 'porcentaje';
     document.getElementById('cup-valor').value = c.valor || '';
     document.getElementById('cup-alcance').value = c.alcance || 'publico';
-    document.getElementById('cup-vencimiento').value = c.vencimiento?.toDate ? c.vencimiento.toDate().toISOString().slice(0, 10) : '';
+    document.getElementById('cup-vencimiento-tipo').value = c.vencimientoTipo || 'ninguno';
+    document.getElementById('cup-vencimiento-fecha').value = c.vencimientoFecha?.toDate ? c.vencimientoFecha.toDate().toISOString().slice(0, 10) : '';
+    document.getElementById('cup-vencimiento-dias').value = c.vencimientoDias || '';
+    onVencimientoTipoChange(c.vencimientoTipo || 'ninguno');
     document.getElementById('cup-minimo').value = c.minimoCompra || '';
     document.getElementById('cup-uso-max-usuario').value = c.usoMaximoPorUsuario || 1;
     document.getElementById('cup-uso-max-total').value = c.usoMaximoTotal || '';
