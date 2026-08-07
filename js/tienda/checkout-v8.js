@@ -227,7 +227,7 @@ window.aplicarCupon = async function() {
         }
 
         const monto = c.tipo === 'porcentaje'
-            ? Math.round(subtotal * (c.valor / 100))
+            ? Math.min(Math.round(subtotal * (c.valor / 100)), c.topeDescuento || Infinity, subtotal)
             : Math.min(c.valor, subtotal);
 
         cuponAplicado = { codigo, tipo: c.tipo, valor: c.valor, monto };

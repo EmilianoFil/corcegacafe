@@ -1970,7 +1970,9 @@ export async function loadCuponesTable() {
         tbody.innerHTML = cuponesData.map(c => {
             const estado = _estadoCupon(c);
             const alcanceLabel = { publico: 'Público', individual: 'Individual', masivo: `Masivo (${(c.uids || []).length})` }[c.alcance] || c.alcance;
-            const descuentoLabel = c.tipo === 'porcentaje' ? `${c.valor}%` : `$${Number(c.valor).toLocaleString('es-AR')}`;
+            const descuentoLabel = c.tipo === 'porcentaje'
+                ? `${c.valor}%${c.topeDescuento ? ` (tope $${Number(c.topeDescuento).toLocaleString('es-AR')})` : ''}`
+                : `$${Number(c.valor).toLocaleString('es-AR')}`;
             const vencLabel = c.vencimientoTipo === 'fecha' && c.vencimientoFecha?.toDate
                 ? c.vencimientoFecha.toDate().toLocaleDateString('es-AR')
                 : c.vencimientoTipo === 'diasRegistro'
@@ -2012,6 +2014,8 @@ export function mostrarFormularioCupon() {
     document.getElementById('cup-codigo').disabled = false;
     document.getElementById('cup-tipo').value = 'porcentaje';
     document.getElementById('cup-valor').value = '';
+    document.getElementById('cup-tope').value = '';
+    onTipoCuponChange('porcentaje');
     document.getElementById('cup-alcance').value = 'publico';
     document.getElementById('cup-vencimiento-tipo').value = 'ninguno';
     document.getElementById('cup-vencimiento-fecha').value = '';
@@ -2044,6 +2048,11 @@ export function onAlcanceCuponChange(alcance) {
 export function onVencimientoTipoChange(tipo) {
     document.getElementById('cup-vencimiento-fecha-group').style.display = tipo === 'fecha' ? 'block' : 'none';
     document.getElementById('cup-vencimiento-dias-group').style.display = tipo === 'diasRegistro' ? 'block' : 'none';
+}
+
+export function onTipoCuponChange(tipo) {
+    // El tope solo tiene sentido para porcentaje: en "fijo" el valor ya es el tope.
+    document.getElementById('cup-tope-group').style.display = tipo === 'porcentaje' ? 'block' : 'none';
 }
 
 async function _fetchClientesTienda() {
@@ -2110,6 +2119,7 @@ export async function guardarCupon() {
     const codigo = document.getElementById('cup-codigo').value.trim().toUpperCase();
     const tipo = document.getElementById('cup-tipo').value;
     const valor = Number(document.getElementById('cup-valor').value);
+    const topeDescuento = Number(document.getElementById('cup-tope').value) || null;
     const alcance = document.getElementById('cup-alcance').value;
     const vencimientoTipo = document.getElementById('cup-vencimiento-tipo').value;
     const vencimientoFechaStr = document.getElementById('cup-vencimiento-fecha').value;
@@ -2141,6 +2151,7 @@ export async function guardarCupon() {
         codigo,
         tipo,
         valor,
+        topeDescuento: tipo === 'porcentaje' ? topeDescuento : null,
         activo,
         alcance,
         uids: alcance === 'publico' ? [] : cuponClientesSeleccionados.map(c => c.uid),
@@ -2191,6 +2202,8 @@ export async function editarCupon(id) {
     document.getElementById('cup-codigo').disabled = true;
     document.getElementById('cup-tipo').value = c.tipo || 'porcentaje';
     document.getElementById('cup-valor').value = c.valor || '';
+    document.getElementById('cup-tope').value = c.topeDescuento || '';
+    onTipoCuponChange(c.tipo || 'porcentaje');
     document.getElementById('cup-alcance').value = c.alcance || 'publico';
     document.getElementById('cup-vencimiento-tipo').value = c.vencimientoTipo || 'ninguno';
     document.getElementById('cup-vencimiento-fecha').value = c.vencimientoFecha?.toDate ? c.vencimientoFecha.toDate().toISOString().slice(0, 10) : '';
