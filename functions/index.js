@@ -364,7 +364,7 @@ exports.enviarMailFelicitaciones = onRequest(
             <p style="margin-top:26px; color:#999; font-size:13px;">Pasá cuando quieras, te esperamos en la isla 🏝️.</p>
 
             <div style="margin-top:20px; padding-top:18px; border-top:1px dashed #eee; font-size:12.5px; color:#999; text-align:left;">
-              PD: mientras tanto, ¿ya conocés nuestra <a href="https://emilianofil.github.io/corcegacafe/tienda.html" style="color:#d86634; font-weight:700; text-decoration:none;">tienda online</a>? Café en grano, merch y pastelería para llevar.
+              PD: mientras tanto, ¿ya conocés nuestra <a href="https://corcegacafe.com.ar/tienda.html" style="color:#d86634; font-weight:700; text-decoration:none;">tienda online</a>? Café en grano, merch y pastelería para llevar.
             </div>
 
             <hr style="margin:26px auto; max-width:80%; border:none; border-top:1px solid #ccc;" />
@@ -2953,7 +2953,7 @@ function _htmlBienvenidaCartaConCupon(nombre, cupon) {
         <div style="font-size:13px; color:#1a4a8a;">${_descuentoTexto(cupon)}</div>
       </div>
 
-      <a href="https://emilianofil.github.io/corcegacafe/tienda.html" style="display:inline-block; padding:12px 26px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px; font-size:15px;">
+      <a href="https://corcegacafe.com.ar/tienda.html" style="display:inline-block; padding:12px 26px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px; font-size:15px;">
         Ir a la tienda
       </a>
 
@@ -2985,12 +2985,12 @@ function _htmlBienvenidaTienda(nombre, cupon) {
 
       ${bloqueCupon}
 
-      <a href="https://emilianofil.github.io/corcegacafe/tienda.html" style="display:inline-block; padding:12px 26px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px; font-size:15px;">
+      <a href="https://corcegacafe.com.ar/tienda.html" style="display:inline-block; padding:12px 26px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px; font-size:15px;">
         Empezar a comprar
       </a>
 
       <div style="margin-top:26px; padding-top:18px; border-top:1px dashed #eee; font-size:12.5px; color:#999;">
-        PD: con esta misma cuenta también podés guardar tus platos favoritos en nuestra <a href="https://emilianofil.github.io/corcegacafe/carta.html" style="color:#d86634; font-weight:700; text-decoration:none;">carta digital</a> 🐎.
+        PD: con esta misma cuenta también podés guardar tus platos favoritos en nuestra <a href="https://corcegacafe.com.ar/carta.html" style="color:#d86634; font-weight:700; text-decoration:none;">carta digital</a> 🐎.
       </div>
 
       <hr style="margin:26px auto; max-width:80%; border:none; border-top:1px solid #ccc;" />
