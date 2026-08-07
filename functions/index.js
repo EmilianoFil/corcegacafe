@@ -17,6 +17,21 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 const db = admin.firestore();
 
+const zeptoFunctions = require("./zepto-functions");
+const { sendZeptoMail } = require("./zepto");
+
+// Lee configuracion/tienda.mailProvider.{funcionKey} para decidir Gmail vs ZeptoMail
+// por función — permite migrar de a un mail por vez y volver atrás sin redeploy.
+async function _resolverProveedorMail(funcionKey) {
+  try {
+    const snap = await db.collection("configuracion").doc("tienda").get();
+    return snap.data()?.mailProvider?.[funcionKey] || "gmail";
+  } catch (e) {
+    logger.warn(`No se pudo leer mailProvider.${funcionKey}, uso gmail por defecto:`, e.message);
+    return "gmail";
+  }
+}
+
 // Verifica que el request tenga un token de admin válido
 const verificarAuthAdmin = async (req, res) => {
   const authHeader = req.headers.authorization || "";
@@ -326,25 +341,14 @@ exports.enviarMailRegistroIG = onRequest(
 );
 
 exports.enviarMailFelicitaciones = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass] },
+  { region: "us-central1", secrets: [emailUser, emailPass, zeptoFunctions.zeptoToken] },
   (req, res) => {
     corsHandler(req, res, async () => {
       const { nombre, mail, dni } = req.body;
       const email = mail;
 
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: emailUser.value(),
-          pass: emailPass.value(),
-        },
-      });
-
-      const mailOptions = {
-        from: `Córcega Café <${emailUser.value()}>`,
-        to: email,
-        subject: "🎉 ¡Completaste tu tarjeta! Te invitamos tu próximo café",
-        html: `
+      const subject = "🎉 ¡Completaste tu tarjeta! Te invitamos tu próximo café";
+      const html = `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b;">
             <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:110px; margin-bottom:20px;">
             <h2 style="margin:0 0 8px; color:#2b2b2b;">¡Lo lograste, ${nombre}! 🎉</h2>
@@ -374,14 +378,36 @@ exports.enviarMailFelicitaciones = onRequest(
               @corcegacafe
             </a>
           </div>
-        `,
-      };
+        `;
 
       try {
-        await transporter.sendMail(mailOptions);
+        const proveedor = await _resolverProveedorMail("enviarMailFelicitaciones");
+
+        if (proveedor === "zepto") {
+          await sendZeptoMail({
+            fromKey: "club",
+            to: email,
+            toName: nombre,
+            subject,
+            htmlbody: html,
+            token: zeptoFunctions.zeptoToken.value(),
+          });
+        } else {
+          const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: { user: emailUser.value(), pass: emailPass.value() },
+          });
+          await transporter.sendMail({
+            from: `Córcega Café <${emailUser.value()}>`,
+            to: email,
+            subject,
+            html,
+          });
+        }
+
         const logRef = await db.collection("logs").add({
           accion: "enviar_mail_felicitaciones",
-          detalles: `DNI: ${dni} - ${nombre} - ${email}`,
+          detalles: `DNI: ${dni} - ${nombre} - ${email} (vía ${proveedor})`,
           usuario: "Correo_Felicitacion",
           timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
@@ -2920,16 +2946,13 @@ exports.sharePlato = onRequest({ region: "us-central1" }, async (req, res) => {
 </html>`);
 });
 
-// ZeptoMail — infraestructura nueva (no reemplaza Gmail todavía)
-const zeptoFunctions = require("./zepto-functions");
+// ZeptoMail — infraestructura nueva (todavía convive con Gmail)
 exports.testZeptoMail = zeptoFunctions.testZeptoMail;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIL DE BIENVENIDA AUTOMÁTICO — registro en Carta o Tienda (vía ZeptoMail)
 // Apagado por defecto: solo manda si configuracion/tienda.mails.bienvenidaHabilitado === true
 // ═══════════════════════════════════════════════════════════════════════════
-
-const { sendZeptoMail } = require("./zepto");
 
 function _descuentoTexto(cupon) {
   if (!cupon) return "";
