@@ -1206,13 +1206,16 @@ exports.crearPreferenciaMP = onRequest(
           return res.status(400).send("Falta orderId");
         }
 
-        // Si no vienen items, los buscamos en Firestore
-        if (!items) {
-          const orderDoc = await admin.firestore().collection("ordenes").doc(orderId).get();
-          if (!orderDoc.exists) {
-            return res.status(404).send("Orden no encontrada");
-          }
-          items = orderDoc.data().items;
+        // Siempre consultamos la orden: además de completar los items si no vinieron,
+        // ahí vive el descuento del cupón (si se aplicó uno) que hay que respetar acá.
+        let descuento = 0;
+        const orderDoc = await admin.firestore().collection("ordenes").doc(orderId).get();
+        if (orderDoc.exists) {
+          const orderData = orderDoc.data();
+          if (!items) items = orderData.items;
+          descuento = Number(orderData.cuponAplicado?.monto) || 0;
+        } else if (!items) {
+          return res.status(404).send("Orden no encontrada");
         }
 
         if (!items || items.length === 0) {
@@ -1222,13 +1225,18 @@ exports.crearPreferenciaMP = onRequest(
         const client = new MercadoPagoConfig({ accessToken: mpAccessToken.value() });
         const preference = new Preference(client);
 
+        const subtotal = items.reduce((s, i) => s + Number(i.precio) * i.qty, 0);
+        const totalConDescuento = Math.max(0, subtotal - descuento);
+
         const body = {
-          items: items.length > 1
+          // Si hay más de un item, o hay un descuento por cupón, mandamos una sola línea
+          // con el total ya calculado (MP no soporta descuentos por separado).
+          items: (items.length > 1 || descuento > 0)
             ? [{
                 id: "pedido",
                 title: "Pedido Córcega Café",
                 quantity: 1,
-                unit_price: items.reduce((s, i) => s + Number(i.precio) * i.qty, 0),
+                unit_price: totalConDescuento,
                 currency_id: "ARS",
                 picture_url: "https://corcegacafe.com.ar/css/img/logo-corcega-color.png"
               }]

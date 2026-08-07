@@ -1,7 +1,7 @@
 import { db, auth } from '../firebase-config.js';
 console.log("=== CHECKOUT V4 ACTIVE (NO ALERT) ===");
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { collection, addDoc, serverTimestamp, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where, limit, updateDoc, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { deleteAllSessionReservas } from './cart-reservas.js';
 import { computeAgendaMeta, fetchOrderCounts, buildCalendarConfig, isDateSelectable, getFechaRetiro, saveFechaRetiro, clearFechaRetiro, parseHorarioToISO, isoFromDate, dateFromISO } from './agenda-disponibilidad.js';
 
@@ -10,6 +10,9 @@ let cart = JSON.parse(localStorage.getItem('corcega_cart')) || [];
 let deliveryMethod = 'pickup';
 let userProfile = null;
 let processing = false;
+let authUser = null;
+let cuponesHabilitadosGlobal = false;
+let cuponAplicado = null; // { codigo, tipo, valor, monto }
 
 // --- ELEMENTS ---
 const checkoutItems = document.getElementById('checkout-items');
@@ -33,6 +36,11 @@ function init() {
 
     // 2. Auth Listener (Autofill) - Esto suele ser lo que más tarda
     onAuthStateChanged(auth, async (user) => {
+        authUser = user;
+        // Si se pierde la sesión (logout), el cupón ya no es válido
+        if (!user && cuponAplicado) window.quitarCupon();
+        updateCuponUI();
+
         const loginModal = document.getElementById('login-mini-modal');
         try {
             if (user) {
@@ -132,11 +140,110 @@ async function applyStoreConfig() {
 
         // 4. Agenda
         await initAgendaPicker(config.agenda, config.agenda?.pedidosMaximosDia || 0);
-        
+
+        // 5. Cupones (feature flag global)
+        cuponesHabilitadosGlobal = config.cupones?.habilitado || false;
+        updateCuponUI();
+
     } catch (err) {
         console.error("Error applying config:", err);
     }
 }
+
+// --- CUPONES DE DESCUENTO ---
+function updateCuponUI() {
+    const box = document.getElementById('cupon-box');
+    if (!box) return;
+
+    if (!cuponesHabilitadosGlobal) { box.style.display = 'none'; return; }
+    box.style.display = 'block';
+
+    const loginMsg = document.getElementById('cupon-login-required');
+    const inputRow = document.getElementById('cupon-input-row');
+    const aplicadoRow = document.getElementById('cupon-aplicado-row');
+
+    if (!authUser) {
+        loginMsg.style.display = 'block';
+        inputRow.style.display = 'none';
+        aplicadoRow.style.display = 'none';
+        return;
+    }
+
+    loginMsg.style.display = 'none';
+    if (cuponAplicado) {
+        inputRow.style.display = 'none';
+        aplicadoRow.style.display = 'flex';
+    } else {
+        inputRow.style.display = 'flex';
+        aplicadoRow.style.display = 'none';
+    }
+}
+
+window.aplicarCupon = async function() {
+    const input = document.getElementById('cupon-codigo-input');
+    const feedback = document.getElementById('cupon-feedback');
+    const btn = document.querySelector('#cupon-input-row button');
+    const codigo = input.value.trim().toUpperCase();
+
+    feedback.style.color = '#c0392b';
+    feedback.textContent = '';
+
+    if (!codigo) { feedback.textContent = 'Ingresá un código.'; return; }
+    if (!authUser) { feedback.textContent = 'Iniciá sesión para usar un cupón.'; return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Validando...';
+
+    try {
+        const snap = await getDoc(doc(db, 'cupones', codigo));
+        if (!snap.exists()) { feedback.textContent = 'Ese cupón no existe.'; return; }
+
+        const c = snap.data();
+        const subtotal = cart.reduce((s, i) => s + (i.precio * i.qty), 0);
+
+        if (c.activo === false) { feedback.textContent = 'Ese cupón ya no está disponible.'; return; }
+        if (c.vencimiento?.toDate && c.vencimiento.toDate() < new Date()) { feedback.textContent = 'Ese cupón está vencido.'; return; }
+        if (c.alcance !== 'publico' && !(c.uids || []).includes(authUser.uid)) { feedback.textContent = 'Ese cupón no está asignado a tu cuenta.'; return; }
+        if (c.minimoCompra && subtotal < c.minimoCompra) { feedback.textContent = `Este cupón requiere una compra mínima de $${c.minimoCompra.toLocaleString('es-AR')}.`; return; }
+
+        const misUsos = (c.usos || []).filter(u => u.uid === authUser.uid).length;
+        if (misUsos >= (c.usoMaximoPorUsuario || 1)) { feedback.textContent = 'Ya usaste este cupón antes.'; return; }
+        if (c.usoMaximoTotal && (c.usos || []).length >= c.usoMaximoTotal) { feedback.textContent = 'Este cupón alcanzó su límite de usos.'; return; }
+
+        if (c.soloPrimeraCompra) {
+            const qPrev = query(collection(db, 'ordenes'), where('cliente.uid', '==', authUser.uid), limit(1));
+            const prevSnap = await getDocs(qPrev);
+            if (!prevSnap.empty) { feedback.textContent = 'Este cupón es solo para tu primera compra.'; return; }
+        }
+
+        const monto = c.tipo === 'porcentaje'
+            ? Math.round(subtotal * (c.valor / 100))
+            : Math.min(c.valor, subtotal);
+
+        cuponAplicado = { codigo, tipo: c.tipo, valor: c.valor, monto };
+
+        feedback.textContent = '';
+        document.getElementById('cupon-aplicado-label').textContent = `🎟️ ${codigo} aplicado`;
+        updateCuponUI();
+        renderSummary();
+    } catch (err) {
+        console.error('Error validando cupón:', err);
+        feedback.textContent = 'Error al validar el cupón. Probá de nuevo.';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Aplicar';
+    }
+};
+
+window.quitarCupon = function() {
+    cuponAplicado = null;
+    const input = document.getElementById('cupon-codigo-input');
+    if (input) input.value = '';
+    const feedback = document.getElementById('cupon-feedback');
+    if (feedback) feedback.textContent = '';
+    updateCuponUI();
+    renderSummary();
+};
 
 async function initAgendaPicker(agendaConfig, pedidosMaximosDia) {
     // 1. Find the most restrictive agenda config across all cart products
@@ -296,7 +403,17 @@ function renderSummary() {
         }
     }
 
-    const total = cart.reduce((acc, item) => acc + (item.precio * item.qty), 0);
+    const subtotal = cart.reduce((acc, item) => acc + (item.precio * item.qty), 0);
+    const descuentoLinea = document.getElementById('cupon-descuento-linea');
+    const descuentoMonto = document.getElementById('cupon-descuento-monto');
+    let total = subtotal;
+    if (cuponAplicado) {
+        total = Math.max(0, subtotal - cuponAplicado.monto);
+        if (descuentoLinea) descuentoLinea.style.display = 'flex';
+        if (descuentoMonto) descuentoMonto.textContent = `-$${cuponAplicado.monto.toLocaleString('es-AR')}`;
+    } else if (descuentoLinea) {
+        descuentoLinea.style.display = 'none';
+    }
     checkoutTotal.innerText = `$${total.toLocaleString('es-AR')}`;
 }
 
@@ -384,20 +501,23 @@ async function handleOrderSubmission() {
     btnFinalizar.innerText = "Procesando pedido... ⏳";
 
     try {
-        const total = cart.reduce((acc, item) => acc + (item.precio * item.qty), 0);
+        const subtotal = cart.reduce((acc, item) => acc + (item.precio * item.qty), 0);
+        const total = cuponAplicado ? Math.max(0, subtotal - cuponAplicado.monto) : subtotal;
         const rawDni = localStorage.getItem('corcega_tienda_dni');
         const sessionDni = (rawDni && /^\d{7,8}$/.test(rawDni.trim())) ? rawDni.trim() : null;
-        
+
         const orderData = {
             cliente: {
                 nombre,
                 email,
                 whatsapp,
                 dni: dni || sessionDni || null,
+                uid: auth.currentUser?.uid || null,
                 direccion: deliveryMethod === 'delivery' ? direccion : 'Retiro en local'
             },
             items: cart,
             total,
+            ...(cuponAplicado ? { cuponAplicado } : {}),
             metodoEntrega: deliveryMethod,
             horario,
             fechaISO: parseHorarioToISO(horario),
@@ -411,6 +531,15 @@ async function handleOrderSubmission() {
         // 1. Guardar en Firestore
         const docRef = await addDoc(collection(db, "ordenes"), orderData);
         const orderId = docRef.id;
+
+        // 1b. Registrar el canje del cupón (si corresponde)
+        if (cuponAplicado) {
+            try {
+                await updateDoc(doc(db, "cupones", cuponAplicado.codigo), {
+                    usos: arrayUnion({ uid: auth.currentUser.uid, orderId, monto: cuponAplicado.monto, fecha: Date.now() })
+                });
+            } catch (e) { console.warn('Error registrando canje de cupón:', e); }
+        }
 
         // 2. Limpiar reservas de sesión y fecha de retiro elegida
         try { await deleteAllSessionReservas(); } catch(e) { console.warn('Error clearing reservas:', e); }

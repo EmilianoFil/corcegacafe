@@ -271,6 +271,28 @@
                 <!-- Injected by JS -->
             </div>
             <div id="checkout-entrega-info" style="display:none;"></div>
+
+            <!-- Cupón de descuento -->
+            <div id="cupon-box" style="display:none; margin-top:14px; padding-top:14px; border-top:1px dashed #e8e4db;">
+                <div id="cupon-login-required" style="display:none; font-size:13px; color:var(--texto-muted, #777);">
+                    <i class="fas fa-lock"></i> <a href="#" onclick="window.toggleLoginModal(); return false;" style="color:var(--naranja-accent); font-weight:700; text-decoration:none;">Iniciá sesión</a> para usar un cupón de descuento.
+                </div>
+                <div id="cupon-input-row" style="display:none; gap:8px;">
+                    <input type="text" id="cupon-codigo-input" placeholder="Código de descuento" style="flex:1; padding:10px 14px; border-radius:10px; border:1px solid #ddd; font-size:14px; text-transform:uppercase;">
+                    <button type="button" onclick="window.aplicarCupon()" style="padding:10px 18px; border:none; border-radius:10px; background:var(--panel-oscuro); color:white; font-weight:700; font-size:13px; cursor:pointer;">Aplicar</button>
+                </div>
+                <div id="cupon-feedback" style="font-size:12.5px; margin-top:6px;"></div>
+                <div id="cupon-aplicado-row" style="display:none; justify-content:space-between; align-items:center; margin-top:6px; background:#e8f9ee; color:#1a6b3a; padding:8px 12px; border-radius:10px; font-size:13px; font-weight:700;">
+                    <span id="cupon-aplicado-label"></span>
+                    <button type="button" onclick="window.quitarCupon()" style="background:none; border:none; color:#1a6b3a; text-decoration:underline; cursor:pointer; font-size:12px; font-weight:700;">Quitar</button>
+                </div>
+            </div>
+
+            <div id="cupon-descuento-linea" style="display:none; justify-content:space-between; font-size:14px; color:#1a6b3a; font-weight:700; margin-top:8px;">
+                <span>Descuento</span>
+                <span id="cupon-descuento-monto"></span>
+            </div>
+
             <div class="summary-total">
                 <span>Total a pagar</span>
                 <span id="checkout-total">$0.00</span>

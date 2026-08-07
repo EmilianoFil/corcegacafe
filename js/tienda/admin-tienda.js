@@ -1919,3 +1919,293 @@ export async function guardarClarusConfig() {
         _setClarusStatus('Error al guardar: ' + err.message, true);
     }
 }
+
+// ============================================
+// CUPONES DE DESCUENTO
+// ============================================
+let cuponesData = [];
+let clientesTiendaCache = null; // [{uid, nombre, email}]
+let cuponClientesSeleccionados = []; // clientes elegidos en el form (individual/masivo)
+
+export async function loadCuponesConfig() {
+    try {
+        const snap = await getDoc(doc(db, 'configuracion', 'tienda'));
+        const habilitado = snap.exists() ? (snap.data().cupones?.habilitado || false) : false;
+        const toggle = document.getElementById('cup-global-toggle');
+        if (toggle) toggle.checked = habilitado;
+    } catch (err) {
+        console.error('Error loading cupones config:', err);
+    }
+}
+
+export async function toggleCuponesGlobal(checked) {
+    try {
+        await updateDoc(doc(db, 'configuracion', 'tienda'), { 'cupones.habilitado': checked });
+    } catch (err) {
+        console.error('Error toggling cupones global:', err);
+        alert('Error al guardar. Probá de nuevo.');
+    }
+}
+
+function _estadoCupon(c) {
+    if (c.activo === false) return { label: 'Pausado', color: '#aaa' };
+    if (c.vencimiento?.toDate && c.vencimiento.toDate() < new Date()) return { label: 'Vencido', color: 'var(--error)' };
+    if (c.usoMaximoTotal && (c.usos || []).length >= c.usoMaximoTotal) return { label: 'Agotado', color: 'var(--error)' };
+    return { label: 'Activo', color: 'var(--success)' };
+}
+
+export async function loadCuponesTable() {
+    try {
+        const snap = await getDocs(query(collection(db, 'cupones'), orderBy('creado', 'desc')));
+        cuponesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        const tbody = document.getElementById('lista-cupones-body');
+        if (!tbody) return;
+
+        if (cuponesData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="padding:20px; text-align:center; color:#999;">Todavía no creaste ningún cupón.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = cuponesData.map(c => {
+            const estado = _estadoCupon(c);
+            const alcanceLabel = { publico: 'Público', individual: 'Individual', masivo: `Masivo (${(c.uids || []).length})` }[c.alcance] || c.alcance;
+            const descuentoLabel = c.tipo === 'porcentaje' ? `${c.valor}%` : `$${Number(c.valor).toLocaleString('es-AR')}`;
+            const vencLabel = c.vencimiento?.toDate ? c.vencimiento.toDate().toLocaleDateString('es-AR') : 'Sin vencimiento';
+            const usosLabel = `${(c.usos || []).length}${c.usoMaximoTotal ? ' / ' + c.usoMaximoTotal : ''}`;
+
+            return `
+                <tr>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                        <div style="font-weight:800; font-family:monospace; letter-spacing:0.03em; color:var(--secondary);">${c.id}</div>
+                        ${c.soloPrimeraCompra ? '<div style="font-size:0.68rem; color:var(--naranja-accent, #d86634); font-weight:700;">1ERA COMPRA</div>' : ''}
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-weight:800; color:var(--primary);">${descuentoLabel}</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">${alcanceLabel}</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-size:0.82rem;">${vencLabel}</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-size:0.82rem;">${usosLabel}</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                        <span style="color:${estado.color}; font-weight:700;"><span style="font-size:1.2rem; vertical-align:middle;">•</span> ${estado.label}</span>
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; text-align: right;">
+                        <button class="btn-secondary" onclick="window.tiendaAdmin.editarCupon('${c.id}')" style="padding:6px 12px; font-size:0.75rem; font-weight:600; margin:0; width:auto;">Editar</button>
+                        <button class="btn-secondary" onclick="window.tiendaAdmin.toggleCuponActivo('${c.id}', ${c.activo === false})" style="padding:6px 12px; font-size:0.75rem; font-weight:600; margin:0; width:auto;">${c.activo === false ? 'Activar' : 'Pausar'}</button>
+                        <button class="btn-secondary" onclick="window.tiendaAdmin.eliminarCupon('${c.id}')" style="padding:6px 12px; font-size:0.75rem; font-weight:600; color:var(--error); border-color:#ffebeb; margin:0; width:auto;">Borrar</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (err) {
+        console.error('Error loading cupones:', err);
+    }
+}
+
+export function mostrarFormularioCupon() {
+    document.getElementById('form-cupon-container').style.display = 'block';
+    document.getElementById('form-cupon-title').innerText = 'Nuevo Cupón';
+    document.getElementById('cup-id-original').value = '';
+    document.getElementById('cup-codigo').value = '';
+    document.getElementById('cup-codigo').disabled = false;
+    document.getElementById('cup-tipo').value = 'porcentaje';
+    document.getElementById('cup-valor').value = '';
+    document.getElementById('cup-alcance').value = 'publico';
+    document.getElementById('cup-vencimiento').value = '';
+    document.getElementById('cup-minimo').value = '';
+    document.getElementById('cup-uso-max-usuario').value = '1';
+    document.getElementById('cup-uso-max-total').value = '';
+    document.getElementById('cup-solo-primera').checked = false;
+    document.getElementById('cup-nota').value = '';
+    document.getElementById('cup-activo').checked = true;
+    document.getElementById('cup-buscar-cliente').value = '';
+    document.getElementById('cup-clientes-resultados').innerHTML = '';
+    cuponClientesSeleccionados = [];
+    renderClientesSeleccionados();
+    onAlcanceCuponChange('publico');
+    document.getElementById('form-cupon-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+export function ocultarFormularioCupon() {
+    document.getElementById('form-cupon-container').style.display = 'none';
+}
+
+export function onAlcanceCuponChange(alcance) {
+    const block = document.getElementById('cup-clientes-block');
+    block.style.display = alcance === 'publico' ? 'none' : 'block';
+    document.getElementById('btn-cup-todos-clientes').style.display = alcance === 'masivo' ? 'inline-block' : 'none';
+}
+
+async function _fetchClientesTienda() {
+    if (clientesTiendaCache) return clientesTiendaCache;
+    const snap = await getDocs(collection(db, 'usuarios_tienda'));
+    clientesTiendaCache = snap.docs.map(d => ({ uid: d.id, nombre: d.data().nombre || '', email: d.data().email || '' }));
+    return clientesTiendaCache;
+}
+
+export async function buscarClientesCupon(texto) {
+    const resultsEl = document.getElementById('cup-clientes-resultados');
+    const term = texto.trim().toLowerCase();
+    if (!term) { resultsEl.innerHTML = ''; return; }
+
+    const clientes = await _fetchClientesTienda();
+    const matches = clientes.filter(c =>
+        (c.nombre.toLowerCase().includes(term) || c.email.toLowerCase().includes(term)) &&
+        !cuponClientesSeleccionados.find(s => s.uid === c.uid)
+    ).slice(0, 8);
+
+    resultsEl.innerHTML = matches.map(c => `
+        <div onclick="window.tiendaAdmin.agregarClienteCupon('${c.uid}')" style="padding:8px 10px; cursor:pointer; border-radius:8px; font-size:0.85rem;" onmouseenter="this.style.background='#f0f0f0'" onmouseleave="this.style.background='transparent'">
+            <strong>${c.nombre || '(sin nombre)'}</strong> <span style="color:#999;">${c.email}</span>
+        </div>
+    `).join('') || '<div style="padding:8px; color:#999; font-size:0.82rem;">Sin resultados.</div>';
+}
+
+export function agregarClienteCupon(uid) {
+    const c = clientesTiendaCache?.find(x => x.uid === uid);
+    if (!c) return;
+
+    const alcance = document.getElementById('cup-alcance').value;
+    if (alcance === 'individual') cuponClientesSeleccionados = [c];
+    else if (!cuponClientesSeleccionados.find(s => s.uid === uid)) cuponClientesSeleccionados.push(c);
+
+    document.getElementById('cup-buscar-cliente').value = '';
+    document.getElementById('cup-clientes-resultados').innerHTML = '';
+    renderClientesSeleccionados();
+}
+
+export function quitarClienteCupon(uid) {
+    cuponClientesSeleccionados = cuponClientesSeleccionados.filter(c => c.uid !== uid);
+    renderClientesSeleccionados();
+}
+
+export async function seleccionarTodosClientes() {
+    cuponClientesSeleccionados = await _fetchClientesTienda();
+    renderClientesSeleccionados();
+}
+
+function renderClientesSeleccionados() {
+    const el = document.getElementById('cup-clientes-seleccionados');
+    if (!el) return;
+    el.innerHTML = cuponClientesSeleccionados.map(c => `
+        <span style="display:inline-flex; align-items:center; gap:6px; background:rgba(13,43,55,0.06); border-radius:20px; padding:5px 6px 5px 12px; font-size:0.78rem; font-weight:600;">
+            ${c.nombre || c.email}
+            <button type="button" onclick="window.tiendaAdmin.quitarClienteCupon('${c.uid}')" style="background:none; border:none; cursor:pointer; color:#c0392b; font-weight:800; padding:0 4px;">&times;</button>
+        </span>
+    `).join('');
+}
+
+export async function guardarCupon() {
+    const idOriginal = document.getElementById('cup-id-original').value;
+    const codigo = document.getElementById('cup-codigo').value.trim().toUpperCase();
+    const tipo = document.getElementById('cup-tipo').value;
+    const valor = Number(document.getElementById('cup-valor').value);
+    const alcance = document.getElementById('cup-alcance').value;
+    const vencimientoStr = document.getElementById('cup-vencimiento').value;
+    const minimoCompra = Number(document.getElementById('cup-minimo').value) || 0;
+    const usoMaximoPorUsuario = Number(document.getElementById('cup-uso-max-usuario').value) || 1;
+    const usoMaximoTotalStr = document.getElementById('cup-uso-max-total').value;
+    const soloPrimeraCompra = document.getElementById('cup-solo-primera').checked;
+    const nota = document.getElementById('cup-nota').value.trim();
+    const activo = document.getElementById('cup-activo').checked;
+
+    if (!codigo) return alert('Ingresá un código para el cupón.');
+    if (!valor || valor <= 0) return alert('Ingresá un valor de descuento mayor a 0.');
+    if (tipo === 'porcentaje' && valor > 100) return alert('El porcentaje no puede ser mayor a 100.');
+    if ((alcance === 'individual' || alcance === 'masivo') && cuponClientesSeleccionados.length === 0) {
+        return alert('Seleccioná al menos un cliente para este alcance.');
+    }
+
+    if (!idOriginal) {
+        const existe = await getDoc(doc(db, 'cupones', codigo));
+        if (existe.exists()) return alert('Ya existe un cupón con ese código.');
+    } else if (idOriginal !== codigo) {
+        return alert('El código no se puede editar una vez creado. Creá un cupón nuevo si necesitás otro código.');
+    }
+
+    const data = {
+        codigo,
+        tipo,
+        valor,
+        activo,
+        alcance,
+        uids: alcance === 'publico' ? [] : cuponClientesSeleccionados.map(c => c.uid),
+        soloPrimeraCompra,
+        vencimiento: vencimientoStr ? Timestamp.fromDate(new Date(vencimientoStr + 'T23:59:59')) : null,
+        minimoCompra,
+        usoMaximoPorUsuario,
+        usoMaximoTotal: usoMaximoTotalStr ? Number(usoMaximoTotalStr) : null,
+        nota,
+        actualizado: serverTimestamp(),
+        actualizadoPor: auth.currentUser?.email || '',
+    };
+
+    try {
+        if (idOriginal) {
+            await updateDoc(doc(db, 'cupones', idOriginal), data);
+        } else {
+            await setDoc(doc(db, 'cupones', codigo), {
+                ...data,
+                usos: [],
+                creado: serverTimestamp(),
+                creadoPor: auth.currentUser?.email || '',
+            });
+        }
+        ocultarFormularioCupon();
+        loadCuponesTable();
+        alert('✅ Cupón guardado!');
+    } catch (err) {
+        console.error('Error guardando cupón:', err);
+        alert('Error al guardar el cupón.');
+    }
+}
+
+export async function editarCupon(id) {
+    let c = cuponesData.find(x => x.id === id);
+    if (!c) {
+        const snap = await getDoc(doc(db, 'cupones', id));
+        if (!snap.exists()) return;
+        c = { id, ...snap.data() };
+    }
+
+    document.getElementById('form-cupon-container').style.display = 'block';
+    document.getElementById('form-cupon-title').innerText = `Editar Cupón — ${id}`;
+    document.getElementById('cup-id-original').value = id;
+    document.getElementById('cup-codigo').value = id;
+    document.getElementById('cup-codigo').disabled = true;
+    document.getElementById('cup-tipo').value = c.tipo || 'porcentaje';
+    document.getElementById('cup-valor').value = c.valor || '';
+    document.getElementById('cup-alcance').value = c.alcance || 'publico';
+    document.getElementById('cup-vencimiento').value = c.vencimiento?.toDate ? c.vencimiento.toDate().toISOString().slice(0, 10) : '';
+    document.getElementById('cup-minimo').value = c.minimoCompra || '';
+    document.getElementById('cup-uso-max-usuario').value = c.usoMaximoPorUsuario || 1;
+    document.getElementById('cup-uso-max-total').value = c.usoMaximoTotal || '';
+    document.getElementById('cup-solo-primera').checked = !!c.soloPrimeraCompra;
+    document.getElementById('cup-nota').value = c.nota || '';
+    document.getElementById('cup-activo').checked = c.activo !== false;
+
+    // Recuperar clientes seleccionados a partir de los uids guardados
+    const clientes = await _fetchClientesTienda();
+    cuponClientesSeleccionados = (c.uids || []).map(uid => clientes.find(cl => cl.uid === uid) || { uid, nombre: '(cliente no encontrado)', email: '' });
+    renderClientesSeleccionados();
+
+    onAlcanceCuponChange(c.alcance || 'publico');
+    document.getElementById('form-cupon-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+export async function toggleCuponActivo(id, nuevoValor) {
+    try {
+        await updateDoc(doc(db, 'cupones', id), { activo: nuevoValor });
+        loadCuponesTable();
+    } catch (err) {
+        console.error('Error toggling cupón:', err);
+    }
+}
+
+export async function eliminarCupon(id) {
+    if (!confirm(`¿Estás seguro de eliminar el cupón "${id}"? Los clientes que lo tengan ya no van a poder usarlo.`)) return;
+    try {
+        await deleteDoc(doc(db, 'cupones', id));
+        loadCuponesTable();
+    } catch (err) {
+        console.error('Error eliminando cupón:', err);
+    }
+}

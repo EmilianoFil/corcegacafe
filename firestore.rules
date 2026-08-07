@@ -42,6 +42,20 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // CUPONES: solo clientes logueados los pueden leer/canjear, solo admins los crean/editan
+    match /cupones/{codigo} {
+      allow read: if request.auth != null;
+      allow create, delete: if request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      allow update: if request.auth != null && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (
+          // Canje de cliente: solo puede agregar UN elemento al array "usos", nada más cambia
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usos']) &&
+          request.resource.data.usos.size() == resource.data.usos.size() + 1
+        )
+      );
+    }
+
     // RESERVAS DE STOCK: cualquiera puede leer/escribir (carritos anónimos)
     match /reservas/{id} {
       allow read: if true;

@@ -1008,6 +1008,7 @@
                 <li><a href="#tienda-productos"><span class="icon">🛒</span> Productos</a></li>
                 <li><a href="#tienda-categorias"><span class="icon">🏷️</span> Categorías</a></li>
                 <li><a href="#tienda-ordenes"><span class="icon">📦</span> Órdenes</a></li>
+                <li><a href="#tienda-cupones"><span class="icon">🎟️</span> Cupones</a></li>
                 <li><a href="#tienda-arrepentimientos"><span class="icon">↩️</span> Arrepentimientos</a></li>
                 <li><a href="#tienda-config"><span class="icon">⚙️</span> Configuración</a></li>
                 <li><a href="#tienda-clarus"><span class="icon">🔗</span> ClarusHub</a></li>
@@ -1898,6 +1899,128 @@
         </section>
 
         <!-- ARREPENTIMIENTOS SECTION -->
+        <!-- TIENDA CUPONES SECTION -->
+        <section id="tienda-cupones" class="section-content">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                <h3 style="margin:0; font-size: 1.5rem;">Cupones de Descuento 🎟️</h3>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">TIENDA ONLINE — REQUIERE LOGIN DEL CLIENTE</span>
+            </div>
+
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:16px 20px;">
+                <div>
+                    <strong>Sistema de cupones</strong>
+                    <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">Apagalo para desactivar todos los cupones de golpe, sin tocar cada uno.</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="cup-global-toggle" onchange="window.tiendaAdmin.toggleCuponesGlobal(this.checked)">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
+                <a href="tienda.html?adminPreview=1" target="_blank" class="btn-secondary" style="margin:0; width:auto; padding:10px 20px; font-size:0.85rem; height:auto; margin-right:10px;">👁️ Preview tienda</a>
+                <button class="btn-primary" onclick="window.tiendaAdmin.mostrarFormularioCupon()" style="margin:0; width:auto; padding:10px 20px; font-size:0.85rem; height:auto;">+ Nuevo Cupón</button>
+            </div>
+
+            <!-- FORM CUPON -->
+            <div id="form-cupon-container" class="card" style="display:none; margin-bottom:24px; padding:24px;">
+                <h4 id="form-cupon-title" style="margin-top:0;">Nuevo Cupón</h4>
+                <input type="hidden" id="cup-id-original">
+
+                <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
+                    <div class="input-group">
+                        <label>Código</label>
+                        <input type="text" id="cup-codigo" placeholder="Ej: BIENVENIDA10" style="text-transform:uppercase;">
+                    </div>
+                    <div class="input-group">
+                        <label>Tipo de descuento</label>
+                        <select id="cup-tipo" class="form-control">
+                            <option value="porcentaje">Porcentaje (%)</option>
+                            <option value="fijo">Monto fijo ($)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Valor</label>
+                        <input type="number" id="cup-valor" placeholder="Ej: 10" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label>Alcance</label>
+                        <select id="cup-alcance" class="form-control" onchange="window.tiendaAdmin.onAlcanceCuponChange(this.value)">
+                            <option value="publico">Público (cualquier cliente logueado)</option>
+                            <option value="individual">Individual (un solo cliente)</option>
+                            <option value="masivo">Masivo (varios clientes)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Vencimiento (opcional)</label>
+                        <input type="date" id="cup-vencimiento">
+                    </div>
+                    <div class="input-group">
+                        <label>Mínimo de compra $ (opcional)</label>
+                        <input type="number" id="cup-minimo" placeholder="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label>Uso máximo por cliente</label>
+                        <input type="number" id="cup-uso-max-usuario" value="1" min="1">
+                    </div>
+                    <div class="input-group">
+                        <label>Uso máximo total (opcional)</label>
+                        <input type="number" id="cup-uso-max-total" placeholder="Sin tope" min="1">
+                    </div>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:10px; margin:16px 0;">
+                    <input type="checkbox" id="cup-solo-primera" style="width:18px; height:18px;">
+                    <label for="cup-solo-primera" style="margin:0; font-weight:600; cursor:pointer;">Solo válido en la primera compra del cliente</label>
+                </div>
+
+                <!-- Buscador de clientes (individual / masivo) -->
+                <div id="cup-clientes-block" style="display:none; margin-bottom:16px; padding:16px; border:1px solid var(--border); border-radius:12px; background:#fdfcf7;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <label style="margin:0; font-weight:700;">Clientes asignados</label>
+                        <button type="button" id="btn-cup-todos-clientes" style="display:none; background:none; border:1px solid var(--secondary); color:var(--secondary); border-radius:8px; padding:5px 10px; font-size:0.72rem; font-weight:700; cursor:pointer;" onclick="window.tiendaAdmin.seleccionarTodosClientes()">Seleccionar todos los clientes</button>
+                    </div>
+                    <input type="text" id="cup-buscar-cliente" placeholder="Buscar por nombre o email..." class="form-control" style="margin-bottom:8px;" oninput="window.tiendaAdmin.buscarClientesCupon(this.value)">
+                    <div id="cup-clientes-resultados" style="max-height:150px; overflow-y:auto; margin-bottom:10px;"></div>
+                    <div id="cup-clientes-seleccionados" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+                </div>
+
+                <div class="input-group" style="margin-bottom:16px;">
+                    <label>Nota interna (no la ve el cliente)</label>
+                    <textarea id="cup-nota" rows="2" class="form-control" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; font-family:inherit;"></textarea>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+                    <input type="checkbox" id="cup-activo" checked style="width:18px; height:18px;">
+                    <label for="cup-activo" style="margin:0; font-weight:600; cursor:pointer;">Cupón activo</label>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-primary" onclick="window.tiendaAdmin.guardarCupon()" style="margin:0; width:auto; padding:12px 30px;">Guardar Cupón</button>
+                    <button class="btn-secondary" onclick="window.tiendaAdmin.ocultarFormularioCupon()" style="margin:0; width:auto; padding:12px 30px;">Cancelar</button>
+                </div>
+            </div>
+
+            <div class="card" style="padding:10px; border:1px solid var(--border); background:white;">
+                <table class="display" style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                    <thead style="background:#fdfcf7;">
+                        <tr>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Código</th>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Descuento</th>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Alcance</th>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Vencimiento</th>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Usos</th>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Estado</th>
+                            <th style="text-align:right; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-cupones-body">
+                        <!-- Cupones dinámicos -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <section id="tienda-arrepentimientos" class="section-content">
             <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:25px; border-bottom:1px solid var(--border); padding-bottom:15px;">
                 <h3 style="margin:0; font-size:1.5rem;">Arrepentimientos ↩️</h3>
@@ -3009,6 +3132,7 @@
             if (target === 'tienda-productos') window.tiendaAdmin.loadProductosTable();
             if (target === 'tienda-categorias') window.tiendaAdmin.loadCategoriasTable();
             if (target === 'tienda-ordenes') window.tiendaAdmin.loadOrdenesTable();
+            if (target === 'tienda-cupones') { window.tiendaAdmin.loadCuponesTable(); window.tiendaAdmin.loadCuponesConfig(); }
             if (target === 'tienda-arrepentimientos') loadArrepentimientos();
             if (target === 'tienda-config') window.tiendaAdmin.loadConfigStore();
             if (target === 'tienda-clarus') window.tiendaAdmin.loadClarusConfig();
