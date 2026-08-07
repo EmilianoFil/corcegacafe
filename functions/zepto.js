@@ -10,9 +10,12 @@ const FROM = {
 
 async function sendZeptoMail({ fromKey = "tienda", to, toName, subject, htmlbody, token }) {
   const client = new SendMailClient({ url: ZEPTO_URL, token });
+  const recipients = Array.isArray(to)
+    ? to.map((addr) => ({ email_address: { address: addr, name: toName || addr } }))
+    : [{ email_address: { address: to, name: toName || to } }];
   return client.sendMail({
     from: FROM[fromKey],
-    to: [{ email_address: { address: to, name: toName || to } }],
+    to: recipients,
     subject,
     htmlbody,
   });

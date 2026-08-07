@@ -137,25 +137,14 @@ const TELEGRAM_GROUP_ID = "-5218118104";
 const TELEGRAM_CHAT_IDS = [TELEGRAM_CHAT_ID, TELEGRAM_GROUP_ID];
 
 exports.enviarMailRegistro = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass, ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET] },
+  { region: "us-central1", secrets: [emailUser, emailPass, zeptoFunctions.zeptoToken, ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET] },
   (req, res) => {
     corsHandler(req, res, async () => {
       const { nombre, mail, dni } = req.body;
       const email = mail;
 
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: emailUser.value(),
-          pass: emailPass.value(),
-        },
-      });
-
-      const mailOptions = {
-        from: `Córcega Café <${emailUser.value()}>`,
-        to: email,
-        subject: "¡Bienvenido/a al Club de Recompensas!",
-        html: `
+      const subject = "¡Bienvenido/a al Club de Recompensas!";
+      const html = `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b;">
             <h2>¡Bienvenido/a al Club de Cafecitos de Córcega! ☕</h2>
             <p>Hola <strong>${nombre}</strong>, ya estás registrado con el DNI <strong>${dni}</strong>.</p>
@@ -181,15 +170,20 @@ exports.enviarMailRegistro = onRequest(
               @corcegacafe
             </a>
           </div>
-        `,
-      };
+        `;
 
       try {
-        await transporter.sendMail(mailOptions);
+        const proveedor = await _resolverProveedorMail("enviarMailRegistro");
+        if (proveedor === "zepto") {
+          await sendZeptoMail({ fromKey: "club", to: email, toName: nombre, subject, htmlbody: html, token: zeptoFunctions.zeptoToken.value() });
+        } else {
+          const transporter = nodemailer.createTransport({ service: "gmail", auth: { user: emailUser.value(), pass: emailPass.value() } });
+          await transporter.sendMail({ from: `Córcega Café <${emailUser.value()}>`, to: email, subject, html });
+        }
         await agregarASuscriptores(email, nombre, dni);
         const logRef = await db.collection("logs").add({
           accion: "enviar_mail_bienvenida",
-          detalles: `DNI: ${dni} - ${nombre} - ${email}`,
+          detalles: `DNI: ${dni} - ${nombre} - ${email} (vía ${proveedor})`,
           usuario: "Correo_Bienvenida",
           timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
@@ -205,25 +199,14 @@ exports.enviarMailRegistro = onRequest(
 );
 
 exports.enviarMailRegistroTA = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass, ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET] },
+  { region: "us-central1", secrets: [emailUser, emailPass, zeptoFunctions.zeptoToken, ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET] },
   (req, res) => {
     corsHandler(req, res, async () => {
       const { nombre, mail, dni } = req.body;
       const email = mail;
 
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: emailUser.value(),
-          pass: emailPass.value(),
-        },
-      });
-
-      const mailOptions = {
-        from: `Córcega Café <${emailUser.value()}>`,
-        to: email,
-        subject: "¡Bienvenido/a al Club de Recompensas!",
-        html: `
+      const subject = "¡Bienvenido/a al Club de Recompensas!";
+      const html = `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b;">
             <h2>¡Bienvenido/a al Club de Cafecitos de Córcega! ☕</h2>
             <p>Hola <strong>${nombre}</strong>, ya estás registrado con el DNI <strong>${dni}</strong>.</p>
@@ -249,15 +232,20 @@ exports.enviarMailRegistroTA = onRequest(
               @corcegacafe
             </a>
           </div>
-        `,
-      };
+        `;
 
       try {
-        await transporter.sendMail(mailOptions);
+        const proveedor = await _resolverProveedorMail("enviarMailRegistroTA");
+        if (proveedor === "zepto") {
+          await sendZeptoMail({ fromKey: "club", to: email, toName: nombre, subject, htmlbody: html, token: zeptoFunctions.zeptoToken.value() });
+        } else {
+          const transporter = nodemailer.createTransport({ service: "gmail", auth: { user: emailUser.value(), pass: emailPass.value() } });
+          await transporter.sendMail({ from: `Córcega Café <${emailUser.value()}>`, to: email, subject, html });
+        }
         await agregarASuscriptores(email, nombre, dni);
         const logRef = await db.collection("logs").add({
           accion: "enviar_mail_bienvenida_ig",
-          detalles: `DNI: ${dni} - ${nombre} - ${email}`,
+          detalles: `DNI: ${dni} - ${nombre} - ${email} (vía ${proveedor})`,
           usuario: "Correo_Bienvenida_ig",
           timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
@@ -273,25 +261,14 @@ exports.enviarMailRegistroTA = onRequest(
 );
 
 exports.enviarMailRegistroIG = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass, ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET] },
+  { region: "us-central1", secrets: [emailUser, emailPass, zeptoFunctions.zeptoToken, ZOHO_CAMPAIGNS_REFRESH_TOKEN, ZOHO_CAMPAIGNS_CLIENT_ID, ZOHO_CAMPAIGNS_CLIENT_SECRET] },
   (req, res) => {
     corsHandler(req, res, async () => {
       const { nombre, mail, dni } = req.body;
       const email = mail;
 
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: emailUser.value(),
-          pass: emailPass.value(),
-        },
-      });
-
-      const mailOptions = {
-        from: `Córcega Café <${emailUser.value()}>`,
-        to: email,
-        subject: "¡Bienvenido/a al Club de Recompensas!",
-        html: `
+      const subject = "¡Bienvenido/a al Club de Recompensas!";
+      const html = `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b;">
             <h2>¡Bienvenido/a al Club de Cafecitos de Córcega! ☕</h2>
             <p>Hola <strong>${nombre}</strong>, ya estás registrado con el DNI <strong>${dni}</strong>.</p>
@@ -317,15 +294,20 @@ exports.enviarMailRegistroIG = onRequest(
               @corcegacafe
             </a>
           </div>
-        `,
-      };
+        `;
 
       try {
-        await transporter.sendMail(mailOptions);
+        const proveedor = await _resolverProveedorMail("enviarMailRegistroIG");
+        if (proveedor === "zepto") {
+          await sendZeptoMail({ fromKey: "club", to: email, toName: nombre, subject, htmlbody: html, token: zeptoFunctions.zeptoToken.value() });
+        } else {
+          const transporter = nodemailer.createTransport({ service: "gmail", auth: { user: emailUser.value(), pass: emailPass.value() } });
+          await transporter.sendMail({ from: `Córcega Café <${emailUser.value()}>`, to: email, subject, html });
+        }
         await agregarASuscriptores(email, nombre, dni);
         const logRef = await db.collection("logs").add({
           accion: "enviar_mail_bienvenida_ig",
-          detalles: `DNI: ${dni} - ${nombre} - ${email}`,
+          detalles: `DNI: ${dni} - ${nombre} - ${email} (vía ${proveedor})`,
           usuario: "Correo_Bienvenida_ig",
           timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
@@ -425,7 +407,7 @@ exports.selloCumpleaniosDiario = onSchedule(
   {
     schedule: "0 8 * * *", // todos los días a las 8:00
     timeZone: "America/Argentina/Buenos_Aires",
-    secrets: [emailUser, emailPass],
+    secrets: [emailUser, emailPass, zeptoFunctions.zeptoToken],
   },
   async (event) => {
     const snapshot = await db.collection("clientes").get();
@@ -433,7 +415,8 @@ exports.selloCumpleaniosDiario = onSchedule(
     const dia = hoy.getDate();
     const mes = hoy.getMonth() + 1;
 
-    const transporter = nodemailer.createTransport({
+    const proveedor = await _resolverProveedorMail("selloCumpleaniosDiario");
+    const transporter = proveedor === "zepto" ? null : nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: emailUser.value(),
@@ -461,11 +444,8 @@ exports.selloCumpleaniosDiario = onSchedule(
           cafes_acumulados_total: admin.firestore.FieldValue.increment(1),
         });
 
-        const mailOptions = {
-          from: `Córcega Café <${emailUser.value()}>`,
-          to: email,
-          subject: "¡Feliz cumpleaños! 🎂 Te regalamos un sello",
-          html: `
+        const subject = "¡Feliz cumpleaños! 🎂 Te regalamos un sello";
+        const html = `
             <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b;">
   <h2>¡Feliz cumple, ${nombre}! 🎉</h2>
   <p>Hoy es tu día, y queremos regalarte un sello especial en tu tarjeta de cafecitos.</p>
@@ -490,14 +470,17 @@ exports.selloCumpleaniosDiario = onSchedule(
     @corcegacafe
   </a>
 </div>
-          `,
-        };
+          `;
 
         try {
-          await transporter.sendMail(mailOptions);
+          if (proveedor === "zepto") {
+            await sendZeptoMail({ fromKey: "club", to: email, toName: nombre, subject, htmlbody: html, token: zeptoFunctions.zeptoToken.value() });
+          } else {
+            await transporter.sendMail({ from: `Córcega Café <${emailUser.value()}>`, to: email, subject, html });
+          }
           await db.collection("logs").add({
             accion: "sello_cumpleanios_auto",
-            detalles: `DNI: ${dni} - ${nombre} - ${email}`,
+            detalles: `DNI: ${dni} - ${nombre} - ${email} (vía ${proveedor})`,
             usuario: "Cron_Cumpleaños",
             timestamp: admin.firestore.FieldValue.serverTimestamp(),
           });
@@ -511,14 +494,15 @@ exports.selloCumpleaniosDiario = onSchedule(
 );
 
 exports.enviarMailAniversario = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass], timeoutSeconds: 540, memory: "512MiB" },
+  { region: "us-central1", secrets: [emailUser, emailPass, zeptoFunctions.zeptoToken], timeoutSeconds: 540, memory: "512MiB" },
   (req, res) => {
     corsHandler(req, res, async () => {
       if (!await verificarAuthAdmin(req, res)) return;
       const { dnisPrueba, esMasivo } = req.body;
       const adminUser = "Admin_Panel";
 
-      const transporter = nodemailer.createTransport({
+      const proveedor = await _resolverProveedorMail("enviarMailAniversario");
+      const transporter = proveedor === "zepto" ? null : nodemailer.createTransport({
         service: "gmail",
         pool: true,
         maxConnections: 5,
@@ -528,6 +512,52 @@ exports.enviarMailAniversario = onRequest(
           pass: emailPass.value(),
         },
       });
+
+      const subjectAniversario = "¡Aniversario Córcega 24/01!";
+      const htmlAniversario = `<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light only" />
+    <title>Aniversario Córcega</title>
+    <style>
+      :root { color-scheme: light only; }
+      html, body { background-color: #fdfcf7 !important; margin: 0; padding: 0; }
+
+      @media (prefers-color-scheme: dark) {
+        .body-bg { background-color: #fdfcf7 !important; }
+      }
+    </style>
+  </head>
+  <body style="margin:0; padding:0; background-color:#fdfcf7;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#fdfcf7;">
+      <tr>
+        <td align="center" style="padding:20px 12px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px; width:100%;">
+            <tr>
+              <td align="center" style="padding:0;">
+                <img
+                  src="https://emilianofil.github.io/corcegacafe/css/img/FlyerAniversario.jpg"
+                  alt="Aniversario Córcega"
+                  style="display:block; width:100%; max-width:600px; height:auto; border:0;"
+                />
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:20px 0;">
+                <p style="font-family:Arial, sans-serif; font-size:14px; color:#2b2b2b; margin:0;">
+                  Nos vemos en la isla 🏝️<br/>
+                  <strong>Equipo Córcega 🐎</strong>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
 
       let listaEnvio = [];
 
@@ -595,58 +625,12 @@ exports.enviarMailAniversario = onRequest(
               return;
             }
 
-            const mailOptions = {
-              from: `Córcega Café <${emailUser.value()}>`,
-              to: target.email,
-              subject: "¡Aniversario Córcega 24/01!",
-              html: `<!doctype html>
-<html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="light only" />
-    <title>Aniversario Córcega</title>
-    <style>
-      :root { color-scheme: light only; }
-      html, body { background-color: #fdfcf7 !important; margin: 0; padding: 0; }
-      
-      @media (prefers-color-scheme: dark) {
-        .body-bg { background-color: #fdfcf7 !important; }
-      }
-    </style>
-  </head>
-  <body style="margin:0; padding:0; background-color:#fdfcf7;">
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#fdfcf7;">
-      <tr>
-        <td align="center" style="padding:20px 12px;">
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px; width:100%;">
-            <tr>
-              <td align="center" style="padding:0;">
-                <img
-                  src="https://emilianofil.github.io/corcegacafe/css/img/FlyerAniversario.jpg"
-                  alt="Aniversario Córcega"
-                  style="display:block; width:100%; max-width:600px; height:auto; border:0;"
-                />
-              </td>
-            </tr>
-            <tr>
-              <td align="center" style="padding:20px 0;">
-                <p style="font-family:Arial, sans-serif; font-size:14px; color:#2b2b2b; margin:0;">
-                  Nos vemos en la isla 🏝️<br/>
-                  <strong>Equipo Córcega 🐎</strong>
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>`,
-            };
-
             try {
-              await transporter.sendMail(mailOptions);
+              if (proveedor === "zepto") {
+                await sendZeptoMail({ fromKey: "club", to: target.email, toName: target.nombre, subject: subjectAniversario, htmlbody: htmlAniversario, token: zeptoFunctions.zeptoToken.value() });
+              } else {
+                await transporter.sendMail({ from: `Córcega Café <${emailUser.value()}>`, to: target.email, subject: subjectAniversario, html: htmlAniversario });
+              }
 
               // Marcar el usuario como que ya recibió el mail
               await db.collection("clientes").doc(target.dni).update({
@@ -677,7 +661,7 @@ exports.enviarMailAniversario = onRequest(
 
         await db.collection("logs").add({
           accion: esMasivo ? "mail_aniversario_masivo_finalizado" : "mail_aniversario_prueba",
-          detalles: `FIN CAMPAÑA ANIVERSARIO. Exitosos: ${resultados.exitosos}, Ya enviados: ${resultados.yaEnviados}, Fallidos: ${resultados.fallidos}. Total procesados: ${listaEnvio.length}`,
+          detalles: `FIN CAMPAÑA ANIVERSARIO (vía ${proveedor}). Exitosos: ${resultados.exitosos}, Ya enviados: ${resultados.yaEnviados}, Fallidos: ${resultados.fallidos}. Total procesados: ${listaEnvio.length}`,
           usuario: adminUser,
           timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
@@ -695,7 +679,7 @@ exports.uploadMenuToGitHub = require('./upload').uploadMenuToGitHub;
 exports.generarTraduccionesPlato = require('./traducciones').generarTraduccionesPlato;
 
 exports.enviarMailCampana = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass], timeoutSeconds: 540, memory: "512MiB" },
+  { region: "us-central1", secrets: [emailUser, emailPass, zeptoFunctions.zeptoToken], timeoutSeconds: 540, memory: "512MiB" },
   (req, res) => {
     corsHandler(req, res, async () => {
       if (!await verificarAuthAdmin(req, res)) return;
@@ -706,7 +690,8 @@ exports.enviarMailCampana = onRequest(
         return res.status(400).send({ error: "Asunto e imagen son requeridos." });
       }
 
-      const transporter = nodemailer.createTransport({
+      const proveedor = await _resolverProveedorMail("enviarMailCampana");
+      const transporter = proveedor === "zepto" ? null : nodemailer.createTransport({
         service: "gmail",
         pool: true,
         maxConnections: 5,
@@ -787,11 +772,7 @@ exports.enviarMailCampana = onRequest(
               ? `https://trackclick-ioo4dzpz2a-uc.a.run.app?c=${campanaId}&u=${encodeURIComponent(target.dni)}&dest=${encodeURIComponent('https://corcegacafe.com.ar')}`
               : imagenUrl;
 
-            const mailOptions = {
-              from: `Córcega Café <${emailUser.value()}>`,
-              to: target.email,
-              subject: asunto,
-              html: `<!doctype html>
+            const htmlCampana = `<!doctype html>
 <html lang="es">
   <head>
     <meta charset="utf-8" />
@@ -839,11 +820,14 @@ exports.enviarMailCampana = onRequest(
     </table>
     ${pixelUrl ? `<img src="${pixelUrl}" width="1" height="1" border="0" style="display:none;" alt="">` : ''}
   </body>
-</html>`,
-            };
+</html>`;
 
             try {
-              await transporter.sendMail(mailOptions);
+              if (proveedor === "zepto") {
+                await sendZeptoMail({ fromKey: "club", to: target.email, toName: target.nombre, subject: asunto, htmlbody: htmlCampana, token: zeptoFunctions.zeptoToken.value() });
+              } else {
+                await transporter.sendMail({ from: `Córcega Café <${emailUser.value()}>`, to: target.email, subject: asunto, html: htmlCampana });
+              }
 
               if (campanaId) {
                 // Marcar en cliente (comportamiento previo)
@@ -889,7 +873,7 @@ exports.enviarMailCampana = onRequest(
 
         await db.collection("logs").add({
           accion: "fin_campana_personalizada",
-          detalles: `Resultados${campanaId ? ' (ID: ' + campanaId + ')' : ''} - Exitosos: ${resultados.exitosos}, Fallidos: ${resultados.fallidos}`,
+          detalles: `Resultados${campanaId ? ' (ID: ' + campanaId + ')' : ''} (vía ${proveedor}) - Exitosos: ${resultados.exitosos}, Fallidos: ${resultados.fallidos}`,
           usuario: adminUser,
           timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
@@ -1103,7 +1087,7 @@ exports.webhookMP = onRequest(
 exports.onOrderCreated = onDocumentCreated({
     document: "ordenes/{orderId}",
     region: "us-central1",
-    secrets: [emailUser, emailPass, TELEGRAM_BOT_TOKEN],
+    secrets: [emailUser, emailPass, zeptoFunctions.zeptoToken, TELEGRAM_BOT_TOKEN],
 }, async (event) => {
     const snapshot = event.data;
     if (!snapshot) return;
@@ -1315,7 +1299,8 @@ exports.onOrderCreated = onDocumentCreated({
     }
 
     // 5. Enviar Mail
-    const transporter = nodemailer.createTransport({
+    const proveedorOrden = await _resolverProveedorMail("onOrderCreated");
+    const transporter = proveedorOrden === "zepto" ? null : nodemailer.createTransport({
         service: "gmail",
         auth: {
           user: emailUser.value(),
@@ -1323,11 +1308,8 @@ exports.onOrderCreated = onDocumentCreated({
         },
     });
 
-    const mailOptions = {
-        from: `Córcega Café <${emailUser.value()}>`,
-        to: orderData.cliente.email,
-        subject: `🐎 ¡Pedido Recibido! #${orderNumber}`,
-        html: `
+    const subjectPedido = `🐎 ¡Pedido Recibido! #${orderNumber}`;
+    const htmlPedido = `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
             <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:140px; margin-bottom:30px;">
             
@@ -1359,11 +1341,14 @@ exports.onOrderCreated = onDocumentCreated({
                </p>
             </div>
           </div>
-        `,
-    };
+        `;
 
     try {
-        await transporter.sendMail(mailOptions);
+        if (proveedorOrden === "zepto") {
+            await sendZeptoMail({ fromKey: "tienda", to: orderData.cliente.email, toName: orderData.cliente.nombre, subject: subjectPedido, htmlbody: htmlPedido, token: zeptoFunctions.zeptoToken.value() });
+        } else {
+            await transporter.sendMail({ from: `Córcega Café <${emailUser.value()}>`, to: orderData.cliente.email, subject: subjectPedido, html: htmlPedido });
+        }
     } catch (err) {
         logger.error(`Error enviando mail inicial para #${orderNumber}:`, err);
     }
@@ -1377,11 +1362,8 @@ exports.onOrderCreated = onDocumentCreated({
                 <td style="padding:6px 0; border-bottom:1px solid #f0f0f0; font-size:14px;"><strong style="color:#d86634;">${i.qty}x</strong> ${i.nombre}${i.variantLabel ? ` (${i.variantLabel})` : ''}</td>
                 <td style="padding:6px 0; border-bottom:1px solid #f0f0f0; text-align:right; font-size:14px;">$${((i.precio||0)*(i.qty||1)).toLocaleString('es-AR')}</td>
             </tr>`).join('');
-        await transporter.sendMail({
-            from: `Córcega Café <${emailUser.value()}>`,
-            to: "emilianofilgueira@gmail.com, lemacafesrl@gmail.com",
-            subject: `🛒 Nuevo pedido #${orderNumber} — ${orderData.cliente?.nombre || 'Sin nombre'} ($${(orderData.total||0).toLocaleString('es-AR')})`,
-            html: `
+        const subjectAdmin = `🛒 Nuevo pedido #${orderNumber} — ${orderData.cliente?.nombre || 'Sin nombre'} ($${(orderData.total||0).toLocaleString('es-AR')})`;
+        const htmlAdmin = `
               <div style="font-family:sans-serif; max-width:500px; margin:auto; padding:24px; border:1px solid #eee; border-radius:16px;">
                 <h2 style="color:#d86634; margin:0 0 16px 0;">🛒 Nuevo pedido #${orderNumber}</h2>
                 <table style="width:100%; font-size:14px; border-collapse:collapse;">
@@ -1400,8 +1382,13 @@ exports.onOrderCreated = onDocumentCreated({
                   </tr>
                 </table>
               </div>
-            `,
-        });
+            `;
+        const adminEmails = ["emilianofilgueira@gmail.com", "lemacafesrl@gmail.com"];
+        if (proveedorOrden === "zepto") {
+            await sendZeptoMail({ fromKey: "tienda", to: adminEmails, subject: subjectAdmin, htmlbody: htmlAdmin, token: zeptoFunctions.zeptoToken.value() });
+        } else {
+            await transporter.sendMail({ from: `Córcega Café <${emailUser.value()}>`, to: adminEmails.join(", "), subject: subjectAdmin, html: htmlAdmin });
+        }
     } catch (err) {
         logger.error(`Error enviando mail interno de nuevo pedido #${orderNumber}:`, err);
     }
@@ -1411,7 +1398,7 @@ exports.onOrderUpdated = onDocumentUpdated(
   {
     document: "ordenes/{orderId}",
     region: "us-central1",
-    secrets: [emailUser, emailPass, CLARUS_API_KEY, CLARUS_ENDPOINT],
+    secrets: [emailUser, emailPass, zeptoFunctions.zeptoToken, CLARUS_API_KEY, CLARUS_ENDPOINT],
   },
   async (event) => {
     const beforeData = event.data.before.data();
@@ -1455,7 +1442,8 @@ exports.onOrderUpdated = onDocumentUpdated(
       }
 
       // 3. Enviar Mail de Notificación
-      const transporter = nodemailer.createTransport({
+      const proveedorEstado = await _resolverProveedorMail("onOrderUpdated");
+      const transporter = proveedorEstado === "zepto" ? null : nodemailer.createTransport({
         service: "gmail",
         auth: {
           user: emailUser.value(),
@@ -1518,11 +1506,7 @@ exports.onOrderUpdated = onDocumentUpdated(
           </tr>
       `).join('');
 
-      const mailOptions = {
-        from: `Córcega Café <${emailUser.value()}>`,
-        to: afterData.cliente.email,
-        subject: subject,
-        html: `
+      const htmlEstado = `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
             <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:140px; margin-bottom:30px;">
             
@@ -1552,12 +1536,15 @@ exports.onOrderUpdated = onDocumentUpdated(
                <p style="font-size:12px; color:#999; margin:0; line-height:1.5;">Nos vemos pronto en la isla.<br><strong>Córcega Café</strong></p>
             </div>
           </div>
-        `,
-      };
+        `;
 
       try {
-        await transporter.sendMail(mailOptions);
-        logger.info(`Mail enviado por cambio de estado: ${nuevoEstado}`);
+        if (proveedorEstado === "zepto") {
+          await sendZeptoMail({ fromKey: "tienda", to: afterData.cliente.email, toName: afterData.cliente.nombre, subject, htmlbody: htmlEstado, token: zeptoFunctions.zeptoToken.value() });
+        } else {
+          await transporter.sendMail({ from: `Córcega Café <${emailUser.value()}>`, to: afterData.cliente.email, subject, html: htmlEstado });
+        }
+        logger.info(`Mail enviado por cambio de estado: ${nuevoEstado} (vía ${proveedorEstado})`);
       } catch (err) {
         logger.error("Error enviando mail de estado:", err);
       }
@@ -1610,7 +1597,7 @@ exports.getPublicOrder = onRequest(async (req, res) => {
 });
 
 exports.enviarMailRecupero = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass] },
+  { region: "us-central1", secrets: [emailUser, emailPass, zeptoFunctions.zeptoToken] },
   (req, res) => {
     corsHandler(req, res, async () => {
       const { email } = req.body;
@@ -1636,19 +1623,8 @@ exports.enviarMailRecupero = onRequest(
         const customResetLink = `https://corcegacafe.com.ar/recuperar.html?oobCode=${oobCode}`;
 
         // 2. Enviar el mail con nuestro diseño
-        const transporter = nodemailer.createTransport({
-          service: "gmail",
-          auth: {
-            user: emailUser.value(),
-            pass: emailPass.value(),
-          },
-        });
-
-        const mailOptions = {
-          from: `Córcega Café <${emailUser.value()}>`,
-          to: email,
-          subject: "☕ Recuperar tu contraseña - Córcega Café",
-          html: `
+        const subjectRecupero = "☕ Recuperar tu contraseña - Córcega Café";
+        const htmlRecupero = `
             <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:40px; border:1px solid #eee; border-radius:30px;">
               <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:120px; margin-bottom:30px;">
               
@@ -1667,10 +1643,15 @@ exports.enviarMailRecupero = onRequest(
                  <p style="font-size:11px; color:#999;">Nos vemos pronto en la isla.<br><strong>Equipo Córcega Café</strong></p>
               </div>
             </div>
-          `,
-        };
+          `;
 
-        await transporter.sendMail(mailOptions);
+        const proveedorRecupero = await _resolverProveedorMail("enviarMailRecupero");
+        if (proveedorRecupero === "zepto") {
+          await sendZeptoMail({ fromKey: "tienda", to: email, subject: subjectRecupero, htmlbody: htmlRecupero, token: zeptoFunctions.zeptoToken.value() });
+        } else {
+          const transporter = nodemailer.createTransport({ service: "gmail", auth: { user: emailUser.value(), pass: emailPass.value() } });
+          await transporter.sendMail({ from: `Córcega Café <${emailUser.value()}>`, to: email, subject: subjectRecupero, html: htmlRecupero });
+        }
         res.status(200).send({ success: true });
 
       } catch (error) {
@@ -1684,7 +1665,7 @@ exports.enviarMailRecupero = onRequest(
 // ─── BOTÓN DE ARREPENTIMIENTO (Ley 24.240) ───────────────────────────────────
 
 exports.solicitarArrepentimiento = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass, mpAccessToken] },
+  { region: "us-central1", secrets: [emailUser, emailPass, zeptoFunctions.zeptoToken, mpAccessToken] },
   (req, res) => {
     corsHandler(req, res, async () => {
       const { nombre, email, numeroOrden, telefono, motivo } = req.body;
@@ -1745,10 +1726,24 @@ exports.solicitarArrepentimiento = onRequest(
       const codigo = 'ARREP-' + Date.now().toString(36).toUpperCase().slice(-4) +
                      Math.random().toString(36).substring(2, 4).toUpperCase();
 
-      const transporter = nodemailer.createTransport({
+      const proveedor = await _resolverProveedorMail("solicitarArrepentimiento");
+      const transporter = proveedor === "zepto" ? null : nodemailer.createTransport({
         service: "gmail",
         auth: { user: emailUser.value(), pass: emailPass.value() }
       });
+
+      const _enviarArrep = async (to, toName, subject, html, errCtx) => {
+        try {
+          if (proveedor === "zepto") {
+            await sendZeptoMail({ fromKey: "tienda", to, toName, subject, htmlbody: html, token: zeptoFunctions.zeptoToken.value() });
+          } else {
+            const toStr = Array.isArray(to) ? to.join(", ") : to;
+            await transporter.sendMail({ from: `Córcega Café <${emailUser.value()}>`, to: toStr, subject, html });
+          }
+        } catch (err) {
+          logger.error(errCtx, err);
+        }
+      };
 
       // ══════════════════════════════════════════════════════════════════
       // CAMINO A: SIN PAGO — cancelar directamente, sin devolución física
@@ -1776,11 +1771,7 @@ exports.solicitarArrepentimiento = onRequest(
         });
 
         // Mail al cliente
-        await transporter.sendMail({
-          from: `Córcega Café <${emailUser.value()}>`,
-          to: email,
-          subject: `✅ Cancelación confirmada - ${codigo}`,
-          html: `
+        await _enviarArrep(email, nombre, `✅ Cancelación confirmada - ${codigo}`, `
             <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
               <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega Café" style="max-width:120px; margin-bottom:24px;">
               <h2 style="color:#d86634; margin:0 0 8px 0;">Pedido cancelado</h2>
@@ -1797,15 +1788,10 @@ exports.solicitarArrepentimiento = onRequest(
                 <strong>Córcega Café</strong>
               </p>
             </div>
-          `
-        }).catch(err => logger.error("Error mail arrepentimiento sin pago:", err));
+          `, "Error mail arrepentimiento sin pago:");
 
         // Mail al admin
-        await transporter.sendMail({
-          from: `Córcega Café <${emailUser.value()}>`,
-          to: "emilianofilgueira@gmail.com, lemacafesrl@gmail.com",
-          subject: `↩️ Cancelación sin pago ${codigo} — Pedido #${order.orderNumber}`,
-          html: `
+        await _enviarArrep(["emilianofilgueira@gmail.com", "lemacafesrl@gmail.com"], null, `↩️ Cancelación sin pago ${codigo} — Pedido #${order.orderNumber}`, `
             <div style="font-family:sans-serif; max-width:500px; margin:auto; padding:24px; border:1px solid #eee; border-radius:16px;">
               <h2 style="color:#888;">Cancelación sin pago</h2>
               <table style="width:100%; font-size:14px; border-collapse:collapse;">
@@ -1817,8 +1803,7 @@ exports.solicitarArrepentimiento = onRequest(
               </table>
               <p style="margin-top:16px; font-size:12px; color:#999;">El pedido no tenía pago registrado, fue cancelado directamente.</p>
             </div>
-          `
-        }).catch(err => logger.error("Error mail admin sin pago:", err));
+          `, "Error mail admin sin pago:");
 
         await db.collection("logs").add({
           accion: "arrepentimiento_sin_pago",
@@ -1856,11 +1841,7 @@ exports.solicitarArrepentimiento = onRequest(
       });
 
       // Mail al cliente — instrucciones de devolución
-      await transporter.sendMail({
-        from: `Córcega Café <${emailUser.value()}>`,
-        to: email,
-        subject: `📦 Solicitud registrada — necesitamos que devuelvas el producto (${codigo})`,
-        html: `
+      await _enviarArrep(email, nombre, `📦 Solicitud registrada — necesitamos que devuelvas el producto (${codigo})`, `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
             <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega Café" style="max-width:120px; margin-bottom:24px;">
             <h2 style="color:#d86634; margin:0 0 8px 0;">Solicitud recibida</h2>
@@ -1879,15 +1860,10 @@ exports.solicitarArrepentimiento = onRequest(
               <strong>Córcega Café</strong>
             </p>
           </div>
-        `
-      }).catch(err => logger.error("Error mail arrepentimiento con pago — cliente:", err));
+        `, "Error mail arrepentimiento con pago — cliente:");
 
       // Mail al admin — acción requerida
-      await transporter.sendMail({
-        from: `Córcega Café <${emailUser.value()}>`,
-        to: "emilianofilgueira@gmail.com, lemacafesrl@gmail.com",
-        subject: `⚠️ Arrepentimiento pendiente — ${codigo} — Pedido #${order.orderNumber} ($${order.total?.toLocaleString('es-AR')})`,
-        html: `
+      await _enviarArrep(["emilianofilgueira@gmail.com", "lemacafesrl@gmail.com"], null, `⚠️ Arrepentimiento pendiente — ${codigo} — Pedido #${order.orderNumber} ($${order.total?.toLocaleString('es-AR')})`, `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; padding:24px; border:1px solid #eee; border-radius:16px;">
             <h2 style="color:#e67e22;">🚨 Arrepentimiento — Devolución pendiente</h2>
             <p style="color:#555; font-size:14px;">El cliente solicita cancelar su pedido. <strong>Esperá la devolución física del producto antes de reembolsar.</strong></p>
@@ -1905,8 +1881,7 @@ exports.solicitarArrepentimiento = onRequest(
               <strong>Acción requerida:</strong> Cuando el cliente traiga el producto al local, confirmá la devolución desde el panel de administración para procesar el reembolso.
             </div>
           </div>
-        `
-      }).catch(err => logger.error("Error mail admin con pago:", err));
+        `, "Error mail admin con pago:");
 
       await db.collection("logs").add({
         accion: "arrepentimiento_pendiente_devolucion",
@@ -1922,7 +1897,7 @@ exports.solicitarArrepentimiento = onRequest(
 
 // ─── PROCESAR DEVOLUCIÓN (admin confirma recepción del producto y dispara reembolso) ─────
 exports.procesarDevolucion = onRequest(
-  { region: "us-central1", secrets: [emailUser, emailPass, mpAccessToken] },
+  { region: "us-central1", secrets: [emailUser, emailPass, zeptoFunctions.zeptoToken, mpAccessToken] },
   (req, res) => {
     corsHandler(req, res, async () => {
       if (!await verificarAuthAdmin(req, res)) return;
@@ -1984,7 +1959,8 @@ exports.procesarDevolucion = onRequest(
       });
 
       // Mail de confirmación al cliente
-      const transporter = nodemailer.createTransport({
+      const proveedorDevolucion = await _resolverProveedorMail("procesarDevolucion");
+      const transporter = proveedorDevolucion === "zepto" ? null : nodemailer.createTransport({
         service: "gmail",
         auth: { user: emailUser.value(), pass: emailPass.value() }
       });
@@ -1995,11 +1971,8 @@ exports.procesarDevolucion = onRequest(
         ? `<p style="margin:0;">🏦 Pagaste por transferencia. Nos comunicaremos con vos dentro de las 24 hs para coordinar la devolución del dinero.</p>`
         : `<p style="margin:0;">Tu pedido fue cancelado. Si tenés dudas, contactanos por WhatsApp.</p>`;
 
-      await transporter.sendMail({
-        from: `Córcega Café <${emailUser.value()}>`,
-        to: clienteEmail,
-        subject: `✅ Devolución confirmada — ${codigo}`,
-        html: `
+      const subjectDevolucion = `✅ Devolución confirmada — ${codigo}`;
+      const htmlDevolucion = `
           <div style="font-family:sans-serif; max-width:500px; margin:auto; text-align:center; color:#2b2b2b; padding:30px; border:1px solid #eee; border-radius:24px;">
             <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Córcega Café" style="max-width:120px; margin-bottom:24px;">
             <h2 style="color:#25a244; margin:0 0 8px 0;">¡Devolución recibida!</h2>
@@ -2016,8 +1989,17 @@ exports.procesarDevolucion = onRequest(
               <strong>Córcega Café</strong>
             </p>
           </div>
-        `
-      }).catch(err => logger.error("Error mail confirmación devolución:", err));
+        `;
+
+      try {
+        if (proveedorDevolucion === "zepto") {
+          await sendZeptoMail({ fromKey: "tienda", to: clienteEmail, toName: clienteNombre, subject: subjectDevolucion, htmlbody: htmlDevolucion, token: zeptoFunctions.zeptoToken.value() });
+        } else {
+          await transporter.sendMail({ from: `Córcega Café <${emailUser.value()}>`, to: clienteEmail, subject: subjectDevolucion, html: htmlDevolucion });
+        }
+      } catch (err) {
+        logger.error("Error mail confirmación devolución:", err);
+      }
 
       await db.collection("logs").add({
         accion: "devolucion_procesada",
@@ -2500,7 +2482,7 @@ exports.analizarReviews = onRequest(
 // genera la respuesta sugerida y avisa por mail. Hasta que la Fase 3 sincronice
 // "google_reviews" desde la Business Profile API, la colección estará vacía y sale sin hacer nada.
 exports.agenteReviews = onSchedule(
-  { schedule: "every 6 hours", region: "us-central1", secrets: [ANTHROPIC_API_KEY, emailUser, emailPass] },
+  { schedule: "every 6 hours", region: "us-central1", secrets: [ANTHROPIC_API_KEY, emailUser, emailPass, zeptoFunctions.zeptoToken] },
   async () => {
     const snap = await db.collection("google_reviews")
       .where("respondida", "==", false).get();
@@ -2537,24 +2519,32 @@ exports.agenteReviews = onSchedule(
     }
     if (!generadas.length) return;
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user: emailUser.value(), pass: emailPass.value() },
-    });
     const filas = generadas.map((g) =>
       `<li style="margin-bottom:14px;"><strong>${g.autor}</strong> (${g.rating}★): "${(g.texto || "").slice(0, 120)}..."<br>
        <em style="color:#2d6a4f;">Respuesta sugerida: ${g.borrador}</em></li>`).join("");
-    await transporter.sendMail({
-      from: `Agente de Reviews Córcega <${emailUser.value()}>`,
-      to: REVIEWS_NOTIFY.join(","),
-      subject: `🤖 ${generadas.length} respuesta(s) de reviews listas para aprobar`,
-      html: `<div style="font-family:sans-serif; max-width:560px; margin:auto; color:#2b2b2b;">
+    const subjectReviews = `🤖 ${generadas.length} respuesta(s) de reviews listas para aprobar`;
+    const htmlReviews = `<div style="font-family:sans-serif; max-width:560px; margin:auto; color:#2b2b2b;">
         <h2>☕ El agente preparó ${generadas.length} respuesta(s)</h2>
         <ul style="padding-left:18px;">${filas}</ul>
         <p><a href="https://corcegacafe.com.ar/admin-new.html#reviews" style="display:inline-block; padding:12px 24px; background:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px;">Revisar y publicar</a></p>
-      </div>`,
-    });
-    logger.info(`agenteReviews: ${generadas.length} borradores generados y notificados.`);
+      </div>`;
+
+    const proveedorReviews = await _resolverProveedorMail("agenteReviews");
+    if (proveedorReviews === "zepto") {
+      await sendZeptoMail({ fromKey: "hola", to: REVIEWS_NOTIFY, subject: subjectReviews, htmlbody: htmlReviews, token: zeptoFunctions.zeptoToken.value() });
+    } else {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: emailUser.value(), pass: emailPass.value() },
+      });
+      await transporter.sendMail({
+        from: `Agente de Reviews Córcega <${emailUser.value()}>`,
+        to: REVIEWS_NOTIFY.join(","),
+        subject: subjectReviews,
+        html: htmlReviews,
+      });
+    }
+    logger.info(`agenteReviews: ${generadas.length} borradores generados y notificados (vía ${proveedorReviews}).`);
   }
 );
 
