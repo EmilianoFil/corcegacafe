@@ -2923,3 +2923,170 @@ exports.sharePlato = onRequest({ region: "us-central1" }, async (req, res) => {
 // ZeptoMail — infraestructura nueva (no reemplaza Gmail todavía)
 const zeptoFunctions = require("./zepto-functions");
 exports.testZeptoMail = zeptoFunctions.testZeptoMail;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIL DE BIENVENIDA AUTOMÁTICO — registro en Carta o Tienda (vía ZeptoMail)
+// Apagado por defecto: solo manda si configuracion/tienda.mails.bienvenidaHabilitado === true
+// ═══════════════════════════════════════════════════════════════════════════
+
+const { sendZeptoMail } = require("./zepto");
+
+function _descuentoTexto(cupon) {
+  if (!cupon) return "";
+  if (cupon.tipo === "porcentaje") {
+    const tope = cupon.topeDescuento ? ` (hasta $${Number(cupon.topeDescuento).toLocaleString("es-AR")})` : "";
+    return `${cupon.valor}% off en tu primera compra${tope}`;
+  }
+  return `$${Number(cupon.valor).toLocaleString("es-AR")} off en tu primera compra`;
+}
+
+function _htmlBienvenidaCartaConCupon(nombre, cupon) {
+  return `
+    <div style="font-family:sans-serif; max-width:480px; margin:auto; text-align:center; color:#2b2b2b;">
+      <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:110px; margin-bottom:20px;">
+      <h2 style="margin:0 0 8px; color:#2b2b2b;">¡Bienvenido/a a Córcega, ${nombre}! 🐎</h2>
+      <p style="margin:0 0 20px; color:#666; font-size:15px; line-height:1.6;">Gracias por sumarte y explorar nuestra carta. Si todavía no conocés nuestra <strong>tienda online</strong>, te dejamos un empujoncito.</p>
+
+      <div style="background:#f0f7ff; border:1.5px solid #cce0ff; border-radius:14px; padding:20px; margin:0 0 22px;">
+        <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">Tu código para la primera compra</div>
+        <div style="font-size:1.6rem; font-weight:900; color:#1a4a8a; letter-spacing:0.05em; margin-bottom:6px;">${cupon.codigo}</div>
+        <div style="font-size:13px; color:#1a4a8a;">${_descuentoTexto(cupon)}</div>
+      </div>
+
+      <a href="https://emilianofil.github.io/corcegacafe/tienda.html" style="display:inline-block; padding:12px 26px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px; font-size:15px;">
+        Ir a la tienda
+      </a>
+
+      <p style="margin-top:26px; color:#999; font-size:13px;">Café en grano, pastelería y merch — con la misma rebeldía cafetera de siempre.</p>
+
+      <hr style="margin:26px auto; max-width:80%; border:none; border-top:1px solid #ccc;" />
+      <p style="margin: 0;">Seguinos en Instagram</p>
+      <a href="https://www.instagram.com/corcegacafe" target="_blank" style="display:inline-flex; align-items:center; justify-content:center; color:#d86634; font-weight:bold; text-decoration:none; margin-top:5px;">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" width="20" height="20" style="margin-right:8px;">
+        @corcegacafe
+      </a>
+    </div>
+  `;
+}
+
+function _htmlBienvenidaTienda(nombre, cupon) {
+  const bloqueCupon = cupon ? `
+      <div style="background:#f0f7ff; border:1.5px solid #cce0ff; border-radius:14px; padding:20px; margin:0 0 22px;">
+        <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">Tu código para la primera compra</div>
+        <div style="font-size:1.6rem; font-weight:900; color:#1a4a8a; letter-spacing:0.05em; margin-bottom:6px;">${cupon.codigo}</div>
+        <div style="font-size:13px; color:#1a4a8a;">${_descuentoTexto(cupon)}</div>
+      </div>
+  ` : "";
+  return `
+    <div style="font-family:sans-serif; max-width:480px; margin:auto; text-align:center; color:#2b2b2b;">
+      <img src="https://emilianofil.github.io/corcegacafe/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:110px; margin-bottom:20px;">
+      <h2 style="margin:0 0 8px; color:#2b2b2b;">¡Bienvenido/a, ${nombre}! 🛒</h2>
+      <p style="margin:0 0 20px; color:#666; font-size:15px; line-height:1.6;">Ya tenés tu cuenta lista en la tienda de Córcega — café en grano, pastelería y merch, a un click.${cupon ? " Para arrancar con el pie derecho, tenés esto:" : ""}</p>
+
+      ${bloqueCupon}
+
+      <a href="https://emilianofil.github.io/corcegacafe/tienda.html" style="display:inline-block; padding:12px 26px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px; font-size:15px;">
+        Empezar a comprar
+      </a>
+
+      <div style="margin-top:26px; padding-top:18px; border-top:1px dashed #eee; font-size:12.5px; color:#999;">
+        PD: con esta misma cuenta también podés guardar tus platos favoritos en nuestra <a href="https://emilianofil.github.io/corcegacafe/carta.html" style="color:#d86634; font-weight:700; text-decoration:none;">carta digital</a> 🐎.
+      </div>
+
+      <hr style="margin:26px auto; max-width:80%; border:none; border-top:1px solid #ccc;" />
+      <p style="margin: 0;">Seguinos en Instagram</p>
+      <a href="https://www.instagram.com/corcegacafe" target="_blank" style="display:inline-flex; align-items:center; justify-content:center; color:#d86634; font-weight:bold; text-decoration:none; margin-top:5px;">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" width="20" height="20" style="margin-right:8px;">
+        @corcegacafe
+      </a>
+    </div>
+  `;
+}
+
+exports.onUsuarioTiendaCreated = onDocumentCreated(
+  {
+    document: "usuarios_tienda/{uid}",
+    region: "us-central1",
+    secrets: [zeptoFunctions.zeptoToken],
+    timeoutSeconds: 600,
+  },
+  async (event) => {
+    const data = event.data.data();
+    const uid = event.params.uid;
+    const origen = data.origen === "carta" || data.origen === "tienda" ? data.origen : null;
+
+    if (!data.email || !origen) {
+      logger.info(`onUsuarioTiendaCreated: sin email u origen reconocible (uid ${uid}), no se hace nada.`);
+      return;
+    }
+
+    // Delay intencional: que primero termine de leer la carta / de registrarse tranquilo.
+    await new Promise((resolve) => setTimeout(resolve, 5 * 60 * 1000));
+
+    // Feature flag global — apagado por defecto.
+    const confSnap = await db.collection("configuracion").doc("tienda").get();
+    const config = confSnap.exists ? confSnap.data() : {};
+    if (config.mails?.bienvenidaHabilitado !== true) {
+      logger.info(`Mail de bienvenida (${origen}) desactivado por flag — no se envía a ${data.email}.`);
+      return;
+    }
+
+    // Buscar el único cupón público + solo-primera-compra activo (si el sistema de cupones está encendido).
+    let cupon = null;
+    if (config.cupones?.habilitado === true) {
+      try {
+        const qCupon = await db.collection("cupones")
+          .where("alcance", "==", "publico")
+          .where("soloPrimeraCompra", "==", true)
+          .where("activo", "==", true)
+          .limit(1)
+          .get();
+        if (!qCupon.empty) {
+          const d = qCupon.docs[0];
+          const cData = d.data();
+          const vencida = cData.vencimientoTipo === "fecha" && cData.vencimientoFecha?.toDate && cData.vencimientoFecha.toDate() < new Date();
+          if (!vencida) cupon = { codigo: d.id, ...cData };
+        }
+      } catch (e) {
+        logger.warn("Error buscando cupón de bienvenida:", e.message);
+      }
+    }
+
+    // El mail de carta solo tiene sentido si hay un cupón para ofrecer.
+    if (origen === "carta" && !cupon) {
+      logger.info(`Registro de carta sin cupón de bienvenida activo — no se manda mail a ${data.email}.`);
+      return;
+    }
+
+    const nombre = data.nombre || "vos";
+    const fromKey = origen === "carta" ? "hola" : "tienda";
+    const subject = origen === "carta"
+      ? "¡Bienvenido/a a Córcega! 🐎 Un regalo para tu primera compra en la tienda"
+      : cupon
+        ? "¡Bienvenido/a a la tienda Córcega! 🛒 Tenés un regalo para tu primera compra"
+        : "¡Bienvenido/a a la tienda Córcega! 🛒";
+    const html = origen === "carta"
+      ? _htmlBienvenidaCartaConCupon(nombre, cupon)
+      : _htmlBienvenidaTienda(nombre, cupon);
+
+    try {
+      await sendZeptoMail({
+        fromKey,
+        to: data.email,
+        toName: nombre,
+        subject,
+        htmlbody: html,
+        token: zeptoFunctions.zeptoToken.value(),
+      });
+      await db.collection("logs").add({
+        accion: `mail_bienvenida_${origen}${cupon ? "_con_cupon" : ""}`,
+        detalles: `${nombre} - ${data.email} (uid: ${uid})`,
+        usuario: "Mail_Bienvenida_Auto",
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      logger.info(`Mail de bienvenida (${origen}) enviado a ${data.email}.`);
+    } catch (err) {
+      logger.error(`Error enviando mail de bienvenida (${origen}) a ${data.email}:`, err);
+    }
+  }
+);

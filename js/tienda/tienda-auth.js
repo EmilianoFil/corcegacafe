@@ -100,6 +100,7 @@ async function handleRegister() {
         await setDoc(doc(db, "usuarios_tienda", user.uid), {
             uid: user.uid,
             dni, nombre, email, whatsapp: tel,
+            origen: 'tienda',
             creado: serverTimestamp()
         });
 

@@ -518,7 +518,7 @@ async function _register() {
     try {
         const cred = await createUserWithEmailAndPassword(auth, email, pass);
         await setDoc(doc(db, 'usuarios_tienda', cred.user.uid), {
-            uid: cred.user.uid, nombre, email, creado: serverTimestamp()
+            uid: cred.user.uid, nombre, email, origen: 'carta', creado: serverTimestamp()
         });
         _ocultarLogin();
     } catch (e) { alert('Error al registrar: ' + e.message); }
