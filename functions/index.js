@@ -2946,11 +2946,16 @@ exports.testZeptoMail = zeptoFunctions.testZeptoMail;
 
 function _descuentoTexto(cupon) {
   if (!cupon) return "";
+  const asterisco = cupon.topeDescuento ? "*" : "";
   if (cupon.tipo === "porcentaje") {
-    const tope = cupon.topeDescuento ? ` (hasta $${Number(cupon.topeDescuento).toLocaleString("es-AR")})` : "";
-    return `${cupon.valor}% off en tu primera compra${tope}`;
+    return `Disfrutá de un ${cupon.valor}% de descuento en tu primera compra${asterisco}`;
   }
-  return `$${Number(cupon.valor).toLocaleString("es-AR")} off en tu primera compra`;
+  return `Disfrutá de $${Number(cupon.valor).toLocaleString("es-AR")} de descuento en tu primera compra`;
+}
+
+function _topeFootnote(cupon) {
+  if (!cupon?.topeDescuento) return "";
+  return `<div style="font-size:11px; color:#6b87ad; margin-top:6px;">*Descuento máximo de $${Number(cupon.topeDescuento).toLocaleString("es-AR")}.</div>`;
 }
 
 function _htmlBienvenidaCartaConCupon(nombre, cupon) {
@@ -2964,13 +2969,14 @@ function _htmlBienvenidaCartaConCupon(nombre, cupon) {
         <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">Tu código para la primera compra</div>
         <div style="font-size:1.6rem; font-weight:900; color:#1a4a8a; letter-spacing:0.05em; margin-bottom:6px;">${cupon.codigo}</div>
         <div style="font-size:13px; color:#1a4a8a;">${_descuentoTexto(cupon)}</div>
+        ${_topeFootnote(cupon)}
       </div>
 
       <a href="https://corcegacafe.com.ar/tienda.html" style="display:inline-block; padding:12px 26px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px; font-size:15px;">
         Ir a la tienda
       </a>
 
-      <p style="margin-top:26px; color:#999; font-size:13px;">Café en grano, pastelería y merch — con la misma rebeldía cafetera de siempre.</p>
+      <p style="margin-top:26px; color:#999; font-size:13px;">Café en grano, pastelería, merch y experiencias — con la misma rebeldía cafetera de siempre.</p>
 
       <hr style="margin:26px auto; max-width:80%; border:none; border-top:1px solid #ccc;" />
       <p style="margin: 0;">Seguinos en Instagram</p>
@@ -2988,13 +2994,14 @@ function _htmlBienvenidaTienda(nombre, cupon) {
         <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">Tu código para la primera compra</div>
         <div style="font-size:1.6rem; font-weight:900; color:#1a4a8a; letter-spacing:0.05em; margin-bottom:6px;">${cupon.codigo}</div>
         <div style="font-size:13px; color:#1a4a8a;">${_descuentoTexto(cupon)}</div>
+        ${_topeFootnote(cupon)}
       </div>
   ` : "";
   return `
     <div style="font-family:sans-serif; max-width:480px; margin:auto; text-align:center; color:#2b2b2b;">
       <img src="https://corcegacafe.com.ar/css/img/logo-corcega-color.png" alt="Logo Córcega" style="max-width:110px; margin-bottom:20px;">
       <h2 style="margin:0 0 8px; color:#2b2b2b;">¡Bienvenido/a, ${nombre}! 🛒</h2>
-      <p style="margin:0 0 20px; color:#666; font-size:15px; line-height:1.6;">Ya tenés tu cuenta lista en la tienda de Córcega — café en grano, pastelería y merch, a un click.${cupon ? " Para arrancar con el pie derecho, tenés esto:" : ""}</p>
+      <p style="margin:0 0 20px; color:#666; font-size:15px; line-height:1.6;">Ya tenés tu cuenta lista en la tienda de Córcega — café en grano, pastelería, merch y experiencias, a un click.${cupon ? " Para arrancar con el pie derecho, tenés esto:" : ""}</p>
 
       ${bloqueCupon}
 
