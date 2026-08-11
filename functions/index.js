@@ -2946,16 +2946,27 @@ exports.testZeptoMail = zeptoFunctions.testZeptoMail;
 
 function _descuentoTexto(cupon) {
   if (!cupon) return "";
-  const asterisco = cupon.topeDescuento ? "*" : "";
+  const tieneCondiciones = !!cupon.topeDescuento || (cupon.vencimientoTipo && cupon.vencimientoTipo !== "ninguno");
+  const asterisco = tieneCondiciones ? "*" : "";
   if (cupon.tipo === "porcentaje") {
     return `Disfrutá de un ${cupon.valor}% de descuento en tu primera compra${asterisco}`;
   }
-  return `Disfrutá de $${Number(cupon.valor).toLocaleString("es-AR")} de descuento en tu primera compra`;
+  return `Disfrutá de $${Number(cupon.valor).toLocaleString("es-AR")} de descuento en tu primera compra${asterisco}`;
 }
 
-function _topeFootnote(cupon) {
-  if (!cupon?.topeDescuento) return "";
-  return `<div style="font-size:11px; color:#6b87ad; margin-top:6px;">*Descuento máximo de $${Number(cupon.topeDescuento).toLocaleString("es-AR")}.</div>`;
+function _condicionesFootnote(cupon) {
+  if (!cupon) return "";
+  const partes = [];
+  if (cupon.topeDescuento) {
+    partes.push(`Descuento máximo de $${Number(cupon.topeDescuento).toLocaleString("es-AR")}.`);
+  }
+  if (cupon.vencimientoTipo === "fecha" && cupon.vencimientoFecha?.toDate) {
+    partes.push(`Válido hasta el ${cupon.vencimientoFecha.toDate().toLocaleDateString("es-AR")}.`);
+  } else if (cupon.vencimientoTipo === "diasRegistro" && cupon.vencimientoDias) {
+    partes.push(`Válido por ${cupon.vencimientoDias} días desde tu registro.`);
+  }
+  if (partes.length === 0) return "";
+  return `<div style="font-size:11px; color:#6b87ad; margin-top:6px;">*${partes.join(" ")}</div>`;
 }
 
 function _htmlBienvenidaCartaConCupon(nombre, cupon) {
@@ -2969,7 +2980,7 @@ function _htmlBienvenidaCartaConCupon(nombre, cupon) {
         <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">Tu código para la primera compra</div>
         <div style="font-size:1.6rem; font-weight:900; color:#1a4a8a; letter-spacing:0.05em; margin-bottom:6px;">${cupon.codigo}</div>
         <div style="font-size:13px; color:#1a4a8a;">${_descuentoTexto(cupon)}</div>
-        ${_topeFootnote(cupon)}
+        ${_condicionesFootnote(cupon)}
       </div>
 
       <a href="https://corcegacafe.com.ar/tienda.html" style="display:inline-block; padding:12px 26px; background-color:#d86634; color:white; text-decoration:none; font-weight:bold; border-radius:8px; font-size:15px;">
@@ -2994,7 +3005,7 @@ function _htmlBienvenidaTienda(nombre, cupon) {
         <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">Tu código para la primera compra</div>
         <div style="font-size:1.6rem; font-weight:900; color:#1a4a8a; letter-spacing:0.05em; margin-bottom:6px;">${cupon.codigo}</div>
         <div style="font-size:13px; color:#1a4a8a;">${_descuentoTexto(cupon)}</div>
-        ${_topeFootnote(cupon)}
+        ${_condicionesFootnote(cupon)}
       </div>
   ` : "";
   return `
