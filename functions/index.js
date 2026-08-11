@@ -3040,8 +3040,11 @@ exports.onUsuarioTiendaCreated = onDocumentCreated(
       return;
     }
 
-    // Delay intencional: que primero termine de leer la carta / de registrarse tranquilo.
-    await new Promise((resolve) => setTimeout(resolve, 5 * 60 * 1000));
+    // Delay intencional solo para carta: que primero termine de leerla tranquilo.
+    // El de tienda sale al toque — ahí no hay nada que "interrumpir".
+    if (origen === "carta") {
+      await new Promise((resolve) => setTimeout(resolve, 5 * 60 * 1000));
+    }
 
     // Feature flag global — apagado por defecto.
     const confSnap = await db.collection("configuracion").doc("tienda").get();
