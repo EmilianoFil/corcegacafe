@@ -1,6 +1,6 @@
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https");
-const { onDocumentUpdated, onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onDocumentUpdated, onDocumentCreated, onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { defineSecret } = require("firebase-functions/params");
 
@@ -3038,7 +3038,7 @@ exports.onUsuarioTiendaCreated = onDocumentCreated(
   {
     document: "usuarios_tienda/{uid}",
     region: "us-central1",
-    secrets: [zeptoFunctions.zeptoToken, emailUser, emailPass],
+    secrets: [zeptoFunctions.zeptoToken, emailUser, emailPass, TELEGRAM_BOT_TOKEN],
     timeoutSeconds: 540,
   },
   async (event) => {
@@ -3050,6 +3050,12 @@ exports.onUsuarioTiendaCreated = onDocumentCreated(
       logger.info(`onUsuarioTiendaCreated: sin email u origen reconocible (uid ${uid}), no se hace nada.`);
       return;
     }
+
+    // Aviso a Telegram inmediato (no espera el delay del mail de bienvenida).
+    const origenTxt = origen === "carta" ? "la Carta" : "la Tienda";
+    await _notificarTelegram(
+      `🎉 *Nuevo registro en ${origenTxt}*\n👤 ${data.nombre || "Sin nombre"}\n✉️ ${data.email}${data.dni ? `\n🪪 DNI ${data.dni}` : ""}`
+    );
 
     // Delay intencional solo para carta: que primero termine de leerla tranquilo.
     // El de tienda sale al toque — ahí no hay nada que "interrumpir".
@@ -3133,3 +3139,71 @@ exports.onUsuarioTiendaCreated = onDocumentCreated(
     }
   }
 );
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MÁS NOTIFICACIONES A TELEGRAM — reviews nuevas y actividad social en la carta
+// (el registro se avisa arriba, en onUsuarioTiendaCreated; los pedidos ya
+// tenían su propio aviso desde antes y no se tocó)
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function _notificarTelegram(msg) {
+  try {
+    await Promise.all(TELEGRAM_CHAT_IDS.map((chatId) =>
+      fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN.value()}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: "Markdown" }),
+      })
+    ));
+  } catch (e) {
+    logger.warn("Telegram notify failed:", e.message);
+  }
+}
+
+// Nueva review de Google (se dispara solo cuando el doc se crea por primera vez,
+// no en cada sync de las ya existentes)
+exports.onGoogleReviewCreated = onDocumentCreated(
+  { document: "google_reviews/{reviewId}", region: "us-central1", secrets: [TELEGRAM_BOT_TOKEN] },
+  async (event) => {
+    const r = event.data.data();
+    const estrellas = "⭐".repeat(r.rating || 0) || "Sin calificación";
+    const texto = r.texto ? `\n"${r.texto.slice(0, 300)}"` : "";
+    await _notificarTelegram(`🌟 *Nueva review de Google*\n👤 ${r.autor || "Anónimo"}\n${estrellas}${texto}`);
+  }
+);
+
+// Actividad social en la carta: like, quiero probar, ya probé.
+// NO incluye apertura/vista de plato a propósito — solo estas 3 acciones.
+// Cada doc guarda platoIds como array completo (no arrayUnion), así que
+// comparamos antes/después para detectar qué se agregó — ignora remociones.
+function _crearListenerCartaSocial(coleccion, emoji, verbo) {
+  return onDocumentWritten(
+    { document: `${coleccion}/{uid}`, region: "us-central1", secrets: [TELEGRAM_BOT_TOKEN] },
+    async (event) => {
+      const antes = new Set(event.data?.before?.data()?.platoIds || []);
+      const despues = new Set(event.data?.after?.data()?.platoIds || []);
+      const nuevos = [...despues].filter((id) => !antes.has(id));
+      if (nuevos.length === 0) return;
+
+      const uid = event.params.uid;
+      let nombreCliente = "Alguien";
+      try {
+        const uSnap = await db.collection("usuarios_tienda").doc(uid).get();
+        if (uSnap.exists) nombreCliente = uSnap.data().nombre || nombreCliente;
+      } catch (e) { /* si falla, seguimos con "Alguien" */ }
+
+      for (const platoId of nuevos) {
+        let nombrePlato = platoId;
+        try {
+          const pSnap = await db.collection("carta_platos").doc(platoId).get();
+          if (pSnap.exists) nombrePlato = pSnap.data().nombre || platoId;
+        } catch (e) { /* si falla, mostramos el id */ }
+        await _notificarTelegram(`${emoji} *${nombreCliente}* ${verbo} _${nombrePlato}_`);
+      }
+    }
+  );
+}
+
+exports.onCartaFavoritoEscrito = _crearListenerCartaSocial("carta_favoritos", "❤️", "le dio like a");
+exports.onCartaQuieroProbarEscrito = _crearListenerCartaSocial("carta_quiero_probar", "🔖", "quiere probar");
+exports.onCartaProbadoEscrito = _crearListenerCartaSocial("carta_probados", "✅", "ya probó");
