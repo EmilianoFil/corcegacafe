@@ -3133,6 +3133,9 @@ exports.onUsuarioTiendaCreated = onDocumentCreated(
         usuario: "Mail_Bienvenida_Auto",
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
       });
+      await db.collection("usuarios_tienda").doc(uid).set({
+        mailBienvenidaEnviadoEn: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
       logger.info(`Mail de bienvenida (${origen}) enviado a ${data.email} (vía ${proveedor}).`);
     } catch (err) {
       logger.error(`Error enviando mail de bienvenida (${origen}) a ${data.email}:`, err);

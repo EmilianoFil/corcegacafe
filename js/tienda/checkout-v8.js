@@ -1,7 +1,7 @@
 import { db, auth } from '../firebase-config.js';
 console.log("=== CHECKOUT V4 ACTIVE (NO ALERT) ===");
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where, limit, updateDoc, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where, limit, updateDoc, setDoc, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { deleteAllSessionReservas } from './cart-reservas.js';
 import { computeAgendaMeta, fetchOrderCounts, buildCalendarConfig, isDateSelectable, getFechaRetiro, saveFechaRetiro, clearFechaRetiro, parseHorarioToISO, isoFromDate, dateFromISO } from './agenda-disponibilidad.js';
 
@@ -548,6 +548,10 @@ async function handleOrderSubmission() {
                 await updateDoc(doc(db, "cupones", cuponAplicado.codigo), {
                     usos: arrayUnion({ uid: auth.currentUser.uid, orderId, monto: cuponAplicado.monto, fecha: Date.now() })
                 });
+                await setDoc(doc(db, "usuarios_tienda", auth.currentUser.uid), {
+                    cuponUsadoCodigo: cuponAplicado.codigo,
+                    cuponUsadoEn: serverTimestamp()
+                }, { merge: true });
             } catch (e) { console.warn('Error registrando canje de cupón:', e); }
         }
 
