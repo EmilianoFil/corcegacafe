@@ -87,11 +87,19 @@ async function handleRegister() {
     const email = document.getElementById('reg-email').value.trim();
     const tel = document.getElementById('reg-tel').value.trim();
     const pass = document.getElementById('reg-pass').value.trim();
+    const pass2 = document.getElementById('reg-pass2').value.trim();
 
-    if (!nombre || !dni || !email || !pass) return alert("Por favor completá los campos obligatorios.");
+    if (!nombre || !dni || !email || !pass || !pass2) return alert("Por favor completá los campos obligatorios.");
     if (pass.length < 6) return alert("La clave debe tener al menos 6 caracteres.");
+    if (pass !== pass2) return alert("Las contraseñas no coinciden.");
 
     try {
+        // 0. Un DNI no puede estar asociado a más de un email
+        const clienteExistente = await getDoc(doc(db, "clientes", dni));
+        if (clienteExistente.exists() && (clienteExistente.data().email || "").toLowerCase() !== email.toLowerCase()) {
+            return alert("Ese DNI ya está registrado con otro email. Si es tuyo, iniciá sesión con ese email o contactanos.");
+        }
+
         // 1. Crear usuario en Firebase Auth
         const cred = await createUserWithEmailAndPassword(auth, email, pass);
         const user = cred.user;
@@ -113,6 +121,15 @@ async function handleRegister() {
                 tienda_uid: user.uid,
                 creado: serverTimestamp()
             });
+        }
+
+        // 4. Volver a la tienda (o al checkout, si venía de ahí) en vez de quedarse en "Mi Cuenta"
+        const redirect = sessionStorage.getItem('redirectAfterLogin');
+        if (redirect) {
+            sessionStorage.removeItem('redirectAfterLogin');
+            window.location.href = redirect;
+        } else {
+            window.location.href = 'tienda.html';
         }
 
     } catch (err) {

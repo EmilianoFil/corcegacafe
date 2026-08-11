@@ -511,15 +511,39 @@ async function _loginEmail() {
 
 async function _register() {
     const nombre = document.getElementById('carta-reg-nombre').value.trim();
+    const dni    = document.getElementById('carta-reg-dni').value.trim();
     const email  = document.getElementById('carta-reg-email').value.trim();
+    const tel    = document.getElementById('carta-reg-tel').value.trim();
     const pass   = document.getElementById('carta-reg-pass').value.trim();
-    if (!nombre || !email || !pass) return alert('Completá todos los campos.');
+    const pass2  = document.getElementById('carta-reg-pass2').value.trim();
+
+    if (!nombre || !dni || !email || !pass || !pass2) return alert('Completá todos los campos.');
     if (pass.length < 6) return alert('La contraseña debe tener al menos 6 caracteres.');
+    if (pass !== pass2) return alert('Las contraseñas no coinciden.');
+
     try {
+        // Un DNI no puede estar asociado a más de un email
+        const clienteExistente = await getDoc(doc(db, 'clientes', dni));
+        if (clienteExistente.exists() && (clienteExistente.data().email || '').toLowerCase() !== email.toLowerCase()) {
+            return alert('Ese DNI ya está registrado con otro email. Si es tuyo, iniciá sesión con ese email o contactanos.');
+        }
+
         const cred = await createUserWithEmailAndPassword(auth, email, pass);
         await setDoc(doc(db, 'usuarios_tienda', cred.user.uid), {
-            uid: cred.user.uid, nombre, email, origen: 'carta', creado: serverTimestamp()
+            uid: cred.user.uid, dni, nombre, email, whatsapp: tel, origen: 'carta', creado: serverTimestamp()
         });
+
+        // Vincular con Cafecitos, igual que en el registro de la tienda
+        const loyaltyRef = doc(db, 'clientes', dni);
+        const loyaltySnap = await getDoc(loyaltyRef);
+        if (!loyaltySnap.exists()) {
+            await setDoc(loyaltyRef, {
+                dni, nombre, email, cafes: 0,
+                tienda_uid: cred.user.uid,
+                creado: serverTimestamp()
+            });
+        }
+
         _ocultarLogin();
     } catch (e) { alert('Error al registrar: ' + e.message); }
 }
@@ -605,11 +629,17 @@ function _inyectarLoginModal() {
         <div id="carta-auth-register" style="display:none;">
             <h2 style="font-family:'Syncopate',sans-serif;font-size:1rem;margin-bottom:6px;color:#01323f;">Crear cuenta</h2>
             <p style="font-size:0.85rem;color:#888;margin-bottom:20px;">Registrate para guardar tus favoritos.</p>
-            <input type="text" id="carta-reg-nombre" placeholder="Nombre"
+            <input type="text" id="carta-reg-nombre" placeholder="Nombre completo"
+                style="width:100%;padding:12px;border:1px solid #e0dbd2;border-radius:10px;font-family:inherit;font-size:0.9rem;margin-bottom:10px;">
+            <input type="number" id="carta-reg-dni" placeholder="DNI (para sumar cafecitos)"
                 style="width:100%;padding:12px;border:1px solid #e0dbd2;border-radius:10px;font-family:inherit;font-size:0.9rem;margin-bottom:10px;">
             <input type="email" id="carta-reg-email" placeholder="Email"
                 style="width:100%;padding:12px;border:1px solid #e0dbd2;border-radius:10px;font-family:inherit;font-size:0.9rem;margin-bottom:10px;">
+            <input type="tel" id="carta-reg-tel" placeholder="WhatsApp (ej: 1133334444)" maxlength="10"
+                style="width:100%;padding:12px;border:1px solid #e0dbd2;border-radius:10px;font-family:inherit;font-size:0.9rem;margin-bottom:10px;">
             <input type="password" id="carta-reg-pass" placeholder="Contraseña (mín. 6 caracteres)"
+                style="width:100%;padding:12px;border:1px solid #e0dbd2;border-radius:10px;font-family:inherit;font-size:0.9rem;margin-bottom:10px;">
+            <input type="password" id="carta-reg-pass2" placeholder="Repetí tu contraseña"
                 style="width:100%;padding:12px;border:1px solid #e0dbd2;border-radius:10px;font-family:inherit;font-size:0.9rem;margin-bottom:14px;">
             <button id="carta-btn-register"
                 style="width:100%;padding:13px;background:#01323f;color:white;border:none;border-radius:12px;font-weight:700;font-family:inherit;cursor:pointer;font-size:0.9rem;margin-bottom:12px;">
