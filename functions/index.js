@@ -3027,7 +3027,7 @@ exports.onUsuarioTiendaCreated = onDocumentCreated(
   {
     document: "usuarios_tienda/{uid}",
     region: "us-central1",
-    secrets: [zeptoFunctions.zeptoToken],
+    secrets: [zeptoFunctions.zeptoToken, emailUser, emailPass],
     timeoutSeconds: 540,
   },
   async (event) => {
@@ -3093,21 +3093,30 @@ exports.onUsuarioTiendaCreated = onDocumentCreated(
       : _htmlBienvenidaTienda(nombre, cupon);
 
     try {
-      await sendZeptoMail({
-        fromKey,
-        to: data.email,
-        toName: nombre,
-        subject,
-        htmlbody: html,
-        token: zeptoFunctions.zeptoToken.value(),
-      });
+      const proveedor = await _resolverProveedorMail("onUsuarioTiendaCreated");
+      if (proveedor === "zepto") {
+        await sendZeptoMail({
+          fromKey,
+          to: data.email,
+          toName: nombre,
+          subject,
+          htmlbody: html,
+          token: zeptoFunctions.zeptoToken.value(),
+        });
+      } else {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: { user: emailUser.value(), pass: emailPass.value() },
+        });
+        await transporter.sendMail({ from: `Córcega Café <${emailUser.value()}>`, to: data.email, subject, html });
+      }
       await db.collection("logs").add({
         accion: `mail_bienvenida_${origen}${cupon ? "_con_cupon" : ""}`,
-        detalles: `${nombre} - ${data.email} (uid: ${uid})`,
+        detalles: `${nombre} - ${data.email} (uid: ${uid}) (vía ${proveedor})`,
         usuario: "Mail_Bienvenida_Auto",
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
       });
-      logger.info(`Mail de bienvenida (${origen}) enviado a ${data.email}.`);
+      logger.info(`Mail de bienvenida (${origen}) enviado a ${data.email} (vía ${proveedor}).`);
     } catch (err) {
       logger.error(`Error enviando mail de bienvenida (${origen}) a ${data.email}:`, err);
     }
