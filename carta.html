@@ -183,6 +183,66 @@
         #carta-user-btn:hover { background: rgba(255,255,255,0.18); }
         body.social-activo #carta-user-btn { display: flex; }
 
+        #btn-wifi {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background .2s;
+            white-space: nowrap;
+        }
+        #btn-wifi:hover { background: rgba(255,255,255,0.18); }
+
+        /* ── Modal WiFi ── */
+        .wifi-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .wifi-row:last-of-type { border-bottom: none; }
+        .wifi-row-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: rgba(1,50,63,0.55);
+        }
+        .wifi-row-valor {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--dark);
+            word-break: break-word;
+            text-align: right;
+        }
+        .btn-copiar-clave {
+            margin-top: 18px;
+            width: 100%;
+            border: none;
+            background: var(--dark);
+            color: white;
+            border-radius: 12px;
+            padding: 13px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: background .2s;
+        }
+        .btn-copiar-clave:active { background: #012530; }
+        .btn-copiar-clave.copiado { background: var(--coral); }
+
         /* ── Botón ❤️ en cards ── */
         .plato-info { position: relative; }
 
@@ -693,6 +753,9 @@
         <button id="carta-user-btn" onclick="window.cartaSocial?.accionBotonUsuario()">
             <span>👤</span><span id="txt-entrar">Entrar</span>
         </button>
+        <button id="btn-wifi" onclick="abrirModalWifi()" title="WiFi">
+            <span>📶</span><span data-i18n="wifiBtn">WiFi</span>
+        </button>
     </div>
     <div class="tabs-scroll" id="tabs-secciones"></div>
 </header>
@@ -728,6 +791,26 @@
     </div>
 </div>
 
+<!-- Modal WiFi -->
+<div class="modal-overlay" id="modal-wifi-overlay" onclick="if (event.target === this) cerrarModalWifi()">
+    <div class="modal-sheet">
+        <button class="modal-close" onclick="cerrarModalWifi()" title="Cerrar">✕</button>
+        <div class="modal-handle"></div>
+        <div class="modal-body">
+            <p class="modal-nombre" data-i18n="wifiTitulo">Conectate al WiFi</p>
+            <div class="wifi-row">
+                <span class="wifi-row-label" data-i18n="wifiRed">Red</span>
+                <span class="wifi-row-valor">Corcega Rebeldia Cafetera2.4Ghz</span>
+            </div>
+            <div class="wifi-row">
+                <span class="wifi-row-label" data-i18n="wifiClave">Clave</span>
+                <span class="wifi-row-valor">corcega309</span>
+            </div>
+            <button class="btn-copiar-clave" id="btn-copiar-clave" data-i18n="wifiCopiar" onclick="copiarClaveWifi()">Copiar clave</button>
+        </div>
+    </div>
+</div>
+
 <script type="module">
     import { db } from './js/firebase-config.js';
     import {
@@ -752,6 +835,8 @@
             qpTitulo: '🔖 Los que querías probar',
             tagVegetariano: '🌱 Vegetariano', tagVegano: '🌿 Vegano', tagSinTacc: 'Sin T.A.C.C.',
             tagDestacado: '⭐ Destacado', tagNuevo: '✨ Nuevo',
+            wifiBtn: 'WiFi', wifiTitulo: '📶 Conectate al WiFi', wifiRed: 'Red', wifiClave: 'Clave',
+            wifiCopiar: 'Copiar clave', wifiCopiado: '✓ ¡Copiada!',
         },
         en: {
             entrar: 'Sign in', compartir: '📤 Share', quieroProbar: 'Want to try it',
@@ -761,6 +846,8 @@
             qpTitulo: '🔖 Saved to try',
             tagVegetariano: '🌱 Vegetarian', tagVegano: '🌿 Vegan', tagSinTacc: 'Gluten-free',
             tagDestacado: '⭐ Featured', tagNuevo: '✨ New',
+            wifiBtn: 'WiFi', wifiTitulo: '📶 Connect to WiFi', wifiRed: 'Network', wifiClave: 'Password',
+            wifiCopiar: 'Copy password', wifiCopiado: '✓ Copied!',
         },
         pt: {
             entrar: 'Entrar', compartir: '📤 Compartilhar', quieroProbar: 'Quero provar',
@@ -770,6 +857,8 @@
             qpTitulo: '🔖 Salvos para provar',
             tagVegetariano: '🌱 Vegetariano', tagVegano: '🌿 Vegano', tagSinTacc: 'Sem glúten',
             tagDestacado: '⭐ Destaque', tagNuevo: '✨ Novo',
+            wifiBtn: 'WiFi', wifiTitulo: '📶 Conecte-se ao WiFi', wifiRed: 'Rede', wifiClave: 'Senha',
+            wifiCopiar: 'Copiar senha', wifiCopiado: '✓ Copiada!',
         },
         ko: {
             entrar: '로그인', compartir: '📤 공유', quieroProbar: '먹어보고 싶어요',
@@ -779,6 +868,8 @@
             qpTitulo: '🔖 담아둔 메뉴',
             tagVegetariano: '🌱 채식', tagVegano: '🌿 비건', tagSinTacc: '글루텐 프리',
             tagDestacado: '⭐ 추천', tagNuevo: '✨ 신메뉴',
+            wifiBtn: 'WiFi', wifiTitulo: '📶 와이파이 연결', wifiRed: '네트워크', wifiClave: '비밀번호',
+            wifiCopiar: '비밀번호 복사', wifiCopiado: '✓ 복사됨!',
         },
     };
 
@@ -996,6 +1087,40 @@
 
         const top = el.getBoundingClientRect().top + window.scrollY - headerH - 8;
         window.scrollTo({ top, behavior: 'smooth' });
+    };
+
+    // ── Modal WiFi ───────────────────────────────────────────────────────────
+    const WIFI_CLAVE = 'corcega309';
+
+    window.abrirModalWifi = function() {
+        document.getElementById('modal-wifi-overlay').classList.add('open');
+    };
+
+    window.cerrarModalWifi = function() {
+        document.getElementById('modal-wifi-overlay').classList.remove('open');
+    };
+
+    window.copiarClaveWifi = async function() {
+        const btn = document.getElementById('btn-copiar-clave');
+        try {
+            await navigator.clipboard.writeText(WIFI_CLAVE);
+        } catch {
+            // Fallback para navegadores sin permiso de clipboard
+            const ta = document.createElement('textarea');
+            ta.value = WIFI_CLAVE;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+        btn.textContent = tr('wifiCopiado');
+        btn.classList.add('copiado');
+        setTimeout(() => {
+            btn.textContent = tr('wifiCopiar');
+            btn.classList.remove('copiado');
+        }, 1800);
     };
 
     // ── Contenido único (scroll largo) ───────────────────────────────────────
