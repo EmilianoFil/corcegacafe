@@ -183,23 +183,26 @@
         #carta-user-btn:hover { background: rgba(255,255,255,0.18); }
         body.social-activo #carta-user-btn { display: flex; }
 
-        #btn-wifi {
+        .wifi-bar {
             display: flex;
             align-items: center;
-            gap: 5px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.72rem;
+            justify-content: center;
+            gap: 7px;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 9px 16px;
+            border: none;
+            background: #eaf4f7;
+            color: #01546a;
+            font-family: inherit;
+            font-size: 0.78rem;
             font-weight: 700;
             cursor: pointer;
-            font-family: inherit;
-            transition: background .2s;
-            white-space: nowrap;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
-        #btn-wifi:hover { background: rgba(255,255,255,0.18); }
+        .wifi-bar:active { background: #ddedf2; }
 
         /* ── Modal WiFi ── */
         .wifi-row {
@@ -753,12 +756,14 @@
         <button id="carta-user-btn" onclick="window.cartaSocial?.accionBotonUsuario()">
             <span>👤</span><span id="txt-entrar">Entrar</span>
         </button>
-        <button id="btn-wifi" onclick="abrirModalWifi()" title="WiFi">
-            <span>📶</span><span data-i18n="wifiBtn">WiFi</span>
-        </button>
     </div>
     <div class="tabs-scroll" id="tabs-secciones"></div>
 </header>
+
+<!-- Franja WiFi -->
+<button class="wifi-bar" id="wifi-bar" onclick="abrirModalWifi()">
+    <span>📶</span> <span data-i18n="wifiBtn">Conectate al WiFi</span>
+</button>
 
 <!-- Filtros por tag -->
 <div class="filtros-bar" id="filtros-bar">
@@ -835,7 +840,7 @@
             qpTitulo: '🔖 Los que querías probar',
             tagVegetariano: '🌱 Vegetariano', tagVegano: '🌿 Vegano', tagSinTacc: 'Sin T.A.C.C.',
             tagDestacado: '⭐ Destacado', tagNuevo: '✨ Nuevo',
-            wifiBtn: 'WiFi', wifiTitulo: '📶 Conectate al WiFi', wifiRed: 'Red', wifiClave: 'Clave',
+            wifiBtn: 'Conectate al WiFi', wifiTitulo: '📶 Conectate al WiFi', wifiRed: 'Red', wifiClave: 'Clave',
             wifiCopiar: 'Copiar clave', wifiCopiado: '✓ ¡Copiada!',
         },
         en: {
@@ -846,7 +851,7 @@
             qpTitulo: '🔖 Saved to try',
             tagVegetariano: '🌱 Vegetarian', tagVegano: '🌿 Vegan', tagSinTacc: 'Gluten-free',
             tagDestacado: '⭐ Featured', tagNuevo: '✨ New',
-            wifiBtn: 'WiFi', wifiTitulo: '📶 Connect to WiFi', wifiRed: 'Network', wifiClave: 'Password',
+            wifiBtn: 'Connect to WiFi', wifiTitulo: '📶 Connect to WiFi', wifiRed: 'Network', wifiClave: 'Password',
             wifiCopiar: 'Copy password', wifiCopiado: '✓ Copied!',
         },
         pt: {
@@ -857,7 +862,7 @@
             qpTitulo: '🔖 Salvos para provar',
             tagVegetariano: '🌱 Vegetariano', tagVegano: '🌿 Vegano', tagSinTacc: 'Sem glúten',
             tagDestacado: '⭐ Destaque', tagNuevo: '✨ Novo',
-            wifiBtn: 'WiFi', wifiTitulo: '📶 Conecte-se ao WiFi', wifiRed: 'Rede', wifiClave: 'Senha',
+            wifiBtn: 'Conecte-se ao WiFi', wifiTitulo: '📶 Conecte-se ao WiFi', wifiRed: 'Rede', wifiClave: 'Senha',
             wifiCopiar: 'Copiar senha', wifiCopiado: '✓ Copiada!',
         },
         ko: {
@@ -868,7 +873,7 @@
             qpTitulo: '🔖 담아둔 메뉴',
             tagVegetariano: '🌱 채식', tagVegano: '🌿 비건', tagSinTacc: '글루텐 프리',
             tagDestacado: '⭐ 추천', tagNuevo: '✨ 신메뉴',
-            wifiBtn: 'WiFi', wifiTitulo: '📶 와이파이 연결', wifiRed: '네트워크', wifiClave: '비밀번호',
+            wifiBtn: '와이파이 연결', wifiTitulo: '📶 와이파이 연결', wifiRed: '네트워크', wifiClave: '비밀번호',
             wifiCopiar: '비밀번호 복사', wifiCopiado: '✓ 복사됨!',
         },
     };
