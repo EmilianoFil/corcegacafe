@@ -198,46 +198,11 @@ export function descargarQrImagen() {
 }
 
 export function imprimirQrImagen() {
-  // Imprime desde un iframe oculto en vez de una pestaña nueva: abrir una
-  // pestaña y esperar a que cargue antes de imprimir es poco confiable
-  // (bloqueo de popups, o el navegador imprime la pestaña de atrás si la
-  // nueva todavía no terminó de cargar). El iframe siempre está en esta
-  // misma página, así que no hay timing raro.
+  // Tratar de disparar el diálogo de impresión automáticamente (popups,
+  // iframes ocultos) es frágil según el navegador/extensiones instaladas.
+  // Más simple y confiable: abrir el PNG en una pestaña nueva —ahí el
+  // usuario imprime con Ctrl/Cmd+P como con cualquier imagen.
   const canvas = document.getElementById('qr-preview-canvas');
-  const titulo = document.getElementById('qr-preview-title').textContent;
   const dataUrl = canvas.toDataURL('image/png');
-
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed; width:0; height:0; border:0; right:0; bottom:0;';
-  document.body.appendChild(iframe);
-
-  const limpiar = () => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); };
-
-  iframe.onload = () => {
-    const img = iframe.contentDocument.querySelector('img');
-    const imprimirYLimpiar = () => {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-      setTimeout(limpiar, 1000);
-    };
-    if (img.complete) imprimirYLimpiar();
-    else img.onload = imprimirYLimpiar;
-  };
-
-  iframe.contentDocument.open();
-  iframe.contentDocument.write(`
-    <html><head><title>Imprimir QR — ${titulo}</title>
-    <style>
-      @page { margin: 10mm; }
-      body { margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; font-family:sans-serif; }
-      h2 { margin: 0 0 20px; }
-      img { width:320px; height:320px; }
-    </style>
-    </head>
-    <body>
-      <h2>${titulo}</h2>
-      <img src="${dataUrl}" />
-    </body></html>
-  `);
-  iframe.contentDocument.close();
+  window.open(dataUrl, '_blank');
 }
