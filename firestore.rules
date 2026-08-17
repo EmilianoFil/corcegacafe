@@ -79,6 +79,13 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // QRs: redirectores propios. Lectura pública (la necesita la página de
+    // redirección antes de loguearse), solo admin crea/edita/borra.
+    match /qrs/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
     // CARTA SOCIAL: cada usuario solo su propio doc
     match /carta_favoritos/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;

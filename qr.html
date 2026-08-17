@@ -2,7 +2,6 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <!-- <meta http-equiv="refresh" content="2; url=https://corcegacafe.com.ar/"> -->
   <meta name="robots" content="noindex, nofollow">
   <title>Abriéndo sitio...</title>
   <style>
@@ -38,7 +37,8 @@
   <h1>Galopando hasta el sitio de Córcega 🐎</h1>
   <script type="module">
     import { redirigirQr } from './js/qr-redirect.js';
-    redirigirQr('QR1', 'https://corcegacafe.com.ar/');
+    const slug = new URLSearchParams(window.location.search).get('id');
+    redirigirQr(slug || 'QR1', 'https://corcegacafe.com.ar/');
   </script>
 </body>
 </html>
