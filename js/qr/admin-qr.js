@@ -12,7 +12,9 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const BASE_URL = 'https://corcegacafe.com.ar';
-const QRCODE_LIB_URL = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+// Librería vendorizada en el propio repo (js/vendor/qrcode.js) — nada de CDN
+// externa, así no depende de ningún sitio de terceros para generar el QR.
+const QRCODE_LIB_URL = '../vendor/qrcode.js';
 
 let _qrsCache = [];
 let _qrLibPromise = null;
@@ -26,7 +28,7 @@ function cargarLibreriaQr() {
   if (_qrLibPromise) return _qrLibPromise;
   _qrLibPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = QRCODE_LIB_URL;
+    script.src = new URL(QRCODE_LIB_URL, import.meta.url).href;
     script.onload = resolve;
     script.onerror = () => reject(new Error('No se pudo cargar la librería de QR'));
     document.head.appendChild(script);
@@ -167,10 +169,18 @@ export async function mostrarQrImagen(slug) {
   document.getElementById('qr-preview-url').textContent = url;
   modal.style.display = 'flex';
 
-  const canvas = document.getElementById('qr-preview-canvas');
+  const container = document.getElementById('qr-preview-canvas');
+  container.innerHTML = '';
   try {
     await cargarLibreriaQr();
-    await window.QRCode.toCanvas(canvas, url, { width: 320, margin: 2, color: { dark: '#2b1a12', light: '#ffffff' } });
+    new window.QRCode(container, {
+      text: url,
+      width: 280,
+      height: 280,
+      colorDark: '#2b1a12',
+      colorLight: '#ffffff',
+      correctLevel: window.QRCode.CorrectLevel.M
+    });
   } catch (err) {
     console.error(err);
     alert('No se pudo generar la imagen del QR.');
@@ -181,24 +191,34 @@ export function cerrarQrImagen() {
   document.getElementById('qr-preview-modal').style.display = 'none';
 }
 
+function _obtenerImagenQr() {
+  const container = document.getElementById('qr-preview-canvas');
+  const canvas = container.querySelector('canvas');
+  if (canvas) return canvas.toDataURL('image/png');
+  const img = container.querySelector('img');
+  return img ? img.src : null;
+}
+
 export function descargarQrImagen() {
-  const canvas = document.getElementById('qr-preview-canvas');
+  const dataUrl = _obtenerImagenQr();
+  if (!dataUrl) return alert('Todavía no se generó la imagen del QR.');
   const titulo = document.getElementById('qr-preview-title').textContent.replace(/[^a-z0-9]+/gi, '_');
   const link = document.createElement('a');
   link.download = `QR_${titulo || 'corcega'}.png`;
-  link.href = canvas.toDataURL('image/png');
+  link.href = dataUrl;
   link.click();
 }
 
 export function imprimirQrImagen() {
-  const canvas = document.getElementById('qr-preview-canvas');
+  const dataUrl = _obtenerImagenQr();
+  if (!dataUrl) return alert('Todavía no se generó la imagen del QR.');
   const titulo = document.getElementById('qr-preview-title').textContent;
   const win = window.open('', '_blank');
   win.document.write(`
     <html><head><title>Imprimir QR — ${titulo}</title></head>
     <body style="text-align:center; font-family:sans-serif; margin-top:40px;">
       <h2>${titulo}</h2>
-      <img src="${canvas.toDataURL('image/png')}" style="width:320px;" />
+      <img src="${dataUrl}" style="width:320px;" />
       <script>window.onload = () => { window.print(); }<\/script>
     </body></html>
   `);
