@@ -198,16 +198,46 @@ export function descargarQrImagen() {
 }
 
 export function imprimirQrImagen() {
+  // Imprime desde un iframe oculto en vez de una pestaña nueva: abrir una
+  // pestaña y esperar a que cargue antes de imprimir es poco confiable
+  // (bloqueo de popups, o el navegador imprime la pestaña de atrás si la
+  // nueva todavía no terminó de cargar). El iframe siempre está en esta
+  // misma página, así que no hay timing raro.
   const canvas = document.getElementById('qr-preview-canvas');
   const titulo = document.getElementById('qr-preview-title').textContent;
-  const win = window.open('', '_blank');
-  win.document.write(`
-    <html><head><title>Imprimir QR — ${titulo}</title></head>
-    <body style="text-align:center; font-family:sans-serif; margin-top:40px;">
+  const dataUrl = canvas.toDataURL('image/png');
+
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed; width:0; height:0; border:0; right:0; bottom:0;';
+  document.body.appendChild(iframe);
+
+  const limpiar = () => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); };
+
+  iframe.onload = () => {
+    const img = iframe.contentDocument.querySelector('img');
+    const imprimirYLimpiar = () => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(limpiar, 1000);
+    };
+    if (img.complete) imprimirYLimpiar();
+    else img.onload = imprimirYLimpiar;
+  };
+
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(`
+    <html><head><title>Imprimir QR — ${titulo}</title>
+    <style>
+      @page { margin: 10mm; }
+      body { margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; font-family:sans-serif; }
+      h2 { margin: 0 0 20px; }
+      img { width:320px; height:320px; }
+    </style>
+    </head>
+    <body>
       <h2>${titulo}</h2>
-      <img src="${canvas.toDataURL('image/png')}" style="width:320px;" />
-      <script>window.onload = () => { window.print(); }<\/script>
+      <img src="${dataUrl}" />
     </body></html>
   `);
-  win.document.close();
+  iframe.contentDocument.close();
 }
