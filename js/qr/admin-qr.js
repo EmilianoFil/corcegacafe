@@ -1,39 +1,27 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN QRs — Sección "Códigos QR" del Admin Dash.
-// Cada doc en Firestore "qrs/{slug}" define a dónde redirige un QR propio.
-// El QR "QR1" es el que ya está impreso y apunta a /qr1.html; los que se
-// creen desde acá apuntan a /qr.html?id=SLUG (no hace falta imprimir un
-// archivo nuevo por cada QR).
+// Cada doc en Firestore "qrs/{slug}" define a dónde redirige un QR propio,
+// más su estilo (colores + logo). El QR "QR1" es el que ya está impreso y
+// apunta a /qr1.html; los que se creen desde acá apuntan a
+// /qr.html?id=SLUG (no hace falta imprimir un archivo nuevo por cada QR).
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { db } from '../firebase-config.js';
 import {
   collection, getDocs, doc, getDoc, setDoc, deleteDoc, serverTimestamp, orderBy, query
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { dibujarQrEstilizado } from './qr-render.js';
 
 const BASE_URL = 'https://corcegacafe.com.ar';
-// Librería vendorizada en el propio repo (js/vendor/qrcode.js) — nada de CDN
-// externa, así no depende de ningún sitio de terceros para generar el QR.
-const QRCODE_LIB_URL = '../vendor/qrcode.js';
+const LOGO_URL = 'css/img/Corcega_Logo_Original.png';
+
+const DEFAULT_COLOR_PRINCIPAL = '#2b1a12';
+const DEFAULT_COLOR_ACENTO = '#d86634';
 
 let _qrsCache = [];
-let _qrLibPromise = null;
 
 function urlDe(slug) {
   return slug === 'QR1' ? `${BASE_URL}/qr1.html` : `${BASE_URL}/qr.html?id=${encodeURIComponent(slug)}`;
-}
-
-function cargarLibreriaQr() {
-  if (window.QRCode) return Promise.resolve();
-  if (_qrLibPromise) return _qrLibPromise;
-  _qrLibPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = new URL(QRCODE_LIB_URL, import.meta.url).href;
-    script.onload = resolve;
-    script.onerror = () => reject(new Error('No se pudo cargar la librería de QR'));
-    document.head.appendChild(script);
-  });
-  return _qrLibPromise;
 }
 
 function slugify(nombre) {
@@ -92,6 +80,9 @@ export function mostrarFormularioQr(slug) {
     document.getElementById('qr-slug').disabled = true;
     document.getElementById('qr-destino').value = q?.destino || '';
     document.getElementById('qr-activo').checked = q?.activo !== false;
+    document.getElementById('qr-color-principal').value = q?.colorPrincipal || DEFAULT_COLOR_PRINCIPAL;
+    document.getElementById('qr-color-acento').value = q?.colorAcento || DEFAULT_COLOR_ACENTO;
+    document.getElementById('qr-logo').checked = q?.logo !== false;
   } else {
     title.textContent = 'Nuevo QR';
     document.getElementById('qr-nombre').value = '';
@@ -99,6 +90,9 @@ export function mostrarFormularioQr(slug) {
     document.getElementById('qr-slug').disabled = false;
     document.getElementById('qr-destino').value = '';
     document.getElementById('qr-activo').checked = true;
+    document.getElementById('qr-color-principal').value = DEFAULT_COLOR_PRINCIPAL;
+    document.getElementById('qr-color-acento').value = DEFAULT_COLOR_ACENTO;
+    document.getElementById('qr-logo').checked = true;
   }
   cont.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -119,6 +113,9 @@ export async function guardarQr() {
   let slug = document.getElementById('qr-slug').value.trim().toUpperCase();
   let destino = document.getElementById('qr-destino').value.trim();
   const activo = document.getElementById('qr-activo').checked;
+  const colorPrincipal = document.getElementById('qr-color-principal').value;
+  const colorAcento = document.getElementById('qr-color-acento').value;
+  const logo = document.getElementById('qr-logo').checked;
 
   if (!nombre) return alert('Ingresá un nombre para identificar el QR.');
   slug = slugify(slug || nombre);
@@ -136,6 +133,9 @@ export async function guardarQr() {
       nombre,
       destino,
       activo,
+      colorPrincipal,
+      colorAcento,
+      logo,
       actualizadoEn: serverTimestamp(),
       ...(original ? {} : { creadoEn: serverTimestamp(), clicks: 0 })
     }, { merge: true });
@@ -169,17 +169,14 @@ export async function mostrarQrImagen(slug) {
   document.getElementById('qr-preview-url').textContent = url;
   modal.style.display = 'flex';
 
-  const container = document.getElementById('qr-preview-canvas');
-  container.innerHTML = '';
+  const canvas = document.getElementById('qr-preview-canvas');
   try {
-    await cargarLibreriaQr();
-    new window.QRCode(container, {
-      text: url,
-      width: 280,
-      height: 280,
-      colorDark: '#2b1a12',
-      colorLight: '#ffffff',
-      correctLevel: window.QRCode.CorrectLevel.M
+    await dibujarQrEstilizado(canvas, {
+      texto: url,
+      tamano: 280,
+      colorPrincipal: q.colorPrincipal || DEFAULT_COLOR_PRINCIPAL,
+      colorAcento: q.colorAcento || DEFAULT_COLOR_ACENTO,
+      logoUrl: q.logo !== false ? LOGO_URL : null
     });
   } catch (err) {
     console.error(err);
@@ -191,34 +188,24 @@ export function cerrarQrImagen() {
   document.getElementById('qr-preview-modal').style.display = 'none';
 }
 
-function _obtenerImagenQr() {
-  const container = document.getElementById('qr-preview-canvas');
-  const canvas = container.querySelector('canvas');
-  if (canvas) return canvas.toDataURL('image/png');
-  const img = container.querySelector('img');
-  return img ? img.src : null;
-}
-
 export function descargarQrImagen() {
-  const dataUrl = _obtenerImagenQr();
-  if (!dataUrl) return alert('Todavía no se generó la imagen del QR.');
+  const canvas = document.getElementById('qr-preview-canvas');
   const titulo = document.getElementById('qr-preview-title').textContent.replace(/[^a-z0-9]+/gi, '_');
   const link = document.createElement('a');
   link.download = `QR_${titulo || 'corcega'}.png`;
-  link.href = dataUrl;
+  link.href = canvas.toDataURL('image/png');
   link.click();
 }
 
 export function imprimirQrImagen() {
-  const dataUrl = _obtenerImagenQr();
-  if (!dataUrl) return alert('Todavía no se generó la imagen del QR.');
+  const canvas = document.getElementById('qr-preview-canvas');
   const titulo = document.getElementById('qr-preview-title').textContent;
   const win = window.open('', '_blank');
   win.document.write(`
     <html><head><title>Imprimir QR — ${titulo}</title></head>
     <body style="text-align:center; font-family:sans-serif; margin-top:40px;">
       <h2>${titulo}</h2>
-      <img src="${dataUrl}" style="width:320px;" />
+      <img src="${canvas.toDataURL('image/png')}" style="width:320px;" />
       <script>window.onload = () => { window.print(); }<\/script>
     </body></html>
   `);

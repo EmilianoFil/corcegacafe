@@ -2746,11 +2746,24 @@
                         <label>URL de destino</label>
                         <input type="text" id="qr-destino" placeholder="https://...">
                     </div>
+                    <div class="input-group">
+                        <label>Color principal (los puntitos)</label>
+                        <input type="color" id="qr-color-principal" value="#2b1a12" style="width:100%; height:42px; padding:4px; border-radius:8px; border:1px solid #ddd; cursor:pointer;">
+                    </div>
+                    <div class="input-group">
+                        <label>Color de acento (las esquinas)</label>
+                        <input type="color" id="qr-color-acento" value="#d86634" style="width:100%; height:42px; padding:4px; border-radius:8px; border:1px solid #ddd; cursor:pointer;">
+                    </div>
                 </div>
 
                 <div style="display:flex; align-items:center; gap:10px; margin:16px 0;">
                     <input type="checkbox" id="qr-activo" checked style="width:18px; height:18px;">
                     <label for="qr-activo" style="margin:0; font-weight:600; cursor:pointer;">QR activo</label>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:10px; margin:16px 0;">
+                    <input type="checkbox" id="qr-logo" checked style="width:18px; height:18px;">
+                    <label for="qr-logo" style="margin:0; font-weight:600; cursor:pointer;">Caballito de Córcega en el centro</label>
                 </div>
 
                 <div style="display:flex; gap:10px;">
@@ -2781,7 +2794,7 @@
             <div id="qr-preview-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
                 <div class="card" style="background:white; padding:24px; border-radius:16px; text-align:center; max-width:360px; width:90%;">
                     <h4 id="qr-preview-title" style="margin-top:0;"></h4>
-                    <div id="qr-preview-canvas" style="display:flex; align-items:center; justify-content:center; min-height:280px; border:1px solid var(--border); border-radius:8px;"></div>
+                    <canvas id="qr-preview-canvas" style="max-width:100%; border:1px solid var(--border); border-radius:8px;"></canvas>
                     <div id="qr-preview-url" style="font-size:0.75rem; color:var(--text-muted); margin:10px 0; word-break:break-all;"></div>
                     <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
                         <button class="btn-primary" onclick="window.qrAdmin.descargarQrImagen()" style="margin:0; width:auto; padding:10px 20px;">⬇️ Descargar</button>
