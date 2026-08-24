@@ -384,6 +384,17 @@ function renderSummary() {
         });
     }
 
+    if (typeof fbq === 'function' && cart.length > 0) {
+        const totalFbq = cart.reduce((s, i) => s + (i.precio * i.qty), 0);
+        fbq('track', 'InitiateCheckout', {
+            content_ids: cart.map(i => i.id),
+            content_type: 'product',
+            currency: 'ARS',
+            value: totalFbq,
+            num_items: cart.reduce((s, i) => s + i.qty, 0)
+        });
+    }
+
     checkoutItems.innerHTML = cart.map(item => `
         <div class="order-summary-item">
             <span>
@@ -573,6 +584,16 @@ async function handleOrderSubmission() {
                     quantity: i.qty
                 }))
             });
+        }
+
+        if (typeof fbq === 'function') {
+            fbq('track', 'Purchase', {
+                content_ids: cart.map(i => i.id),
+                content_type: 'product',
+                currency: 'ARS',
+                value: total,
+                num_items: cart.reduce((s, i) => s + i.qty, 0)
+            }, { eventID: orderId });
         }
 
         // 3. Lógica según método de pago

@@ -222,6 +222,17 @@ function renderProductDetail() {
         });
     }
 
+    // Meta Pixel: ViewContent
+    if (typeof fbq === 'function') {
+        fbq('track', 'ViewContent', {
+            content_ids: [p.id],
+            content_name: p.nombre,
+            content_type: 'product',
+            currency: 'ARS',
+            value: p.precio
+        });
+    }
+
     // "Más info" button + modal
     const masInfoContainer = document.getElementById('prod-masinfo-container');
     if (masInfoContainer) {
@@ -692,6 +703,16 @@ function addToCartFromPage() {
             currency: 'ARS',
             value: currentProduct.precio * currentQty,
             items: [{ item_id: currentProduct.id, item_name: currentProduct.nombre, item_category: currentProduct.categoria || '', price: currentProduct.precio, quantity: currentQty }]
+        });
+    }
+
+    if (typeof fbq === 'function') {
+        fbq('track', 'AddToCart', {
+            content_ids: [currentProduct.id],
+            content_name: currentProduct.nombre,
+            content_type: 'product',
+            currency: 'ARS',
+            value: currentProduct.precio * currentQty
         });
     }
 

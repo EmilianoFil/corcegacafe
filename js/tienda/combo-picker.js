@@ -259,6 +259,16 @@ export function initComboPicker({ getProducts, getReservedByOthers, cart, onAddT
             gtag('event', 'add_to_cart', { currency: 'ARS', value: p.precio * _qty,
                 items: [{ item_id: p.id, item_name: p.nombre, price: p.precio, quantity: _qty }] });
         }
+
+        if (typeof fbq === 'function') {
+            fbq('track', 'AddToCart', {
+                content_ids: [p.id],
+                content_name: p.nombre,
+                content_type: 'product',
+                currency: 'ARS',
+                value: p.precio * _qty
+            });
+        }
         onAddToCart();
         document.getElementById('combo-picker-modal').style.display = 'none';
         document.body.style.overflow = '';

@@ -369,6 +369,16 @@ window.addToCart = function(id) {
         });
     }
 
+    if (typeof fbq === 'function') {
+        fbq('track', 'AddToCart', {
+            content_ids: [p.id],
+            content_name: p.nombre,
+            content_type: 'product',
+            currency: 'ARS',
+            value: p.precio
+        });
+    }
+
     saveAndRefresh();
     openCart();
 };
@@ -600,6 +610,16 @@ window.vpmConfirm = function() {
             currency: 'ARS',
             value: precio * _vpmQty,
             items: [{ item_id: _vpmProduct.id, item_name: _vpmProduct.nombre, item_variant: label, item_category: _vpmProduct.categoria || '', price: precio, quantity: _vpmQty }]
+        });
+    }
+
+    if (typeof fbq === 'function') {
+        fbq('track', 'AddToCart', {
+            content_ids: [_vpmProduct.id],
+            content_name: _vpmProduct.nombre,
+            content_type: 'product',
+            currency: 'ARS',
+            value: precio * _vpmQty
         });
     }
     saveAndRefresh();

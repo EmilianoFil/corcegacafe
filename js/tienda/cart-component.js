@@ -110,6 +110,17 @@ function _setupEvents() {
             });
         }
 
+        if (typeof fbq === 'function') {
+            const totalFbq = cart.reduce((s, i) => s + (i.precio * i.qty), 0);
+            fbq('track', 'InitiateCheckout', {
+                content_ids: cart.map(i => i.id),
+                content_type: 'product',
+                currency: 'ARS',
+                value: totalFbq,
+                num_items: cart.reduce((s, i) => s + i.qty, 0)
+            });
+        }
+
         if (userIsLogged) { window.location.href = 'checkout.html'; return; }
         const modal = document.getElementById('checkout-modal');
         if (modal) {
