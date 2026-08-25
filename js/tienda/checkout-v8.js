@@ -570,31 +570,11 @@ async function handleOrderSubmission() {
         try { await deleteAllSessionReservas(); } catch(e) { console.warn('Error clearing reservas:', e); }
         try { clearFechaRetiro(); } catch(e) { console.warn('Error clearing fecha retiro:', e); }
 
-        // GA4: purchase
-        if (typeof gtag === 'function') {
-            gtag('event', 'purchase', {
-                transaction_id: orderId,
-                currency: 'ARS',
-                value: total,
-                items: cart.map(i => ({
-                    item_id: i.id,
-                    item_name: i.nombre,
-                    item_category: i.categoria || '',
-                    price: i.precio,
-                    quantity: i.qty
-                }))
-            });
-        }
-
-        if (typeof fbq === 'function') {
-            fbq('track', 'Purchase', {
-                content_ids: cart.map(i => i.id),
-                content_type: 'product',
-                currency: 'ARS',
-                value: total,
-                num_items: cart.reduce((s, i) => s + i.qty, 0)
-            }, { eventID: orderId });
-        }
+        // NOTA: el evento purchase/Purchase (GA4 + Meta Pixel) NO se dispara acá.
+        // Acá el cliente recién hizo click en "Finalizar compra" — todavía no sabemos
+        // si Mercado Pago va a aprobar el pago, ni si la transferencia se va a completar.
+        // Se dispara en success.html, cuando el estado real de la orden en Firestore
+        // pasa a 'pagado' (confirmado por webhook de MP o por un admin en caso de transferencia).
 
         // 3. Lógica según método de pago
         if (metodoPago === 'transferencia') {

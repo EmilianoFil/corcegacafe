@@ -264,6 +264,7 @@
 
         const urlParams  = new URLSearchParams(window.location.search);
         const orderId    = urlParams.get('orderId');
+        let purchaseFired = false; // evita disparar purchase/Purchase más de una vez por visita
 
         // ── Número de WhatsApp (se sobreescribe con el de Firestore) ──────────
         let waContactNumber = '5491136053892';
@@ -294,38 +295,9 @@
         if (!orderId) {
             window.location.href = 'tienda.html';
         } else {
-            // Fire GA4 purchase event — read cart before clearing it
-            try {
-                const savedCart = JSON.parse(localStorage.getItem('corcega_cart') || '[]');
-                if (savedCart.length > 0 && typeof gtag === 'function') {
-                    const total = savedCart.reduce((s, i) => s + (i.precio * i.qty), 0);
-                    gtag('event', 'purchase', {
-                        transaction_id: orderId,
-                        value: total,
-                        currency: 'ARS',
-                        items: savedCart.map(i => ({
-                            item_id: i.id,
-                            item_name: i.nombre,
-                            item_variant: i.variantLabel || undefined,
-                            price: i.precio,
-                            quantity: i.qty
-                        }))
-                    });
-                }
-                if (savedCart.length > 0 && typeof fbq === 'function') {
-                    const totalFbq = savedCart.reduce((s, i) => s + (i.precio * i.qty), 0);
-                    // eventID = orderId dedupea contra el Purchase que ya dispara checkout-v8.js al confirmar el pedido
-                    fbq('track', 'Purchase', {
-                        content_ids: savedCart.map(i => i.id),
-                        content_type: 'product',
-                        currency: 'ARS',
-                        value: totalFbq,
-                        num_items: savedCart.reduce((s, i) => s + i.qty, 0)
-                    }, { eventID: orderId });
-                }
-            } catch(e) { console.warn('GA4 purchase error:', e); }
-
             // Ya aterrizamos en seguimiento, limpiamos el carrito local
+            // (el evento purchase/Purchase se dispara más abajo, en updateSteppers,
+            // solo cuando el estado real del pedido confirma que se pagó)
             localStorage.removeItem('corcega_cart');
             
             // Listener de estado de la orden (público via OrderID)
@@ -379,6 +351,43 @@
             } catch (err) {
                 console.error("Error fetching public order:", err);
                 return null;
+            }
+        }
+
+        // Dispara purchase (GA4) y Purchase (Meta Pixel) UNA sola vez, y solo cuando
+        // el estado real del pedido en Firestore confirma que se pagó (webhook de MP,
+        // o un admin marcándolo pagado a mano en caso de transferencia). Así un pedido
+        // rechazado, abandonado o sin transferir nunca genera esta señal.
+        function firePurchaseOnce(order) {
+            if (purchaseFired) return;
+            purchaseFired = true;
+
+            const total = order.total ?? (order.items || []).reduce((s, i) => s + (i.precio * i.qty), 0);
+            const items = order.items || [];
+
+            if (typeof gtag === 'function') {
+                gtag('event', 'purchase', {
+                    transaction_id: orderId,
+                    currency: 'ARS',
+                    value: total,
+                    items: items.map(i => ({
+                        item_id: i.id,
+                        item_name: i.nombre,
+                        item_variant: i.variantLabel || undefined,
+                        price: i.precio,
+                        quantity: i.qty
+                    }))
+                });
+            }
+
+            if (typeof fbq === 'function') {
+                fbq('track', 'Purchase', {
+                    content_ids: items.map(i => i.id).filter(Boolean),
+                    content_type: 'product',
+                    currency: 'ARS',
+                    value: total,
+                    num_items: items.reduce((s, i) => s + i.qty, 0)
+                }, { eventID: orderId });
             }
         }
 
@@ -468,6 +477,7 @@
                 pagoText.innerText = "Pago confirmado ✨";
                 mainTitle.innerText = "¡Todo en marcha!";
                 actionArea.innerHTML = btnHome + btnOrders + (mostrarArrepentimiento ? btnArrepentimiento : '');
+                firePurchaseOnce(order);
             } else if (order.estado === 'rechazado') {
                 stepPago.classList.add('error');
                 pagoText.innerText = "Pago rechazado ❌";
