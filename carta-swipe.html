@@ -432,6 +432,7 @@
     } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     const fotoMedium = f => typeof f === 'string' ? f : (f?.medium ?? f?.thumb ?? '');
+    const fotoFull   = f => typeof f === 'string' ? f : (f?.full ?? f?.medium ?? f?.thumb ?? '');
 
     function tagLabel(t) {
         const map = {
@@ -498,11 +499,14 @@
         const card = document.createElement('div');
         card.className = 'card' + (esTop ? ' top' : '');
 
+        // La card de arriba se ve a pantalla completa (mucho más grande que el
+        // recuadro 4:3 del modal normal), así que pide la foto en resolución
+        // completa para no perder nitidez; las de fondo se ven poco y usan medium.
         const foto = p.fotos?.[0];
         const fotoZona = document.createElement('div');
         fotoZona.className = 'card-foto-zona';
         fotoZona.innerHTML = foto
-            ? `<img src="${fotoMedium(foto)}" alt="${p.nombre ?? ''}" draggable="false">`
+            ? `<img src="${esTop ? fotoFull(foto) : fotoMedium(foto)}" alt="${p.nombre ?? ''}" draggable="false">`
             : `<div class="card-foto-placeholder">🍽️</div>`;
         fotoZona.innerHTML += `<div class="card-gradient"></div>`;
         fotoZona.innerHTML += `<div class="sello anterior">Anterior</div><div class="sello siguiente">Siguiente</div>`;
