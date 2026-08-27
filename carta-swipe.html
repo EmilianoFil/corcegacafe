@@ -77,7 +77,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 4px 16px 10px;
+        padding: 4px 16px calc(18px + env(safe-area-inset-bottom, 0px));
         min-height: 0;
     }
 
@@ -214,50 +214,96 @@
         backdrop-filter: blur(4px);
     }
 
-    /* ── Controles inferiores ── */
-    .controles {
+
+    /* ── Instructivo primer ingreso ── */
+    .instructivo-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.78);
+        backdrop-filter: blur(2px);
+        z-index: 50;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 22px;
-        padding: 6px 16px calc(18px + env(safe-area-inset-bottom, 0px));
-        z-index: 20;
+        padding: 24px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s;
     }
-    .btn-control {
-        width: 54px;
-        height: 54px;
+    .instructivo-overlay.show { opacity: 1; pointer-events: auto; }
+
+    .instructivo-card {
+        background: #17171a;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 22px;
+        max-width: 340px;
+        width: 100%;
+        padding: 28px 24px 24px;
+        text-align: center;
+    }
+
+    .instructivo-gestos {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        margin-bottom: 20px;
+    }
+    .instructivo-gesto {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+    }
+    .instructivo-gesto .icono {
+        width: 46px;
+        height: 46px;
         border-radius: 50%;
-        border: none;
         background: rgba(255,255,255,0.08);
         border: 1px solid rgba(255,255,255,0.15);
-        color: white;
-        font-size: 1.3rem;
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
-        transition: transform .15s, background .15s;
+        font-size: 1.3rem;
     }
-    .btn-control:active { transform: scale(0.9); background: rgba(255,255,255,0.18); }
-    .btn-control.grande { width: 64px; height: 64px; font-size: 1.6rem; background: var(--coral); border-color: var(--coral); }
-    .btn-control.grande:active { background: #d85a3f; }
+    .instructivo-gesto .icono.mano { animation: swipeDemo 1.6s ease-in-out infinite; }
+    @keyframes swipeDemo {
+        0%, 100% { transform: translateX(0); }
+        50% { transform: translateX(-10px); }
+    }
+    .instructivo-gesto small {
+        font-size: 0.65rem;
+        color: rgba(255,255,255,0.55);
+        letter-spacing: 0.3px;
+    }
 
-    .hint-swipe {
-        position: absolute;
-        bottom: 50%;
-        left: 50%;
-        transform: translate(-50%, 50%);
-        text-align: center;
-        font-family: 'Syncopate', sans-serif;
-        font-size: 0.62rem;
-        letter-spacing: 1.5px;
-        color: rgba(255,255,255,0.35);
-        text-transform: uppercase;
-        pointer-events: none;
-        z-index: 6;
-        animation: fadeOutHint 3.5s forwards;
+    .instructivo-titulo {
+        font-family: 'Playfair Display', serif;
+        font-style: italic;
+        font-size: 1.25rem;
+        margin-bottom: 8px;
     }
-    @keyframes fadeOutHint { 0%,60% { opacity:1 } 100% { opacity:0 } }
+    .instructivo-texto {
+        font-size: 0.82rem;
+        color: rgba(255,255,255,0.65);
+        line-height: 1.5;
+        margin-bottom: 22px;
+    }
+    .instructivo-texto b { color: white; font-weight: 600; }
+
+    .btn-instructivo-ok {
+        width: 100%;
+        border: none;
+        background: var(--coral);
+        color: white;
+        padding: 13px;
+        border-radius: 14px;
+        font-family: inherit;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    .btn-instructivo-ok:active { background: #d85a3f; }
 
     #loader, .empty-state {
         margin: auto;
@@ -282,10 +328,25 @@
     <div id="loader">Cargando carta...</div>
 </div>
 
-<div class="controles" id="controles" style="display:none;">
-    <button class="btn-control" id="btn-prev" title="Anterior">‹</button>
-    <button class="btn-control grande" id="btn-abrir" title="Ver foto en grande">🔍</button>
-    <button class="btn-control" id="btn-next" title="Siguiente">›</button>
+<div class="instructivo-overlay" id="instructivo-overlay">
+    <div class="instructivo-card">
+        <div class="instructivo-gestos">
+            <div class="instructivo-gesto">
+                <div class="icono">👉</div>
+                <small>Anterior</small>
+            </div>
+            <div class="instructivo-gesto">
+                <div class="icono mano">✋</div>
+            </div>
+            <div class="instructivo-gesto">
+                <div class="icono">👈</div>
+                <small>Siguiente</small>
+            </div>
+        </div>
+        <p class="instructivo-titulo">Descubrí la carta</p>
+        <p class="instructivo-texto">Deslizá la foto hacia los <b>costados</b> para pasar de plato.<br>Tocá la foto para ver el <b>detalle completo</b>.</p>
+        <button class="btn-instructivo-ok" id="btn-instructivo-ok">Entendido</button>
+    </div>
 </div>
 
 <script type="module">
@@ -295,7 +356,6 @@
     } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     const fotoMedium = f => typeof f === 'string' ? f : (f?.medium ?? f?.thumb ?? '');
-    const fotoFull   = f => typeof f === 'string' ? f : (f?.full ?? f?.medium ?? f?.thumb ?? '');
 
     function tagLabel(t) {
         const map = {
@@ -310,7 +370,6 @@
     let idx = 0;
 
     const stackWrap  = document.getElementById('stack-wrap');
-    const controles   = document.getElementById('controles');
     const progresoEl  = document.getElementById('progreso');
 
     async function init() {
@@ -329,8 +388,8 @@
                 return;
             }
 
-            controles.style.display = 'flex';
             render();
+            mostrarInstructivoSiCorresponde();
         } catch (err) {
             console.error(err);
             stackWrap.innerHTML = `<div class="empty-state">Error cargando la carta</div>`;
@@ -356,13 +415,6 @@
             }
             stackWrap.appendChild(card);
         });
-
-        if (idx === 0) {
-            const hint = document.createElement('div');
-            hint.className = 'hint-swipe';
-            hint.innerHTML = '← deslizá para ver más →';
-            stackWrap.appendChild(hint);
-        }
     }
 
     function crearCard(p, esTop) {
@@ -448,10 +500,10 @@
         card.addEventListener('pointerup', soltar);
         card.addEventListener('pointercancel', soltar);
 
-        // click en la card (sin haber arrastrado) abre foto full HD
+        // click en la card (sin haber arrastrado) abre el plato en la carta normal
         card.addEventListener('click', e => {
             if (Math.abs(dx) > 5) return;
-            abrirFotoCompleta(plato);
+            verEnCarta(plato);
         });
     }
 
@@ -468,29 +520,30 @@
         }, 220);
     }
 
-    function abrirFotoCompleta(p) {
-        const foto = p.fotos?.[0];
-        if (!foto) return;
-        window.open(fotoFull(foto), '_blank');
+    function verEnCarta(p) {
+        window.location.href = `carta.html?plato=${p.id}`;
     }
-
-    document.getElementById('btn-prev').addEventListener('click', () => {
-        const top = document.querySelector('.card.top');
-        if (top) dispararSwipe(top, 1);
-    });
-    document.getElementById('btn-next').addEventListener('click', () => {
-        const top = document.querySelector('.card.top');
-        if (top) dispararSwipe(top, -1);
-    });
-    document.getElementById('btn-abrir').addEventListener('click', () => {
-        abrirFotoCompleta(platos[idx]);
-    });
 
     document.addEventListener('keydown', e => {
         const top = document.querySelector('.card.top');
         if (!top) return;
         if (e.key === 'ArrowLeft')  dispararSwipe(top, 1);
         if (e.key === 'ArrowRight') dispararSwipe(top, -1);
+    });
+
+    // ── Instructivo primer ingreso ──────────────────────────────────────────
+    const LS_KEY = 'cartaSwipeInstructivoVisto';
+    function mostrarInstructivoSiCorresponde() {
+        if (localStorage.getItem(LS_KEY)) return;
+        document.getElementById('instructivo-overlay').classList.add('show');
+    }
+    function cerrarInstructivo() {
+        localStorage.setItem(LS_KEY, '1');
+        document.getElementById('instructivo-overlay').classList.remove('show');
+    }
+    document.getElementById('btn-instructivo-ok').addEventListener('click', cerrarInstructivo);
+    document.getElementById('instructivo-overlay').addEventListener('click', e => {
+        if (e.target.id === 'instructivo-overlay') cerrarInstructivo();
     });
 
     init();
