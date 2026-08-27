@@ -441,6 +441,7 @@
     let platos = [];
     let secciones = {};
     let idx = 0;
+    let direccion = -1; // -1 = avanzando hacia "siguiente", 1 = retrocediendo hacia "anterior"
 
     const stackWrap  = document.getElementById('stack-wrap');
     const progresoEl  = document.getElementById('progreso');
@@ -474,8 +475,11 @@
         stackWrap.innerHTML = '';
         progresoEl.textContent = `${idx + 1} / ${platos.length}`;
 
-        // Muestra hasta 3 cards apiladas: la de arriba (actual) + 2 de fondo (siguientes)
-        const visibles = [2, 1, 0].map(off => platos[(idx + off) % platos.length]);
+        // Muestra hasta 3 cards apiladas: la de arriba (actual) + 2 de fondo.
+        // El fondo sigue la última dirección: si venís retrocediendo (anterior),
+        // atrás se ven más "anteriores"; si venís avanzando, más "siguientes".
+        const offsets = direccion === -1 ? [2, 1, 0] : [-2, -1, 0];
+        const visibles = offsets.map(off => platos[((idx + off) % platos.length + platos.length) % platos.length]);
         const seen = new Set();
         visibles.forEach((p, posDesdeAtras) => {
             if (seen.has(p.id) && platos.length > 1) return; // evita duplicar si hay pocos platos
@@ -621,6 +625,7 @@
         card.style.transition = 'transform 0.35s ease-out';
         card.style.transform = `translate(${salida}px, ${(Math.random() - 0.5) * 80}px) rotate(${dir * -25}deg)`;
         setTimeout(() => {
+            direccion = dir > 0 ? 1 : -1;
             idx = dir > 0
                 ? (idx - 1 + platos.length) % platos.length
                 : (idx + 1) % platos.length;
