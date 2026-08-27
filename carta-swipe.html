@@ -150,6 +150,14 @@
     }
     .sello.anterior { left: 24px; color: #4ade80; border-color: #4ade80; transform: rotate(-18deg); }
     .sello.siguiente { right: 24px; color: var(--coral); border-color: var(--coral); transform: rotate(18deg); }
+    .sello.probado, .sello.guardar {
+        left: 50%;
+        top: 34px;
+        transform: translateX(-50%);
+        font-size: 0.95rem;
+    }
+    .sello.probado { color: #4ade80; border-color: #4ade80; }
+    .sello.guardar { top: auto; bottom: 34px; color: var(--coral); border-color: var(--coral); }
 
     .card-info {
         position: absolute;
@@ -270,13 +278,74 @@
         align-items: center;
         justify-content: center;
         font-size: 1.8rem;
-        animation: manoArco 2.4s ease-in-out infinite;
+        animation: manoArco 3.2s ease-in-out infinite;
     }
     @keyframes manoArco {
-        0%   { transform: translate(42px, 16px) rotate(16deg); }
-        50%  { transform: translate(0, -18px) rotate(0deg); }
-        100% { transform: translate(-42px, 16px) rotate(-16deg); }
+        0%   { transform: translate(0, 0)          rotate(0deg); }
+        15%  { transform: translate(19px, -10px)   rotate(8deg); }
+        30%  { transform: translate(38px, 4px)     rotate(16deg); }
+        45%  { transform: translate(19px, -10px)   rotate(8deg); }
+        50%  { transform: translate(0, 0)          rotate(0deg); }
+        65%  { transform: translate(-19px, -10px)  rotate(-8deg); }
+        80%  { transform: translate(-38px, 4px)    rotate(-16deg); }
+        95%  { transform: translate(-19px, -10px)  rotate(-8deg); }
+        100% { transform: translate(0, 0)          rotate(0deg); }
     }
+
+    .instructivo-demo.vertical { height: 118px; }
+    .instructivo-demo.vertical::after {
+        content: "";
+        position: absolute;
+        top: 6px;
+        left: 50%;
+        width: 0;
+        height: 100px;
+        transform: translateX(-50%);
+        border-left: 1.5px dashed rgba(255,255,255,0.15);
+        border-top: none;
+        border-radius: 0;
+        clip-path: none;
+    }
+    .demo-label {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.62rem;
+        letter-spacing: 0.5px;
+        color: rgba(255,255,255,0.4);
+        white-space: nowrap;
+    }
+    .demo-label.top { top: 0; }
+    .demo-label.bottom { bottom: 0; }
+    .demo-tarjeta.vertical { animation: manoArcoVertical 3.2s ease-in-out infinite; }
+    @keyframes manoArcoVertical {
+        0%   { transform: translate(0, 0)         rotate(0deg); }
+        15%  { transform: translate(8px, -19px)    rotate(-6deg); }
+        30%  { transform: translate(0, -38px)      rotate(0deg); }
+        45%  { transform: translate(-8px, -19px)   rotate(6deg); }
+        50%  { transform: translate(0, 0)          rotate(0deg); }
+        65%  { transform: translate(8px, 19px)     rotate(-6deg); }
+        80%  { transform: translate(0, 38px)       rotate(0deg); }
+        95%  { transform: translate(-8px, 19px)    rotate(6deg); }
+        100% { transform: translate(0, 0)          rotate(0deg); }
+    }
+
+    .instructivo-paso { display: none; }
+    .instructivo-paso.activo { display: block; }
+
+    .instructivo-dots {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        margin-top: 16px;
+    }
+    .instructivo-dots .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.22);
+    }
+    .instructivo-dots .dot.activo { background: var(--coral); }
 
     .instructivo-titulo {
         font-family: 'Playfair Display', serif;
@@ -331,12 +400,28 @@
 
 <div class="instructivo-overlay" id="instructivo-overlay">
     <div class="instructivo-card">
-        <div class="instructivo-demo">
-            <div class="demo-tarjeta">👆</div>
+        <div class="instructivo-paso activo" data-paso="1">
+            <div class="instructivo-demo">
+                <div class="demo-tarjeta">👆</div>
+            </div>
+            <p class="instructivo-titulo">Descubrí la carta</p>
+            <p class="instructivo-texto">Deslizá la foto hacia los <b>costados</b> para pasar de plato.<br>Tocá la foto para ver el <b>detalle completo</b>.</p>
+            <button class="btn-instructivo-ok" id="btn-instructivo-siguiente">Seguir</button>
         </div>
-        <p class="instructivo-titulo">Descubrí la carta</p>
-        <p class="instructivo-texto">Deslizá la foto hacia los <b>costados</b> para pasar de plato.<br>Tocá la foto para ver el <b>detalle completo</b>.</p>
-        <button class="btn-instructivo-ok" id="btn-instructivo-ok">Entendido</button>
+        <div class="instructivo-paso" data-paso="2">
+            <div class="instructivo-demo vertical">
+                <span class="demo-label top">✓ Ya lo probé</span>
+                <div class="demo-tarjeta vertical">👆</div>
+                <span class="demo-label bottom">🔖 Quiero probarlo</span>
+            </div>
+            <p class="instructivo-titulo">Marcá tus favoritos</p>
+            <p class="instructivo-texto">Con tu cuenta iniciada, deslizá hacia <b>arriba</b> si ya lo probaste, o hacia <b>abajo</b> para guardarlo en tu lista.</p>
+            <button class="btn-instructivo-ok" id="btn-instructivo-ok">Entendido</button>
+        </div>
+        <div class="instructivo-dots">
+            <span class="dot activo" data-dot="1"></span>
+            <span class="dot" data-dot="2"></span>
+        </div>
     </div>
 </div>
 
@@ -379,6 +464,7 @@
                 return;
             }
 
+            window.cartaSocial?.setPlatos(Object.fromEntries(platos.map(p => [p.id, p])));
             render();
             mostrarInstructivoSiCorresponde();
         } catch (err) {
@@ -420,6 +506,7 @@
             : `<div class="card-foto-placeholder">🍽️</div>`;
         fotoZona.innerHTML += `<div class="card-gradient"></div>`;
         fotoZona.innerHTML += `<div class="sello anterior">Anterior</div><div class="sello siguiente">Siguiente</div>`;
+        fotoZona.innerHTML += `<div class="sello probado">✓ Probado</div><div class="sello guardar">🔖 Guardado</div>`;
         card.appendChild(fotoZona);
 
         const precio = p.precio != null ? `$${Number(p.precio).toLocaleString('es-AR')}` : '';
@@ -443,13 +530,17 @@
     }
 
     // ── Swipe (pointer events: funciona con mouse y touch) ────────────────────
+    // Ejes independientes: horizontal cambia de plato, vertical marca favoritos.
     function habilitarSwipe(card, plato) {
-        let startX = 0, startY = 0, dx = 0, dy = 0, dragging = false, pointerId = null;
-        const UMBRAL = 90;
+        let startX = 0, startY = 0, dx = 0, dy = 0, dragging = false, pointerId = null, eje = null;
+        const UMBRAL   = 90;
+        const UMBRAL_V = 80;
+        const ZONA_MUERTA = 12;
 
         card.addEventListener('pointerdown', e => {
             if (e.button !== undefined && e.button !== 0) return;
             dragging = true;
+            eje = null;
             pointerId = e.pointerId;
             card.setPointerCapture(pointerId);
             card.classList.add('dragging');
@@ -461,15 +552,33 @@
             if (!dragging) return;
             dx = e.clientX - startX;
             dy = e.clientY - startY;
-            const rot = dx / 18;
-            card.style.transform = `translate(${dx}px, ${dy * 0.15}px) rotate(${rot}deg)`;
 
-            const selloSig = card.querySelector('.sello.siguiente');
+            if (!eje && (Math.abs(dx) > ZONA_MUERTA || Math.abs(dy) > ZONA_MUERTA)) {
+                eje = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+            }
+            if (!eje) return;
+
             const selloAnt = card.querySelector('.sello.anterior');
-            const fuerza = Math.min(Math.abs(dx) / UMBRAL, 1);
-            if (dx < 0) { selloSig.style.opacity = fuerza; selloAnt.style.opacity = 0; }
-            else if (dx > 0) { selloAnt.style.opacity = fuerza; selloSig.style.opacity = 0; }
-            else { selloSig.style.opacity = 0; selloAnt.style.opacity = 0; }
+            const selloSig = card.querySelector('.sello.siguiente');
+            const selloProb = card.querySelector('.sello.probado');
+            const selloGuar = card.querySelector('.sello.guardar');
+
+            if (eje === 'h') {
+                const rot = dx / 18;
+                card.style.transform = `translate(${dx}px, ${dy * 0.15}px) rotate(${rot}deg)`;
+                const fuerza = Math.min(Math.abs(dx) / UMBRAL, 1);
+                selloAnt.style.opacity = dx > 0 ? fuerza : 0;
+                selloSig.style.opacity = dx < 0 ? fuerza : 0;
+                selloProb.style.opacity = 0;
+                selloGuar.style.opacity = 0;
+            } else {
+                card.style.transform = `translate(${dx * 0.15}px, ${dy}px) scale(${1 - Math.min(Math.abs(dy) / 900, 0.06)})`;
+                const fuerza = Math.min(Math.abs(dy) / UMBRAL_V, 1);
+                selloProb.style.opacity = dy < 0 ? fuerza : 0;
+                selloGuar.style.opacity = dy > 0 ? fuerza : 0;
+                selloAnt.style.opacity = 0;
+                selloSig.style.opacity = 0;
+            }
         });
 
         function soltar(e) {
@@ -478,14 +587,16 @@
             card.classList.remove('dragging');
             try { card.releasePointerCapture(pointerId); } catch (_) {}
 
-            if (Math.abs(dx) > UMBRAL) {
+            if (eje === 'h' && Math.abs(dx) > UMBRAL) {
                 dispararSwipe(card, dx > 0 ? 1 : -1);
+            } else if (eje === 'v' && Math.abs(dy) > UMBRAL_V) {
+                dispararAccionVertical(card, plato, dy < 0 ? -1 : 1);
             } else {
                 card.style.transition = 'transform 0.3s cubic-bezier(0.32,0.72,0,1)';
                 card.style.transform = '';
                 card.querySelectorAll('.sello').forEach(s => s.style.opacity = 0);
             }
-            dx = 0; dy = 0;
+            dx = 0; dy = 0; eje = null;
         }
 
         card.addEventListener('pointerup', soltar);
@@ -515,6 +626,17 @@
         window.location.href = `carta.html?plato=${p.id}`;
     }
 
+    // dir -1 = arriba (ya lo probé), dir 1 = abajo (quiero probarlo)
+    // Si no está logueado, cartaSocial abre el login solo y reintenta al volver.
+    function dispararAccionVertical(card, plato, dir) {
+        card.style.transition = 'transform 0.3s cubic-bezier(0.32,0.72,0,1)';
+        card.style.transform = 'translate(0, 0) scale(1)';
+        setTimeout(() => card.querySelectorAll('.sello').forEach(s => s.style.opacity = 0), 300);
+
+        if (dir < 0) window.cartaSocial?.toggleProbado(plato.id);
+        else         window.cartaSocial?.toggleQuieroProbar(plato.id);
+    }
+
     document.addEventListener('keydown', e => {
         const top = document.querySelector('.card.top');
         if (!top) return;
@@ -532,12 +654,24 @@
         localStorage.setItem(LS_KEY, '1');
         document.getElementById('instructivo-overlay').classList.remove('show');
     }
+    document.getElementById('btn-instructivo-siguiente').addEventListener('click', () => {
+        document.querySelector('.instructivo-paso[data-paso="1"]').classList.remove('activo');
+        document.querySelector('.instructivo-paso[data-paso="2"]').classList.add('activo');
+        document.querySelector('.dot[data-dot="1"]').classList.remove('activo');
+        document.querySelector('.dot[data-dot="2"]').classList.add('activo');
+    });
     document.getElementById('btn-instructivo-ok').addEventListener('click', cerrarInstructivo);
     document.getElementById('instructivo-overlay').addEventListener('click', e => {
         if (e.target.id === 'instructivo-overlay') cerrarInstructivo();
     });
 
     init();
+</script>
+
+<script type="module">
+    import * as cartaSocial from './js/carta/carta-social.js?v=4';
+    window.cartaSocial = cartaSocial;
+    cartaSocial.init();
 </script>
 
 </body>
