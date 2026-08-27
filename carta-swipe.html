@@ -242,39 +242,40 @@
         text-align: center;
     }
 
-    .instructivo-gestos {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 18px;
-        margin-bottom: 20px;
+    .instructivo-demo {
+        position: relative;
+        height: 84px;
+        margin-bottom: 18px;
     }
-    .instructivo-gesto {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
+    .instructivo-demo::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: 14px;
+        width: 100px;
+        height: 46px;
+        transform: translateX(-50%);
+        border-top: 1.5px dashed rgba(255,255,255,0.15);
+        border-radius: 50%;
+        clip-path: inset(0 0 50% 0);
     }
-    .instructivo-gesto .icono {
+    .demo-tarjeta {
+        position: absolute;
+        top: 50%;
+        left: 50%;
         width: 46px;
         height: 46px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.15);
+        margin: -23px 0 0 -23px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.3rem;
+        font-size: 1.8rem;
+        animation: manoArco 2.4s ease-in-out infinite;
     }
-    .instructivo-gesto .icono.mano { animation: swipeDemo 1.6s ease-in-out infinite; }
-    @keyframes swipeDemo {
-        0%, 100% { transform: translateX(0); }
-        50% { transform: translateX(-10px); }
-    }
-    .instructivo-gesto small {
-        font-size: 0.65rem;
-        color: rgba(255,255,255,0.55);
-        letter-spacing: 0.3px;
+    @keyframes manoArco {
+        0%   { transform: translate(42px, 16px) rotate(16deg); }
+        50%  { transform: translate(0, -18px) rotate(0deg); }
+        100% { transform: translate(-42px, 16px) rotate(-16deg); }
     }
 
     .instructivo-titulo {
@@ -330,18 +331,8 @@
 
 <div class="instructivo-overlay" id="instructivo-overlay">
     <div class="instructivo-card">
-        <div class="instructivo-gestos">
-            <div class="instructivo-gesto">
-                <div class="icono">👉</div>
-                <small>Anterior</small>
-            </div>
-            <div class="instructivo-gesto">
-                <div class="icono mano">✋</div>
-            </div>
-            <div class="instructivo-gesto">
-                <div class="icono">👈</div>
-                <small>Siguiente</small>
-            </div>
+        <div class="instructivo-demo">
+            <div class="demo-tarjeta">👆</div>
         </div>
         <p class="instructivo-titulo">Descubrí la carta</p>
         <p class="instructivo-texto">Deslizá la foto hacia los <b>costados</b> para pasar de plato.<br>Tocá la foto para ver el <b>detalle completo</b>.</p>
