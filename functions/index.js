@@ -493,6 +493,270 @@ exports.selloCumpleaniosDiario = onSchedule(
   }
 );
 
+// ============================================
+// CARRITO ABANDONADO
+// ============================================
+// Argentina no tiene horario de verano desde 2009 → offset fijo UTC-3.
+// Evitamos usar getHours()/setHours() del runtime (que corre en UTC en
+// Cloud Functions) y en cambio desplazamos el instante para leer/escribir
+// la hora de pared de Argentina con los getters/setters UTC.
+const AR_OFFSET_MS = -3 * 60 * 60 * 1000;
+
+function _argentinaParts(date) {
+  const shifted = new Date(date.getTime() + AR_OFFSET_MS);
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth(),
+    day: shifted.getUTCDate(),
+    hour: shifted.getUTCHours(),
+    minute: shifted.getUTCMinutes(),
+  };
+}
+
+function _argentinaDate(year, month, day, hour, minute) {
+  return new Date(Date.UTC(year, month, day, hour, minute) - AR_OFFSET_MS);
+}
+
+// Calcula cuándo debe salir el recordatorio de carrito abandonado, según el
+// modo elegido en admin (configuracion/tienda.carritoAbandonado):
+//  - "mismaHora": al día siguiente, a la misma hora del abandono si cae
+//    dentro de [horaMin, horaMax]; si no, a horaMax del día siguiente.
+//  - "xHoras": abandono + xHoras horas, pero si eso cae fuera de
+//    [horaMin, horaMax] se empuja a la próxima apertura de esa ventana.
+function _calcularHorarioEnvioCarrito(abandonoUTC, modo, xHoras, horaMin, horaMax) {
+  if (modo === "xHoras") {
+    const objetivoUTC = new Date(abandonoUTC.getTime() + xHoras * 60 * 60 * 1000);
+    const p = _argentinaParts(objetivoUTC);
+    const horaDecimal = p.hour + p.minute / 60;
+    if (horaDecimal > horaMax) return _argentinaDate(p.year, p.month, p.day + 1, horaMin, 0);
+    if (horaDecimal < horaMin) return _argentinaDate(p.year, p.month, p.day, horaMin, 0);
+    return objetivoUTC;
+  }
+  const p = _argentinaParts(abandonoUTC);
+  const horaDecimal = p.hour + p.minute / 60;
+  if (horaDecimal >= horaMin && horaDecimal <= horaMax) {
+    return _argentinaDate(p.year, p.month, p.day + 1, p.hour, p.minute);
+  }
+  return _argentinaDate(p.year, p.month, p.day + 1, horaMax, 0);
+}
+
+// Revalida stock actual de cada ítem del carrito guardado contra el catálogo.
+// Los combos no se revalidan acá (no tenemos el motor de combos del cliente
+// disponible en el backend) — se revalidan igual al restaurar el carrito y,
+// en última instancia, en el checkout, así que nunca se vende sin stock real.
+async function _revisarStockCarrito(items) {
+  const itemsDisponibles = [];
+  const itemsSinStock = [];
+  for (const item of items) {
+    if (item.stockIlimitado === true || item.esCombo) { itemsDisponibles.push(item); continue; }
+    try {
+      const pSnap = await db.collection("productos").doc(item.id).get();
+      if (!pSnap.exists) { itemsSinStock.push(item); continue; }
+      const p = pSnap.data();
+      let stockOk;
+      if (item.variantKey && p.variantes) {
+        const v = p.variantes[item.variantKey];
+        stockOk = v ? (v.stockIlimitado || (v.stock || 0) >= item.qty) : false;
+      } else {
+        stockOk = p.stockIlimitado || (p.stock || 0) >= item.qty;
+      }
+      if (stockOk) itemsDisponibles.push(item); else itemsSinStock.push(item);
+    } catch (e) {
+      itemsDisponibles.push(item); // ante error de red no lo sacamos del mail
+    }
+  }
+  return { itemsDisponibles, itemsSinStock };
+}
+
+function _buildHtmlCarritoAbandonado({ nombre, dni, items, itemsSinStock, esPrimeraCompra }) {
+  const filasItems = items.map((item) => {
+    const detalle = item.variantLabel || item.comboVariantLabel;
+    return `
+      <tr>
+        <td style="font-family:Georgia,serif;color:#ffffff;font-size:15px;padding:8px 0;border-bottom:1px solid #144a58;">
+          ${item.nombre}${detalle ? ` <span style="color:#7fa8b3;font-size:12px;">(${detalle})</span>` : ""}
+        </td>
+        <td align="right" style="font-family:Georgia,serif;color:#c8c8c8;font-size:14px;padding:8px 0;border-bottom:1px solid #144a58;">x${item.qty}</td>
+        <td align="right" style="font-family:Georgia,serif;color:#ffffff;font-size:15px;padding:8px 0;border-bottom:1px solid #144a58;width:90px;">$${Number((item.precio || 0) * item.qty).toLocaleString("es-AR")}</td>
+      </tr>`;
+  }).join("");
+
+  const bloqueSinStock = itemsSinStock.length > 0 ? `
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px;background-color:#2a1815;border-left:3px solid #eb6f53;border-radius:4px;">
+        <tr><td style="padding:14px 20px;">
+          <p style="font-family:Georgia,serif;color:#f0c4b8;font-size:13.5px;line-height:1.6;margin:0;">
+            ☹ Lamentablemente ${itemsSinStock.map((i) => `<strong>${i.nombre}</strong>`).join(", ")} ya no ${itemsSinStock.length > 1 ? "tienen" : "tiene"} stock disponible — lo${itemsSinStock.length > 1 ? "s" : ""} sacamos de tu carrito, pero el resto sigue guardado para vos.
+          </p>
+        </td></tr>
+      </table>` : "";
+
+  const bloqueCupon = esPrimeraCompra ? `
+      <p style="font-family:Georgia,serif;color:#008ba4;font-size:17px;line-height:1.75;margin:0 0 8px;font-style:italic;">
+        Y tu 15% OFF de bienvenida sigue activo para esta compra.
+      </p>` : "";
+
+  const token = dni ? Buffer.from(String(dni)).toString("base64") : "";
+  const unsubscribeUrl = `https://corcegacafe.com.ar/cancelar.html?id=${token}`;
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Córcega — Algo quedó pendiente acá</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#f0ebe4;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0ebe4;">
+    <tr>
+      <td align="center" style="padding:24px 16px;">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+
+          <tr>
+            <td style="background-color:#01323f;padding:36px 40px;text-align:center;">
+              <p style="font-family:'Syncopate',Arial,sans-serif;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:8px;text-transform:uppercase;margin:0;">CÓRCEGA</p>
+              <p style="font-family:'Syncopate',Arial,sans-serif;color:#008ba4;font-size:9px;font-weight:400;letter-spacing:5px;text-transform:uppercase;margin:6px 0 0;">rebeldía cafetera</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background-color:#eb6f53;padding:52px 40px 44px;text-align:center;">
+              <h1 style="font-family:'Playfair Display',Georgia,serif;color:#ffffff;font-size:34px;margin:0;line-height:1.2;letter-spacing:0.5px;">ALGO QUEDÓ<br>PENDIENTE ACÁ</h1>
+              <p style="font-family:'Syncopate',Arial,sans-serif;color:#01323f;font-size:11px;letter-spacing:4px;margin:20px 0 0;text-transform:uppercase;font-weight:700;">y te guardamos todo &nbsp;☕</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background-color:#01323f;padding:48px 48px 8px;">
+              <p style="font-family:Georgia,serif;color:#ffffff;font-size:16px;line-height:1.75;margin:0 0 22px;">Hola${nombre ? ` <strong>${nombre}</strong>` : ""},</p>
+              <p style="font-family:Georgia,serif;color:#ffffff;font-size:16px;line-height:1.75;margin:0 0 28px;">Estabas armando tu pedido y quedó a mitad de camino. Tranqui — guardamos todo tal cual lo dejaste:</p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;background-color:#0a3f4d;border-radius:6px;">
+                <tr><td style="padding:20px 24px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    ${filasItems}
+                  </table>
+                </td></tr>
+              </table>
+
+              ${bloqueSinStock}
+              ${bloqueCupon}
+
+              <table cellpadding="0" cellspacing="0" border="0" style="margin:32px auto 8px;">
+                <tr><td style="background-color:#eb6f53;border-radius:3px;text-align:center;padding:15px 36px;">
+                  <a href="https://corcegacafe.com.ar/tienda.html?carrito=recuperado" style="font-family:'Syncopate',Arial,sans-serif;color:#ffffff;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-decoration:none;">Volver a mi carrito</a>
+                </td></tr>
+              </table>
+
+              <p style="font-family:Georgia,serif;color:#7fa8b3;font-size:12.5px;line-height:1.6;margin:24px 0 0;text-align:center;">Reservamos el stock por poco tiempo cuando vuelvas a agregarlo al carrito — no te quedes esperando.</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background-color:#f0ebe4;padding:28px 40px;text-align:center;">
+              <p style="font-family:Georgia,serif;color:#8a8378;font-size:11.5px;line-height:1.6;margin:0;">
+                Recibiste este mail porque tenés una cuenta en Club Córcega.<br>
+                ${token ? `Si no querés más recordatorios de este tipo, podés <a href="${unsubscribeUrl}" style="color:#8a8378;text-decoration:underline;">gestionar tus preferencias aquí</a>.` : ""}
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+exports.revisarCarritosAbandonados = onSchedule(
+  {
+    schedule: "*/15 * * * *", // cada 15 minutos
+    timeZone: "America/Argentina/Buenos_Aires",
+    secrets: [emailUser, emailPass, zeptoFunctions.zeptoToken],
+  },
+  async (event) => {
+    const configSnap = await db.collection("configuracion").doc("tienda").get();
+    const cfg = configSnap.data()?.carritoAbandonado;
+    if (!cfg?.habilitado) return;
+
+    const modo = cfg.modo === "xHoras" ? "xHoras" : "mismaHora";
+    const horaMin = Number.isFinite(cfg.horaMin) ? cfg.horaMin : 10;
+    const horaMax = Number.isFinite(cfg.horaMax) ? cfg.horaMax : 20;
+    const xHoras = Number.isFinite(cfg.xHoras) ? cfg.xHoras : 6;
+
+    const proveedor = await _resolverProveedorMail("recordatorioCarritoAbandonado");
+    const transporter = proveedor === "zepto" ? null : nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: emailUser.value(), pass: emailPass.value() },
+    });
+
+    const snap = await db.collection("carritos_guardados").get();
+    const ahora = new Date();
+
+    for (const docSnap of snap.docs) {
+      const uid = docSnap.id;
+      const data = docSnap.data();
+      const items = data.items || [];
+      if (items.length === 0) continue;
+
+      const actualizado = data.actualizado?.toDate ? data.actualizado.toDate() : null;
+      if (!actualizado) continue;
+      const actualizadoMillis = actualizado.getTime();
+      if (data.emailEnviadoPara === actualizadoMillis) continue; // ya se le mandó para este estado del carrito
+
+      const horarioObjetivo = _calcularHorarioEnvioCarrito(actualizado, modo, xHoras, horaMin, horaMax);
+      if (ahora < horarioObjetivo) continue; // todavía no le toca
+
+      try {
+        // ¿ya compró desde que abandonó el carrito? → se convirtió, no mandamos nada
+        const ordenesDesdeAbandono = await db.collection("ordenes")
+          .where("cliente.uid", "==", uid)
+          .where("timestamp", ">", actualizado)
+          .limit(1).get();
+        if (!ordenesDesdeAbandono.empty) {
+          await docSnap.ref.delete();
+          continue;
+        }
+
+        // ¿alguna vez compró? define si mostramos el cupón de bienvenida
+        const algunaOrden = await db.collection("ordenes").where("cliente.uid", "==", uid).limit(1).get();
+        const esPrimeraCompra = algunaOrden.empty;
+
+        const usuarioSnap = await db.collection("usuarios_tienda").doc(uid).get();
+        const usuario = usuarioSnap.data();
+        if (!usuario?.email) { await docSnap.ref.delete(); continue; }
+
+        const { itemsDisponibles, itemsSinStock } = await _revisarStockCarrito(items);
+        if (itemsDisponibles.length === 0) { await docSnap.ref.delete(); continue; }
+
+        const subject = "Algo quedó pendiente acá ☕";
+        const html = _buildHtmlCarritoAbandonado({
+          nombre: usuario.nombre || "",
+          dni: usuario.dni || "",
+          items: itemsDisponibles,
+          itemsSinStock,
+          esPrimeraCompra,
+        });
+
+        if (proveedor === "zepto") {
+          await sendZeptoMail({ fromKey: "tienda", to: usuario.email, toName: usuario.nombre, subject, htmlbody: html, token: zeptoFunctions.zeptoToken.value() });
+        } else {
+          await transporter.sendMail({ from: `Córcega Café <${emailUser.value()}>`, to: usuario.email, subject, html });
+        }
+
+        await docSnap.ref.update({
+          emailEnviadoPara: actualizadoMillis,
+          emailEnviadoEn: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        logger.info(`✅ Mail de carrito abandonado enviado a ${usuario.email} (uid ${uid})`);
+      } catch (error) {
+        logger.error(`❌ Error procesando carrito abandonado de uid ${uid}:`, error);
+      }
+    }
+  }
+);
+
 exports.enviarMailAniversario = onRequest(
   { region: "us-central1", secrets: [emailUser, emailPass, zeptoFunctions.zeptoToken], timeoutSeconds: 540, memory: "512MiB" },
   (req, res) => {

@@ -1,6 +1,6 @@
 import { auth, db } from '../firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { writeReserva, deleteReserva, CART_TIMEOUT_MS } from './cart-reservas.js';
 import { openDisponibilidadModal, getFechaRetiro } from './agenda-disponibilidad.js';
 
@@ -26,6 +26,7 @@ let cartTotal = null;
 // --- AUTH ---
 onAuthStateChanged(auth, (user) => {
     userIsLogged = !!user;
+    if (user) _tryRestoreSavedCart(user.uid);
 });
 
 // --- HTML INJECTION ---
@@ -284,6 +285,106 @@ export function updateCartUI() {
 export function saveAndRefresh() {
     localStorage.setItem('corcega_cart', JSON.stringify(cart));
     updateCartUI();
+    _persistCartToCloud();
+}
+
+// --- CARRITO GUARDADO EN LA NUBE (recupero de carrito abandonado) ---
+// Guarda una copia del carrito en Firestore para usuarios logueados, así
+// podemos restaurarlo si vuelven en otro momento/dispositivo y, si se
+// abandona por mucho tiempo, mandar un recordatorio por mail.
+let _saveCloudTimer = null;
+function _persistCartToCloud() {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    clearTimeout(_saveCloudTimer);
+    _saveCloudTimer = setTimeout(async () => {
+        try {
+            if (cart.length === 0) {
+                await deleteDoc(doc(db, 'carritos_guardados', uid));
+            } else {
+                // JSON round-trip: descarta valores undefined (Firestore los rechaza),
+                // igual que hace JSON.stringify al guardar en localStorage.
+                const items = JSON.parse(JSON.stringify(cart));
+                await setDoc(doc(db, 'carritos_guardados', uid), {
+                    items,
+                    actualizado: serverTimestamp(),
+                });
+            }
+        } catch (e) { console.error('Error guardando carrito en la nube:', e); }
+    }, 4000);
+}
+
+// --- RESTAURAR CARRITO GUARDADO ---
+// Solo si el carrito local está vacío (no pisamos nada que el usuario ya
+// esté armando en este dispositivo). Revalida stock contra el catálogo
+// actual antes de restaurar cada ítem.
+async function _tryRestoreSavedCart(uid) {
+    if (cart.length > 0) return;
+    let saved;
+    try {
+        const snap = await getDoc(doc(db, 'carritos_guardados', uid));
+        if (!snap.exists()) return;
+        saved = snap.data();
+    } catch (e) {
+        console.error('Error leyendo carrito guardado:', e);
+        return;
+    }
+
+    const items = saved?.items || [];
+    if (items.length === 0) return;
+
+    const restaurados = [];
+    const sinStock = [];
+
+    for (const item of items) {
+        const disponible = await _stockDisponibleParaItem(item);
+        if (disponible) {
+            restaurados.push(item);
+        } else {
+            sinStock.push(item.nombre);
+        }
+    }
+
+    if (restaurados.length > 0) {
+        for (const item of restaurados) {
+            cart.push(item);
+            if (item.stockIlimitado !== true) {
+                try { writeReserva(item.id, item.variantKey || null, item.qty, item.nombre); } catch (e) {}
+            }
+        }
+        saveAndRefresh();
+        showToast(`🛒 Recuperamos tu carrito (${restaurados.length} producto${restaurados.length > 1 ? 's' : ''})`, 'warning');
+    }
+    if (sinStock.length > 0) {
+        showToast(`😔 Sin stock disponible de: ${sinStock.join(', ')}`, 'error');
+    }
+
+    // Ya se restauró (con o sin éxito) — se borra para no reintentarlo en cada visita.
+    try { await deleteDoc(doc(db, 'carritos_guardados', uid)); } catch (e) {}
+}
+
+async function _stockDisponibleParaItem(item) {
+    if (item.stockIlimitado === true) return true;
+    if (item.esCombo) {
+        const disponible = window.getComboCartStock?.(item);
+        return disponible === undefined ? true : disponible >= item.qty;
+    }
+    try {
+        const pSnap = await getDoc(doc(db, 'productos', item.id));
+        if (!pSnap.exists()) return false;
+        const p = pSnap.data();
+        if (item.variantKey && p.variantes) {
+            const v = p.variantes[item.variantKey];
+            if (!v) return false;
+            if (v.stockIlimitado) return true;
+            return (v.stock || 0) >= item.qty;
+        }
+        if (p.stockIlimitado) return true;
+        return (p.stock || 0) >= item.qty;
+    } catch (e) {
+        console.error('Error chequeando stock al restaurar carrito:', e);
+        return false;
+    }
 }
 
 // --- WINDOW HANDLERS ---

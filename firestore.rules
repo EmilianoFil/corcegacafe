@@ -62,6 +62,12 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // CARRITOS GUARDADOS: cada usuario solo su propio carrito. El backend
+    // (scheduled function) usa admin SDK y no pasa por estas reglas.
+    match /carritos_guardados/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // CARTA DIGITAL: lectura pública, escritura solo admin
     match /carta_secciones/{docId} {
       allow read: if true;

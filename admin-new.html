@@ -1009,6 +1009,7 @@
                 <li><a href="#tienda-categorias"><span class="icon">🏷️</span> Categorías</a></li>
                 <li><a href="#tienda-ordenes"><span class="icon">📦</span> Órdenes</a></li>
                 <li><a href="#tienda-cupones"><span class="icon">🎟️</span> Cupones</a></li>
+                <li><a href="#tienda-carrito-abandonado"><span class="icon">🛒</span> Carrito Abandonado</a></li>
                 <li><a href="#tienda-arrepentimientos"><span class="icon">↩️</span> Arrepentimientos</a></li>
                 <li><a href="#tienda-config"><span class="icon">⚙️</span> Configuración</a></li>
                 <li><a href="#tienda-clarus"><span class="icon">🔗</span> ClarusHub</a></li>
@@ -2037,6 +2038,60 @@
                         <!-- Cupones dinámicos -->
                     </tbody>
                 </table>
+            </div>
+        </section>
+
+        <!-- TIENDA CARRITO ABANDONADO SECTION -->
+        <section id="tienda-carrito-abandonado" class="section-content">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                <h3 style="margin:0; font-size: 1.5rem;">Carrito Abandonado 🛒</h3>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">RECORDATORIO POR MAIL — REQUIERE CLIENTE LOGUEADO</span>
+            </div>
+
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:16px 20px;">
+                <div>
+                    <strong>Mail de carrito abandonado</strong>
+                    <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">Si está apagado, no se manda ningún recordatorio, aunque los carritos se sigan guardando.</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="ca-habilitado" onchange="window.tiendaAdmin.toggleCarritoAbandonadoGlobal(this.checked)">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <div class="card" style="padding:24px;">
+                <h4 style="margin-top:0;">Cuándo enviar el recordatorio</h4>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:-8px; margin-bottom:20px;">
+                    Para no mandar mails de madrugada, el envío siempre se acota a una ventana horaria del día siguiente al abandono.
+                </p>
+
+                <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-bottom:16px;">
+                    <div class="input-group">
+                        <label>Modo</label>
+                        <select id="ca-modo" class="form-control" onchange="window.tiendaAdmin.onModoCarritoAbandonadoChange()">
+                            <option value="mismaHora">Misma hora del día siguiente</option>
+                            <option value="xHoras">X horas después del abandono</option>
+                        </select>
+                        <span style="font-size:0.72rem; color:var(--text-muted);">
+                            "Misma hora": si abandonó a las 12, sale al otro día a las 12 (o a la hora máxima si abandonó fuera de la ventana).
+                        </span>
+                    </div>
+                    <div class="input-group" id="ca-x-horas-group" style="display:none;">
+                        <label>Horas después del abandono</label>
+                        <input type="number" id="ca-x-horas" min="1" max="72" placeholder="Ej: 6">
+                        <span style="font-size:0.72rem; color:var(--text-muted);">Si el horario calculado cae fuera de la ventana horaria, se empuja a la próxima apertura.</span>
+                    </div>
+                    <div class="input-group">
+                        <label>Hora mínima de envío</label>
+                        <input type="number" id="ca-hora-min" min="0" max="23" placeholder="Ej: 10">
+                    </div>
+                    <div class="input-group">
+                        <label>Hora máxima de envío</label>
+                        <input type="number" id="ca-hora-max" min="0" max="23" placeholder="Ej: 20">
+                    </div>
+                </div>
+
+                <button class="btn-primary" onclick="window.tiendaAdmin.guardarParametrosCarritoAbandonado()" style="margin:0; width:auto; padding:10px 24px; font-size:0.85rem; height:auto;">Guardar parámetros</button>
             </div>
         </section>
 
@@ -3126,7 +3181,7 @@
         import {
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
-        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=24';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=25';
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=12';
         window.cartaAdmin = cartaAdmin;
@@ -3247,6 +3302,7 @@
             if (target === 'tienda-categorias') window.tiendaAdmin.loadCategoriasTable();
             if (target === 'tienda-ordenes') window.tiendaAdmin.loadOrdenesTable();
             if (target === 'tienda-cupones') { window.tiendaAdmin.loadCuponesTable(); window.tiendaAdmin.loadCuponesConfig(); }
+            if (target === 'tienda-carrito-abandonado') window.tiendaAdmin.loadCarritoAbandonadoConfig();
             if (target === 'tienda-arrepentimientos') loadArrepentimientos();
             if (target === 'tienda-config') window.tiendaAdmin.loadConfigStore();
             if (target === 'tienda-clarus') window.tiendaAdmin.loadClarusConfig();

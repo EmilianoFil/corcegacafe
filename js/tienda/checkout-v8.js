@@ -1,7 +1,7 @@
 import { db, auth } from '../firebase-config.js';
 console.log("=== CHECKOUT V4 ACTIVE (NO ALERT) ===");
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where, limit, updateDoc, setDoc, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where, limit, updateDoc, setDoc, deleteDoc, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { deleteAllSessionReservas } from './cart-reservas.js';
 import { computeAgendaMeta, fetchOrderCounts, buildCalendarConfig, isDateSelectable, getFechaRetiro, saveFechaRetiro, clearFechaRetiro, parseHorarioToISO, isoFromDate, dateFromISO } from './agenda-disponibilidad.js';
 
@@ -569,6 +569,11 @@ async function handleOrderSubmission() {
         // 2. Limpiar reservas de sesión y fecha de retiro elegida
         try { await deleteAllSessionReservas(); } catch(e) { console.warn('Error clearing reservas:', e); }
         try { clearFechaRetiro(); } catch(e) { console.warn('Error clearing fecha retiro:', e); }
+        // 2b. Borrar el carrito guardado en la nube: ya se convirtió en orden,
+        // no tiene sentido mandar un recordatorio de "carrito abandonado".
+        if (auth.currentUser) {
+            try { await deleteDoc(doc(db, 'carritos_guardados', auth.currentUser.uid)); } catch(e) { console.warn('Error borrando carrito guardado:', e); }
+        }
 
         // NOTA: el evento purchase/Purchase (GA4 + Meta Pixel) NO se dispara acá.
         // Acá el cliente recién hizo click en "Finalizar compra" — todavía no sabemos

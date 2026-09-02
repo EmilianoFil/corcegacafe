@@ -2259,3 +2259,73 @@ export async function eliminarCupon(id) {
         console.error('Error eliminando cupón:', err);
     }
 }
+
+// ============================================
+// CARRITO ABANDONADO
+// ============================================
+export async function loadCarritoAbandonadoConfig() {
+    try {
+        const snap = await getDoc(doc(db, 'configuracion', 'tienda'));
+        const cfg = snap.exists() ? (snap.data().carritoAbandonado || {}) : {};
+
+        const elHabilitado = document.getElementById('ca-habilitado');
+        const elModo = document.getElementById('ca-modo');
+        const elX = document.getElementById('ca-x-horas');
+        const elMin = document.getElementById('ca-hora-min');
+        const elMax = document.getElementById('ca-hora-max');
+
+        if (elHabilitado) elHabilitado.checked = cfg.habilitado || false;
+        if (elModo) elModo.value = cfg.modo || 'mismaHora';
+        if (elX) elX.value = Number.isFinite(cfg.xHoras) ? cfg.xHoras : 6;
+        if (elMin) elMin.value = Number.isFinite(cfg.horaMin) ? cfg.horaMin : 10;
+        if (elMax) elMax.value = Number.isFinite(cfg.horaMax) ? cfg.horaMax : 20;
+
+        onModoCarritoAbandonadoChange();
+    } catch (err) {
+        console.error('Error loading carrito abandonado config:', err);
+    }
+}
+
+export async function toggleCarritoAbandonadoGlobal(checked) {
+    try {
+        await updateDoc(doc(db, 'configuracion', 'tienda'), { 'carritoAbandonado.habilitado': checked });
+    } catch (err) {
+        console.error('Error toggling carrito abandonado:', err);
+        alert('Error al guardar. Probá de nuevo.');
+    }
+}
+
+export function onModoCarritoAbandonadoChange() {
+    const modo = document.getElementById('ca-modo')?.value;
+    const grupoX = document.getElementById('ca-x-horas-group');
+    if (grupoX) grupoX.style.display = modo === 'xHoras' ? 'flex' : 'none';
+}
+
+export async function guardarParametrosCarritoAbandonado() {
+    const modo = document.getElementById('ca-modo')?.value || 'mismaHora';
+    const xHoras = Number(document.getElementById('ca-x-horas')?.value);
+    const horaMin = Number(document.getElementById('ca-hora-min')?.value);
+    const horaMax = Number(document.getElementById('ca-hora-max')?.value);
+
+    if (modo === 'xHoras' && (!Number.isFinite(xHoras) || xHoras <= 0)) {
+        alert('Ingresá cuántas horas después del abandono se debe enviar el recordatorio.');
+        return;
+    }
+    if (!Number.isFinite(horaMin) || !Number.isFinite(horaMax) || horaMin < 0 || horaMax > 23 || horaMin >= horaMax) {
+        alert('Revisá la ventana horaria: la hora mínima debe ser menor a la máxima, ambas entre 0 y 23.');
+        return;
+    }
+
+    try {
+        await updateDoc(doc(db, 'configuracion', 'tienda'), {
+            'carritoAbandonado.modo': modo,
+            'carritoAbandonado.xHoras': xHoras || 6,
+            'carritoAbandonado.horaMin': horaMin,
+            'carritoAbandonado.horaMax': horaMax,
+        });
+        alert('Configuración guardada.');
+    } catch (err) {
+        console.error('Error guardando config de carrito abandonado:', err);
+        alert('Error al guardar. Probá de nuevo.');
+    }
+}
