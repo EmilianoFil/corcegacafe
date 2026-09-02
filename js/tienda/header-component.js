@@ -110,6 +110,9 @@ export function initHeader() {
         const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
 
         if (user) {
+            // Marca persistente (no se borra al hacer logout) para no volver a
+            // mostrarle promos de "registrate" a alguien que ya tiene cuenta.
+            localStorage.setItem('corcega_registered', '1');
             try {
                 const snap = await getDoc(doc(db, "usuarios_tienda", user.uid));
                 let nombre = user.displayName || user.email.split('@')[0];

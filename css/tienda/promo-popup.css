@@ -1,0 +1,114 @@
+/* ─── POPUP PROMO REGISTRO ──────────────────────────────────── */
+.promo-overlay {
+  position:fixed;
+  inset:0;
+  background:rgba(1,20,25,0.55);
+  backdrop-filter:blur(3px);
+  z-index:5000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.3s ease;
+}
+.promo-overlay.open { opacity:1; pointer-events:auto; }
+
+.promo-modal {
+  position:relative;
+  background:var(--bg-crema);
+  border-radius:28px;
+  max-width:420px;
+  width:100%;
+  overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,0.35);
+  transform:translateY(24px) scale(0.96);
+  transition:transform 0.35s cubic-bezier(0.25,0.8,0.25,1);
+  text-align:center;
+}
+.promo-overlay.open .promo-modal { transform:translateY(0) scale(1); }
+
+.promo-header {
+  background:var(--panel-oscuro);
+  color:white;
+  padding:36px 32px 30px;
+  position:relative;
+}
+.promo-close {
+  position:absolute;
+  top:14px; right:14px;
+  width:32px; height:32px;
+  border-radius:50%;
+  border:none;
+  background:rgba(255,255,255,0.12);
+  color:white;
+  font-size:15px;
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:background 0.15s;
+}
+.promo-close:hover { background:rgba(255,255,255,0.22); }
+
+.promo-kicker {
+  font-family:var(--font-sync);
+  font-size:11px;
+  letter-spacing:3px;
+  color:var(--naranja-accent);
+  font-weight:700;
+  margin-bottom:10px;
+}
+.promo-percent {
+  font-family:var(--font-display);
+  font-size:56px;
+  font-weight:700;
+  line-height:1;
+  margin-bottom:8px;
+}
+.promo-title {
+  font-size:15px;
+  font-weight:600;
+  opacity:0.9;
+}
+
+.promo-body { padding:28px 32px 32px; }
+.promo-desc {
+  font-size:14px;
+  color:var(--texto-muted);
+  line-height:1.6;
+  margin-bottom:22px;
+}
+
+.promo-cta {
+  display:block;
+  width:100%;
+  padding:15px;
+  border:none;
+  border-radius:14px;
+  background:var(--naranja-accent);
+  color:white;
+  font-family:var(--font-base);
+  font-weight:700;
+  font-size:14px;
+  cursor:pointer;
+  text-decoration:none;
+  transition:background 0.18s, transform 0.12s;
+  margin-bottom:12px;
+}
+.promo-cta:hover { background:var(--naranja-oscuro); transform:translateY(-1px); }
+
+.promo-dismiss {
+  background:none;
+  border:none;
+  color:var(--texto-muted);
+  font-size:12px;
+  cursor:pointer;
+  text-decoration:underline;
+  padding:6px;
+}
+
+@media (max-width:480px) {
+  .promo-header { padding:30px 24px 24px; }
+  .promo-body { padding:24px 24px 28px; }
+  .promo-percent { font-size:46px; }
+}
