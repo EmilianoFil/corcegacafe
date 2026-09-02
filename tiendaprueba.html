@@ -11,6 +11,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <!-- Google Analytics (mismo tag que el resto del sitio) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NXMC00DZ81"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-NXMC00DZ81');
+    </script>
+
 <style>
 /* ─── VARIABLES ─────────────────────────────────────────────── */
 :root {
@@ -625,15 +634,15 @@ header {
 <div class="promo-overlay" id="promo-overlay">
   <div class="promo-modal">
     <div class="promo-header">
-      <button class="promo-close" id="promo-close" aria-label="Cerrar">✕</button>
+      <button class="promo-close" id="promo-close" aria-label="Cerrar" onclick="gtag('event','click_popup_bienvenida',{boton:'cerrar_x'})">✕</button>
       <div class="promo-kicker">BIENVENIDO A CÓRCEGA</div>
       <div class="promo-percent">15% OFF</div>
       <div class="promo-title">en tu primera compra al registrarte</div>
     </div>
     <div class="promo-body">
       <p class="promo-desc">Creá tu cuenta gratis y sumate a Club Córcega. Te enviamos el código de descuento apenas te registrás.</p>
-      <a href="tienda-cuenta.html" class="promo-cta">Registrarme y obtener el 15%</a>
-      <button class="promo-dismiss" id="promo-dismiss">Seguir comprando sin registrarme</button>
+      <a href="tienda-cuenta.html" class="promo-cta" id="promo-cta" onclick="gtag('event','click_popup_bienvenida',{boton:'registrarme'})">Registrarme y obtener el 15%</a>
+      <button class="promo-dismiss" id="promo-dismiss" onclick="gtag('event','click_popup_bienvenida',{boton:'seguir_sin_registrarme'})">Seguir comprando sin registrarme</button>
     </div>
   </div>
 </div>
@@ -941,12 +950,35 @@ document.getElementById('mobile-products-toggle').addEventListener('click', () =
 });
 
 // ─── POPUP PROMO REGISTRO ─────────────────────────────────────────
+// Reglas para no ser invasivo:
+//  - Si el navegador ya está marcado como "registrado" (corcega_registered), nunca se muestra.
+//    En la tienda real esta bandera la setea tienda-auth.js cuando Firebase detecta
+//    sesión iniciada o cuando el registro se completó alguna vez (no se borra al cerrar sesión).
+//  - Si lo cerraron (X, "seguir comprando", click afuera o Esc) 3 veces, no se vuelve a mostrar.
+const PROMO_DISMISS_KEY = 'corcega_promo_dismiss_count';
+const PROMO_MAX_DISMISS = 3;
+const REGISTERED_KEY = 'corcega_registered';
+
 const promoOverlay = document.getElementById('promo-overlay');
+
+function isRegistered() {
+  return localStorage.getItem(REGISTERED_KEY) === '1';
+}
+function getDismissCount() {
+  return parseInt(localStorage.getItem(PROMO_DISMISS_KEY) || '0', 10);
+}
+function registerDismiss() {
+  localStorage.setItem(PROMO_DISMISS_KEY, String(getDismissCount() + 1));
+}
+function shouldShowPromo() {
+  return !isRegistered() && getDismissCount() < PROMO_MAX_DISMISS;
+}
 
 function openPromo() {
   promoOverlay.classList.add('open');
 }
 function closePromo() {
+  registerDismiss();
   promoOverlay.classList.remove('open');
 }
 
@@ -959,8 +991,26 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closePromo();
 });
 
-// Se muestra 1.5s después de entrar a la tienda (cada vez, es archivo de prueba)
-setTimeout(openPromo, 1500);
+// Se muestra 1.5s después de entrar, salvo que ya esté "registrado" o lo hayan cerrado 3 veces
+if (shouldShowPromo()) {
+  setTimeout(openPromo, 1500);
+}
+
+// ─── HELPERS DE QA (sólo para probar los distintos estados) ───────
+// Desde la consola del navegador:
+//   corcegaPromoTest.reset()        → borra el conteo de cierres y la marca de registrado
+//   corcegaPromoTest.markRegistered() → simula un usuario ya registrado
+window.corcegaPromoTest = {
+  reset() {
+    localStorage.removeItem(PROMO_DISMISS_KEY);
+    localStorage.removeItem(REGISTERED_KEY);
+    console.log('Promo reseteada. Recargá la página para verla de nuevo.');
+  },
+  markRegistered() {
+    localStorage.setItem(REGISTERED_KEY, '1');
+    console.log('Marcado como registrado. Recargá: el popup no debería aparecer.');
+  }
+};
 
 // ─── INIT ───────────────────────────────────────────────────────
 buildDesktopCats();
