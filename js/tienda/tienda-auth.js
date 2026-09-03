@@ -24,6 +24,11 @@ const btnGoogle = document.getElementById('btn-google');
 
 const googleProvider = new GoogleAuthProvider();
 
+// Si venimos de un link externo (ej. mail de carrito abandonado) con ?redirect=,
+// lo guardamos para que dispare apenas se loguee — o de inmediato si ya está logueado.
+const _redirectParam = new URLSearchParams(window.location.search).get('redirect');
+if (_redirectParam) sessionStorage.setItem('redirectAfterLogin', _redirectParam);
+
 // --- INITIALIZATION ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {

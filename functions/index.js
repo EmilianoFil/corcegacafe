@@ -644,7 +644,7 @@ function _buildHtmlCarritoAbandonado({ nombre, dni, items, itemsSinStock, esPrim
 
               <table cellpadding="0" cellspacing="0" border="0" style="margin:32px auto 8px;">
                 <tr><td style="background-color:#eb6f53;border-radius:3px;text-align:center;padding:15px 36px;">
-                  <a href="https://corcegacafe.com.ar/tienda.html?carrito=recuperado" style="font-family:'Syncopate',Arial,sans-serif;color:#ffffff;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-decoration:none;">Volver a mi carrito</a>
+                  <a href="https://corcegacafe.com.ar/tienda-cuenta.html?redirect=${encodeURIComponent("tienda.html?carrito=recuperado")}" style="font-family:'Syncopate',Arial,sans-serif;color:#ffffff;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-decoration:none;">Volver a mi carrito</a>
                 </td></tr>
               </table>
 
