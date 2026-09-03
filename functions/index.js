@@ -554,7 +554,7 @@ async function _revisarStockCarrito(items) {
       if (!pSnap.exists) { itemsSinStock.push(item); continue; }
       const p = pSnap.data();
       let stockOk;
-      if (item.variantKey && p.variantes) {
+      if (item.variantKey && p.tieneVariantes && p.variantes) {
         const v = p.variantes[item.variantKey];
         stockOk = v ? (v.stockIlimitado || (v.stock || 0) >= item.qty) : false;
       } else {

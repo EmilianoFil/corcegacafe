@@ -381,8 +381,12 @@ async function _tryRestoreSavedCart(uid) {
         showToast(`😔 Sin stock disponible de: ${sinStock.join(', ')}`, 'error');
     }
 
-    // Ya se restauró (con o sin éxito) — se borra para no reintentarlo en cada visita.
-    try { await deleteDoc(doc(db, 'carritos_guardados', uid)); } catch (e) {}
+    // Solo borramos el carrito guardado si TODO se pudo restaurar. Si algo quedó
+    // afuera (sin stock, o un falso negativo nuestro), lo dejamos guardado para
+    // no perder el registro — la próxima visita lo vuelve a intentar.
+    if (sinStock.length === 0) {
+        try { await deleteDoc(doc(db, 'carritos_guardados', uid)); } catch (e) {}
+    }
 }
 
 async function _stockDisponibleParaItem(item) {
@@ -395,7 +399,7 @@ async function _stockDisponibleParaItem(item) {
         const pSnap = await getDoc(doc(db, 'productos', item.id));
         if (!pSnap.exists()) return false;
         const p = pSnap.data();
-        if (item.variantKey && p.variantes) {
+        if (item.variantKey && p.tieneVariantes && p.variantes) {
             const v = p.variantes[item.variantKey];
             if (!v) return false;
             if (v.stockIlimitado) return true;
