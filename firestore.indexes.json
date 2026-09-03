@@ -23,6 +23,32 @@
         { "fieldPath": "estado", "order": "ASCENDING" },
         { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "ordenes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "cliente.uid", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "carritos_abandonados_log",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" },
+        { "fieldPath": "convertido", "order": "ASCENDING" },
+        { "fieldPath": "mailEnviadoEn", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "carritos_abandonados_log",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" },
+        { "fieldPath": "recuperado", "order": "ASCENDING" },
+        { "fieldPath": "mailEnviadoEn", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
