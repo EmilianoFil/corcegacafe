@@ -1,6 +1,6 @@
 import { auth, db } from '../firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, collection, query, where, orderBy, limit, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { writeReserva, deleteReserva, CART_TIMEOUT_MS } from './cart-reservas.js';
 import { openDisponibilidadModal, getFechaRetiro } from './agenda-disponibilidad.js';
 
@@ -26,8 +26,30 @@ let cartTotal = null;
 // --- AUTH ---
 onAuthStateChanged(auth, (user) => {
     userIsLogged = !!user;
-    if (user) _tryRestoreSavedCart(user.uid);
+    if (user) {
+        _tryRestoreSavedCart(user.uid);
+        _trackVueltaPorMail(user.uid);
+    }
 });
+
+// Si vino desde el link del mail de carrito abandonado (?carrito=recuperado),
+// marca el último recordatorio enviado a este usuario como "recuperado" —
+// alimenta el historial que se ve en el panel de admin.
+async function _trackVueltaPorMail(uid) {
+    try {
+        if (new URLSearchParams(window.location.search).get('carrito') !== 'recuperado') return;
+        const q = query(
+            collection(db, 'carritos_abandonados_log'),
+            where('uid', '==', uid),
+            where('recuperado', '==', false),
+            orderBy('mailEnviadoEn', 'desc'),
+            limit(1)
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) return;
+        await updateDoc(snap.docs[0].ref, { recuperado: true, recuperadoEn: serverTimestamp() });
+    } catch (e) { console.error('Error registrando vuelta por mail:', e); }
+}
 
 // --- HTML INJECTION ---
 function _injectHTML() {

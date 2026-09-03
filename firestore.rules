@@ -68,6 +68,19 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // HISTORIAL DE CARRITOS ABANDONADOS: los crea solo el backend (admin SDK).
+    // Cada usuario puede leer/marcar solo sus propios registros (para trackear
+    // si volvió por el link del mail); los admins leen todo para el panel.
+    match /carritos_abandonados_log/{id} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.uid ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+      allow create, delete: if false;
+      allow update: if request.auth != null && request.auth.uid == resource.data.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['recuperado', 'recuperadoEn']);
+    }
+
     // CARTA DIGITAL: lectura pública, escritura solo admin
     match /carta_secciones/{docId} {
       allow read: if true;

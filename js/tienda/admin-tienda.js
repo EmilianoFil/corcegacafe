@@ -2301,6 +2301,134 @@ export function onModoCarritoAbandonadoChange() {
     if (grupoX) grupoX.style.display = modo === 'xHoras' ? 'flex' : 'none';
 }
 
+// --- Mismo cálculo de horario que usa el backend (functions/index.js), para
+// mostrar en admin cuándo le toca el mail a cada carrito pendiente. Argentina
+// no tiene horario de verano desde 2009 → offset fijo UTC-3.
+const AR_OFFSET_MS = -3 * 60 * 60 * 1000;
+
+function _argentinaParts(date) {
+    const shifted = new Date(date.getTime() + AR_OFFSET_MS);
+    return {
+        year: shifted.getUTCFullYear(), month: shifted.getUTCMonth(), day: shifted.getUTCDate(),
+        hour: shifted.getUTCHours(), minute: shifted.getUTCMinutes(),
+    };
+}
+function _argentinaDate(year, month, day, hour, minute) {
+    return new Date(Date.UTC(year, month, day, hour, minute) - AR_OFFSET_MS);
+}
+function _calcularHorarioEnvioCarrito(abandonoUTC, modo, xHoras, horaMin, horaMax) {
+    if (modo === 'xHoras') {
+        const objetivoUTC = new Date(abandonoUTC.getTime() + xHoras * 60 * 60 * 1000);
+        const p = _argentinaParts(objetivoUTC);
+        const horaDecimal = p.hour + p.minute / 60;
+        if (horaDecimal > horaMax) return _argentinaDate(p.year, p.month, p.day + 1, horaMin, 0);
+        if (horaDecimal < horaMin) return _argentinaDate(p.year, p.month, p.day, horaMin, 0);
+        return objetivoUTC;
+    }
+    const p = _argentinaParts(abandonoUTC);
+    const horaDecimal = p.hour + p.minute / 60;
+    if (horaDecimal >= horaMin && horaDecimal <= horaMax) {
+        return _argentinaDate(p.year, p.month, p.day + 1, p.hour, p.minute);
+    }
+    return _argentinaDate(p.year, p.month, p.day + 1, horaMax, 0);
+}
+
+function _resumenItems(items) {
+    return (items || []).map(i => `${i.nombre} x${i.qty}`).join(', ') || '(sin ítems)';
+}
+function _fmtFechaHora(date) {
+    if (!date) return '—';
+    return date.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+export async function loadCarritoAbandonadoPendientes() {
+    const tbody = document.getElementById('ca-pendientes-body');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="4" style="padding:20px; text-align:center; color:#999;">Cargando...</td></tr>`;
+
+    try {
+        const configSnap = await getDoc(doc(db, 'configuracion', 'tienda'));
+        const cfg = configSnap.data()?.carritoAbandonado || {};
+        const modo = cfg.modo === 'xHoras' ? 'xHoras' : 'mismaHora';
+        const horaMin = Number.isFinite(cfg.horaMin) ? cfg.horaMin : 10;
+        const horaMax = Number.isFinite(cfg.horaMax) ? cfg.horaMax : 20;
+        const xHoras = Number.isFinite(cfg.xHoras) ? cfg.xHoras : 6;
+
+        const snap = await getDocs(collection(db, 'carritos_guardados'));
+        const pendientes = snap.docs
+            .map(d => ({ uid: d.id, ...d.data() }))
+            .filter(c => (c.items || []).length > 0)
+            .filter(c => {
+                const actualizado = c.actualizado?.toDate ? c.actualizado.toDate() : null;
+                return actualizado && c.emailEnviadoPara !== actualizado.getTime();
+            });
+
+        if (pendientes.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="padding:20px; text-align:center; color:#999;">No hay carritos pendientes de recordatorio.</td></tr>`;
+            return;
+        }
+
+        const conCliente = await Promise.all(pendientes.map(async (c) => {
+            let cliente = c.uid;
+            try {
+                const uSnap = await getDoc(doc(db, 'usuarios_tienda', c.uid));
+                if (uSnap.exists()) cliente = uSnap.data().nombre || uSnap.data().email || c.uid;
+            } catch (e) {}
+            const actualizado = c.actualizado.toDate();
+            const objetivo = cfg.habilitado ? _calcularHorarioEnvioCarrito(actualizado, modo, xHoras, horaMin, horaMax) : null;
+            return { ...c, cliente, actualizado, objetivo };
+        }));
+
+        conCliente.sort((a, b) => (a.objetivo || a.actualizado) - (b.objetivo || b.actualizado));
+
+        tbody.innerHTML = conCliente.map(c => `
+            <tr>
+                <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0;">${c.cliente}</td>
+                <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0; font-size:0.82rem; color:#555;">${_resumenItems(c.items)}</td>
+                <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0; font-size:0.82rem;">${_fmtFechaHora(c.actualizado)}</td>
+                <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0; font-size:0.82rem;">
+                    ${cfg.habilitado
+                        ? `<span style="color:var(--secondary); font-weight:700;">${_fmtFechaHora(c.objetivo)}</span>`
+                        : `<span style="color:#aaa;">Feature apagado</span>`}
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        console.error('Error loading carritos pendientes:', err);
+        tbody.innerHTML = `<tr><td colspan="4" style="padding:20px; text-align:center; color:var(--error);">Error al cargar. Probá de nuevo.</td></tr>`;
+    }
+}
+
+export async function loadCarritoAbandonadoHistorial() {
+    const tbody = document.getElementById('ca-historial-body');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="5" style="padding:20px; text-align:center; color:#999;">Cargando...</td></tr>`;
+
+    try {
+        const snap = await getDocs(query(collection(db, 'carritos_abandonados_log'), orderBy('mailEnviadoEn', 'desc'), limit(50)));
+        if (snap.empty) {
+            tbody.innerHTML = `<tr><td colspan="5" style="padding:20px; text-align:center; color:#999;">Todavía no se mandó ningún recordatorio.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = snap.docs.map(d => {
+            const l = d.data();
+            const mailEnviadoEn = l.mailEnviadoEn?.toDate ? l.mailEnviadoEn.toDate() : null;
+            return `
+            <tr>
+                <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0;">${l.nombre || l.email || l.uid}</td>
+                <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0; font-size:0.82rem; color:#555;">${_resumenItems(l.items)}</td>
+                <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0; font-size:0.82rem;">${_fmtFechaHora(mailEnviadoEn)}</td>
+                <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0; text-align:center;">${l.recuperado ? '✅' : '—'}</td>
+                <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0; text-align:center;">${l.convertido ? `✅ <span style="font-size:0.72rem; color:#999;">(${l.ordenId || ''})</span>` : '—'}</td>
+            </tr>`;
+        }).join('');
+    } catch (err) {
+        console.error('Error loading historial carrito abandonado:', err);
+        tbody.innerHTML = `<tr><td colspan="5" style="padding:20px; text-align:center; color:var(--error);">Error al cargar. Probá de nuevo.</td></tr>`;
+    }
+}
+
 export async function guardarParametrosCarritoAbandonado() {
     const modo = document.getElementById('ca-modo')?.value || 'mismaHora';
     const xHoras = Number(document.getElementById('ca-x-horas')?.value);

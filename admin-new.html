@@ -2093,6 +2093,47 @@
 
                 <button class="btn-primary" onclick="window.tiendaAdmin.guardarParametrosCarritoAbandonado()" style="margin:0; width:auto; padding:10px 24px; font-size:0.85rem; height:auto;">Guardar parámetros</button>
             </div>
+
+            <div class="card" style="padding:0; margin-top:24px; overflow:hidden;">
+                <div style="padding:16px 20px; border-bottom:1px solid var(--border);">
+                    <strong>Pendientes</strong>
+                    <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">Carritos guardados que todavía no recibieron el recordatorio, y cuándo les toca.</div>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
+                        <thead style="background:#fdfcf7;">
+                            <tr>
+                                <th style="text-align:left; padding:10px 12px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Cliente</th>
+                                <th style="text-align:left; padding:10px 12px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Productos</th>
+                                <th style="text-align:left; padding:10px 12px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Abandonó</th>
+                                <th style="text-align:left; padding:10px 12px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Próximo envío</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ca-pendientes-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="padding:0; margin-top:24px; overflow:hidden;">
+                <div style="padding:16px 20px; border-bottom:1px solid var(--border);">
+                    <strong>Historial de recordatorios</strong>
+                    <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">Últimos 50 mails enviados — si volvieron por el link y si terminaron comprando.</div>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
+                        <thead style="background:#fdfcf7;">
+                            <tr>
+                                <th style="text-align:left; padding:10px 12px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Cliente</th>
+                                <th style="text-align:left; padding:10px 12px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Productos</th>
+                                <th style="text-align:left; padding:10px 12px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Mail enviado</th>
+                                <th style="text-align:center; padding:10px 12px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Volvió por el mail</th>
+                                <th style="text-align:center; padding:10px 12px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Convirtió</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ca-historial-body"></tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
         <section id="tienda-arrepentimientos" class="section-content">
@@ -3181,7 +3222,7 @@
         import {
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
-        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=25';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=26';
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=12';
         window.cartaAdmin = cartaAdmin;
@@ -3302,7 +3343,11 @@
             if (target === 'tienda-categorias') window.tiendaAdmin.loadCategoriasTable();
             if (target === 'tienda-ordenes') window.tiendaAdmin.loadOrdenesTable();
             if (target === 'tienda-cupones') { window.tiendaAdmin.loadCuponesTable(); window.tiendaAdmin.loadCuponesConfig(); }
-            if (target === 'tienda-carrito-abandonado') window.tiendaAdmin.loadCarritoAbandonadoConfig();
+            if (target === 'tienda-carrito-abandonado') {
+                window.tiendaAdmin.loadCarritoAbandonadoConfig();
+                window.tiendaAdmin.loadCarritoAbandonadoPendientes();
+                window.tiendaAdmin.loadCarritoAbandonadoHistorial();
+            }
             if (target === 'tienda-arrepentimientos') loadArrepentimientos();
             if (target === 'tienda-config') window.tiendaAdmin.loadConfigStore();
             if (target === 'tienda-clarus') window.tiendaAdmin.loadClarusConfig();

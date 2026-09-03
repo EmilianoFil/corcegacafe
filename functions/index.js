@@ -749,6 +749,24 @@ exports.revisarCarritosAbandonados = onSchedule(
           emailEnviadoPara: actualizadoMillis,
           emailEnviadoEn: admin.firestore.FieldValue.serverTimestamp(),
         });
+
+        // Registro histórico (para el panel de admin): a diferencia del doc "vivo" en
+        // carritos_guardados (que se pisa/borra), este queda para siempre y trackea si
+        // el cliente volvió por el link del mail y si terminó comprando.
+        await db.collection("carritos_abandonados_log").add({
+          uid,
+          nombre: usuario.nombre || "",
+          email: usuario.email,
+          items: itemsDisponibles,
+          abandonadoEn: actualizado,
+          mailEnviadoEn: admin.firestore.FieldValue.serverTimestamp(),
+          recuperado: false,
+          recuperadoEn: null,
+          convertido: false,
+          convertidoEn: null,
+          ordenId: null,
+        });
+
         logger.info(`✅ Mail de carrito abandonado enviado a ${usuario.email} (uid ${uid})`);
       } catch (error) {
         logger.error(`❌ Error procesando carrito abandonado de uid ${uid}:`, error);
@@ -1357,7 +1375,27 @@ exports.onOrderCreated = onDocumentCreated({
     if (!snapshot) return;
     const orderData = snapshot.data();
     const orderId = event.params.orderId;
-    
+
+    // 0. Cerrar el círculo del recordatorio de carrito abandonado, si corresponde
+    // (no bloquea el resto del flujo de la orden si falla).
+    if (orderData.cliente?.uid) {
+        try {
+            const logSnap = await db.collection("carritos_abandonados_log")
+                .where("uid", "==", orderData.cliente.uid)
+                .where("convertido", "==", false)
+                .orderBy("mailEnviadoEn", "desc")
+                .limit(1)
+                .get();
+            if (!logSnap.empty) {
+                await logSnap.docs[0].ref.update({
+                    convertido: true,
+                    convertidoEn: admin.firestore.FieldValue.serverTimestamp(),
+                    ordenId: orderId,
+                });
+            }
+        } catch (e) { logger.warn("No se pudo cerrar el log de carrito abandonado:", e.message); }
+    }
+
     // 1. Obtener número de orden correlativo usando una transacción
     const counterRef = db.collection("metadata").doc("ordenes");
     let orderNumber = "0000";
