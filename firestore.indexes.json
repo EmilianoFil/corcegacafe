@@ -1,6 +1,56 @@
 {
   "indexes": [
     {
+      "collectionGroup": "carritos_abandonados_log",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" },
+        { "fieldPath": "convertido", "order": "ASCENDING" },
+        { "fieldPath": "mailEnviadoEn", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "carritos_abandonados_log",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" },
+        { "fieldPath": "recuperado", "order": "ASCENDING" },
+        { "fieldPath": "mailEnviadoEn", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "carta_platos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "seccionId", "order": "ASCENDING" },
+        { "fieldPath": "orden", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "accion", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "accion", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "detalles", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "ordenes",
       "queryScope": "COLLECTION",
       "fields": [
@@ -20,36 +70,38 @@
       "collectionGroup": "ordenes",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "estado", "order": "ASCENDING" },
-        { "fieldPath": "timestamp", "order": "DESCENDING" }
+        { "fieldPath": "cliente.uid", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "ordenes",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "cliente.uid", "order": "ASCENDING" },
-        { "fieldPath": "timestamp", "order": "ASCENDING" }
+        { "fieldPath": "estado", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "carritos_abandonados_log",
+      "collectionGroup": "productos",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "uid", "order": "ASCENDING" },
-        { "fieldPath": "convertido", "order": "ASCENDING" },
-        { "fieldPath": "mailEnviadoEn", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "carritos_abandonados_log",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "uid", "order": "ASCENDING" },
-        { "fieldPath": "recuperado", "order": "ASCENDING" },
-        { "fieldPath": "mailEnviadoEn", "order": "DESCENDING" }
+        { "fieldPath": "activo", "order": "ASCENDING" },
+        { "fieldPath": "creadoEn", "order": "DESCENDING" }
       ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "logs",
+      "fieldPath": "timestamp",
+      "ttl": false,
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION" },
+        { "order": "DESCENDING", "queryScope": "COLLECTION" },
+        { "arrayConfig": "CONTAINS", "queryScope": "COLLECTION" },
+        { "order": "DESCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    }
+  ]
 }
