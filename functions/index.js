@@ -1260,6 +1260,18 @@ exports.crearPreferenciaMP = onRequest(
           return res.status(400).send("No hay items para esta orden");
         }
 
+        // Medios de pago por producto: si algún producto restringe medios y no incluye
+        // Mercado Pago, no generamos la preferencia (el front ya lo filtra, esto es el respaldo).
+        const prodIds = [...new Set(items.map(i => i.id).filter(Boolean))];
+        const prodDocs = await Promise.all(prodIds.map(id => admin.firestore().collection("productos").doc(id).get()));
+        const noPermiteMP = prodDocs.some(d => {
+          const m = d.exists ? d.data().mediosPago : null;
+          return Array.isArray(m) && m.length > 0 && !m.includes("mercadopago");
+        });
+        if (noPermiteMP) {
+          return res.status(400).send("Algún producto del pedido no admite Mercado Pago");
+        }
+
         const client = new MercadoPagoConfig({ accessToken: mpAccessToken.value() });
         const preference = new Preference(client);
 

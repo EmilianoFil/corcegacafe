@@ -1,6 +1,6 @@
 import { db, storage, auth } from '../firebase-config.js';
 import {
-    collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy, setDoc, onSnapshot, limit, where, Timestamp
+    collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, query, orderBy, setDoc, onSnapshot, limit, where, Timestamp, writeBatch
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import {
     ref, uploadBytes, getDownloadURL
@@ -102,6 +102,9 @@ export async function mostrarFormularioProducto() {
     
     document.getElementById('prod-stock').disabled = false;
     document.getElementById('prod-stock-ilimitado').checked = false;
+
+    // Reset medios de pago
+    cargarMediosPagoForm(null);
 
     // Reset Combo
     if (document.getElementById('prod-es-combo')) {
@@ -315,6 +318,9 @@ export async function loadProductosTable() {
                         <span style="background:rgba(13, 43, 55, 0.05); color:var(--secondary); padding:4px 10px; border-radius:8px; font-size:0.7rem; font-weight:700; text-transform:uppercase;">${p.categoria || 'Sin Cat'}</span>
                     </td>
                     <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
+                        <button onclick="window.tiendaAdmin.abrirMediosPago('${p.id}')" title="Editar medios de pago" style="background:#f0f0f0; border:none; border-radius:8px; cursor:pointer; padding:5px 10px; font-size:0.72rem; font-weight:700; color:var(--secondary); white-space:nowrap;">💳 ${resumenMediosPago(p.mediosPago)}</button>
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
                         ${p.activo !== false ? '<span style="color:var(--success); font-weight:700;"><span style="font-size:1.2rem; vertical-align:middle;">•</span> Activo</span>' : '<span style="color:#aaa; font-weight:700;"><span style="font-size:1.2rem; vertical-align:middle;">•</span> Oculto</span>'}
                     </td>
                     <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5; text-align: right;">
@@ -371,6 +377,7 @@ export async function guardarProducto(e) {
             ? collectVariantesData()
             : {},
         productosRelacionados: window._productosRelacionados || [],
+        mediosPago: leerMediosPagoForm(),
         esCombo: document.getElementById('prod-es-combo')?.checked || false,
         componentIds: document.getElementById('prod-es-combo')?.checked ? getComboComponentIds() : [],
     };
@@ -458,6 +465,8 @@ export async function editarProducto(id) {
         combSection.style.display = 'none';
     }
 
+    cargarMediosPagoForm(p.mediosPago);
+
     // Load combo fields
     if (document.getElementById('prod-es-combo')) {
         const esCombo = p.esCombo || false;
@@ -515,6 +524,112 @@ export async function editarProducto(id) {
     document.querySelector('.prod-tab-btn')?.classList.add('active');
 
     document.getElementById('form-producto-container').scrollIntoView({ behavior: 'smooth' });
+}
+
+
+// ============================================
+// MEDIOS DE PAGO POR PRODUCTO
+// mediosPago ausente o vacío = acepta todos los medios habilitados en la tienda
+// ============================================
+const MEDIOS_PAGO = {
+    mercadopago: 'Mercado Pago',
+    transferencia: 'Transferencia',
+    efectivo: 'Efectivo'
+};
+
+function resumenMediosPago(medios) {
+    if (!Array.isArray(medios) || medios.length === 0) return 'Todos';
+    return medios.map(m => MEDIOS_PAGO[m] || m).join(' + ');
+}
+
+function cargarMediosPagoForm(medios) {
+    const todos = document.getElementById('prod-pagos-todos');
+    if (!todos) return;
+    const especificos = Array.isArray(medios) && medios.length > 0;
+    todos.checked = !especificos;
+    document.getElementById('prod-pagos-lista').style.display = especificos ? 'flex' : 'none';
+    document.querySelectorAll('.prod-pago-chk').forEach(c => { c.checked = especificos && medios.includes(c.value); });
+}
+
+function leerMediosPagoForm() {
+    const todos = document.getElementById('prod-pagos-todos');
+    if (!todos || todos.checked) return [];
+    return Array.from(document.querySelectorAll('.prod-pago-chk')).filter(c => c.checked).map(c => c.value);
+}
+
+// Modal chico reutilizado para un producto (desde la lista) o para todos (masivo)
+function mostrarModalMediosPago({ titulo, medios, onGuardar }) {
+    document.getElementById('modal-medios-pago')?.remove();
+    const especificos = Array.isArray(medios) && medios.length > 0;
+    const modal = document.createElement('div');
+    modal.id = 'modal-medios-pago';
+    modal.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:12000; display:flex; align-items:center; justify-content:center; padding:20px;';
+    modal.innerHTML = `
+        <div style="background:white; border-radius:20px; padding:28px; width:100%; max-width:380px; position:relative;">
+            <h3 style="margin:0 0 6px; color:var(--secondary);">💳 Medios de pago</h3>
+            <p style="margin:0 0 16px; font-size:0.8rem; color:#888;">${titulo}</p>
+            <label style="display:flex; align-items:center; gap:10px; font-weight:600; margin-bottom:12px;">
+                <input type="checkbox" id="mmp-todos" ${especificos ? '' : 'checked'} style="width:auto;"> Todos los medios habilitados en la tienda
+            </label>
+            <div id="mmp-lista" style="display:${especificos ? 'flex' : 'none'}; flex-direction:column; gap:8px; margin-bottom:12px;">
+                ${Object.entries(MEDIOS_PAGO).map(([k, label]) => `
+                    <label style="display:flex; align-items:center; gap:10px;">
+                        <input type="checkbox" class="mmp-chk" value="${k}" ${especificos && medios.includes(k) ? 'checked' : ''} style="width:auto;"> ${label}
+                    </label>`).join('')}
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
+                <button type="button" id="mmp-cancelar" class="btn-secondary" style="margin:0; width:auto; padding:8px 16px;">Cancelar</button>
+                <button type="button" id="mmp-guardar" class="btn-primary" style="margin:0; width:auto; padding:8px 16px; height:auto;">Guardar</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+    const todos = modal.querySelector('#mmp-todos');
+    todos.onchange = () => { modal.querySelector('#mmp-lista').style.display = todos.checked ? 'none' : 'flex'; };
+    modal.querySelector('#mmp-cancelar').onclick = () => modal.remove();
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    modal.querySelector('#mmp-guardar').onclick = async () => {
+        const sel = todos.checked ? [] : Array.from(modal.querySelectorAll('.mmp-chk')).filter(c => c.checked).map(c => c.value);
+        if (!todos.checked && sel.length === 0) {
+            alert('Elegí al menos un medio de pago, o dejá "Todos".');
+            return;
+        }
+        const btn = modal.querySelector('#mmp-guardar');
+        btn.disabled = true; btn.innerText = 'Guardando...';
+        try {
+            await onGuardar(sel);
+            modal.remove();
+            loadProductosTable();
+        } catch (err) {
+            console.error(err);
+            alert('Error al guardar los medios de pago');
+            btn.disabled = false; btn.innerText = 'Guardar';
+        }
+    };
+}
+
+export function abrirMediosPago(id) {
+    const p = productosData.find(item => item.id === id);
+    if (!p) return;
+    mostrarModalMediosPago({
+        titulo: p.nombre,
+        medios: p.mediosPago,
+        onGuardar: (sel) => updateDoc(doc(db, "productos", id), { mediosPago: sel, actualizadoEn: serverTimestamp() })
+    });
+}
+
+export function abrirMediosPagoMasivo() {
+    mostrarModalMediosPago({
+        titulo: `Se va a aplicar a los ${productosData.length} productos de la lista (combos incluidos). Reemplaza lo que tengan configurado.`,
+        medios: [],
+        onGuardar: async (sel) => {
+            const docs = productosData.map(p => p.id);
+            for (let i = 0; i < docs.length; i += 400) {
+                const batch = writeBatch(db);
+                docs.slice(i, i + 400).forEach(pid => batch.update(doc(db, "productos", pid), { mediosPago: sel }));
+                await batch.commit();
+            }
+        }
+    });
 }
 
 export async function eliminarProducto(id) {

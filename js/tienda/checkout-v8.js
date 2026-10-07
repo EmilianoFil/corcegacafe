@@ -22,6 +22,7 @@ const deliveryGroup = document.getElementById('delivery-address-group');
 const paymentMethod = document.getElementById('payment-method');
 const transferInfo = document.getElementById('transfer-info');
 const btnFinalizar = document.getElementById('btn-finalizar-pedido');
+let pagoBloqueado = false; // true si ningún medio de pago sirve para todos los productos del carrito
 
 // --- INITIALIZATION ---
 function init() {
@@ -108,13 +109,38 @@ async function applyStoreConfig() {
         const transferEnabled = config.pagos?.transferencia?.habilitado !== false;
         const cashEnabled = config.pagos?.efectivo?.habilitado === true;
 
-        let paymentOptionsHTML = "";
-        if (mpEnabled) paymentOptionsHTML += `<option value="mercadopago">Mercado Pago</option>`;
-        if (transferEnabled) paymentOptionsHTML += `<option value="transferencia">Transferencia Bancaria</option>`;
-        if (cashEnabled) paymentOptionsHTML += `<option value="efectivo">Efectivo / En Local</option>`;
+        // Medios habilitados en la tienda ∩ medios que acepta cada producto del carrito
+        // (producto sin mediosPago = acepta todos los habilitados)
+        let disponibles = [];
+        if (mpEnabled) disponibles.push('mercadopago');
+        if (transferEnabled) disponibles.push('transferencia');
+        if (cashEnabled) disponibles.push('efectivo');
+
+        const ids = [...new Set(cart.map(i => i.id).filter(Boolean))];
+        const prodSnaps = await Promise.all(ids.map(id => getDoc(doc(db, "productos", id)).catch(() => null)));
+        prodSnaps.forEach(ps => {
+            const permitidos = ps?.exists() ? ps.data().mediosPago : null;
+            if (Array.isArray(permitidos) && permitidos.length > 0) {
+                disponibles = disponibles.filter(m => permitidos.includes(m));
+            }
+        });
+
+        const labels = {
+            mercadopago: 'Mercado Pago',
+            transferencia: 'Transferencia Bancaria',
+            efectivo: 'Efectivo / En Local'
+        };
+        const paymentOptionsHTML = disponibles.map(m => `<option value="${m}">${labels[m]}</option>`).join('');
+        pagoBloqueado = disponibles.length === 0;
 
         if (paymentMethod) {
             paymentMethod.innerHTML = paymentOptionsHTML;
+            if (pagoBloqueado) {
+                const aviso = document.createElement('div');
+                aviso.style.cssText = "padding: 12px 15px; background: #fff3f0; border: 1px solid #f5c6bd; border-radius: 12px; font-size: 13px; color: #8a2b1a; margin-top: 10px;";
+                aviso.textContent = "Los productos de tu carrito no comparten un medio de pago. Hacé la compra por separado (o escribinos por WhatsApp) para poder continuar.";
+                paymentMethod.parentNode.insertBefore(aviso, paymentMethod.nextSibling);
+            }
             // Texto inicial del botón según método por defecto
             updateFinalizarBtnLabel(paymentMethod.value);
         }
@@ -492,6 +518,7 @@ function validateForm() {
         if (!direccion) valid = false;
     }
 
+    if (pagoBloqueado) valid = false;
     btnFinalizar.disabled = !valid;
     if (valid) updateFinalizarBtnLabel(paymentMethod?.value);
 }
@@ -507,6 +534,10 @@ async function handleOrderSubmission() {
     const metodoPago = paymentMethod.value;
 
     // Validation
+    if (pagoBloqueado || !metodoPago) {
+        alert("No hay un medio de pago disponible para todos los productos del carrito.");
+        return;
+    }
     if (!nombre || !whatsapp || !email) {
         alert("Por favor completá tu nombre, email y WhatsApp para que podamos contactarte y enviarte el seguimiento.");
         return;

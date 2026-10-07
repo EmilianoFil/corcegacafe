@@ -1440,6 +1440,7 @@
                         style="display:inline-flex; align-items:center; gap:7px; padding:10px 18px; background:#f0f7f4; color:#1a6b3a; border:1.5px solid #b2e8c4; border-radius:12px; font-size:0.82rem; font-weight:700; text-decoration:none; cursor:pointer;">
                         👁️ Preview tienda
                     </a>
+                    <button class="btn-secondary" onclick="window.tiendaAdmin.abrirMediosPagoMasivo()" style="margin:0 8px 0 0; width: auto; padding: 10px 20px; font-size: 0.85rem; height: auto;">💳 Medios de pago a todos</button>
                     <button class="btn-primary" onclick="window.tiendaAdmin.mostrarFormularioProducto()" style="margin:0; width: auto; padding: 10px 20px; font-size: 0.85rem; height: auto;">+ Nuevo Producto</button>
                 </div>
             </div>
@@ -1505,6 +1506,21 @@
                         <div class="input-group" style="display: flex; align-items: center; gap: 10px;">
                             <input type="checkbox" id="prod-activo" checked style="width: auto;">
                             <label for="prod-activo" style="margin-bottom: 0;">Producto Activo (Visible)</label>
+                        </div>
+                        <div class="input-group">
+                            <label>💳 Medios de pago</label>
+                            <div style="background:#fdfcf7; padding:14px 18px; border-radius:16px; border:1px solid var(--border);">
+                                <label style="display:flex; align-items:center; gap:10px; margin:0; font-weight:600;">
+                                    <input type="checkbox" id="prod-pagos-todos" checked style="width:auto;"
+                                        onchange="document.getElementById('prod-pagos-lista').style.display = this.checked ? 'none' : 'flex'">
+                                    Todos los medios habilitados en la tienda
+                                </label>
+                                <div id="prod-pagos-lista" style="display:none; flex-direction:column; gap:8px; margin-top:12px;">
+                                    <label style="display:flex; align-items:center; gap:10px; margin:0;"><input type="checkbox" class="prod-pago-chk" value="mercadopago" style="width:auto;"> Mercado Pago</label>
+                                    <label style="display:flex; align-items:center; gap:10px; margin:0;"><input type="checkbox" class="prod-pago-chk" value="transferencia" style="width:auto;"> Transferencia Bancaria</label>
+                                    <label style="display:flex; align-items:center; gap:10px; margin:0;"><input type="checkbox" class="prod-pago-chk" value="efectivo" style="width:auto;"> Efectivo / En Local</label>
+                                </div>
+                            </div>
                         </div>
                         <div class="input-group">
                             <label>Imagen Principal (Portada)</label>
@@ -1727,6 +1743,7 @@
                                 <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Precio</th>
                                 <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Stock</th>
                                 <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Categoría</th>
+                                <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Pago</th>
                                 <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Estado</th>
                                 <th style="text-align: right; padding: 12px 15px; border-bottom: 1px solid #eee;">Acciones</th>
                             </tr>
@@ -3222,7 +3239,7 @@
         import {
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
-        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=26';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=27';
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=12';
         window.cartaAdmin = cartaAdmin;
