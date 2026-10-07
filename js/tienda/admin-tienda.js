@@ -105,6 +105,7 @@ export async function mostrarFormularioProducto() {
 
     // Reset medios de pago
     cargarMediosPagoForm(null);
+    aplicarDisponibilidadPagosForm();
 
     // Reset Combo
     if (document.getElementById('prod-es-combo')) {
@@ -382,6 +383,16 @@ export async function guardarProducto(e) {
         componentIds: document.getElementById('prod-es-combo')?.checked ? getComboComponentIds() : [],
     };
 
+    if (productData.mediosPago.length > 0 && window._pagosHabilitados &&
+        !productData.mediosPago.some(m => window._pagosHabilitados.includes(m))) {
+        alert('Los medios de pago elegidos están apagados en Configuración de Tienda. Elegí al menos uno encendido, o dejá "Todos".');
+        return;
+    }
+    if (document.getElementById('prod-pagos-todos') && !document.getElementById('prod-pagos-todos').checked && productData.mediosPago.length === 0) {
+        alert('Elegí al menos un medio de pago, o dejá "Todos".');
+        return;
+    }
+
     btn.disabled = true;
     btn.innerText = "Guardando... ⏳";
 
@@ -466,6 +477,7 @@ export async function editarProducto(id) {
     }
 
     cargarMediosPagoForm(p.mediosPago);
+    aplicarDisponibilidadPagosForm();
 
     // Load combo fields
     if (document.getElementById('prod-es-combo')) {
@@ -537,6 +549,38 @@ const MEDIOS_PAGO = {
     efectivo: 'Efectivo'
 };
 
+// Medios encendidos en Configuración de Tienda (mismos defaults que el checkout)
+async function getPagosHabilitados() {
+    try {
+        const snap = await getDoc(doc(db, "configuracion", "tienda"));
+        const pagos = snap.exists() ? (snap.data().pagos || {}) : {};
+        const hab = [];
+        if (pagos.mercadopago !== false) hab.push('mercadopago');
+        if (pagos.transferencia?.habilitado !== false) hab.push('transferencia');
+        if (pagos.efectivo?.habilitado === true) hab.push('efectivo');
+        return hab;
+    } catch (e) {
+        console.warn('No se pudo leer la config de pagos:', e);
+        return Object.keys(MEDIOS_PAGO);
+    }
+}
+
+const aceptaMedio = (p, m) => !Array.isArray(p.mediosPago) || p.mediosPago.length === 0 || p.mediosPago.includes(m);
+
+// Deshabilita en el formulario de producto los medios apagados en Configuración
+async function aplicarDisponibilidadPagosForm() {
+    const hab = await getPagosHabilitados();
+    window._pagosHabilitados = hab;
+    document.querySelectorAll('.prod-pago-chk').forEach(c => {
+        const off = !hab.includes(c.value);
+        c.disabled = off;
+        const lbl = c.closest('label');
+        lbl.style.opacity = off ? '0.5' : '1';
+        lbl.querySelector('.pago-off-tag')?.remove();
+        if (off) lbl.insertAdjacentHTML('beforeend', ' <span class="pago-off-tag" style="font-size:0.7rem; color:#c0392b;">(apagado en Configuración)</span>');
+    });
+}
+
 function resumenMediosPago(medios) {
     if (!Array.isArray(medios) || medios.length === 0) return 'Todos';
     return medios.map(m => MEDIOS_PAGO[m] || m).join(' + ');
@@ -558,7 +602,7 @@ function leerMediosPagoForm() {
 }
 
 // Modal chico reutilizado para un producto (desde la lista) o para todos (masivo)
-function mostrarModalMediosPago({ titulo, medios, onGuardar }) {
+function mostrarModalMediosPago({ titulo, medios, habilitados, onGuardar }) {
     document.getElementById('modal-medios-pago')?.remove();
     const especificos = Array.isArray(medios) && medios.length > 0;
     const modal = document.createElement('div');
@@ -572,10 +616,12 @@ function mostrarModalMediosPago({ titulo, medios, onGuardar }) {
                 <input type="checkbox" id="mmp-todos" ${especificos ? '' : 'checked'} style="width:auto;"> Todos los medios habilitados en la tienda
             </label>
             <div id="mmp-lista" style="display:${especificos ? 'flex' : 'none'}; flex-direction:column; gap:8px; margin-bottom:12px;">
-                ${Object.entries(MEDIOS_PAGO).map(([k, label]) => `
-                    <label style="display:flex; align-items:center; gap:10px;">
-                        <input type="checkbox" class="mmp-chk" value="${k}" ${especificos && medios.includes(k) ? 'checked' : ''} style="width:auto;"> ${label}
-                    </label>`).join('')}
+                ${Object.entries(MEDIOS_PAGO).map(([k, label]) => {
+                    const off = !habilitados.includes(k);
+                    return `<label style="display:flex; align-items:center; gap:10px; ${off ? 'opacity:0.5;' : ''}">
+                        <input type="checkbox" class="mmp-chk" value="${k}" ${especificos && medios.includes(k) ? 'checked' : ''} ${off ? 'disabled' : ''} style="width:auto;"> ${label}${off ? ' <span style="font-size:0.7rem; color:#c0392b;">(apagado en Configuración)</span>' : ''}
+                    </label>`;
+                }).join('')}
             </div>
             <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
                 <button type="button" id="mmp-cancelar" class="btn-secondary" style="margin:0; width:auto; padding:8px 16px;">Cancelar</button>
@@ -588,8 +634,8 @@ function mostrarModalMediosPago({ titulo, medios, onGuardar }) {
     modal.querySelector('#mmp-cancelar').onclick = () => modal.remove();
     modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
     modal.querySelector('#mmp-guardar').onclick = async () => {
-        const sel = todos.checked ? [] : Array.from(modal.querySelectorAll('.mmp-chk')).filter(c => c.checked).map(c => c.value);
-        if (!todos.checked && sel.length === 0) {
+        const sel = todos.checked ? [] : Array.from(modal.querySelectorAll('.mmp-chk')).filter(c => c.checked).map(c => c.value); // los apagados conservan su estado
+        if (!todos.checked && !sel.some(m => habilitados.includes(m))) {
             alert('Elegí al menos un medio de pago, o dejá "Todos".');
             return;
         }
@@ -607,18 +653,20 @@ function mostrarModalMediosPago({ titulo, medios, onGuardar }) {
     };
 }
 
-export function abrirMediosPago(id) {
+export async function abrirMediosPago(id) {
     const p = productosData.find(item => item.id === id);
     if (!p) return;
     mostrarModalMediosPago({
         titulo: p.nombre,
         medios: p.mediosPago,
+        habilitados: await getPagosHabilitados(),
         onGuardar: (sel) => updateDoc(doc(db, "productos", id), { mediosPago: sel, actualizadoEn: serverTimestamp() })
     });
 }
 
-export function abrirMediosPagoMasivo() {
+export async function abrirMediosPagoMasivo() {
     mostrarModalMediosPago({
+        habilitados: await getPagosHabilitados(),
         titulo: `Se va a aplicar a los ${productosData.length} productos de la lista (combos incluidos). Reemplaza lo que tengan configurado.`,
         medios: [],
         onGuardar: async (sel) => {
@@ -1028,6 +1076,96 @@ export async function cambiarEstadoOrden(id, nuevoEstado) {
 // CONFIGURACION TIENDA
 // ============================================
 
+
+// ============================================
+// ASIGNACIÓN DE PRODUCTOS DESDE CONFIGURACIÓN DE TIENDA
+// Los datos viven en cada producto (mediosPago); acá se editan "por medio de pago".
+// ============================================
+const CONF_PAY_SWITCH = { mercadopago: 'conf-pay-mp', transferencia: 'conf-pay-transfer', efectivo: 'conf-pay-cash' };
+
+function renderAsignacionPagos() {
+    Object.keys(MEDIOS_PAGO).forEach(m => {
+        const cont = document.getElementById(`conf-pay-asig-${m}`);
+        if (!cont) return;
+        const aceptan = productosData.filter(p => aceptaMedio(p, m));
+        const todos = productosData.length > 0 && aceptan.length === productosData.length;
+        cont.innerHTML = `
+            <div style="margin-top:12px; padding-top:12px; border-top:1px dashed #e5e5e5;">
+                <label style="font-size:10px; font-weight:800; color:#aaa; text-transform:uppercase; letter-spacing:0.5px;">Disponible en</label>
+                <div style="display:flex; flex-direction:column; gap:6px; margin:6px 0;">
+                    <label style="display:flex; align-items:center; gap:8px; font-size:13px; margin:0;"><input type="radio" name="asig-${m}" value="todos" ${todos ? 'checked' : ''} style="width:auto;"> Todos los productos</label>
+                    <label style="display:flex; align-items:center; gap:8px; font-size:13px; margin:0;"><input type="radio" name="asig-${m}" value="elegidos" ${todos ? '' : 'checked'} style="width:auto;"> Solo los que elija <span style="color:#aaa;">(${aceptan.length} de ${productosData.length})</span></label>
+                </div>
+                <div id="asig-lista-${m}" style="display:${todos ? 'none' : 'block'};">
+                    <div style="display:flex; gap:12px; margin-bottom:6px; font-size:12px;">
+                        <a href="#" data-asig-all="${m}" style="color:var(--primary);">Marcar todos</a>
+                        <a href="#" data-asig-none="${m}" style="color:var(--primary);">Ninguno</a>
+                    </div>
+                    <div style="max-height:170px; overflow-y:auto; border:1px solid #eee; border-radius:8px; padding:8px 10px; display:flex; flex-direction:column; gap:5px;">
+                        ${productosData.map(p => `<label style="display:flex; align-items:center; gap:8px; font-size:12.5px; margin:0;"><input type="checkbox" class="asig-chk-${m}" value="${p.id}" ${aceptaMedio(p, m) ? 'checked' : ''} style="width:auto;"> ${p.nombre}</label>`).join('')}
+                    </div>
+                </div>
+                <small id="asig-off-${m}" style="display:none; color:#c0392b; font-size:11px;">Encendé este medio para poder asignarlo a productos.</small>
+            </div>`;
+        cont.querySelectorAll(`input[name="asig-${m}"]`).forEach(r => r.onchange = () => {
+            document.getElementById(`asig-lista-${m}`).style.display = r.value === 'elegidos' && r.checked ? 'block' : 'none';
+        });
+        cont.querySelector(`[data-asig-all="${m}"]`).onclick = (e) => { e.preventDefault(); cont.querySelectorAll(`.asig-chk-${m}`).forEach(c => c.checked = true); };
+        cont.querySelector(`[data-asig-none="${m}"]`).onclick = (e) => { e.preventDefault(); cont.querySelectorAll(`.asig-chk-${m}`).forEach(c => c.checked = false); };
+        const sw = document.getElementById(CONF_PAY_SWITCH[m]);
+        if (sw) sw.onchange = () => actualizarEstadoAsignacion(m);
+        actualizarEstadoAsignacion(m);
+    });
+}
+
+// Medio apagado => no se puede asignar a productos
+function actualizarEstadoAsignacion(m) {
+    const cont = document.getElementById(`conf-pay-asig-${m}`);
+    if (!cont) return;
+    const on = document.getElementById(CONF_PAY_SWITCH[m])?.checked;
+    cont.querySelectorAll('input').forEach(i => { i.disabled = !on; });
+    cont.style.opacity = on ? '1' : '0.5';
+    const note = document.getElementById(`asig-off-${m}`);
+    if (note) note.style.display = on ? 'none' : 'block';
+}
+
+// Calcula los cambios de mediosPago por producto según lo marcado en la config.
+// Devuelve { cambios: [{id, mediosPago}], sinMedio: [nombres] }
+function planificarAsignacionPagos() {
+    const habilitados = Object.keys(MEDIOS_PAGO).filter(m => document.getElementById(CONF_PAY_SWITCH[m])?.checked);
+    const quiere = {}; // m -> Set de ids (o 'todos')
+    habilitados.forEach(m => {
+        const modo = document.querySelector(`input[name="asig-${m}"]:checked`)?.value;
+        if (!modo) { quiere[m] = null; return; } // UI no renderizada: no tocar
+        quiere[m] = modo === 'todos' ? 'todos' : new Set(Array.from(document.querySelectorAll(`.asig-chk-${m}`)).filter(c => c.checked).map(c => c.value));
+    });
+    const cambios = [], sinMedio = [];
+    productosData.forEach(p => {
+        const actual = Array.isArray(p.mediosPago) ? p.mediosPago : [];
+        const efectivoActual = habilitados.filter(m => aceptaMedio(p, m));
+        const deseado = habilitados.filter(m => quiere[m] === null ? aceptaMedio(p, m) : (quiere[m] === 'todos' || quiere[m].has(p.id)));
+        if (deseado.length === efectivoActual.length && deseado.every(m => efectivoActual.includes(m))) return;
+        if (deseado.length === 0) { sinMedio.push(p.nombre); return; }
+        const apagadosConservados = actual.filter(m => !habilitados.includes(m));
+        const todosLosHabilitados = deseado.length === habilitados.length;
+        cambios.push({ id: p.id, mediosPago: todosLosHabilitados && apagadosConservados.length === 0 ? [] : [...deseado, ...apagadosConservados] });
+    });
+    return { cambios, sinMedio };
+}
+
+async function aplicarAsignacionPagos(cambios) {
+    for (let i = 0; i < cambios.length; i += 400) {
+        const batch = writeBatch(db);
+        cambios.slice(i, i + 400).forEach(c => batch.update(doc(db, "productos", c.id), { mediosPago: c.mediosPago }));
+        await batch.commit();
+    }
+}
+
+async function cargarProductosParaConfig() {
+    const snap = await getDocs(query(collection(db, "productos"), orderBy("nombre", "asc")));
+    productosData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
 export async function loadConfigStore() {
     try {
         const snap = await getDoc(doc(db, "configuracion", "tienda"));
@@ -1053,6 +1191,10 @@ export async function loadConfigStore() {
                 document.getElementById('conf-pay-cash').checked = data.pagos?.efectivo?.habilitado || false;
             if (document.getElementById('conf-pay-cash-info'))
                 document.getElementById('conf-pay-cash-info').value = data.pagos?.efectivo?.info || "";
+            try {
+                await cargarProductosParaConfig();
+                renderAsignacionPagos();
+            } catch (e) { console.warn('No se pudo cargar la asignación de pagos:', e); }
             
             // Contacto
             if (document.getElementById('conf-contact-wa'))
@@ -1146,8 +1288,22 @@ export async function guardarConfigStore() {
         actualizadoEn: serverTimestamp()
     };
 
+    // Asignación de medios de pago a productos (se valida antes de guardar nada)
+    const plan = planificarAsignacionPagos();
+    if (plan.sinMedio.length > 0) {
+        alert('Estos productos quedarían sin ningún medio de pago encendido:\n\n• ' + plan.sinMedio.slice(0, 15).join('\n• ') + (plan.sinMedio.length > 15 ? '\n• …' : '') + '\n\nAsignales al menos un medio (o encendé otro) y volvé a guardar.');
+        btn.disabled = false;
+        btn.innerText = originalText;
+        return;
+    }
+
     try {
         await setDoc(doc(db, "configuracion", "tienda"), configData);
+        if (plan.cambios.length > 0) {
+            await aplicarAsignacionPagos(plan.cambios);
+            await cargarProductosParaConfig();
+            renderAsignacionPagos();
+        }
         alert("¡Configuración guardada correctamente! ✅");
     } catch (err) {
         console.error("Error saving config:", err);

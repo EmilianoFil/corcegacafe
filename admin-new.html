@@ -2204,6 +2204,7 @@
                             <span class="slider round"></span>
                         </label>
                     </div>
+                    <div id="conf-pay-asig-mercadopago" style="margin:-5px 0 15px; padding:0 15px;"></div>
 
                     <div style="margin-bottom: 15px; padding: 15px; border: 1px solid var(--border); border-radius: 12px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -2215,6 +2216,7 @@
                         </div>
                         <label style="font-size: 10px; font-weight: 800; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;">Instrucciones para el cliente</label>
                         <textarea id="conf-pay-transfer-info" rows="3" class="form-control" style="width:100%; border:1px solid #eee; border-radius:8px; font-size: 13px; margin-top: 5px; padding: 10px; font-family: inherit;" placeholder="Alias, CBU, Titular..."></textarea>
+                        <div id="conf-pay-asig-transferencia"></div>
                     </div>
 
                     <div style="padding: 15px; border: 1px solid var(--border); border-radius: 12px;">
@@ -2227,6 +2229,7 @@
                         </div>
                         <label style="font-size: 10px; font-weight: 800; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;">Instrucciones para el cliente</label>
                         <textarea id="conf-pay-cash-info" rows="2" class="form-control" style="width:100%; border:1px solid #eee; border-radius:8px; font-size: 13px; margin-top: 5px; padding: 10px; font-family: inherit;" placeholder="Ej: Paga al retirar en el local."></textarea>
+                        <div id="conf-pay-asig-efectivo"></div>
                     </div>
                 </div>
 
@@ -3239,7 +3242,7 @@
         import {
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
-        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=27';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=28';
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=12';
         window.cartaAdmin = cartaAdmin;
