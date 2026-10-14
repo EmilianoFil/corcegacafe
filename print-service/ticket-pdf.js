@@ -129,6 +129,8 @@ async function generarYAbrirPDF(pedido, id) {
 <body>
 <div class="ticket">
   <div class="header">Córcega Café | TIENDA ONLINE</div>
+  ${p.metodoPago === 'efectivo' ? '<div class="center bold" style="font-size:22px; margin:6px 0;">EFECTIVO</div>' : ''}
+  ${p.metodoPago === 'transferencia' ? '<div class="center bold" style="font-size:22px; margin:6px 0;">TRANSFERENCIA</div>' : ''}
   <div class="center muted espacio">${formatFechaHora(p.timestamp)}</div>
 
   <div class="campo"><b>Cliente:</b> ${p.cliente?.nombre || '—'}</div>

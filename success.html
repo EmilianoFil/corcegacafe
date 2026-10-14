@@ -498,6 +498,18 @@
                         ${mostrarArrepentimiento ? btnArrepentimiento : ''}
                     </div>
                 `;
+            } else if (order.metodoPago === 'efectivo') {
+                stepPago.classList.remove('active');
+                pagoText.innerText = "Pagás al retirar 💵";
+                mainTitle.innerText = "¡Pedido recibido!";
+                actionArea.innerHTML = `
+                    <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">
+                        <p style="font-size:13px; color:#666; margin-bottom:5px;">Ya registramos tu pedido. Abonás en efectivo cuando lo retirás en el local.</p>
+                        ${btnHome}
+                        ${btnOrders}
+                        ${mostrarArrepentimiento ? btnArrepentimiento : ''}
+                    </div>
+                `;
             } else {
                 // Pago pendiente Mercado Pago o Rechazado
                 stepPago.classList.remove('active');

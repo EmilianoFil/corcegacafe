@@ -3469,15 +3469,16 @@
             });
 
             // Donut método de pago
-            const mpCount = mes.filter(o => o.metodoPago !== 'transferencia').length;
+            const mpCount = mes.filter(o => o.metodoPago !== 'transferencia' && o.metodoPago !== 'efectivo').length;
             const trCount = mes.filter(o => o.metodoPago === 'transferencia').length;
+            const efCount = mes.filter(o => o.metodoPago === 'efectivo').length;
             if (_tdChartPago) _tdChartPago.destroy();
             _tdChartPago = new Chart(document.getElementById('td-chart-pago'), {
                 type: 'doughnut',
-                data: { labels: ['MercadoPago','Transferencia'], datasets: [{ data: [mpCount, trCount], backgroundColor: ['#009ee3','#22c55e'], borderWidth: 0, hoverOffset: 4 }] },
+                data: { labels: ['MercadoPago','Transferencia','Efectivo'], datasets: [{ data: [mpCount, trCount, efCount], backgroundColor: ['#009ee3','#22c55e','#f59e0b'], borderWidth: 0, hoverOffset: 4 }] },
                 options: { plugins:{ legend:{display:false} }, cutout:'70%', responsive:true, maintainAspectRatio:false }
             });
-            document.getElementById('td-legend-pago').innerHTML = `<span style="color:#009ee3">■</span> MP: ${mpCount} &nbsp; <span style="color:#22c55e">■</span> Transf: ${trCount}`;
+            document.getElementById('td-legend-pago').innerHTML = `<span style="color:#009ee3">■</span> MP: ${mpCount} &nbsp; <span style="color:#22c55e">■</span> Transf: ${trCount} &nbsp; <span style="color:#f59e0b">■</span> Efectivo: ${efCount}`;
 
             // Donut entrega
             const retiroCount   = mes.filter(o => o.metodoEntrega !== 'delivery').length;

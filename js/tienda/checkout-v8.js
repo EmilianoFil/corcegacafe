@@ -613,8 +613,8 @@ async function handleOrderSubmission() {
         // pasa a 'pagado' (confirmado por webhook de MP o por un admin en caso de transferencia).
 
         // 3. Lógica según método de pago
-        if (metodoPago === 'transferencia') {
-            // Limpiar carrito y redirigir a éxito directamente
+        if (metodoPago !== 'mercadopago') {
+            // Transferencia / efectivo: no hay pasarela. Limpiar carrito y redirigir a éxito directamente
             localStorage.removeItem('corcega_cart');
             window.location.href = `success.html?orderId=${orderId}`;
         } else {

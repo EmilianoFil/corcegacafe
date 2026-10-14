@@ -30,6 +30,11 @@ function generarTicket(pedido, id, b) {
     b.bigBold('Corcega Cafe | TIENDA ONLINE');
     b.espacio();
 
+    // Pago en efectivo / transferencia: se imprime ni bien se hace el pedido,
+    // asi que se aclara bien grande como va a pagar el cliente.
+    if (p.metodoPago === 'efectivo')      { b.bigBold('EFECTIVO');      b.espacio(); }
+    if (p.metodoPago === 'transferencia') { b.bigBold('TRANSFERENCIA'); b.espacio(); }
+
     // ── FECHA/HORA DEL PEDIDO ────────────────────────────────────────────────
     b.centro(formatFechaHora(p.timestamp));
     b.espacio();
@@ -91,4 +96,19 @@ function generarTicket(pedido, id, b) {
     b.cortar();
 }
 
-module.exports = { generarTicket };
+/**
+ * Decide si un pedido hay que imprimirlo ahora.
+ * - Pagados: siempre (Mercado Pago confirmado, o cobrado a mano por un admin).
+ * - Efectivo / transferencia: apenas se crea (todavia sin pagar), cuando ya tiene numero de orden.
+ */
+const ESTADOS_SIN_PAGAR = ['pendiente_pago', 'transferencia', 'recibido'];
+function debeImprimir(p) {
+    if (!p || p.impreso === true) return false;
+    if (p.estado === 'pagado') return true;
+    return ['efectivo', 'transferencia'].includes(p.metodoPago)
+        && ESTADOS_SIN_PAGAR.includes(p.estado)
+        && !!p.orderNumber;
+}
+const ESTADOS_ESCUCHADOS = ['pagado', ...ESTADOS_SIN_PAGAR];
+
+module.exports = { generarTicket, debeImprimir, ESTADOS_ESCUCHADOS };

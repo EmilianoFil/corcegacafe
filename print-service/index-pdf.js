@@ -11,6 +11,7 @@ const path  = require('path');
 const admin = require('firebase-admin');
 
 const { generarYAbrirPDF } = require('./ticket-pdf.js');
+const { debeImprimir, ESTADOS_ESCUCHADOS } = require('./ticket.js');
 
 // ─── DIRECTORIO REAL (funciona tanto con "node index-pdf.js" como con el .exe)
 // process.pkg se define cuando corre como ejecutable pkg
@@ -90,16 +91,17 @@ async function procesarConReintentos(snap) {
 // ─── LISTENER ────────────────────────────────────────────────────────────────
 // Escucha TODOS los pagados y filtra en JS (cubre órdenes sin campo "impreso")
 function iniciarListener() {
-    log('Escuchando pedidos pagados...');
+    log('Escuchando pedidos pagados y pedidos en efectivo/transferencia...');
 
     db.collection('ordenes')
-      .where('estado', '==', 'pagado')
+      .where('estado', 'in', ESTADOS_ESCUCHADOS)
       .onSnapshot(
         (snap) => {
             snap.docChanges().forEach((change) => {
-                if (change.type !== 'added') return;
+                if (change.type === 'removed') return;
                 const data = change.doc.data();
-                if (data.impreso === true) return;   // ya impreso, ignorar
+                // pagados, o efectivo/transferencia recien creados (ver debeImprimir)
+                if (!debeImprimir(data)) return;
 
                 const id = change.doc.id;
                 if (enProceso.has(id)) return;

@@ -11,6 +11,7 @@ const path   = require('path');
 const http   = require('http');
 const { exec } = require('child_process');
 const admin  = require('firebase-admin');
+const { debeImprimir, ESTADOS_ESCUCHADOS } = require('./ticket.js');
 
 // ─── BASE DIR (exe vs node) ───────────────────────────────────────────────────
 const BASE_DIR = process.pkg ? path.dirname(process.execPath) : __dirname;
@@ -216,13 +217,14 @@ async function procesarConReintentos(snap) {
 function iniciarListener() {
     log('Escuchando Firestore...');
     db.collection('ordenes')
-      .where('estado', '==', 'pagado')
+      .where('estado', 'in', ESTADOS_ESCUCHADOS)
       .onSnapshot(
         (snap) => {
             snap.docChanges().forEach((change) => {
-                if (change.type !== 'added') return;
+                if (change.type === 'removed') return;
                 const data = change.doc.data();
                 if (data.impreso === true) {
+                    if (change.type !== 'added') return;
                     // Mostrar en la cola como ya impresos (historial)
                     colaUpsert(change.doc.id, {
                         nombre: data.cliente?.nombre || '?',
@@ -235,6 +237,8 @@ function iniciarListener() {
                     });
                     return;
                 }
+                // pagados, o efectivo/transferencia recien creados (ver debeImprimir)
+                if (!debeImprimir(data)) return;
                 const id = change.doc.id;
                 if (enProceso.has(id)) return;
                 enProceso.add(id);

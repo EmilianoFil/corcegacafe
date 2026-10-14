@@ -529,7 +529,9 @@ async function fetchOrders(dni, email) {
                                 ? (order.metodoPago === 'transferencia' 
                                     ? `<a href="https://wa.me/${waContactNumber}?text=${encodeURIComponent(`Hola Córcega! Soy ${(order.cliente?.nombre || '').split(' ')[0]}, adjunto comprobante del pedido #${order.orderNumber || order.id.substring(0,8).toUpperCase()}`)}" target="_blank" style="background:#25d366; border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:5px;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:12px; height:12px;"> COMPROBANTE</a>
                                        <button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer;">PAGAR CON MP</button>`
-                                    : `<button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer;">PAGAR CON MERCADOPAGO</button>`)
+                                    : (order.metodoPago === 'efectivo'
+                                        ? ''
+                                        : `<button onclick="payOrder('${order.id}', this)" style="background:var(--naranja-accent); border:none; color:white; padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer;">PAGAR CON MERCADOPAGO</button>`))
                                 : ''}
                             <button onclick="window.location.href='success.html?orderId=${order.id}'" style="background:none; border:1px solid var(--naranja-accent); color:var(--naranja-accent); padding:6px 14px; border-radius:50px; font-size:10px; font-weight:800; cursor:pointer;">VER SEGUIMIENTO</button>
                         </div>

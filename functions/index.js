@@ -1378,6 +1378,15 @@ exports.webhookMP = onRequest(
 
 // --- TRIGGERS PARA HISTORIAL Y MAILS DE ÓRDENES ---
 
+// Etiqueta del medio de pago para avisos internos (Telegram / mail al local)
+function _etiquetaMetodoPago(metodo) {
+  switch (metodo) {
+    case 'efectivo':      return '💵 EFECTIVO (a cobrar en el local)';
+    case 'transferencia': return '🏦 TRANSFERENCIA (pendiente de confirmar)';
+    default:              return '💳 MercadoPago';
+  }
+}
+
 exports.onOrderCreated = onDocumentCreated({
     document: "ordenes/{orderId}",
     region: "us-central1",
@@ -1539,7 +1548,7 @@ exports.onOrderCreated = onDocumentCreated({
         const itemsTexto = (orderData.items || [])
             .map(i => `  • ${i.qty}x ${i.nombre}${i.variantLabel ? ` (${i.variantLabel})` : ''}`)
             .join('\n');
-        const metodoPago = orderData.metodoPago === 'transferencia' ? '🏦 Transferencia' : '💳 MercadoPago';
+        const metodoPago = _etiquetaMetodoPago(orderData.metodoPago);
         const entrega = orderData.metodoEntrega === 'delivery' ? '🛵 Delivery' : '🏠 Retiro en local';
         const total = (orderData.total || 0).toLocaleString('es-AR');
         const horarioLinea = orderData.horario ? `\n📅 Retiro: ${orderData.horario}` : '';
@@ -1669,7 +1678,7 @@ exports.onOrderCreated = onDocumentCreated({
 
     // 6. Mail interno de nuevo pedido
     try {
-        const metodoPagoTxt = orderData.metodoPago === 'transferencia' ? '🏦 Transferencia' : '💳 MercadoPago';
+        const metodoPagoTxt = _etiquetaMetodoPago(orderData.metodoPago);
         const entregaTxt = orderData.metodoEntrega === 'delivery' ? '🛵 Delivery' : '🏠 Retiro en local';
         const itemsAdminHtml = (orderData.items || []).map(i => `
             <tr>
