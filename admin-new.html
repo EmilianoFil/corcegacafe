@@ -2446,40 +2446,40 @@
                 </div>
             </div>
 
-            <div class="card" style="margin-bottom:24px;">
-                <h4 style="margin-top:0;">🧠 Instrucciones del agente</h4>
-                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:-8px;">Así redacta las respuestas. Partís del texto original y lo podés ajustar; con "Restaurar original" volvés a la versión base cuando quieras.</p>
+            <details class="card" style="margin-bottom:24px; padding:14px 20px;">
+                <summary style="cursor:pointer; font-weight:700; font-size:0.9rem;">🧠 Instrucciones del agente <span style="font-weight:400; font-size:0.75rem; color:var(--text-muted);">— cómo redacta las respuestas</span></summary>
+                <div style="margin-top:12px;">
+                    <label style="font-size:0.68rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px;">📌 Instrucciones del momento</label>
+                    <textarea id="rev-prompt-extra" rows="2" placeholder="Ej: esta semana mencioná el menú de verano · sé más breve · no uses emojis" style="width:100%; box-sizing:border-box; margin:4px 0 8px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:0.78rem; resize:vertical;"></textarea>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">
+                        <button class="btn-rev" style="background:var(--secondary); color:white; padding:6px 12px; font-size:0.74rem;" onclick="window.reviewsAdmin.guardarPrompt(this)">💾 Guardar</button>
+                        <button class="btn-rev" style="background:var(--white); border:1px solid var(--border); padding:6px 12px; font-size:0.74rem;" onclick="window.reviewsAdmin.reescribirBandeja(this)">🔄 Reescribir los primeros 20 borradores</button>
+                    </div>
 
-                <label style="font-size:0.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">📌 Instrucciones del momento</label>
-                <textarea id="rev-prompt-extra" rows="3" placeholder="Ej: esta semana mencioná el menú de verano · ofrecé mesa para grupos · sé más breve · no uses emojis" style="width:100%; box-sizing:border-box; margin:6px 0 10px; padding:10px; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:0.85rem;"></textarea>
-                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;">
-                    <button class="btn-primary" id="rev-prompt-extra-guardar" onclick="window.reviewsAdmin.guardarPrompt(this)">💾 Guardar instrucciones</button>
-                    <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="window.reviewsAdmin.reescribirBandeja(this)">🔄 Reescribir los primeros 20 borradores</button>
-                </div>
-
-                <details>
-                    <summary style="cursor:pointer; font-weight:700; font-size:0.85rem;">⚙️ Editar manual de marca y reglas base</summary>
-                    <div style="margin-top:12px;">
-                        <label style="font-size:0.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Manual de marca (voz, tono, léxico)</label>
-                        <textarea id="rev-prompt-manual" rows="12" style="width:100%; box-sizing:border-box; margin:6px 0 14px; padding:10px; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:0.82rem;"></textarea>
-                        <label style="font-size:0.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Reglas de respuesta</label>
-                        <textarea id="rev-prompt-reglas" rows="14" style="width:100%; box-sizing:border-box; margin:6px 0 10px; padding:10px; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:0.82rem;"></textarea>
-                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            <button class="btn-primary" onclick="window.reviewsAdmin.guardarPrompt(this)">💾 Guardar</button>
-                            <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="window.reviewsAdmin.restaurarPrompt(this)">↩️ Restaurar original</button>
+                    <details style="margin-bottom:12px;">
+                        <summary style="cursor:pointer; font-weight:600; font-size:0.78rem; color:var(--text-muted);">⚙️ Manual de marca y reglas base (texto original editable)</summary>
+                        <div style="margin-top:8px;">
+                            <label style="font-size:0.68rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px;">Manual de marca</label>
+                            <textarea id="rev-prompt-manual" rows="8" style="width:100%; box-sizing:border-box; margin:4px 0 8px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:0.78rem; resize:vertical;"></textarea>
+                            <label style="font-size:0.68rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px;">Reglas de respuesta</label>
+                            <textarea id="rev-prompt-reglas" rows="9" style="width:100%; box-sizing:border-box; margin:4px 0 8px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:0.78rem; resize:vertical;"></textarea>
+                            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                <button class="btn-rev" style="background:var(--secondary); color:white; padding:6px 12px; font-size:0.74rem;" onclick="window.reviewsAdmin.guardarPrompt(this)">💾 Guardar</button>
+                                <button class="btn-rev" style="background:var(--white); border:1px solid var(--border); padding:6px 12px; font-size:0.74rem;" onclick="window.reviewsAdmin.restaurarPrompt(this)">↩️ Restaurar original</button>
+                            </div>
                         </div>
-                    </div>
-                </details>
+                    </details>
 
-                <div style="margin-top:18px; border-top:1px solid var(--border); padding-top:14px;">
-                    <label style="font-size:0.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">🧪 Probar (sin guardar)</label>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
-                        <select id="rev-prompt-test-review" style="flex:1; min-width:200px; padding:8px; border:1px solid var(--border); border-radius:10px;"></select>
-                        <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="window.reviewsAdmin.probarPrompt(this)">Probar</button>
+                    <div style="border-top:1px solid var(--border); padding-top:10px;">
+                        <label style="font-size:0.68rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px;">🧪 Probar (sin guardar)</label>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
+                            <select id="rev-prompt-test-review" style="flex:1; min-width:180px; padding:6px; border:1px solid var(--border); border-radius:8px; font-size:0.76rem;"></select>
+                            <button class="btn-rev" style="background:var(--white); border:1px solid var(--border); padding:6px 12px; font-size:0.74rem;" onclick="window.reviewsAdmin.probarPrompt(this)">Probar</button>
+                        </div>
+                        <div id="rev-prompt-test-out" style="display:none; margin-top:8px; padding:10px; background:#f6f6f6; border-radius:8px; font-size:0.8rem; white-space:pre-wrap;"></div>
                     </div>
-                    <div id="rev-prompt-test-out" style="display:none; margin-top:10px; padding:12px; background:#f6f6f6; border-radius:10px; font-size:0.85rem; white-space:pre-wrap;"></div>
                 </div>
-            </div>
+            </details>
 
             <div class="card" style="margin-bottom:24px;">
                 <h4 style="margin-top:0;">🤖 Bandeja del agente <span style="background:var(--primary); color:white; font-size:0.7rem; padding:3px 10px; border-radius:20px; vertical-align:middle;" id="rev-bandeja-count">0</span></h4>
@@ -3281,7 +3281,7 @@
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=12';
         window.cartaAdmin = cartaAdmin;
-        import * as reviewsAdmin from './js/reviews/admin-reviews.js?v=8';
+        import * as reviewsAdmin from './js/reviews/admin-reviews.js?v=9';
         window.reviewsAdmin = reviewsAdmin;
         import * as qrAdmin from './js/qr/admin-qr.js?v=1';
         window.qrAdmin = qrAdmin;
