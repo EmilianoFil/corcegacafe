@@ -2201,6 +2201,22 @@
                 <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">MÉTODOS Y LOGÍSTICA</span>
             </div>
 
+            <!-- Destacados en "Todos" -->
+            <div class="card" style="margin-bottom:24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:12px;">
+                    <h4 style="margin:0">Vitrina de "Todos" ⭐</h4>
+                    <label class="switch">
+                        <input type="checkbox" id="dest-activo" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin:0 0 16px;">Cuando está encendida, la vista "Todos" de la tienda muestra solo 1 producto por categoría (el que elijas acá) en lugar de todo el listado. Si una categoría queda sin elegir, se muestra su primer producto.</p>
+                <div id="dest-selects" class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px;"></div>
+                <div style="margin-top:16px; text-align:right;">
+                    <button class="btn-primary" onclick="window.tiendaAdmin.guardarDestacadosTodos(this)" style="margin:0; width:auto; padding:10px 24px; font-size:0.85rem; height:auto;">Guardar vitrina</button>
+                </div>
+            </div>
+
             <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px;">
                 <!-- Delivery -->
                 <div class="card">
@@ -3305,7 +3321,7 @@
         import {
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
-        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=29';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=30';
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=12';
         window.cartaAdmin = cartaAdmin;
@@ -3433,7 +3449,7 @@
                 window.tiendaAdmin.loadCarritoAbandonadoHistorial();
             }
             if (target === 'tienda-arrepentimientos') loadArrepentimientos();
-            if (target === 'tienda-config') window.tiendaAdmin.loadConfigStore();
+            if (target === 'tienda-config') { window.tiendaAdmin.loadConfigStore(); window.tiendaAdmin.loadDestacadosTodos(); }
             if (target === 'tienda-clarus') window.tiendaAdmin.loadClarusConfig();
             if (target === 'carta-secciones') { window.cartaAdmin.loadSecciones(); _cargarToggleSocial(); }
             if (target === 'carta-platos') window.cartaAdmin.loadPlatos();

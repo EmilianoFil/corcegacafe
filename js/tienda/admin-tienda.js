@@ -2326,6 +2326,57 @@ export function onTipoCuponChange(tipo) {
     document.getElementById('cup-tope-group').style.display = tipo === 'porcentaje' ? 'block' : 'none';
 }
 
+// ── Vitrina de "Todos" (1 producto por categoría) ─────────────────────────
+export async function loadDestacadosTodos() {
+    const cont = document.getElementById('dest-selects');
+    if (!cont) return;
+    cont.innerHTML = '<span style="color:#999; font-size:0.85rem;">Cargando…</span>';
+    try {
+        const [cats, prodSnap, cfgSnap] = await Promise.all([
+            _fetchCatsOrdered(),
+            getDocs(query(collection(db, 'productos'), orderBy('nombre', 'asc'))),
+            getDoc(doc(db, 'configuracion', 'tienda-destacados'))
+        ]);
+        const prods = prodSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.activo !== false);
+        const cfg = cfgSnap.exists() ? cfgSnap.data() : {};
+        const sel = cfg.porCategoria || {};
+        document.getElementById('dest-activo').checked = cfg.activo !== false;
+        cont.innerHTML = cats.map(c => {
+            const opts = prods.filter(p => p.categoria === c.id)
+                .map(p => `<option value="${_escTC(p.id)}" ${sel[c.id] === p.id ? 'selected' : ''}>${_escTC(p.nombre)}</option>`).join('');
+            return `<div class="input-group">
+                <label>${_escTC(c.nombre)}</label>
+                <select class="form-control dest-select" data-cat="${_escTC(c.id)}">
+                    <option value="">— Primero de la categoría —</option>${opts}
+                </select>
+            </div>`;
+        }).join('') || '<span style="color:#999; font-size:0.85rem;">No hay categorías.</span>';
+    } catch (e) {
+        console.error('Error cargando vitrina:', e);
+        cont.innerHTML = '<span style="color:#c0392b; font-size:0.85rem;">No se pudo cargar la vitrina.</span>';
+    }
+}
+
+export async function guardarDestacadosTodos(btn) {
+    const original = btn.innerText;
+    btn.disabled = true; btn.innerText = 'Guardando…';
+    try {
+        const porCategoria = {};
+        document.querySelectorAll('.dest-select').forEach(s => { if (s.value) porCategoria[s.dataset.cat] = s.value; });
+        await setDoc(doc(db, 'configuracion', 'tienda-destacados'), {
+            activo: document.getElementById('dest-activo').checked,
+            porCategoria,
+            actualizadoEn: serverTimestamp()
+        });
+        alert('¡Vitrina guardada! ✅');
+    } catch (e) {
+        console.error('Error guardando vitrina:', e);
+        alert('No se pudo guardar la vitrina.');
+    } finally {
+        btn.disabled = false; btn.innerText = original;
+    }
+}
+
 // ── Clientes registrados en la tienda ────────────────────────────────────
 let clientesTiendaLista = [];
 

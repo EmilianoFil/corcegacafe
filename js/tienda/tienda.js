@@ -9,6 +9,7 @@ import { initComboPicker } from './combo-picker.js';
 // --- STATE ---
 let products = [];
 let categories = [];
+let destacadosTodos = null; // { activo, porCategoria } — vitrina de la vista "Todos"
 let activeCategory = 'todos';
 let reservedByOthers = {};
 let maxUnidadesPorPedido = 0;
@@ -76,6 +77,9 @@ async function init() {
         fetchCategories(),
         fetchProducts(),
         fetchReservedByOthers().then(map => { reservedByOthers = map; }).catch(err => { console.warn('fetchReservedByOthers error:', err); }),
+        getDoc(doc(db, "configuracion", "tienda-destacados")).then(snap => {
+            destacadosTodos = snap.exists() ? snap.data() : null;
+        }).catch(() => {}),
         getDoc(doc(db, "configuracion", "tienda")).then(snap => {
             if (snap.exists()) {
                 maxUnidadesPorPedido = snap.data().agenda?.pedidosMaximosDia || 0;
@@ -241,6 +245,25 @@ function renderProducts() {
 
     // Vista "todos" — agrupar por categoría con secciones
     productsGrid.className = 'products-sections';
+
+    // Vitrina: 1 producto por categoría (elegido en el admin) en lugar de todo el listado
+    if (destacadosTodos && destacadosTodos.activo !== false) {
+        const sel = destacadosTodos.porCategoria || {};
+        const picks = categories.map(cat => {
+            const delCat = products.filter(p => p.categoria === cat.id);
+            return delCat.find(p => p.id === sel[cat.id]) || delCat[0];
+        }).filter(Boolean);
+        if (picks.length > 0) {
+            productsGrid.className = 'products-sections';
+            productsGrid.innerHTML = `
+                <section class="cat-section">
+                    <div class="products-grid">${picks.map((p, i) => buildProductCard(p, i)).join('')}</div>
+                    <p style="text-align:center; color:var(--texto-muted); margin-top:24px;">Elegí una categoría arriba para ver todos los productos.</p>
+                </section>`;
+            afterRender(picks);
+            return;
+        }
+    }
 
     // Ordenar categorías según el orden de `categories` (Firestore)
     const sections = categories.map(cat => ({
