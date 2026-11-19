@@ -2326,6 +2326,60 @@ export function onTipoCuponChange(tipo) {
     document.getElementById('cup-tope-group').style.display = tipo === 'porcentaje' ? 'block' : 'none';
 }
 
+// ── Clientes registrados en la tienda ────────────────────────────────────
+let clientesTiendaLista = [];
+
+function _escTC(s) {
+    return String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+function _renderClientesTienda(lista) {
+    const tbody = document.getElementById('lista-clientes-tienda-body');
+    const contador = document.getElementById('tc-contador');
+    if (!tbody) return;
+    if (contador) contador.textContent = `${lista.length} de ${clientesTiendaLista.length} clientes`;
+    if (lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="padding:20px; text-align:center; color:#999;">No hay clientes para mostrar.</td></tr>`;
+        return;
+    }
+    const td = 'padding:12px 15px; border-bottom:1px solid #f3f3f3;';
+    tbody.innerHTML = lista.map(c => `
+        <tr>
+            <td style="${td} font-weight:600;">${_escTC(c.nombre) || '<span style="color:#bbb;">(sin nombre)</span>'}</td>
+            <td style="${td}">${_escTC(c.email)}</td>
+            <td style="${td}">${_escTC(c.dni)}</td>
+            <td style="${td}">${_escTC(c.whatsapp)}</td>
+            <td style="${td}">${_escTC(c.origen)}</td>
+            <td style="${td}">${c.fecha ? c.fecha.toLocaleDateString('es-AR') : '—'}</td>
+            <td style="${td} text-align:right;">${c.dni ? `<a href="cliente.html?dni=${encodeURIComponent(c.dni)}" target="_blank" style="color:var(--secondary); font-weight:600; text-decoration:none;">Ver →</a>` : ''}</td>
+        </tr>`).join('');
+}
+
+export async function loadClientesTienda() {
+    const tbody = document.getElementById('lista-clientes-tienda-body');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:20px; text-align:center; color:#999;">Cargando…</td></tr>`;
+    try {
+        const snap = await getDocs(collection(db, 'usuarios_tienda'));
+        clientesTiendaLista = snap.docs.map(d => {
+            const x = d.data();
+            const f = x.creado?.toDate ? x.creado.toDate() : null;
+            return { uid: d.id, nombre: x.nombre || '', email: x.email || '', dni: x.dni || '', whatsapp: x.whatsapp || x.telefono || '', origen: x.origen || '', fecha: f };
+        }).sort((a, b) => (b.fecha?.getTime() || 0) - (a.fecha?.getTime() || 0));
+        const buscador = document.getElementById('tc-buscar');
+        filtrarClientesTienda(buscador ? buscador.value : '');
+    } catch (e) {
+        console.error('Error cargando clientes de tienda:', e);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="padding:20px; text-align:center; color:#c0392b;">No se pudieron cargar los clientes.</td></tr>`;
+    }
+}
+
+export function filtrarClientesTienda(texto) {
+    const t = (texto || '').trim().toLowerCase();
+    const lista = !t ? clientesTiendaLista : clientesTiendaLista.filter(c =>
+        [c.nombre, c.email, c.dni, c.whatsapp].some(v => String(v).toLowerCase().includes(t)));
+    _renderClientesTienda(lista);
+}
+
 async function _fetchClientesTienda() {
     if (clientesTiendaCache) return clientesTiendaCache;
     const snap = await getDocs(collection(db, 'usuarios_tienda'));

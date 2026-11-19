@@ -1008,6 +1008,7 @@
                 <li><a href="#tienda-productos"><span class="icon">🛒</span> Productos</a></li>
                 <li><a href="#tienda-categorias"><span class="icon">🏷️</span> Categorías</a></li>
                 <li><a href="#tienda-ordenes"><span class="icon">📦</span> Órdenes</a></li>
+                <li><a href="#tienda-clientes"><span class="icon">👤</span> Clientes registrados</a></li>
                 <li><a href="#tienda-cupones"><span class="icon">🎟️</span> Cupones</a></li>
                 <li><a href="#tienda-carrito-abandonado"><span class="icon">🛒</span> Carrito Abandonado</a></li>
                 <li><a href="#tienda-arrepentimientos"><span class="icon">↩️</span> Arrepentimientos</a></li>
@@ -1919,6 +1920,33 @@
 
         <!-- ARREPENTIMIENTOS SECTION -->
         <!-- TIENDA CUPONES SECTION -->
+        <section id="tienda-clientes" class="section-content">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                <h3 style="margin:0; font-size: 1.5rem;">Clientes registrados 👤</h3>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">TIENDA ONLINE — CUENTAS CREADAS EN LA TIENDA</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
+                <input type="search" id="tc-buscar" placeholder="Buscar por nombre, email, DNI o WhatsApp" oninput="window.tiendaAdmin.filtrarClientesTienda(this.value)" style="flex:1; min-width:220px; padding:10px 14px; border:1px solid var(--border); border-radius:8px; font-size:0.9rem;">
+                <span id="tc-contador" style="font-size:0.85rem; color:var(--text-muted);"></span>
+            </div>
+            <div class="card" style="padding:10px; border:1px solid var(--border); background:white; overflow-x:auto;">
+                <table class="display" style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                    <thead style="background:#fdfcf7;">
+                        <tr>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Nombre</th>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Email</th>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">DNI</th>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">WhatsApp</th>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Origen</th>
+                            <th style="text-align:left; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Registro</th>
+                            <th style="text-align:right; padding:12px 15px; color:var(--text-muted); font-weight:600; border-bottom:1px solid #eee;">Club</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-clientes-tienda-body"></tbody>
+                </table>
+            </div>
+        </section>
+
         <section id="tienda-cupones" class="section-content">
             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
                 <h3 style="margin:0; font-size: 1.5rem;">Cupones de Descuento 🎟️</h3>
@@ -3277,7 +3305,7 @@
         import {
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
-        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=28';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=29';
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=12';
         window.cartaAdmin = cartaAdmin;
@@ -3397,6 +3425,7 @@
             if (target === 'tienda-productos') window.tiendaAdmin.loadProductosTable();
             if (target === 'tienda-categorias') window.tiendaAdmin.loadCategoriasTable();
             if (target === 'tienda-ordenes') window.tiendaAdmin.loadOrdenesTable();
+            if (target === 'tienda-clientes') window.tiendaAdmin.loadClientesTienda();
             if (target === 'tienda-cupones') { window.tiendaAdmin.loadCuponesTable(); window.tiendaAdmin.loadCuponesConfig(); }
             if (target === 'tienda-carrito-abandonado') {
                 window.tiendaAdmin.loadCarritoAbandonadoConfig();
