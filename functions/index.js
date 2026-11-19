@@ -2673,17 +2673,37 @@ REGLAS PARA RESPONDER RESEÑAS DE GOOGLE:
 7. Máximo 60 palabras.
 Respondé ÚNICAMENTE con el texto de la respuesta, sin comillas ni explicaciones.`;
 
-const getManualMarca = async () => {
+// Configuración editable del prompt (doc config/reviews_prompt: manual, reglas, extra).
+// Cada campo vacío cae al original del código. Compatibilidad: config/manual_marca (legacy).
+const getPromptConfig = async () => {
+  const cfg = { manual: MANUAL_MARCA_DEFAULT, reglas: REGLAS_RESPUESTA, extra: "" };
   try {
-    const snap = await db.doc("config/manual_marca").get();
-    if (snap.exists && snap.data().texto) return snap.data().texto;
+    const snap = await db.doc("config/reviews_prompt").get();
+    if (snap.exists) {
+      const d = snap.data();
+      if (d.manual && d.manual.trim()) cfg.manual = d.manual;
+      if (d.reglas && d.reglas.trim()) cfg.reglas = d.reglas;
+      if (d.extra && d.extra.trim()) cfg.extra = d.extra.trim();
+      return cfg;
+    }
+    const legacy = await db.doc("config/manual_marca").get();
+    if (legacy.exists && legacy.data().texto) cfg.manual = legacy.data().texto;
   } catch (e) {
-    logger.warn("No se pudo leer config/manual_marca, uso default:", e.message);
+    logger.warn("No se pudo leer config del prompt de reviews, uso default:", e.message);
   }
-  return MANUAL_MARCA_DEFAULT;
+  return cfg;
 };
 
-const generarBorradorReview = async (apiKey, manual, review, previas = []) => {
+const armarSystemReviews = (cfg) => {
+  let sys = cfg.manual + "\n" + cfg.reglas;
+  if (cfg.extra) {
+    sys += "\n\nINSTRUCCIONES ADICIONALES DEL EQUIPO (tienen prioridad sobre el tono, estilo y largo de las reglas anteriores; " +
+      "nunca inventes datos ni prometas compensaciones que no estén indicadas acá):\n" + cfg.extra;
+  }
+  return sys;
+};
+
+const generarBorradorReview = async (apiKey, cfg, review, previas = []) => {
   const client = new Anthropic({ apiKey });
   let pedido = `Escribí la respuesta oficial de Córcega a esta reseña de Google:\n` +
     `Autor: ${review.autor}\nEstrellas: ${review.rating} de 5\nReseña: "${review.texto}"`;
@@ -2694,13 +2714,24 @@ const generarBorradorReview = async (apiKey, manual, review, previas = []) => {
   const response = await client.messages.create({
     model: REVIEWS_MODEL,
     max_tokens: 600,
-    system: manual + "\n" + REGLAS_RESPUESTA,
+    system: armarSystemReviews(cfg),
     messages: [{ role: "user", content: pedido }],
   });
   const texto = response.content.find((b) => b.type === "text")?.text?.trim();
   if (!texto) throw new Error("Claude no devolvió texto");
   return texto;
 };
+
+// Devuelve los textos originales del prompt (para "Restaurar original" en el admin).
+exports.promptReviewsDefaults = onRequest(
+  { region: "us-central1" },
+  (req, res) => {
+    corsHandler(req, res, async () => {
+      if (!(await verificarAuthAdmin(req, res))) return;
+      res.json({ manual: MANUAL_MARCA_DEFAULT, reglas: REGLAS_RESPUESTA });
+    });
+  }
+);
 
 // Genera (o regenera) la respuesta sugerida para una review. La llama el admin.
 exports.generarRespuestaReview = onRequest(
@@ -2714,9 +2745,16 @@ exports.generarRespuestaReview = onRequest(
         return;
       }
       try {
-        const manual = await getManualMarca();
+        const cfg = await getPromptConfig();
+        // Permite probar textos sin guardar (botón "Probar" del admin)
+        const o = req.body?.config;
+        if (o && typeof o === "object") {
+          if (typeof o.manual === "string" && o.manual.trim()) cfg.manual = o.manual;
+          if (typeof o.reglas === "string" && o.reglas.trim()) cfg.reglas = o.reglas;
+          if (typeof o.extra === "string") cfg.extra = o.extra.trim();
+        }
         const respuesta = await generarBorradorReview(
-          ANTHROPIC_API_KEY.value(), manual,
+          ANTHROPIC_API_KEY.value(), cfg,
           { autor, rating, texto },
           Array.isArray(previas) ? previas.slice(0, 5) : []
         );
@@ -2825,7 +2863,7 @@ exports.agenteReviews = onSchedule(
       return;
     }
 
-    const manual = await getManualMarca();
+    const manual = await getPromptConfig();
     const generadas = [];
     for (const doc of pendientes.slice(0, 10)) {
       const r = doc.data();

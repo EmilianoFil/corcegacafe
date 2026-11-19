@@ -1440,7 +1440,7 @@
                         style="display:inline-flex; align-items:center; gap:7px; padding:10px 18px; background:#f0f7f4; color:#1a6b3a; border:1.5px solid #b2e8c4; border-radius:12px; font-size:0.82rem; font-weight:700; text-decoration:none; cursor:pointer;">
                         👁️ Preview tienda
                     </a>
-                    <button class="btn-secondary" onclick="window.tiendaAdmin.abrirMediosPagoMasivo()" style="margin:0 8px 0 0; width: auto; padding: 10px 20px; font-size: 0.85rem; height: auto;">💳 Medios de pago a todos</button>
+                    <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="window.tiendaAdmin.abrirMediosPagoMasivo()" style="margin:0 8px 0 0; width: auto; padding: 10px 20px; font-size: 0.85rem; height: auto;">💳 Medios de pago a todos</button>
                     <button class="btn-primary" onclick="window.tiendaAdmin.mostrarFormularioProducto()" style="margin:0; width: auto; padding: 10px 20px; font-size: 0.85rem; height: auto;">+ Nuevo Producto</button>
                 </div>
             </div>
@@ -1728,7 +1728,7 @@
 
                     <div style="display: flex; gap: 10px; margin-top: 20px;">
                         <button type="submit" id="btn-save-producto" class="btn-primary">Guardar Producto</button>
-                        <button type="button" class="btn-secondary" onclick="window.tiendaAdmin.ocultarFormularioProducto()">Cancelar</button>
+                        <button type="button" class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="window.tiendaAdmin.ocultarFormularioProducto()">Cancelar</button>
                     </div>
                 </form>
             </div>
@@ -1937,7 +1937,7 @@
             </div>
 
             <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
-                <a href="tienda.html?adminPreview=1" target="_blank" class="btn-secondary" style="margin:0; width:auto; padding:10px 20px; font-size:0.85rem; height:auto; margin-right:10px;">👁️ Preview tienda</a>
+                <a href="tienda.html?adminPreview=1" target="_blank" class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" style="margin:0; width:auto; padding:10px 20px; font-size:0.85rem; height:auto; margin-right:10px;">👁️ Preview tienda</a>
                 <button class="btn-primary" onclick="window.tiendaAdmin.mostrarFormularioCupon()" style="margin:0; width:auto; padding:10px 20px; font-size:0.85rem; height:auto;">+ Nuevo Cupón</button>
             </div>
 
@@ -2034,7 +2034,7 @@
 
                 <div style="display:flex; gap:10px;">
                     <button class="btn-primary" onclick="window.tiendaAdmin.guardarCupon()" style="margin:0; width:auto; padding:12px 30px;">Guardar Cupón</button>
-                    <button class="btn-secondary" onclick="window.tiendaAdmin.ocultarFormularioCupon()" style="margin:0; width:auto; padding:12px 30px;">Cancelar</button>
+                    <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="window.tiendaAdmin.ocultarFormularioCupon()" style="margin:0; width:auto; padding:12px 30px;">Cancelar</button>
                 </div>
             </div>
 
@@ -2452,6 +2452,41 @@
                 <div id="rev-bandeja"></div>
             </div>
 
+            <div class="card" style="margin-bottom:24px;">
+                <h4 style="margin-top:0;">🧠 Instrucciones del agente</h4>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:-8px;">Así redacta las respuestas. Partís del texto original y lo podés ajustar; con "Restaurar original" volvés a la versión base cuando quieras.</p>
+
+                <label style="font-size:0.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">📌 Instrucciones del momento</label>
+                <textarea id="rev-prompt-extra" rows="3" placeholder="Ej: esta semana mencioná el menú de verano · ofrecé mesa para grupos · sé más breve · no uses emojis" style="width:100%; box-sizing:border-box; margin:6px 0 10px; padding:10px; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:0.85rem;"></textarea>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;">
+                    <button class="btn-primary" id="rev-prompt-extra-guardar" onclick="window.reviewsAdmin.guardarPrompt(this)">💾 Guardar instrucciones</button>
+                    <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="window.reviewsAdmin.reescribirBandeja(this)">🔄 Reescribir borradores pendientes con esto</button>
+                </div>
+
+                <details>
+                    <summary style="cursor:pointer; font-weight:700; font-size:0.85rem;">⚙️ Editar manual de marca y reglas base</summary>
+                    <div style="margin-top:12px;">
+                        <label style="font-size:0.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Manual de marca (voz, tono, léxico)</label>
+                        <textarea id="rev-prompt-manual" rows="12" style="width:100%; box-sizing:border-box; margin:6px 0 14px; padding:10px; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:0.82rem;"></textarea>
+                        <label style="font-size:0.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Reglas de respuesta</label>
+                        <textarea id="rev-prompt-reglas" rows="14" style="width:100%; box-sizing:border-box; margin:6px 0 10px; padding:10px; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:0.82rem;"></textarea>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <button class="btn-primary" onclick="window.reviewsAdmin.guardarPrompt(this)">💾 Guardar</button>
+                            <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="window.reviewsAdmin.restaurarPrompt(this)">↩️ Restaurar original</button>
+                        </div>
+                    </div>
+                </details>
+
+                <div style="margin-top:18px; border-top:1px solid var(--border); padding-top:14px;">
+                    <label style="font-size:0.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">🧪 Probar (sin guardar)</label>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
+                        <select id="rev-prompt-test-review" style="flex:1; min-width:200px; padding:8px; border:1px solid var(--border); border-radius:10px;"></select>
+                        <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="window.reviewsAdmin.probarPrompt(this)">Probar</button>
+                    </div>
+                    <div id="rev-prompt-test-out" style="display:none; margin-top:10px; padding:12px; background:#f6f6f6; border-radius:10px; font-size:0.85rem; white-space:pre-wrap;"></div>
+                </div>
+            </div>
+
             <div class="dashboard-grid" style="margin-bottom:24px;">
                 <div class="card">
                     <h4 style="margin-top:0;">☁️ Nube de palabras</h4>
@@ -2548,15 +2583,15 @@
 
                     <div
                         style="display: flex; gap: 15px; margin-top: 30px; border-top: 1px solid var(--bg-color); padding-top: 20px;">
-                        <button class="btn-secondary" onclick="guardarCampana()" id="btn-save-draft" style="flex: 1;">
+                        <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="guardarCampana()" id="btn-save-draft" style="flex: 1;">
                             <span>💾</span> Guardar Borrador
                         </button>
-                        <button class="btn-secondary" id="btn-stats-campaign"
+                        <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" id="btn-stats-campaign"
                             style="flex: 0 0 60px; color: var(--primary); border-color: var(--primary-light); display: none; padding: 0;"
                             title="Ver estadísticas de la campaña">
                             <span>📊</span>
                         </button>
-                        <button class="btn-secondary" onclick="confirmarEliminarActual()" id="btn-delete-campaign"
+                        <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="confirmarEliminarActual()" id="btn-delete-campaign"
                             style="flex: 0 0 60px; color: var(--error); border-color: #ffccc7; display: none; padding: 0;">
                             <span>🗑️</span>
                         </button>
@@ -2884,7 +2919,7 @@
 
                 <div style="display:flex; gap:10px;">
                     <button class="btn-primary" onclick="window.qrAdmin.guardarQr()" style="margin:0; width:auto; padding:12px 30px;">Guardar QR</button>
-                    <button class="btn-secondary" onclick="window.qrAdmin.ocultarFormularioQr()" style="margin:0; width:auto; padding:12px 30px;">Cancelar</button>
+                    <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="window.qrAdmin.ocultarFormularioQr()" style="margin:0; width:auto; padding:12px 30px;">Cancelar</button>
                 </div>
             </div>
 
@@ -2914,8 +2949,8 @@
                     <div id="qr-preview-url" style="font-size:0.75rem; color:var(--text-muted); margin:10px 0; word-break:break-all;"></div>
                     <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
                         <button class="btn-primary" onclick="window.qrAdmin.descargarQrImagen()" style="margin:0; width:auto; padding:10px 20px;">⬇️ Descargar</button>
-                        <button class="btn-secondary" onclick="window.qrAdmin.imprimirQrImagen()" style="margin:0; width:auto; padding:10px 20px;">🖨️ Imprimir</button>
-                        <button class="btn-secondary" onclick="window.qrAdmin.cerrarQrImagen()" style="margin:0; width:auto; padding:10px 20px;">Cerrar</button>
+                        <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="window.qrAdmin.imprimirQrImagen()" style="margin:0; width:auto; padding:10px 20px;">🖨️ Imprimir</button>
+                        <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="window.qrAdmin.cerrarQrImagen()" style="margin:0; width:auto; padding:10px 20px;">Cerrar</button>
                     </div>
                 </div>
             </div>
@@ -3246,7 +3281,7 @@
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=12';
         window.cartaAdmin = cartaAdmin;
-        import * as reviewsAdmin from './js/reviews/admin-reviews.js?v=6';
+        import * as reviewsAdmin from './js/reviews/admin-reviews.js?v=7';
         window.reviewsAdmin = reviewsAdmin;
         import * as qrAdmin from './js/qr/admin-qr.js?v=1';
         window.qrAdmin = qrAdmin;

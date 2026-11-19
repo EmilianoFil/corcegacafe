@@ -7,11 +7,12 @@
 
 import { auth } from '../firebase-config.js';
 import { db } from '../firebase-config.js';
-import { collection, getDocs, orderBy, query } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { collection, getDocs, orderBy, query, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const MODO_DEMO = false;
 const GENERAR_URL = 'https://us-central1-corcega-loyalty-club.cloudfunctions.net/generarRespuestaReview';
 const SINCRONIZAR_URL = 'https://us-central1-corcega-loyalty-club.cloudfunctions.net/sincronizarReviews';
+const DEFAULTS_URL = 'https://us-central1-corcega-loyalty-club.cloudfunctions.net/promptReviewsDefaults';
 const PUBLICAR_URL = 'https://us-central1-corcega-loyalty-club.cloudfunctions.net/publicarRespuesta';
 
 // ── DATOS DE DEMO ────────────────────────────────────────────────────────────
@@ -313,6 +314,7 @@ export async function load() {
     if (_cargado) return;
     _cargado = true;
     _reviews = await fetchReviews();
+    cargarPrompt();
     const banner = $('rev-demo-banner');
     if (banner) banner.style.display = MODO_DEMO ? 'flex' : 'none';
     if (!_reviews.length) {
@@ -453,4 +455,123 @@ export function filtrarPeriodo(periodo, btn) {
     renderKPIs();
     renderNube();
     renderLista();
+}
+
+
+// ── INSTRUCCIONES DEL AGENTE (prompt editable) ───────────────────────────────
+// Firestore config/reviews_prompt { manual, reglas, extra }. Vacío = original del código.
+let _promptDefaults = null;
+
+async function getDefaults() {
+    if (_promptDefaults) return _promptDefaults;
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(DEFAULTS_URL, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error('No se pudo leer el texto original');
+    _promptDefaults = await res.json();
+    return _promptDefaults;
+}
+
+async function cargarPrompt() {
+    try {
+        const [def, snap] = await Promise.all([getDefaults(), getDoc(doc(db, 'config', 'reviews_prompt'))]);
+        const d = snap.exists() ? snap.data() : {};
+        $('rev-prompt-manual').value = (d.manual && d.manual.trim()) ? d.manual : def.manual;
+        $('rev-prompt-reglas').value = (d.reglas && d.reglas.trim()) ? d.reglas : def.reglas;
+        $('rev-prompt-extra').value = d.extra || '';
+        const sel = $('rev-prompt-test-review');
+        sel.innerHTML = _reviews.slice(0, 20).map(r =>
+            `<option value="${esc(r.id)}">${r.rating}★ ${esc(r.autor)} — ${esc((r.texto || '').slice(0, 50))}</option>`).join('');
+    } catch (e) {
+        console.warn('[reviews] No se pudo cargar el prompt:', e);
+    }
+}
+
+export async function guardarPrompt(btn) {
+    if (btn) btn.disabled = true;
+    try {
+        const def = await getDefaults();
+        const manual = $('rev-prompt-manual').value.trim();
+        const reglas = $('rev-prompt-reglas').value.trim();
+        await setDoc(doc(db, 'config', 'reviews_prompt'), {
+            // si coincide con el original se guarda vacío, así sigue las mejoras del código
+            manual: manual === def.manual.trim() ? '' : manual,
+            reglas: reglas === def.reglas.trim() ? '' : reglas,
+            extra: $('rev-prompt-extra').value.trim(),
+            actualizadoEl: new Date().toISOString(),
+        });
+        toast('✅ Instrucciones guardadas. Aplican a las próximas respuestas.');
+    } catch (e) {
+        toast('Error al guardar: ' + e.message, false);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+export async function restaurarPrompt(btn) {
+    if (!confirm('¿Volver al manual de marca y reglas originales? Se pierden tus ajustes en esos dos textos (las instrucciones del momento no se tocan).')) return;
+    try {
+        const def = await getDefaults();
+        $('rev-prompt-manual').value = def.manual;
+        $('rev-prompt-reglas').value = def.reglas;
+        await guardarPrompt(btn);
+    } catch (e) {
+        toast('Error: ' + e.message, false);
+    }
+}
+
+async function pedirRespuesta(r, config) {
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(GENERAR_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ autor: r.autor, rating: r.rating, texto: r.texto, config }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || res.status);
+    return data.respuesta;
+}
+
+const configActual = () => ({
+    manual: $('rev-prompt-manual').value,
+    reglas: $('rev-prompt-reglas').value,
+    extra: $('rev-prompt-extra').value,
+});
+
+export async function probarPrompt(btn) {
+    const r = _reviews.find(x => x.id === $('rev-prompt-test-review').value);
+    if (!r) { toast('Elegí una review para probar', false); return; }
+    const out = $('rev-prompt-test-out');
+    btn.disabled = true; btn.textContent = 'Probando...';
+    try {
+        out.textContent = await pedirRespuesta(r, configActual());
+        out.style.display = 'block';
+    } catch (e) {
+        toast('No se pudo probar: ' + e.message, false);
+    } finally {
+        btn.disabled = false; btn.textContent = 'Probar';
+    }
+}
+
+// Reescribe todos los borradores pendientes de la bandeja con lo que está escrito ahora
+export async function reescribirBandeja(btn) {
+    const pend = _reviews.filter(r => !r.respondida && r.borradores?.length);
+    if (!pend.length) { toast('No hay borradores pendientes en la bandeja'); return; }
+    if (!confirm(`Se van a reescribir ${pend.length} borrador(es), incluyendo ediciones que hayas hecho. ¿Seguimos?`)) return;
+    btn.disabled = true;
+    const cfg = configActual();
+    let ok = 0;
+    for (let i = 0; i < pend.length; i++) {
+        btn.textContent = `Reescribiendo ${i + 1}/${pend.length}...`;
+        try {
+            const texto = await pedirRespuesta(pend[i], cfg);
+            pend[i].borradores = [texto];
+            pend[i].borradorIdx = 0;
+            ok++;
+        } catch (e) {
+            console.warn('[reviews] falló reescritura', pend[i].id, e);
+        }
+    }
+    btn.disabled = false; btn.textContent = '🔄 Reescribir borradores pendientes con esto';
+    renderBandeja();
+    toast(`🤖 ${ok} de ${pend.length} borradores reescritos`, ok > 0);
 }
