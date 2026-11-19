@@ -2447,12 +2447,6 @@
             </div>
 
             <div class="card" style="margin-bottom:24px;">
-                <h4 style="margin-top:0;">🤖 Bandeja del agente <span style="background:var(--primary); color:white; font-size:0.7rem; padding:3px 10px; border-radius:20px; vertical-align:middle;" id="rev-bandeja-count">0</span></h4>
-                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:-8px;">El agente lee cada review nueva y redacta una respuesta con el tono de la marca. Vos la revisás, la editás si querés, y con un click se publica en Google.</p>
-                <div id="rev-bandeja"></div>
-            </div>
-
-            <div class="card" style="margin-bottom:24px;">
                 <h4 style="margin-top:0;">🧠 Instrucciones del agente</h4>
                 <p style="font-size:0.8rem; color:var(--text-muted); margin-top:-8px;">Así redacta las respuestas. Partís del texto original y lo podés ajustar; con "Restaurar original" volvés a la versión base cuando quieras.</p>
 
@@ -2460,7 +2454,7 @@
                 <textarea id="rev-prompt-extra" rows="3" placeholder="Ej: esta semana mencioná el menú de verano · ofrecé mesa para grupos · sé más breve · no uses emojis" style="width:100%; box-sizing:border-box; margin:6px 0 10px; padding:10px; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:0.85rem;"></textarea>
                 <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;">
                     <button class="btn-primary" id="rev-prompt-extra-guardar" onclick="window.reviewsAdmin.guardarPrompt(this)">💾 Guardar instrucciones</button>
-                    <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="window.reviewsAdmin.reescribirBandeja(this)">🔄 Reescribir borradores pendientes con esto</button>
+                    <button class="btn-primary" style="background:var(--white); color:var(--text); border:1px solid var(--border);" onclick="window.reviewsAdmin.reescribirBandeja(this)">🔄 Reescribir los primeros 20 borradores</button>
                 </div>
 
                 <details>
@@ -2485,6 +2479,12 @@
                     </div>
                     <div id="rev-prompt-test-out" style="display:none; margin-top:10px; padding:12px; background:#f6f6f6; border-radius:10px; font-size:0.85rem; white-space:pre-wrap;"></div>
                 </div>
+            </div>
+
+            <div class="card" style="margin-bottom:24px;">
+                <h4 style="margin-top:0;">🤖 Bandeja del agente <span style="background:var(--primary); color:white; font-size:0.7rem; padding:3px 10px; border-radius:20px; vertical-align:middle;" id="rev-bandeja-count">0</span></h4>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:-8px;">El agente lee cada review nueva y redacta una respuesta con el tono de la marca. Vos la revisás, la editás si querés, y con un click se publica en Google.</p>
+                <div id="rev-bandeja"></div>
             </div>
 
             <div class="dashboard-grid" style="margin-bottom:24px;">
@@ -3281,7 +3281,7 @@
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=12';
         window.cartaAdmin = cartaAdmin;
-        import * as reviewsAdmin from './js/reviews/admin-reviews.js?v=7';
+        import * as reviewsAdmin from './js/reviews/admin-reviews.js?v=8';
         window.reviewsAdmin = reviewsAdmin;
         import * as qrAdmin from './js/qr/admin-qr.js?v=1';
         window.qrAdmin = qrAdmin;

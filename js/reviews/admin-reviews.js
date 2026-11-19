@@ -554,9 +554,9 @@ export async function probarPrompt(btn) {
 
 // Reescribe todos los borradores pendientes de la bandeja con lo que está escrito ahora
 export async function reescribirBandeja(btn) {
-    const pend = _reviews.filter(r => !r.respondida && r.borradores?.length);
+    const pend = _reviews.filter(r => !r.respondida && r.borradores?.length).slice(0, 20); // tope: cada uno es una llamada a la IA
     if (!pend.length) { toast('No hay borradores pendientes en la bandeja'); return; }
-    if (!confirm(`Se van a reescribir ${pend.length} borrador(es), incluyendo ediciones que hayas hecho. ¿Seguimos?`)) return;
+    if (!confirm(`Se van a reescribir ${pend.length} borrador(es) (máximo 20 por vez), incluyendo ediciones que hayas hecho. ¿Seguimos?`)) return;
     btn.disabled = true;
     const cfg = configActual();
     let ok = 0;
@@ -571,7 +571,7 @@ export async function reescribirBandeja(btn) {
             console.warn('[reviews] falló reescritura', pend[i].id, e);
         }
     }
-    btn.disabled = false; btn.textContent = '🔄 Reescribir borradores pendientes con esto';
+    btn.disabled = false; btn.textContent = '🔄 Reescribir los primeros 20 borradores';
     renderBandeja();
     toast(`🤖 ${ok} de ${pend.length} borradores reescritos`, ok > 0);
 }
