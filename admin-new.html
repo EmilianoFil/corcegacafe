@@ -201,6 +201,37 @@
             transform: translateY(0);
         }
 
+        #table-productos-wrapper, #tienda-productos .card { min-width: 0; max-width: 100%; }
+        .filtros-productos { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+        .filtros-productos input,
+        .filtros-productos select {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: white;
+            font: 0.85rem Inter, sans-serif;
+        }
+        .filtros-productos input { flex: 1; min-width: 200px; }
+        .orden-agarre { cursor: grab; padding: 8px; font-size: 1.1rem; color: #999; touch-action: none; }
+        .orden-flecha { min-width: 30px; min-height: 30px; border: 1px solid #ddd; border-radius: 6px; background: white; color: var(--primary); cursor: pointer; }
+        .orden-flecha:disabled { color: #ccc; cursor: default; }
+
+        /* Formularios abiertos como pantalla propia (ver js/admin-nav.js) */
+        .oculto-por-pantalla { display: none !important; }
+        .pantalla-activa { margin-top: 0 !important; }
+        .btn-volver {
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 18px;
+            padding: 10px 18px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: white;
+            color: var(--secondary);
+            font: 700 0.85rem Inter, sans-serif;
+            cursor: pointer;
+        }
+
         h3 {
             font-family: 'Playfair Display', serif;
             font-size: 2.2rem;
@@ -1027,6 +1058,7 @@
             <ul>
                 <li><a href="#mails"><span class="icon">📧</span> Mails Masivos</a></li>
                 <li><a href="#reviews"><span class="icon">⭐</span> Reviews Google</a></li>
+                <li><a href="#usuarios-panel"><span class="icon">🔐</span> Usuarios del panel</a></li>
                 <li><a href="#logs"><span class="icon">📜</span> Auditoría</a></li>
                 <li><a href="#tools"><span class="icon">🛠️</span> Herramientas</a></li>
                 <li><a href="#qrs"><span class="icon">🔳</span> Códigos QR</a></li>
@@ -1393,6 +1425,35 @@
             </div>
         </section>
 
+        <!-- USUARIOS DEL PANEL -->
+        <section id="usuarios-panel" class="section-content">
+            <h3>Usuarios del panel</h3>
+            <div class="card" style="margin-bottom:24px; padding:20px;">
+                <h4 style="margin-top:0;">Dar de alta</h4>
+                <form class="filtros-productos" onsubmit="window.usuariosAdmin.crear(event)">
+                    <input type="text" id="usuario-nombre" placeholder="Nombre" aria-label="Nombre" autocomplete="off" required>
+                    <input type="email" id="usuario-email" placeholder="Correo electrónico" aria-label="Correo electrónico" autocomplete="off" required>
+                    <input type="password" id="usuario-pass" placeholder="Contraseña (mín. 8)" aria-label="Contraseña" autocomplete="new-password">
+                    <button type="submit" id="usuario-crear-btn" class="btn-primary" style="margin:0; width:auto; height:auto; padding:10px 22px;">Dar de alta</button>
+                </form>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin:0;">Si el email ya tiene cuenta (por ejemplo, es cliente), no hace falta contraseña.</p>
+                <p id="usuario-msg" style="font-size:0.88rem; margin:8px 0 0;" aria-live="polite"></p>
+            </div>
+            <div class="card" style="padding:10px; overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="text-align:left; border-bottom:2px solid var(--border);">
+                            <th style="padding:12px;">Usuario</th>
+                            <th style="padding:12px;">Rol</th>
+                            <th style="padding:12px;">Último ingreso</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="usuarios-body"></tbody>
+                </table>
+            </div>
+        </section>
+
         <!-- LOGS SECTION -->
         <section id="logs" class="section-content">
             <h3>Auditoría de Actividad</h3>
@@ -1434,9 +1495,9 @@
 
         <!-- TIENDA PRODUCTOS SECTION -->
         <section id="tienda-productos" class="section-content">
-            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+            <div style="display: flex; flex-wrap: wrap; gap:12px; justify-content: space-between; align-items: baseline; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
                 <h3 style="margin:0; font-size: 1.5rem;">Gestión de Productos 🛒</h3>
-                <div style="display:flex; gap:10px;">
+                <div style="display:flex; flex-wrap:wrap; gap:10px;">
                     <a href="tienda.html?adminPreview=1" target="_blank"
                         style="display:inline-flex; align-items:center; gap:7px; padding:10px 18px; background:#f0f7f4; color:#1a6b3a; border:1.5px solid #b2e8c4; border-radius:12px; font-size:0.82rem; font-weight:700; text-decoration:none; cursor:pointer;">
                         👁️ Preview tienda
@@ -1735,10 +1796,27 @@
             </div>
 
             <div id="table-productos-wrapper">
-                <div class="card" style="padding: 10px; border: 1px solid var(--border); background: white;">
+                <div class="filtros-productos">
+                    <input type="search" id="filtro-prod-texto" placeholder="🔍 Buscar por nombre" aria-label="Buscar producto por nombre" oninput="window.tiendaAdmin.renderProductosTable()">
+                    <select id="filtro-prod-categoria" aria-label="Filtrar por categoría" onchange="window.tiendaAdmin.renderProductosTable()"><option value="">Todas las categorías</option></select>
+                    <select id="filtro-prod-estado" aria-label="Filtrar por estado" onchange="window.tiendaAdmin.renderProductosTable()">
+                        <option value="">Activos y ocultos</option>
+                        <option value="activos">Solo activos</option>
+                        <option value="ocultos">Solo ocultos</option>
+                    </select>
+                    <select id="filtro-prod-stock" aria-label="Filtrar por stock" onchange="window.tiendaAdmin.renderProductosTable()">
+                        <option value="">Cualquier stock</option>
+                        <option value="sin">Sin stock</option>
+                        <option value="bajo">Stock bajo (1 a 5)</option>
+                    </select>
+                    <button type="button" class="btn-volver" style="margin:0;" onclick="window.tiendaAdmin.limpiarFiltrosProductos()">Limpiar</button>
+                </div>
+                <p id="filtro-prod-ayuda" style="font-size:0.8rem; color:var(--text-muted); margin:0 0 10px;" aria-live="polite"></p>
+                <div class="card" style="padding: 10px; border: 1px solid var(--border); background: white; overflow-x:auto;">
                     <table id="tablaProductosDash" class="display" style="width:100%; font-size: 0.85rem;">
                         <thead style="background: #fdfcf7;">
                             <tr>
+                                <th style="padding: 12px 8px; border-bottom: 1px solid #eee;">Orden</th>
                                 <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Imagen</th>
                                 <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Nombre</th>
                                 <th style="padding: 12px 15px; border-bottom: 1px solid #eee;">Precio</th>
@@ -2201,19 +2279,19 @@
                 <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">MÉTODOS Y LOGÍSTICA</span>
             </div>
 
-            <!-- Destacados en "Todos" -->
+            <!-- Destacados de la tienda -->
             <div class="card" style="margin-bottom:24px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:12px;">
-                    <h4 style="margin:0">Vitrina de "Todos" ⭐</h4>
+                    <h4 style="margin:0">Destacados ⭐</h4>
                     <label class="switch">
                         <input type="checkbox" id="dest-activo" checked>
                         <span class="slider round"></span>
                     </label>
                 </div>
-                <p style="font-size:0.8rem; color:var(--text-muted); margin:0 0 16px;">Cuando está encendida, la vista "Todos" de la tienda muestra solo 1 producto por categoría (el que elijas acá) en lugar de todo el listado. Si una categoría queda sin elegir, se muestra su primer producto.</p>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin:0 0 16px;">Cuando está encendida, arriba de todo en la tienda aparece "Destacados" con 1 producto por categoría (el que elijas acá). Debajo se ven todas las categorías completas. Si una categoría queda sin elegir, se destaca su primer producto.</p>
                 <div id="dest-selects" class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px;"></div>
                 <div style="margin-top:16px; text-align:right;">
-                    <button class="btn-primary" onclick="window.tiendaAdmin.guardarDestacadosTodos(this)" style="margin:0; width:auto; padding:10px 24px; font-size:0.85rem; height:auto;">Guardar vitrina</button>
+                    <button class="btn-primary" onclick="window.tiendaAdmin.guardarDestacadosTodos(this)" style="margin:0; width:auto; padding:10px 24px; font-size:0.85rem; height:auto;">Guardar destacados</button>
                 </div>
             </div>
 
@@ -2718,9 +2796,9 @@
                 </div>
                 <div class="card">
                     <h4>Seguridad</h4>
-                    <p>Registrar un nuevo administrador.</p>
-                    <button onclick="window.abrirModalNuevoAdmin()" class="btn-primary"
-                        style="width:100%; cursor:pointer;">Nuevo Admin</button>
+                    <p>Ver, dar de alta y borrar administradores.</p>
+                    <button onclick="window._navigateTo('usuarios-panel')" class="btn-primary"
+                        style="width:100%; cursor:pointer;">Usuarios del panel</button>
                 </div>
                 <div class="card">
                     <h4>Auditoría Completa</h4>
@@ -3321,7 +3399,7 @@
         import {
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
-        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=30';
+        import * as tiendaAdmin from './js/tienda/admin-tienda.js?v=31';
         window.tiendaAdmin = tiendaAdmin;
         import * as cartaAdmin from './js/carta/admin-carta.js?v=12';
         window.cartaAdmin = cartaAdmin;
@@ -3329,6 +3407,8 @@
         window.reviewsAdmin = reviewsAdmin;
         import * as qrAdmin from './js/qr/admin-qr.js?v=1';
         window.qrAdmin = qrAdmin;
+        import * as usuariosAdmin from './js/usuarios/admin-usuarios.js?v=1';
+        window.usuariosAdmin = usuariosAdmin;
 
         let adminData = null;
         let chartInstance = null;
@@ -3354,6 +3434,25 @@
             _statsReady = { platos: false, stats: false, val: false, favs: false, qp: false, probados: false, clientes: false, usuarios: false, general: false };
         }
 
+        // Carga diferida de las secciones pesadas
+        let _authLista = false;
+        let _dashboardCargado = false;
+        let _clientesCargados = false;
+
+        function _cargarDatosSeccion(id) {
+            if (!_authLista) return;
+            if (id === 'dashboard' && !_dashboardCargado) {
+                _dashboardCargado = true;
+                loadDashboardStats().catch(e => { _dashboardCargado = false; console.error('Error cargando resumen:', e); });
+            }
+            // La lista de usuarios exige la sesión ya verificada
+            if (id === 'usuarios-panel') window.usuariosAdmin.load();
+            if (id === 'clientes' && !_clientesCargados) {
+                _clientesCargados = true;
+                loadClientesTable().catch(e => { _clientesCargados = false; console.error('Error cargando clientes:', e); });
+            }
+        }
+
         // Dashboard Cache
         let cachedLogs = [];
         let cachedStartWeek = null;
@@ -3375,10 +3474,6 @@
                 adminData = data || {};
                 document.getElementById("nombre-usuario").innerText = adminData.nombre || user.email;
 
-                // Load initial data
-                await loadDashboardStats();
-                await loadClientesTable();
-
                 // Auto-refresh logic (10 minutes)
                 setInterval(async () => {
                     if (document.visibilityState === 'visible' && document.getElementById('dashboard').classList.contains('active')) {
@@ -3387,10 +3482,14 @@
                     }
                 }, 10 * 60 * 1000);
 
-                // Remove loader elegantly
+                // El panel se muestra apenas se verifica el permiso; los datos
+                // de cada sección se cargan solo cuando se la abre.
                 const loader = document.getElementById("loader-global");
                 loader.style.opacity = "0";
                 setTimeout(() => loader.style.display = "none", 500);
+
+                _authLista = true;
+                _cargarDatosSeccion(document.querySelector('.section-content.active')?.id);
 
             } catch (error) {
                 console.error("Error init:", error);
@@ -3432,9 +3531,15 @@
                 a.classList.toggle('active', a.getAttribute('href') === '#' + target);
             });
 
-            history.replaceState(null, '', '#' + target);
+            window.adminNav?.cerrarTodo();
+            if (location.hash === '#' + target || history.state?.capa) {
+                history.replaceState(null, '', '#' + target);
+            } else {
+                history.pushState(null, '', '#' + target);
+            }
             if (window.innerWidth <= 700) window.scrollTo(0, 0);
 
+            _cargarDatosSeccion(target);
             if (target === 'logs' && (typeof logsData !== 'undefined' && logsData.length === 0)) loadLogsTable();
             if (target === 'mails') window.loadCampanasHistory?.();
             if (target === 'tienda-dashboard') _cargarTiendaDashboard();
@@ -3993,7 +4098,8 @@
         });
 
         // Restaurar sección desde el hash al cargar
-        window.addEventListener('hashchange', () => navigateTo(location.hash.substring(1)));
+        window.addEventListener('hashchange', () => navigateTo(location.hash.substring(1) || 'dashboard'));
+        if (!location.hash) history.replaceState(null, '', '#dashboard');
         const hashInicial = location.hash.substring(1);
         if (hashInicial && document.getElementById(hashInicial)) {
             navigateTo(hashInicial);
@@ -4424,6 +4530,7 @@
             const logsLastYear = lastYearSnap.docs.map(d => ({ ...d.data(), ts: d.data().timestamp?.toDate() }));
 
             // --- CÁLCULOS ---
+            clientesData = clientesSnap.docs.map(d => d.data());
 
             // 1. Cafés Semana vs Semana Pasada
             const cafésEstaSemana = logsRecientes.filter(l => l.ts >= startEstaSemana && (l.accion === 'sumar_cafecito' || l.accion === 'invitar_cafecito')).length;
@@ -4472,7 +4579,6 @@
             // --- RANKINGS ---
 
 
-            clientesData = clientesSnap.docs.map(d => d.data());
             cachedLogs = logsRecientes;
             cachedStartWeek = startEstaSemana;
             const startYear = startEsteAño;
@@ -6162,83 +6268,6 @@
 
     </script>
 
-    <!-- MODAL NUEVO ADMIN -->
-    <div id="modal-nuevo-admin" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center; padding:20px;">
-        <div class="card" style="width:100%; max-width:440px; position:relative; padding:36px 32px;">
-            <button onclick="document.getElementById('modal-nuevo-admin').style.display='none'" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#aaa;">&times;</button>
-            <h3 style="margin:0 0 6px; font-family:'Playfair Display'; font-size:1.5rem;">Nuevo Administrador</h3>
-            <p style="margin:0 0 24px; font-size:0.85rem; color:var(--text-muted);">Creá una cuenta para que pueda ingresar al panel.</p>
-            <div style="display:flex; flex-direction:column; gap:14px;">
-                <input id="nuevo-admin-email" type="email" placeholder="Correo electrónico" style="padding:12px 14px; border:1px solid var(--border); border-radius:8px; font-size:0.95rem; width:100%; box-sizing:border-box;">
-                <input id="nuevo-admin-pass" type="password" placeholder="Contraseña (mín. 6 caracteres)" style="padding:12px 14px; border:1px solid var(--border); border-radius:8px; font-size:0.95rem; width:100%; box-sizing:border-box;">
-                <input id="nuevo-admin-pass2" type="password" placeholder="Repetir contraseña" style="padding:12px 14px; border:1px solid var(--border); border-radius:8px; font-size:0.95rem; width:100%; box-sizing:border-box;">
-                <div id="nuevo-admin-msg" style="font-size:0.88rem; min-height:20px;"></div>
-                <button id="nuevo-admin-btn" onclick="window.crearNuevoAdmin()" class="btn-primary" style="width:100%; cursor:pointer;">Crear administrador</button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-        import { getAuth, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-        import { getFirestore, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-        import { app, firebaseConfig } from './js/firebase-config.js';
-
-        // App secundaria para crear usuarios sin afectar la sesión actual
-        const secondaryApp = initializeApp(firebaseConfig, 'adminCreator');
-        const secondaryAuth = getAuth(secondaryApp);
-        const db = getFirestore(app);
-
-        window.abrirModalNuevoAdmin = () => {
-            document.getElementById('modal-nuevo-admin').style.display = 'flex';
-            document.getElementById('nuevo-admin-email').value = '';
-            document.getElementById('nuevo-admin-pass').value = '';
-            document.getElementById('nuevo-admin-pass2').value = '';
-            document.getElementById('nuevo-admin-msg').textContent = '';
-        };
-
-        window.crearNuevoAdmin = async () => {
-            const email = document.getElementById('nuevo-admin-email').value.trim();
-            const pass = document.getElementById('nuevo-admin-pass').value;
-            const pass2 = document.getElementById('nuevo-admin-pass2').value;
-            const msg = document.getElementById('nuevo-admin-msg');
-            const btn = document.getElementById('nuevo-admin-btn');
-
-            msg.style.color = '#c0392b';
-            if (!email || !pass) { msg.textContent = '⚠️ Completá todos los campos.'; return; }
-            if (pass.length < 6) { msg.textContent = '⚠️ La contraseña debe tener al menos 6 caracteres.'; return; }
-            if (pass !== pass2) { msg.textContent = '⚠️ Las contraseñas no coinciden.'; return; }
-
-            btn.disabled = true;
-            btn.textContent = 'Creando...';
-            msg.textContent = '';
-
-            try {
-                // Crear en app secundaria → no toca la sesión del admin actual
-                const cred = await createUserWithEmailAndPassword(secondaryAuth, email, pass);
-                await signOut(secondaryAuth);
-                await setDoc(doc(db, 'admins', cred.user.uid), {
-                    email,
-                    creadoPor: localStorage.getItem('usuario') || 'admin',
-                    creado: serverTimestamp()
-                });
-                msg.style.color = '#27ae60';
-                msg.textContent = `✅ Admin creado: ${email}`;
-                btn.textContent = 'Crear administrador';
-                btn.disabled = false;
-                document.getElementById('nuevo-admin-email').value = '';
-                document.getElementById('nuevo-admin-pass').value = '';
-                document.getElementById('nuevo-admin-pass2').value = '';
-            } catch (e) {
-                btn.textContent = 'Crear administrador';
-                btn.disabled = false;
-                if (e.code === 'auth/email-already-in-use') msg.textContent = '⚠️ Ese email ya tiene una cuenta.';
-                else if (e.code === 'auth/invalid-email') msg.textContent = '⚠️ Email inválido.';
-                else msg.textContent = '⚠️ Error: ' + e.message;
-            }
-        };
-    </script>
-
     <!-- MODAL HISTORIAL STOCK -->
     <div id="modal-stock-history" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
         <div class="card" style="width:90%; max-width:600px; max-height:80vh; overflow-y:auto; position:relative;">
@@ -6299,5 +6328,6 @@
             <div id="detalle-campana-body"></div>
         </div>
     </div>
+    <script type="module" src="js/admin-nav.js?v=1"></script>
 </body>
 </html>

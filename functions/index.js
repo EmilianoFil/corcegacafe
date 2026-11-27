@@ -3299,6 +3299,7 @@ exports.sharePlato = onRequest({ region: "us-central1" }, async (req, res) => {
 
 // ZeptoMail — infraestructura nueva (todavía convive con Gmail)
 exports.testZeptoMail = zeptoFunctions.testZeptoMail;
+exports.gestionarAdmins = require('./admins').gestionarAdmins;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIL DE BIENVENIDA AUTOMÁTICO — registro en Carta o Tienda (vía ZeptoMail)

@@ -5,8 +5,11 @@ import {
 import {
     ref, uploadBytes, getDownloadURL
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+import { ordenarProductos } from './orden-productos.js';
 
 let productosData = [];
+let categoriasData = [];
+let _sortableProductos = null;
 let imagenesGaleria = []; // Para manejar las fotos extra en el formulario
 
 // ============================================
@@ -274,13 +277,97 @@ export function eliminarDeGaleria(index) {
 // ============================================
 
 export async function loadProductosTable() {
+    const tbody = document.querySelector('#tablaProductosDash tbody');
+    if (!productosData.length) tbody.innerHTML = _filaMensaje('Cargando productos…');
     try {
-        const q = query(collection(db, "productos"), orderBy("nombre", "asc"));
-        const snap = await getDocs(q);
+        const [snap, cats] = await Promise.all([
+            getDocs(query(collection(db, "productos"), orderBy("nombre", "asc"))),
+            _fetchCatsOrdered()
+        ]);
         productosData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        categoriasData = cats;
+        _cargarOpcionesFiltroCategoria();
+        renderProductosTable();
+    } catch (err) {
+        console.error("Error loading products:", err);
+        tbody.innerHTML = _filaMensaje('No se pudieron cargar los productos. Revisá la conexión y volvé a entrar.');
+    }
+}
 
+function _filaMensaje(texto) {
+    return `<tr><td colspan="9" style="text-align:center; padding:30px; color:#999;">${texto}</td></tr>`;
+}
+
+function _cargarOpcionesFiltroCategoria() {
+    const select = document.getElementById('filtro-prod-categoria');
+    if (!select) return;
+    const elegida = select.value;
+    select.innerHTML = '<option value="">Todas las categorías</option>'
+        + categoriasData.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    select.value = categoriasData.some(c => c.id === elegida) ? elegida : '';
+}
+
+const _normalizar = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+function _stockTotal(p) {
+    if (p.tieneVariantes) {
+        const variantes = Object.values(p.variantes || {});
+        if (variantes.some(v => v.stockIlimitado)) return Infinity;
+        return variantes.reduce((s, v) => s + (v.stock || 0), 0);
+    }
+    return p.stockIlimitado ? Infinity : (p.stock || 0);
+}
+
+function _leerFiltros() {
+    const valor = id => document.getElementById(id)?.value || '';
+    return {
+        texto: _normalizar(valor('filtro-prod-texto').trim()),
+        categoria: valor('filtro-prod-categoria'),
+        estado: valor('filtro-prod-estado'),
+        stock: valor('filtro-prod-stock')
+    };
+}
+
+function _productosVisibles(f) {
+    const filtrados = productosData.filter(p => {
+        if (f.texto && !_normalizar(p.nombre).includes(f.texto)) return false;
+        if (f.categoria && p.categoria !== f.categoria) return false;
+        if (f.estado === 'activos' && p.activo === false) return false;
+        if (f.estado === 'ocultos' && p.activo !== false) return false;
+        const stock = p.esCombo ? Infinity : _stockTotal(p);
+        if (f.stock === 'sin' && stock > 0) return false;
+        if (f.stock === 'bajo' && !(stock > 0 && stock <= 5)) return false;
+        return true;
+    });
+    // Mismo orden que ve el cliente: por categoría y, dentro de ella, el elegido
+    const posCategoria = p => {
+        const i = categoriasData.findIndex(c => c.id === p.categoria);
+        return i === -1 ? categoriasData.length : i;
+    };
+    return ordenarProductos(filtrados).sort((a, b) => posCategoria(a) - posCategoria(b));
+}
+
+export function limpiarFiltrosProductos() {
+    ['filtro-prod-texto', 'filtro-prod-categoria', 'filtro-prod-estado', 'filtro-prod-stock']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    renderProductosTable();
+}
+
+export function renderProductosTable() {
         const tbody = document.querySelector('#tablaProductosDash tbody');
-        tbody.innerHTML = productosData.map(p => {
+        const filtros = _leerFiltros();
+        const visibles = _productosVisibles(filtros);
+        // Ordenar solo tiene sentido viendo una categoría completa
+        const puedeOrdenar = !!filtros.categoria && !filtros.texto && !filtros.estado && !filtros.stock;
+
+        const ayuda = document.getElementById('filtro-prod-ayuda');
+        if (ayuda) {
+            ayuda.textContent = `${visibles.length} de ${productosData.length} productos · ` + (puedeOrdenar
+                ? 'Arrastrá ☰ o usá las flechas para elegir el orden en la tienda.'
+                : 'Para cambiar el orden, elegí una categoría (sin otros filtros).');
+        }
+
+        tbody.innerHTML = visibles.map((p, i) => {
              let stockDisplay;
              if (p.tieneVariantes) {
                  const totalStock = Object.values(p.variantes || {}).reduce((s, v) => s + (v.stock || 0), 0);
@@ -292,8 +379,17 @@ export async function loadProductosTable() {
                  stockDisplay = `<span style="color:${p.stock <= 5 ? 'var(--error)' : '#333'}; font-weight:700;">${p.stock}</span>`;
              }
 
+             const nombreCategoria = categoriasData.find(c => c.id === p.categoria)?.nombre || p.categoria || 'Sin Cat';
+
              return `
-                <tr>
+                <tr data-id="${p.id}">
+                    <td style="padding: 8px; border-bottom: 1px solid #f5f5f5; white-space:nowrap;">
+                        ${puedeOrdenar ? `
+                            <span class="orden-agarre" title="Arrastrar">☰</span>
+                            <button type="button" class="orden-flecha" aria-label="Subir" ${i === 0 ? 'disabled' : ''} onclick="window.tiendaAdmin.moverProducto('${p.id}', -1)">▲</button>
+                            <button type="button" class="orden-flecha" aria-label="Bajar" ${i === visibles.length - 1 ? 'disabled' : ''} onclick="window.tiendaAdmin.moverProducto('${p.id}', 1)">▼</button>
+                        ` : ''}
+                    </td>
                     <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
                         <img src="${p.imagenUrl || 'https://placehold.co/50x50'}" style="width: 45px; height: 45px; border-radius: 10px; object-fit: cover; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                     </td>
@@ -316,7 +412,7 @@ export async function loadProductosTable() {
                         </div>
                     </td>
                     <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
-                        <span style="background:rgba(13, 43, 55, 0.05); color:var(--secondary); padding:4px 10px; border-radius:8px; font-size:0.7rem; font-weight:700; text-transform:uppercase;">${p.categoria || 'Sin Cat'}</span>
+                        <span style="background:rgba(13, 43, 55, 0.05); color:var(--secondary); padding:4px 10px; border-radius:8px; font-size:0.7rem; font-weight:700; text-transform:uppercase;">${nombreCategoria}</span>
                     </td>
                     <td style="padding: 12px 15px; border-bottom: 1px solid #f5f5f5;">
                         <button onclick="window.tiendaAdmin.abrirMediosPago('${p.id}')" title="Editar medios de pago" style="background:#f0f0f0; border:none; border-radius:8px; cursor:pointer; padding:5px 10px; font-size:0.72rem; font-weight:700; color:var(--secondary); white-space:nowrap;">💳 ${resumenMediosPago(p.mediosPago)}</button>
@@ -330,9 +426,43 @@ export async function loadProductosTable() {
                     </td>
                 </tr>
             `;
-        }).join('');
+        }).join('') || _filaMensaje(productosData.length ? 'Ningún producto coincide con los filtros.' : 'Todavía no hay productos.');
+
+        _sortableProductos?.destroy();
+        _sortableProductos = puedeOrdenar && window.Sortable
+            ? window.Sortable.create(tbody, {
+                handle: '.orden-agarre',
+                animation: 150,
+                onEnd: () => _guardarOrdenProductos([...tbody.querySelectorAll('tr[data-id]')].map(tr => tr.dataset.id))
+            })
+            : null;
+}
+
+export function moverProducto(id, delta) {
+    const ids = _productosVisibles(_leerFiltros()).map(p => p.id);
+    const i = ids.indexOf(id);
+    const j = i + delta;
+    if (i === -1 || j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    _guardarOrdenProductos(ids);
+}
+
+async function _guardarOrdenProductos(ids) {
+    const anterior = new Map(productosData.map(p => [p.id, p.orden]));
+    ids.forEach((id, orden) => {
+        const p = productosData.find(x => x.id === id);
+        if (p) p.orden = orden;
+    });
+    renderProductosTable();
+    try {
+        const batch = writeBatch(db);
+        ids.forEach((id, orden) => batch.update(doc(db, "productos", id), { orden }));
+        await batch.commit();
     } catch (err) {
-        console.error("Error loading products:", err);
+        console.error("Error guardando el orden:", err);
+        productosData.forEach(p => { p.orden = anterior.get(p.id); });
+        renderProductosTable();
+        alert("No se pudo guardar el orden. Probá de nuevo.");
     }
 }
 
@@ -2353,7 +2483,7 @@ export async function loadDestacadosTodos() {
         }).join('') || '<span style="color:#999; font-size:0.85rem;">No hay categorías.</span>';
     } catch (e) {
         console.error('Error cargando vitrina:', e);
-        cont.innerHTML = '<span style="color:#c0392b; font-size:0.85rem;">No se pudo cargar la vitrina.</span>';
+        cont.innerHTML = '<span style="color:#c0392b; font-size:0.85rem;">No se pudieron cargar los destacados.</span>';
     }
 }
 
@@ -2368,10 +2498,10 @@ export async function guardarDestacadosTodos(btn) {
             porCategoria,
             actualizadoEn: serverTimestamp()
         });
-        alert('¡Vitrina guardada! ✅');
+        alert('¡Destacados guardados! ✅');
     } catch (e) {
         console.error('Error guardando vitrina:', e);
-        alert('No se pudo guardar la vitrina.');
+        alert('No se pudieron guardar los destacados.');
     } finally {
         btn.disabled = false; btn.innerText = original;
     }

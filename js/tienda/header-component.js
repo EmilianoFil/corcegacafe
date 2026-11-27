@@ -212,7 +212,9 @@ async function _loadCategories(closeMenu) {
         // Determinar si estamos en tienda.html
         const onTienda = !!window.tienda?.setCategory;
 
-        const allCats = [{ id: 'todos', nombre: 'Todos los productos' }, ...cats];
+        const destSnap = await getDoc(doc(db, "configuracion", "tienda-destacados")).catch(() => null);
+        const hayDestacados = !!destSnap?.exists() && destSnap.data().activo !== false;
+        const allCats = [{ id: 'todos', nombre: hayDestacados ? 'Destacados' : 'Inicio de la tienda' }, ...cats];
 
         list.innerHTML = allCats.map(cat => `
             <button class="mobile-menu-subitem" data-cat="${cat.id}" type="button">${cat.nombre}</button>

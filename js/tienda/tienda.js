@@ -5,6 +5,7 @@ import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/f
 import { fetchReservedByOthers, getSessionId, writeReserva } from './cart-reservas.js';
 import { cart, initCart, openCart, closeCart, saveAndRefresh, showToast, setMaxUnidadesPorPedido } from './cart-component.js';
 import { initComboPicker } from './combo-picker.js';
+import { ordenarProductos } from './orden-productos.js';
 
 // --- STATE ---
 let products = [];
@@ -19,19 +20,49 @@ let isAdminPreview = false;
 const productsGrid = document.getElementById('products-container');
 const catsNav = document.getElementById('categories-nav');
 
-// Función global propia — no depende de window.tienda para evitar sobreescrituras
-window.setTiendaCategory = function(catId) {
-    activeCategory = catId;
-    document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
-    document.querySelector(`.category-chip[data-cat="${catId}"]`)?.classList.add('active');
-    document.querySelectorAll('.desktop-cat-chip').forEach(c => c.classList.remove('active'));
-    document.querySelector(`.desktop-cat-chip[data-cat="${catId}"]`)?.classList.add('active');
-    document.querySelectorAll('.mobile-menu-subitem').forEach(b => {
-        b.classList.toggle('active-cat', b.dataset.cat === catId);
-    });
-    renderProducts();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+// Función global propia — no depende de window.tienda para evitar sobreescrituras.
+// Todas las categorías están en la misma página: elegir una solo desplaza hasta ella.
+window.setTiendaCategory = function(catId, behavior = 'smooth') {
+    const seccion = document.getElementById(`sec-${catId}`);
+    if (!seccion && catId !== 'todos') return;
+    marcarCategoria(catId);
+    const alturaBarra = document.querySelector('.top-bar')?.offsetHeight || 0;
+    const top = catId === 'todos' ? 0 : seccion.getBoundingClientRect().top + window.scrollY - alturaBarra - 8;
+    // Mientras dura el desplazamiento no se va marcando cada sección que pasa
+    ignorarScrollHasta = Date.now() + (behavior === 'smooth' ? 900 : 100);
+    window.scrollTo({ top, behavior });
 };
+
+function marcarCategoria(catId) {
+    if (!catId || catId === activeCategory && document.querySelector('.desktop-cat-chip.active')?.dataset.cat === catId) return;
+    activeCategory = catId;
+    document.querySelectorAll('.category-chip, .desktop-cat-chip').forEach(c => c.classList.toggle('active', c.dataset.cat === catId));
+    document.querySelectorAll('.mobile-menu-subitem').forEach(b => b.classList.toggle('active-cat', b.dataset.cat === catId));
+    // En la barra horizontal, dejar a la vista la categoría marcada
+    const barra = document.getElementById('desktop-cats');
+    const chip = barra?.querySelector('.desktop-cat-chip.active');
+    if (chip) barra.scrollTo({ left: chip.offsetLeft - barra.clientWidth / 2 + chip.offsetWidth / 2, behavior: 'smooth' });
+}
+
+// Marca en la barra la categoría que se está viendo
+let ignorarScrollHasta = 0;
+let scrollPendiente = false;
+window.addEventListener('scroll', () => {
+    if (scrollPendiente) return;
+    scrollPendiente = true;
+    requestAnimationFrame(() => {
+        scrollPendiente = false;
+        if (Date.now() < ignorarScrollHasta) return;
+        const secciones = [...document.querySelectorAll('.cat-section')];
+        if (!secciones.length) return;
+        const limite = (document.querySelector('.top-bar')?.offsetHeight || 0) + 80;
+        const alFinal = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+        const actual = alFinal
+            ? secciones[secciones.length - 1]
+            : secciones.filter(s => s.getBoundingClientRect().top <= limite).pop() || secciones[0];
+        marcarCategoria(actual.id.replace('sec-', ''));
+    });
+}, { passive: true });
 
 window.tienda = {
     toggleCart: () => {
@@ -98,13 +129,8 @@ async function init() {
         openCartFn: openCart
     });
 
-    // Si hay categoría en la URL, marcar chip activo en el menú mobile
-    if (catFromUrl) {
-        const list = document.getElementById('mobile-categories-list');
-        list?.querySelectorAll('.mobile-menu-subitem').forEach(btn => {
-            btn.classList.toggle('active-cat', btn.dataset.cat === catFromUrl);
-        });
-    }
+    // Si hay categoría en la URL, ir directo a su sección
+    if (catFromUrl) requestAnimationFrame(() => window.setTiendaCategory(catFromUrl, 'instant'));
 }
 
 // --- DATA FETCHING ---
@@ -125,7 +151,7 @@ async function fetchProducts() {
             ? query(productsRef, orderBy("creadoEn", "desc"))
             : query(productsRef, where("activo", "==", true), orderBy("creadoEn", "desc"));
         const snap = await getDocs(q);
-        products = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        products = ordenarProductos(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (err) {
         console.error("Error fetching products:", err);
         if (productsGrid) productsGrid.innerHTML = `<div style="grid-column: 1/-1; color: var(--texto-muted);">Error al cargar productos.</div>`;
@@ -133,14 +159,21 @@ async function fetchProducts() {
 }
 
 // --- RENDERING ---
+const hayDestacados = () => !!destacadosTodos && destacadosTodos.activo !== false;
+
 function renderCategories() {
+    const conProductos = categories.filter(c => products.some(p => p.categoria === c.id));
+    const items = [
+        ...(hayDestacados() ? [{ id: 'todos', nombre: 'Destacados' }] : []),
+        ...conProductos
+    ];
+    if (!items.some(c => c.id === activeCategory)) activeCategory = items[0]?.id || 'todos';
+
     // Chips mobile (DOM oculto, usado por header-component)
     if (catsNav) {
-        let html = `<div class="category-chip ${activeCategory === 'todos' ? 'active' : ''}" data-cat="todos">Todos</div>`;
-        html += categories.map(c => `
+        catsNav.innerHTML = items.map(c => `
             <div class="category-chip ${activeCategory === c.id ? 'active' : ''}" data-cat="${c.id}">${c.nombre}</div>
         `).join('');
-        catsNav.innerHTML = html;
         document.querySelectorAll('.category-chip').forEach(chip => {
             chip.addEventListener('click', () => window.setTiendaCategory(chip.dataset.cat));
         });
@@ -149,8 +182,7 @@ function renderCategories() {
     // Barra de chips desktop — onclick inline para evitar problemas con ES modules
     const desktopCats = document.getElementById('desktop-cats');
     if (desktopCats) {
-        const all = [{ id: 'todos', nombre: 'Todos' }, ...categories];
-        desktopCats.innerHTML = all.map(c => `
+        desktopCats.innerHTML = items.map(c => `
             <button class="desktop-cat-chip ${activeCategory === c.id ? 'active' : ''}"
                     data-cat="${c.id}"
                     onclick="window.setTiendaCategory('${c.id}')">${c.nombre}</button>
@@ -158,7 +190,8 @@ function renderCategories() {
     }
 }
 
-function buildProductCard(p, index) {
+// `zona` distingue las dos tarjetas de un producto destacado (arriba y en su categoría)
+function buildProductCard(p, index, zona = '') {
     let imagenes = [];
     if (p.imagenUrl) imagenes.push(p.imagenUrl);
     if (p.imagenes && Array.isArray(p.imagenes)) {
@@ -192,19 +225,19 @@ function buildProductCard(p, index) {
     const catNombre = categories.find(c => c.id === p.categoria)?.nombre || '';
 
     return `
-        <div class="product-card ${isAgotado ? 'agotado' : ''}" data-id="${p.id}" style="animation-delay: ${index * 0.05}s${inactivo ? '; opacity:0.55; outline:2px dashed #f59e0b; outline-offset:2px;' : ''}">
+        <div class="product-card ${isAgotado ? 'agotado' : ''}" data-id="${p.id}" style="animation-delay: ${Math.min(index, 8) * 0.05}s${inactivo ? '; opacity:0.55; outline:2px dashed #f59e0b; outline-offset:2px;' : ''}">
             <div class="product-img-container" onclick="window.location.href='producto.html?id=${p.id}'">
                 ${catNombre ? `<span class="badge-categoria">${catNombre}</span>` : ''}
                 ${inactivo ? '<div style="position:absolute;top:8px;right:8px;z-index:5;background:#f59e0b;color:white;font-size:0.65rem;font-weight:800;padding:3px 8px;border-radius:20px;letter-spacing:0.05em;">INACTIVO</div>' : ''}
                 ${isAgotado ? '<div class="badge-agotado">AGOTADO</div>' : ''}
-                <div class="card-carousel" id="carousel-${p.id}">
+                <div class="card-carousel" id="carousel-${zona}${p.id}">
                     ${imagenes.map((img, i) => `
-                        <img src="${img}" class="${i === 0 ? 'active' : ''}" alt="${p.nombre}" onload="this.classList.add('img-loaded'); if(${i===0}) this.closest('.product-img-container')?.classList.add('img-loaded');">
+                        <img src="${img}" loading="lazy" class="${i === 0 ? 'active' : ''}" alt="${p.nombre}" onload="this.classList.add('img-loaded'); if(${i===0}) this.closest('.product-img-container')?.classList.add('img-loaded');">
                     `).join('')}
                 </div>
                 ${imagenes.length > 1 ? `
-                    <button class="card-carousel-btn prev" onclick="event.stopPropagation(); window.moveGridCarousel('${p.id}', -1)">&#8249;</button>
-                    <button class="card-carousel-btn next" onclick="event.stopPropagation(); window.moveGridCarousel('${p.id}', 1)">&#8250;</button>
+                    <button class="card-carousel-btn prev" onclick="event.stopPropagation(); window.moveGridCarousel('${zona}${p.id}', -1)">&#8249;</button>
+                    <button class="card-carousel-btn next" onclick="event.stopPropagation(); window.moveGridCarousel('${zona}${p.id}', 1)">&#8250;</button>
                 ` : ''}
             </div>
             <div class="product-info" onclick="window.location.href='producto.html?id=${p.id}'">
@@ -229,69 +262,40 @@ function buildProductCard(p, index) {
 
 function renderProducts() {
     if (!productsGrid) return;
-
-    if (activeCategory !== 'todos') {
-        // Filtro simple — una grilla plana
-        productsGrid.className = 'products-grid';
-        const filtered = products.filter(p => p.categoria === activeCategory);
-        if (filtered.length === 0) {
-            productsGrid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; color: var(--texto-muted); text-align:center;">No hay productos en esta categoría.</div>`;
-        } else {
-            productsGrid.innerHTML = filtered.map((p, i) => buildProductCard(p, i)).join('');
-        }
-        afterRender(filtered);
-        return;
-    }
-
-    // Vista "todos" — agrupar por categoría con secciones
     productsGrid.className = 'products-sections';
 
-    // Vitrina: 1 producto por categoría (elegido en el admin) en lugar de todo el listado
-    if (destacadosTodos && destacadosTodos.activo !== false) {
+    const seccion = (id, titulo, prods, zona = '') => `
+        <section class="cat-section" id="sec-${id}">
+            <div class="cat-section-header">
+                <h2 class="cat-section-title">${titulo}</h2>
+            </div>
+            <div class="products-grid">${prods.map((p, i) => buildProductCard(p, i, zona)).join('')}</div>
+        </section>`;
+
+    let html = '';
+
+    // Destacados: 1 producto por categoría, elegido en el admin
+    if (hayDestacados()) {
         const sel = destacadosTodos.porCategoria || {};
         const picks = categories.map(cat => {
             const delCat = products.filter(p => p.categoria === cat.id);
             return delCat.find(p => p.id === sel[cat.id]) || delCat[0];
         }).filter(Boolean);
-        if (picks.length > 0) {
-            productsGrid.className = 'products-sections';
-            productsGrid.innerHTML = `
-                <section class="cat-section">
-                    <div class="products-grid">${picks.map((p, i) => buildProductCard(p, i)).join('')}</div>
-                    <p style="text-align:center; color:var(--texto-muted); margin-top:24px;">Elegí una categoría arriba para ver todos los productos.</p>
-                </section>`;
-            afterRender(picks);
-            return;
-        }
+        if (picks.length) html += seccion('todos', 'Destacados', picks, 'dest-');
     }
 
-    // Ordenar categorías según el orden de `categories` (Firestore)
-    const sections = categories.map(cat => ({
-        cat,
-        prods: products.filter(p => p.categoria === cat.id)
-    })).filter(s => s.prods.length > 0);
+    // Y debajo, el catálogo completo en el orden de las categorías
+    categories.forEach(cat => {
+        const prods = products.filter(p => p.categoria === cat.id);
+        if (prods.length) html += seccion(cat.id, cat.nombre, prods);
+    });
 
     // Productos sin categoría conocida al final
     const sinCat = products.filter(p => !categories.find(c => c.id === p.categoria));
+    if (sinCat.length) html += seccion('otros', 'Otros', sinCat);
 
-    let globalIndex = 0;
-    productsGrid.innerHTML = sections.map(({ cat, prods }) => {
-        const cardsHtml = prods.map(p => buildProductCard(p, globalIndex++)).join('');
-        return `
-            <section class="cat-section">
-                <div class="cat-section-header">
-                    <h2 class="cat-section-title">${cat.nombre}</h2>
-                </div>
-                <div class="products-grid">${cardsHtml}</div>
-            </section>
-        `;
-    }).join('') + (sinCat.length ? `
-        <section class="cat-section">
-            <div class="cat-section-header"><h2 class="cat-section-title">Otros</h2></div>
-            <div class="products-grid">${sinCat.map(p => buildProductCard(p, globalIndex++)).join('')}</div>
-        </section>
-    ` : '');
-
+    productsGrid.innerHTML = html
+        || '<div style="padding: 40px; color: var(--texto-muted); text-align:center;">No hay productos disponibles.</div>';
     afterRender(products);
 }
 
@@ -299,7 +303,7 @@ function afterRender(list) {
     // GA4
     if (typeof gtag === 'function') {
         gtag('event', 'view_item_list', {
-            item_list_name: activeCategory === 'todos' ? 'Todos' : activeCategory,
+            item_list_name: 'Tienda',
             items: list.map((p, i) => ({
                 item_id: p.id,
                 item_name: p.nombre,
